@@ -27,3 +27,19 @@ Contributing
 ============
 
 For information on how to contribute code changes to MOOSE please [see this article](https://mooseframework.org/framework/contributing.html).
+
+
+Compilation NEML2
+============
+```bash
+git submodule update --checkout --init --recursive modules/solid_mechanics/contrib/neml2
+cd /Users/chenghau.yang/Documents/Package/moose
+Open setup_libtorch.sh in a text editor:
+Change VERSION=2.1.0 to VERSION=2.2.0
+./scripts/setup_libtorch.sh
+./configure --with-libtorch
+
+cd /Users/chenghau.yang/Documents/Package/moose/modules/solid_mechanics
+make -j10
+```
+
