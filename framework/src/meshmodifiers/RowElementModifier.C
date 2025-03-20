@@ -52,6 +52,9 @@ RowElementModifier::RowElementModifier(const InputParameters & parameters)
 SubdomainID
 RowElementModifier::computeSubdomainID()
 {
+
+  // std::cout << "RowElementModifier::computeSubdomainID()" << std::endl;
+
   const Elem * elem = this->_current_elem;
   if (!elem)
     mooseError("RowElementModifier: _current_elem is null!");
@@ -145,6 +148,9 @@ RowElementModifier::computeSubdomainID()
 
   Real eps = 1e-5;
 
+  // std::cout << "_t = " << _t << std::endl;
+
+  // std::cout << "elem->subdomain_id() = " << elem->subdomain_id() << "\n";
   if (elem->subdomain_id() == _subdomain_id_change_from or change_back_to_original)
   {
 
@@ -182,6 +188,7 @@ RowElementModifier::computeSubdomainID()
     // std::cout << "nodal_x_min = " << nodal_x_min << std::endl;
     // std::cout << "nodal_x_max = " << nodal_x_max << std::endl;
 
+    // std::cout << "_subdomain_id_change_to = " << _subdomain_id_change_to << "\n";
     if (_change_one_row)
     {
       if (nodal_x_min >= _coord_min(0) - eps && nodal_x_max <= _coord_max(0) + eps &&
@@ -211,6 +218,7 @@ RowElementModifier::computeSubdomainID()
 
   if (change_back_to_original)
   {
+    // std::cout << "clean marker\n";
     return _subdomain_id_change_from;
   }
 
