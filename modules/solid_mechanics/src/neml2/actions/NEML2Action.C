@@ -63,6 +63,9 @@ NEML2Action::validParams()
       "block",
       {},
       NEML2Utils::docstring("List of blocks (subdomains) where the material model is defined"));
+
+  params.addParam<std::string>("esm_name", "name of the element subdomain modifier user object");
+
   return params;
 }
 
@@ -74,6 +77,7 @@ NEML2Action::NEML2Action(const InputParameters & params)
     _idx_generator_name(isParamValid("batch_index_generator_name")
                             ? getParam<std::string>("batch_index_generator_name")
                             : "neml2_index_" + getParam<std::string>("model") + "_" + name()),
+    _esm_name(isParamValid("esm_name") ? getParam<std::string>("esm_name") : "none"),
     _block(getParam<std::vector<SubdomainName>>("block"))
 {
   NEML2Utils::assertNEML2Enabled();
@@ -260,6 +264,13 @@ NEML2Action::act()
       auto params = _factory.getValidParams(type);
       params.applyParameters(parameters());
       params.set<UserObjectName>("batch_index_generator") = _idx_generator_name;
+
+      if (_esm_name != "none")
+      {
+        params.set<bool>("esm_required") = true;
+      }
+
+      params.set<UserObjectName>("esm") = _esm_name;
       params.set<std::vector<UserObjectName>>("gatherers") = gatherers;
       params.set<std::vector<UserObjectName>>("param_gatherers") = param_gatherers;
       _problem->addUserObject(type, _executor_name, params);

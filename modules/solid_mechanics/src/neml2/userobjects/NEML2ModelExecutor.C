@@ -8,6 +8,7 @@
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "NEML2ModelExecutor.h"
+#include "ElementSubdomainModifierBase.h"
 #include "MOOSEToNEML2.h"
 #include <set>
 
@@ -29,6 +30,7 @@ NEML2ModelExecutor::actionParams()
           "List of NEML2 variables to skip error checking when setting up the model input. If an "
           "input variable is skipped, its value will stay zero. If a required input variable is "
           "not skipped, an error will be raised."));
+  params.addParam<UserObjectName>("esm", "The ElementSubdomainModifierBase user object");
   return params;
 }
 
@@ -41,6 +43,7 @@ NEML2ModelExecutor::validParams()
   params.addRequiredParam<UserObjectName>(
       "batch_index_generator",
       "The NEML2BatchIndexGenerator used to generate the element-to-batch-index map.");
+
   params.addParam<std::vector<UserObjectName>>(
       "gatherers",
       {},
@@ -51,6 +54,8 @@ NEML2ModelExecutor::validParams()
       {},
       NEML2Utils::docstring(
           "List of MOOSE*ToNEML2 user objects gathering MOOSE data as NEML2 model parameters"));
+
+  params.addParam<bool>("esm_required", false, "whether esm is there");
 
   // Since we use the NEML2 model to evaluate the residual AND the Jacobian at the same time, we
   // want to execute this user object only at execute_on = LINEAR (i.e. during residual evaluation).
@@ -67,6 +72,9 @@ NEML2ModelExecutor::NEML2ModelExecutor(const InputParameters & params)
 #ifdef NEML2_ENABLED
     ,
     _batch_index_generator(getUserObject<NEML2BatchIndexGenerator>("batch_index_generator")),
+    _esm_required(getParam<bool>("esm_required")),
+    _esm(_esm_required ? &getUserObject<ElementSubdomainModifierBase>("esm") : nullptr),
+    /*_esm(&getUserObject<ElementSubdomainModifierBase>("esm")),*/
     _output_ready(false)
 #endif
 {
@@ -325,7 +333,19 @@ NEML2ModelExecutor::extractOutputs()
     {
       const auto & source = _dout_din[y][x];
       if (source.defined())
+      {
+
+        if (_esm == nullptr)
+        {
+          std::cout << "ElementSubdomainModifierBase user object is not provided." << std::endl;
+        }
+
+        std::cout << "[DEBUG] Tensor derivative source for output '" << y << "', input '" << x
+                  << "':\n";
+        std::cout << "         source.sizes() = " << source.sizes() << "\n";
+        std::cout << "         expected batch size N = " << N << "\n";
         target = source.to(torch::kCPU).batch_expand({neml2::Size(N)});
+      }
     }
 
   // clear derivatives

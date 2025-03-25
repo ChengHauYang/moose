@@ -12,6 +12,7 @@
 #include "NEML2ModelInterface.h"
 #include "GeneralUserObject.h"
 #include "NEML2BatchIndexGenerator.h"
+#include "ElementSubdomainModifierBase.h"
 
 class MOOSEToNEML2;
 
@@ -84,6 +85,11 @@ protected:
   /// The NEML2BatchIndexGenerator used to generate the element-to-batch-index map
   const NEML2BatchIndexGenerator & _batch_index_generator;
 
+  bool _esm_required;
+
+  /// The ElementSubdomainModifierBase user object
+  const ElementSubdomainModifierBase * _esm;
+
   /// flag that indicates if output data has been fully computed
   bool _output_ready;
 
@@ -120,5 +126,6 @@ protected:
   /// set of parameter derivatives that were retrieved (by other objects)
   mutable std::map<neml2::VariableName, std::map<std::string, neml2::Tensor>>
       _retrieved_parameter_derivatives;
+
 #endif
 };
