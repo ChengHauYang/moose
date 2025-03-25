@@ -265,6 +265,8 @@ NEML2Action::act()
       params.applyParameters(parameters());
       params.set<UserObjectName>("batch_index_generator") = _idx_generator_name;
 
+      std::cout << "_idx_generator_name = " << _idx_generator_name << std::endl;
+      std::cout << "_esm_name = " << _esm_name << std::endl;
       if (_esm_name != "none")
       {
         params.set<bool>("esm_required") = true;

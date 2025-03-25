@@ -335,6 +335,7 @@ NEML2ModelExecutor::extractOutputs()
       if (source.defined())
       {
 
+        // #ifndef NDEBUG
         if (_esm == nullptr)
         {
           std::cout << "ElementSubdomainModifierBase user object is not provided." << std::endl;
@@ -344,6 +345,8 @@ NEML2ModelExecutor::extractOutputs()
                   << "':\n";
         std::cout << "         source.sizes() = " << source.sizes() << "\n";
         std::cout << "         expected batch size N = " << N << "\n";
+        // #endif
+
         target = source.to(torch::kCPU).batch_expand({neml2::Size(N)});
       }
     }
