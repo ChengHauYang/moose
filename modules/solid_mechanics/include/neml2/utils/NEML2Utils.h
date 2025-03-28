@@ -30,6 +30,25 @@ class SubProblem;
 
 namespace NEML2Utils
 {
+enum CopyValueToOld
+{
+  NewToOld = 0,
+  TopToOld = 1,
+  None = 2
+};
+
+inline CopyValueToOld
+parseCopyValueToOld(const std::string & input)
+{
+  if (input == "NewToOld")
+    return NewToOld;
+  else if (input == "TopToOld")
+    return TopToOld;
+  else if (input == "None")
+    return None;
+  else
+    throw std::invalid_argument("Invalid string for CopyValueToOld: " + input);
+}
 
 #ifdef NEML2_ENABLED
 /// Assert that the NEML2 variable name sits on either the forces or the state subaxis

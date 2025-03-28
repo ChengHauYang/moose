@@ -45,6 +45,9 @@ protected:
 
   /// Reference to the requested output (or its derivative) value
   const neml2::Tensor & _value;
+
+// private:
+// std::map<dof_id_type, SubdomainID> _elem_to_subdomain_map;
 #endif
 };
 

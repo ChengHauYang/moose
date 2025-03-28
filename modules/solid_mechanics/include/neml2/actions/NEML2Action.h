@@ -11,6 +11,7 @@
 
 #ifdef NEML2_ENABLED
 #include "neml2/models/Model.h"
+#include "NEML2Utils.h"
 #endif
 
 #include "Action.h"
@@ -134,6 +135,8 @@ protected:
   /// Name of the element subdomain modifier user object
   const UserObjectName _esm_name;
 
+  bool _copy_new2old;
+
   /// Blocks this sub-block action applies to
   const std::vector<SubdomainName> _block;
 
@@ -142,6 +145,8 @@ protected:
 
   /// Material property additional outputs
   std::map<MaterialPropertyName, std::vector<OutputName>> _export_output_targets;
+
+  NEML2Utils::CopyValueToOld _copy_value2old;
 
 private:
 #ifdef NEML2_ENABLED

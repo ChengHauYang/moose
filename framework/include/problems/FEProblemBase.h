@@ -1088,10 +1088,64 @@ public:
         .condition<AttribThread>(tid)
         .condition<AttribName>(name)
         .queryInto(objs);
+
     if (objs.empty())
+    {
+      // Debug: list all available UserObject names
+      std::vector<UserObject *> all_user_objects;
+      theWarehouse()
+          .query()
+          .condition<AttribSystem>("UserObject")
+          .condition<AttribThread>(tid)
+          .queryInto(all_user_objects);
+
+      mooseWarning(
+          "UserObject with name '", name, "' was not found. Listing all available UserObjects:");
+      // for (auto * obj : all_user_objects)
+      // {
+      //   std::cout << *obj << std::endl;
+      // }
+
       mooseError("Unable to find user object with name '" + name + "'");
+    }
+
     return *(objs[0]);
   }
+
+  template <class T>
+  T & getUserObjectMeshModifier(const std::string & name, unsigned int tid = 0) const
+  {
+    std::vector<T *> objs;
+    theWarehouse()
+        .query()
+        .condition<AttribSystem>("MeshModifiers")
+        .condition<AttribThread>(tid)
+        .condition<AttribName>(name)
+        .queryInto(objs);
+
+    if (objs.empty())
+    {
+      // Debug: list all available UserObject names
+      std::vector<UserObject *> all_user_objects;
+      theWarehouse()
+          .query()
+          .condition<AttribSystem>("UserObject")
+          .condition<AttribThread>(tid)
+          .queryInto(all_user_objects);
+
+      mooseWarning(
+          "UserObject with name '", name, "' was not found. Listing all available UserObjects:");
+      // for (auto * obj : all_user_objects)
+      // {
+      //   std::cout << *obj << std::endl;
+      // }
+
+      mooseError("Unable to find user object with name '" + name + "'");
+    }
+
+    return *(objs[0]);
+  }
+
   /**
    * Get the user object by its name
    * @param name The name of the user object being retrieved

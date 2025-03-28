@@ -191,8 +191,13 @@ RowElementModifier::computeSubdomainID()
     // std::cout << "_subdomain_id_change_to = " << _subdomain_id_change_to << "\n";
     if (_change_one_row)
     {
+      double y_shift = (_dt < 1)
+                           ? _t * _number_of_elements * h +
+                                 h /* activate one row of element at the beginning (TODO: fixing)*/
+                           : (_t + _dt) * _number_of_elements * h;
+
       if (nodal_x_min >= _coord_min(0) - eps && nodal_x_max <= _coord_max(0) + eps &&
-          nodal_y_min >= _coord_max(1) - (_t + 1) * _number_of_elements * h - eps
+          nodal_y_min >= _coord_max(1) - y_shift - eps
           /*&& nodal_y_max <= _coord_max(1) - _t * _number_of_elements * h + eps*/)
       {
         // std::cout << "change marker\n";

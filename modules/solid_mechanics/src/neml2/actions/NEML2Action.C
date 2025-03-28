@@ -66,6 +66,11 @@ NEML2Action::validParams()
 
   params.addParam<std::string>("esm_name", "name of the element subdomain modifier user object");
 
+  params.addParam<std::string>("copy_value2old",
+                               "None",
+                               "how we caclulate the old strain for newly "
+                               "activated elements");
+
   return params;
 }
 
@@ -78,7 +83,8 @@ NEML2Action::NEML2Action(const InputParameters & params)
                             ? getParam<std::string>("batch_index_generator_name")
                             : "neml2_index_" + getParam<std::string>("model") + "_" + name()),
     _esm_name(isParamValid("esm_name") ? getParam<std::string>("esm_name") : "none"),
-    _block(getParam<std::vector<SubdomainName>>("block"))
+    _block(getParam<std::vector<SubdomainName>>("block")),
+    _copy_value2old(NEML2Utils::parseCopyValueToOld(getParam<std::string>("copy_value2old")))
 {
   NEML2Utils::assertNEML2Enabled();
 
@@ -265,12 +271,15 @@ NEML2Action::act()
       params.applyParameters(parameters());
       params.set<UserObjectName>("batch_index_generator") = _idx_generator_name;
 
-      std::cout << "_idx_generator_name = " << _idx_generator_name << std::endl;
-      std::cout << "_esm_name = " << _esm_name << std::endl;
+      // std::cout << "ESM name: " << _esm_name << std::endl;
       if (_esm_name != "none")
       {
         params.set<bool>("esm_required") = true;
       }
+
+      params.set<NEML2Utils::CopyValueToOld>("apply_new2old") = _copy_value2old;
+
+      // std::cout << "_copy_new2old = " << _copy_new2old << std::endl;
 
       params.set<UserObjectName>("esm") = _esm_name;
       params.set<std::vector<UserObjectName>>("gatherers") = gatherers;
