@@ -78,8 +78,8 @@ number_elements = 10
     y_max = 2
     change_one_row = true
     execute_on = 'INITIAL TIMESTEP_END'
-    inactive_subdomain_ID = 2
-    ic_strategy = "IC_EXTRAPOLATE"
+    #inactive_subdomain_ID = 2
+    #ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
   []
 []
 
@@ -140,7 +140,7 @@ number_elements = 10
 []
 
 [NEML2]
-  input = 'models/${neml2_input}.i'
+  input = '../models/${neml2_input}.i'
   verbose = true
   device = 'cpu'
 
