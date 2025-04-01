@@ -77,6 +77,11 @@ ElementSubdomainModifierBase::validParams()
       "element should be reinitialized. If set to false, only elements whose old subdomain was not "
       "in 'reinitialize_subdomains' are reinitialized. ");
 
+  params.addParam<std::string>(
+      "ic_strategy",
+      "default_value",
+      "The strategy to set the initial condition on the newly activated elements. ");
+
   params.addParam<int>(
       "inactive_subdomain_ID",
       -1,
@@ -94,8 +99,15 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
     _displaced_mesh(_displaced_problem ? &_displaced_problem->mesh() : nullptr),
     _old_subdomain_reinitialized(getParam<bool>("old_subdomain_reinitialized")),
     _excluded_originalsubdomainID_neighbors(true),
+    _ic_strategy_string(getParam<std::string>("ic_strategy")),
+    _ic_strategy(parseString2ICStrategy(_ic_strategy_string)),
     _inactive_subdomain_ID(getParam<int>("inactive_subdomain_ID"))
 {
+  if (_ic_strategy == ICStrategyForNewlyActivated::IC_EXTRAPOLATE and _inactive_subdomain_ID == -1)
+    mooseError("The inactive subdomain ID must be set to use the extrapolation strategy.");
+  if (_ic_strategy == ICStrategyForNewlyActivated::IC_DEFAULT and _inactive_subdomain_ID != -1)
+    mooseError("The inactive subdomain ID should not be set to use the default strategy.");
+
   if (isParamSetByUser("moving_boundary_name") ||
       isParamSetByUser("complement_moving_boundary_name"))
     mooseError(
@@ -651,8 +663,27 @@ ElementSubdomainModifierBase::applyIC(bool displaced)
 
   // std::cout << "displaced = " << displaced << "\n";
 
-  _fe_problem.projectInitialConditionOnCustomRange(reinitializedElemRange(displaced),
-                                                   reinitializedBndNodeRange(displaced));
+  switch (_ic_strategy)
+  {
+    case ICStrategyForNewlyActivated::IC_DEFAULT:
+      _fe_problem.projectInitialConditionOnCustomRange(reinitializedElemRange(displaced),
+                                                       reinitializedBndNodeRange(displaced));
+      break;
+    case ICStrategyForNewlyActivated::IC_EXTRAPOLATE:
+      if (_t > _dt)
+      {
+        computeSecondNeighborInfo(_fe_problem.getNonlinearSystemBase(_sys.number()), displaced);
+        verifySecondNeighborInfo();
+      }
+      else
+      {
+        _fe_problem.projectInitialConditionOnCustomRange(reinitializedElemRange(displaced),
+                                                         reinitializedBndNodeRange(displaced));
+      }
+      break;
+    default:
+      mooseError("Unknown initial condition strategy.");
+  }
 
   mooseAssert(_fe_problem.numSolverSystems() < 2,
               "This code was written for a single nonlinear system");
@@ -663,11 +694,6 @@ ElementSubdomainModifierBase::applyIC(bool displaced)
   setOldAndOlderSolutions(_fe_problem.getAuxiliarySystem(),
                           reinitializedElemRange(displaced),
                           reinitializedBndNodeRange(displaced));
-  if (_t > _dt and _inactive_subdomain_ID != -1)
-  {
-    computeSecondNeighborInfo(_fe_problem.getNonlinearSystemBase(_sys.number()), displaced);
-    verifySecondNeighborInfo();
-  }
 
   // Note: Need method to handle solve failures at timesteps where subdomain changes. The old
   // solutions are now set to the reinitialized values. Does this impact restoring solutions
@@ -829,8 +855,8 @@ ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool d
 
     Point newly_activated_node_pos = *newly_activated_node;
 
-    std::cout << "newly_activated_node id = " << newly_activated_node_id << "\n";
-    std::cout << "newly_activated_node pos = " << newly_activated_node_pos << "\n";
+    // std::cout << "newly_activated_node id = " << newly_activated_node_id << "\n";
+    // std::cout << "newly_activated_node pos = " << newly_activated_node_pos << "\n";
 
     // === First Layer Elements and Nodes ===
     const auto & first_layer_elems = _mesh.nodeToElemMap().at(newly_activated_node_id);
@@ -855,6 +881,7 @@ ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool d
       }
     }
 
+#ifndef NDEBUG
     // Debugging output
     for (auto first_node : first_layer_nodes)
     {
@@ -871,6 +898,7 @@ ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool d
         std::cerr << "Error: Unable to open newly_activated_nodes.txt for writing!" << std::endl;
       }
     }
+#endif
 
     // === Second Layer Nodes ===
     std::set<const Node *> second_layer_nodes;
@@ -917,6 +945,7 @@ ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool d
 
     _newlyactivated_node_to_second_neighbors[newly_activated_node_id] = std::move(info);
 
+#ifndef NDEBUG
     // Debugging output
     for (auto second_node : second_layer_nodes)
     {
@@ -933,6 +962,7 @@ ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool d
         std::cerr << "Error: Unable to open newly_activated_nodes.txt for writing!" << std::endl;
       }
     }
+#endif
   }
 }
 

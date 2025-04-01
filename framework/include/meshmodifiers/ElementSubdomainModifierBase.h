@@ -19,6 +19,15 @@ struct NeighborInfo
   std::vector<Real> distances;
 };
 
+namespace ICStrategyForNewlyActivated
+{
+enum Type
+{
+  IC_DEFAULT,
+  IC_EXTRAPOLATE
+};
+}
+
 /**
  * Base class for mesh modifiers modifying element subdomains
  */
@@ -158,6 +167,8 @@ private:
   std::unordered_set<dof_id_type> _newactivated_nodes;
 
   bool _excluded_originalsubdomainID_neighbors;
+  std::string _ic_strategy_string;
+  ICStrategyForNewlyActivated::Type _ic_strategy;
   int _inactive_subdomain_ID /*this is actually inactive element*/;
 
   /// @brief find the second layer of neighbors for each element
@@ -168,4 +179,12 @@ private:
   bool nodeIsNewlyActivated(dof_id_type node_id) const;
   void findNewlyActivatedNodes(
       const std::unordered_map<dof_id_type, std::pair<SubdomainID, SubdomainID>> & moved_elems);
+
+  inline ICStrategyForNewlyActivated::Type parseString2ICStrategy(const std::string & input)
+  {
+    if (input == "IC_EXTRAPOLATE")
+      return ICStrategyForNewlyActivated::IC_EXTRAPOLATE;
+    else
+      throw std::invalid_argument("Invalid string for ICStrategyForNewlyActivated: " + input);
+  }
 };
