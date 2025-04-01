@@ -103,7 +103,7 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
     _ic_strategy(parseString2ICStrategy(_ic_strategy_string)),
     _inactive_subdomain_ID(getParam<int>("inactive_subdomain_ID"))
 {
-  if (_ic_strategy == ICStrategyForNewlyActivated::IC_EXTRAPOLATE and _inactive_subdomain_ID == -1)
+  if (_ic_strategy != ICStrategyForNewlyActivated::IC_DEFAULT and _inactive_subdomain_ID == -1)
     mooseError("The inactive subdomain ID must be set to use the extrapolation strategy.");
   if (_ic_strategy == ICStrategyForNewlyActivated::IC_DEFAULT and _inactive_subdomain_ID != -1)
     mooseError("The inactive subdomain ID should not be set to use the default strategy.");
@@ -666,14 +666,20 @@ ElementSubdomainModifierBase::applyIC(bool displaced)
   switch (_ic_strategy)
   {
     case ICStrategyForNewlyActivated::IC_DEFAULT:
+      // note: from IC -> current
       _fe_problem.projectInitialConditionOnCustomRange(reinitializedElemRange(displaced),
                                                        reinitializedBndNodeRange(displaced));
       break;
-    case ICStrategyForNewlyActivated::IC_EXTRAPOLATE:
+
+    case ICStrategyForNewlyActivated::IC_EXTRAPOLATE_SECOND_LAYER:
+    case ICStrategyForNewlyActivated::IC_EXTRAPOLATE_FIRST_LAYER:
       if (_t > _dt)
       {
         computeSecondNeighborInfo(_fe_problem.getNonlinearSystemBase(_sys.number()), displaced);
+#ifndef NDEBUG
         verifySecondNeighborInfo();
+#endif
+        setCurrentSolutionsOnNewlyActivatedNodes(_fe_problem.getNonlinearSystemBase(_sys.number()));
       }
       else
       {
@@ -688,6 +694,7 @@ ElementSubdomainModifierBase::applyIC(bool displaced)
   mooseAssert(_fe_problem.numSolverSystems() < 2,
               "This code was written for a single nonlinear system");
   // Set old and older solutions on the reinitialized dofs to the reinitialized values
+  // note: from current -> old -> older
   setOldAndOlderSolutions(_fe_problem.getNonlinearSystemBase(_sys.number()),
                           reinitializedElemRange(displaced),
                           reinitializedBndNodeRange(displaced));
@@ -794,8 +801,8 @@ ElementSubdomainModifierBase::setOldAndOlderSolutions(SystemBase & sys,
     dof_id_type bnode_id = bnode->id();
     Point bnode_pos = *bnode;
 
-    std::cout << "bnode id = " << bnode_id << "\n";
-    std::cout << "bnode pos = " << bnode_pos << "\n";
+    // std::cout << "bnode id = " << bnode_id << "\n";
+    // std::cout << "bnode pos = " << bnode_pos << "\n";
   }
 
   // Don't do anything if this is a steady simulation
@@ -838,12 +845,76 @@ ElementSubdomainModifierBase::setOldAndOlderSolutions(SystemBase & sys,
 }
 
 void
+ElementSubdomainModifierBase::setCurrentSolutionsOnNewlyActivatedNodes(SystemBase & sys)
+{
+
+  if (_ic_strategy == ICStrategyForNewlyActivated::IC_EXTRAPOLATE_FIRST_LAYER ||
+      _ic_strategy == ICStrategyForNewlyActivated::IC_EXTRAPOLATE_SECOND_LAYER)
+  {
+    NumericVector<Number> & current_solution = sys.solution();
+
+    DofMap & dof_map = sys.dofMap();
+
+    // loop over the newly activated nodes
+    for (auto point_dof_id : _newactivated_nodes)
+    {
+      Node * node = _mesh.nodePtr(point_dof_id);
+      std::vector<dof_id_type> solution_indices;
+      dof_map.dof_indices(node, solution_indices);
+      int solution_dofs = solution_indices.size();
+
+      auto info_extrapolation_pt = _newlyactivated_node_to_second_neighbors[point_dof_id];
+
+      int extrapolation_point_number = info_extrapolation_pt.distances.size();
+
+      std::vector<Real> weighted_averaged_solutions(solution_dofs, 0.0);
+      Real weighted_averaged_denominator = 0.0;
+
+      for (int pt = 0; pt < extrapolation_point_number; ++pt)
+      {
+        auto & solutions_extrapolation_pt = info_extrapolation_pt.solution_values[pt];
+        auto & distances_extrapolation_pt = info_extrapolation_pt.distances[pt];
+
+        for (int solution_dof = 0; solution_dof < solution_dofs; ++solution_dof)
+        {
+          weighted_averaged_solutions[solution_dof] +=
+              solutions_extrapolation_pt[solution_dof] / distances_extrapolation_pt;
+          if (solution_dof == 0)
+            weighted_averaged_denominator += 1.0 / distances_extrapolation_pt;
+        }
+      }
+
+      // for (int solution_dof = 0; solution_dof < solution_dofs; ++solution_dof)
+      // {
+      //   auto old_value = current_solution(solution_indices[solution_dof]);
+      //   std::cout << "[Before] Node ID " << point_dof_id << " DOF "
+      //             << solution_indices[solution_dof] << " old value = " << old_value << std::endl;
+      // }
+
+      for (int solution_dof = 0; solution_dof < solution_dofs; ++solution_dof)
+      {
+        current_solution.set(solution_indices[solution_dof],
+                             weighted_averaged_solutions[solution_dof] /
+                                 weighted_averaged_denominator);
+      }
+
+      for (int solution_dof = 0; solution_dof < solution_dofs; ++solution_dof)
+      {
+        auto new_value = current_solution(solution_indices[solution_dof]);
+        std::cout << "[After] Node ID " << point_dof_id << " DOF " << solution_indices[solution_dof]
+                  << " new value = " << new_value << std::endl;
+      }
+    }
+
+    current_solution.close();
+  }
+}
+
+void
 ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool displaced)
 {
-  // Get the current solution vector
   NumericVector<Number> & current_solution = *sys.system().current_local_solution;
 
-  // Loop over the reinitialized node IDs
   for (const auto & newly_activated_node_id : _newactivated_nodes)
   {
     const Node * newly_activated_node = _mesh.nodePtr(newly_activated_node_id);
@@ -855,102 +926,89 @@ ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool d
 
     Point newly_activated_node_pos = *newly_activated_node;
 
-    // std::cout << "newly_activated_node id = " << newly_activated_node_id << "\n";
-    // std::cout << "newly_activated_node pos = " << newly_activated_node_pos << "\n";
-
-    // === First Layer Elements and Nodes ===
     const auto & first_layer_elems = _mesh.nodeToElemMap().at(newly_activated_node_id);
     std::set<const Node *> first_layer_nodes;
 
     for (auto elem_id : first_layer_elems)
     {
-      if (_mesh.elemPtr(elem_id)->subdomain_id() ==
-              _inactive_subdomain_ID /*means that the element is inactive, and should not be
-                                        considered*/)
+      if (_mesh.elemPtr(elem_id)->subdomain_id() == _inactive_subdomain_ID)
         continue;
-      // Skip if the element is not in the list of reinitialized elements
+
       const Elem * elem = _mesh.elemPtr(elem_id);
       for (unsigned int i = 0; i < elem->n_nodes(); ++i)
       {
         const Node * node = elem->node_ptr(i);
         if (node && node->id() != newly_activated_node_id)
-        {
-          // std::cout << "  First-layer node id = " << node->id() << "\n";
           first_layer_nodes.insert(node);
-        }
       }
     }
 
-#ifndef NDEBUG
-    // Debugging output
-    for (auto first_node : first_layer_nodes)
-    {
-      auto pt = *first_node;
-      std::ofstream fout("first_layer_nodes_" + std::to_string(newly_activated_node_id) + ".txt",
-                         std::ios::app);
-      if (fout.is_open())
-      {
-        fout << pt(0) << ", " << pt(1) << "\n";
-        fout.close();
-      }
-      else
-      {
-        std::cerr << "Error: Unable to open newly_activated_nodes.txt for writing!" << std::endl;
-      }
-    }
-#endif
-
-    // === Second Layer Nodes ===
     std::set<const Node *> second_layer_nodes;
-
     for (const Node * first_node : first_layer_nodes)
     {
       const auto & second_layer_elems = _mesh.nodeToElemMap().at(first_node->id());
       for (auto elem_id : second_layer_elems)
       {
-        if (_mesh.elemPtr(elem_id)->subdomain_id() ==
-                _inactive_subdomain_ID /*means that the element is inactive, and should not be
-                                          considered*/
-            || find(_reinitialized_elems.begin(), _reinitialized_elems.end(), elem_id) !=
-                   _reinitialized_elems.end()/*means that the element is reinitialized here, which
-                   should not be considered as well*/)
+        if (_mesh.elemPtr(elem_id)->subdomain_id() == _inactive_subdomain_ID ||
+            find(_reinitialized_elems.begin(), _reinitialized_elems.end(), elem_id) !=
+                _reinitialized_elems.end())
           continue;
+
         const Elem * elem = _mesh.elemPtr(elem_id);
         for (unsigned int i = 0; i < elem->n_nodes(); ++i)
-        {
-          const Node * second_node = elem->node_ptr(i);
-          second_layer_nodes.insert(second_node); // duplicates automatically ignored by std::set
-        }
+          second_layer_nodes.insert(elem->node_ptr(i));
       }
     }
 
-    // === Extract Solution and Distance ===
-    NeighborInfo info;
-
-    for (const Node * second_node : second_layer_nodes)
+    // === Use intersection if IC_EXTRAPOLATE_FIRST_LAYER ===
+    std::set<const Node *> selected_nodes;
+    if (_ic_strategy == ICStrategyForNewlyActivated::IC_EXTRAPOLATE_FIRST_LAYER)
     {
-      // const dof_id_type dof =
-      //     second_node->dof_number(_sys.number(),
-      //                             this->_mesh.dimension(), // TODO: fix hardcoded dimension
-      //                             0);                      // assumes using first component
+      for (const auto & node : first_layer_nodes)
+      {
+        if (second_layer_nodes.find(node) != second_layer_nodes.end())
+          selected_nodes.insert(node); // Intersection
+      }
+    }
+    else if (_ic_strategy == ICStrategyForNewlyActivated::IC_EXTRAPOLATE_SECOND_LAYER)
+    {
+      selected_nodes = second_layer_nodes;
+    }
+    else
+    {
+      mooseError("Unsupported _ic_strategy in computeSecondNeighborInfo()");
+      continue;
+    }
 
-      // std::cout << "dof = " << dof << "\n";
+    NeighborInfo info;
+    DofMap & dof_map = sys.dofMap();
 
-      // const Number sol_val = current_solution(dof);
-      const Real dist = (*second_node - newly_activated_node_pos).norm();
+    for (const Node * node : selected_nodes)
+    {
+      std::vector<libMesh::dof_id_type> nodal_dofs;
+      dof_map.dof_indices(node, nodal_dofs);
 
-      info.solution_values.push_back(0.0); // Placeholder for solution value
+      std::vector<Real> solution_values;
+      for (auto dof : nodal_dofs)
+        solution_values.push_back(current_solution(dof));
+
+      const Real dist = (*node - newly_activated_node_pos).norm();
+
+      info.solution_values.push_back(solution_values);
       info.distances.push_back(dist);
     }
 
     _newlyactivated_node_to_second_neighbors[newly_activated_node_id] = std::move(info);
 
-#ifndef NDEBUG
-    // Debugging output
-    for (auto second_node : second_layer_nodes)
+    // #ifndef NDEBUG
+    for (const Node * node : selected_nodes)
     {
-      auto pt = *second_node;
-      std::ofstream fout("second_layer_nodes_" + std::to_string(newly_activated_node_id) + ".txt",
+      auto pt = *node;
+      std::string select_layer_name =
+          (_ic_strategy == ICStrategyForNewlyActivated::IC_EXTRAPOLATE_FIRST_LAYER)
+              ? "first_layer_nodes_"
+              : "second_layer_nodes_";
+      std::ofstream fout(select_layer_name + std::to_string(newly_activated_node_id) + ".txt",
                          std::ios::app);
       if (fout.is_open())
       {
@@ -959,10 +1017,10 @@ ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool d
       }
       else
       {
-        std::cerr << "Error: Unable to open newly_activated_nodes.txt for writing!" << std::endl;
+        std::cerr << "Error: Unable to open selected_layer_nodes file for writing!" << std::endl;
       }
     }
-#endif
+    // #endif
   }
 }
 

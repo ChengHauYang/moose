@@ -15,7 +15,7 @@
 
 struct NeighborInfo
 {
-  std::vector<Real> solution_values;
+  std::vector<std::vector<Real>> solution_values;
   std::vector<Real> distances;
 };
 
@@ -24,7 +24,8 @@ namespace ICStrategyForNewlyActivated
 enum Type
 {
   IC_DEFAULT,
-  IC_EXTRAPOLATE
+  IC_EXTRAPOLATE_FIRST_LAYER,
+  IC_EXTRAPOLATE_SECOND_LAYER
 };
 }
 
@@ -182,9 +183,14 @@ private:
 
   inline ICStrategyForNewlyActivated::Type parseString2ICStrategy(const std::string & input)
   {
-    if (input == "IC_EXTRAPOLATE")
-      return ICStrategyForNewlyActivated::IC_EXTRAPOLATE;
+    if (input == "IC_EXTRAPOLATE_FIRST_LAYER")
+      return ICStrategyForNewlyActivated::IC_EXTRAPOLATE_FIRST_LAYER;
+    else if (input == "IC_EXTRAPOLATE_SECOND_LAYER")
+      return ICStrategyForNewlyActivated::IC_EXTRAPOLATE_SECOND_LAYER;
+    else if (input == "default_value")
+      return ICStrategyForNewlyActivated::IC_DEFAULT;
     else
       throw std::invalid_argument("Invalid string for ICStrategyForNewlyActivated: " + input);
   }
+  void setCurrentSolutionsOnNewlyActivatedNodes(SystemBase & sys);
 };
