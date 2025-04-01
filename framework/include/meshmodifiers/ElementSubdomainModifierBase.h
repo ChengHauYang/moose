@@ -13,6 +13,12 @@
 #include "NonlinearSystemBase.h"
 #include "AuxiliarySystem.h"
 
+struct NeighborInfo
+{
+  std::vector<Real> solution_values;
+  std::vector<Real> distances;
+};
+
 /**
  * Base class for mesh modifiers modifying element subdomains
  */
@@ -145,4 +151,21 @@ private:
   std::unique_ptr<ConstBndNodeRange> _reinitialized_bnd_node_range;
   /// Range of reinitialized boundary nodes on the displaced mesh
   std::unique_ptr<ConstBndNodeRange> _reinitialized_displaced_bnd_node_range;
+
+  std::map<dof_id_type, NeighborInfo> _newlyactivated_node_to_second_neighbors;
+
+  ///
+  std::unordered_set<dof_id_type> _newactivated_nodes;
+
+  bool _excluded_originalsubdomainID_neighbors;
+  int _inactive_subdomain_ID /*this is actually inactive element*/;
+
+  /// @brief find the second layer of neighbors for each element
+  /// @param sys
+  /// @param displaced
+  void computeSecondNeighborInfo(SystemBase & sys, bool displaced);
+  void verifySecondNeighborInfo();
+  bool nodeIsNewlyActivated(dof_id_type node_id) const;
+  void findNewlyActivatedNodes(
+      const std::unordered_map<dof_id_type, std::pair<SubdomainID, SubdomainID>> & moved_elems);
 };

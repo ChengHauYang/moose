@@ -77,6 +77,12 @@ ElementSubdomainModifierBase::validParams()
       "element should be reinitialized. If set to false, only elements whose old subdomain was not "
       "in 'reinitialize_subdomains' are reinitialized. ");
 
+  params.addParam<int>(
+      "inactive_subdomain_ID",
+      -1,
+      "If the region has the inative element, you should set this parameter to turn on the "
+      "extrapolation of the solution to the newly activated elements. ");
+
   params.registerBase("MeshModifier");
 
   return params;
@@ -86,7 +92,9 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
   : ElementUserObject(parameters),
     _displaced_problem(_fe_problem.getDisplacedProblem().get()),
     _displaced_mesh(_displaced_problem ? &_displaced_problem->mesh() : nullptr),
-    _old_subdomain_reinitialized(getParam<bool>("old_subdomain_reinitialized"))
+    _old_subdomain_reinitialized(getParam<bool>("old_subdomain_reinitialized")),
+    _excluded_originalsubdomainID_neighbors(true),
+    _inactive_subdomain_ID(getParam<int>("inactive_subdomain_ID"))
 {
   if (isParamSetByUser("moving_boundary_name") ||
       isParamSetByUser("complement_moving_boundary_name"))
@@ -210,6 +218,9 @@ ElementSubdomainModifierBase::modify(
   applyMovingBoundaryChanges(_mesh);
   if (_displaced_mesh)
     applyMovingBoundaryChanges(*_displaced_mesh);
+
+  if (_inactive_subdomain_ID != -1)
+    findNewlyActivatedNodes(moved_elems);
 
   // Reinit equation systems
   _fe_problem.meshChanged();
@@ -500,9 +511,59 @@ ElementSubdomainModifierBase::findReinitializedElemsAndNodes(
 
     const auto elem = _mesh.elemPtr(elem_id);
     for (unsigned int i = 0; i < elem->n_nodes(); ++i)
+    {
       if (nodeIsNewlyReinitialized(elem->node_id(i)))
+      {
+        // std::cout << "(nodeIsNewlyReinitialized) node id = " << elem->node_id(i) << "\n";
         _reinitialized_nodes.insert(elem->node_id(i));
+      }
+    }
   }
+
+  // std::cout << "_reinitialized_elems.size() = " << _reinitialized_elems.size() << "\n";
+  // std::cout << "_reinitialized_nodes.size() = " << _reinitialized_nodes.size() << "\n";
+  // std::cout << "_newactivated_nodes.size() = " << _newactivated_nodes.size() << "\n";
+  // if (_reinitialized_elems.size() > 0)
+  // {
+  //   std::cout << "Reinitialized elements: ";
+  //   for (auto elem_id : _reinitialized_elems)
+  //     std::cout << elem_id << " ";
+  //   std::cout << "\n";
+  // }
+}
+
+void
+ElementSubdomainModifierBase::findNewlyActivatedNodes(
+    const std::unordered_map<dof_id_type, std::pair<SubdomainID, SubdomainID>> & moved_elems)
+{
+  // Clear cached element reinitialization data
+  _newactivated_nodes.clear();
+
+  for (const auto & [elem_id, subdomain] : moved_elems)
+  {
+    const auto elem = _mesh.elemPtr(elem_id);
+    for (unsigned int i = 0; i < elem->n_nodes(); ++i)
+    {
+      if (nodeIsNewlyActivated(elem->node_id(i)))
+      {
+        if (_newactivated_nodes.find(elem->node_id(i)) == _newactivated_nodes.end())
+        { // Only add if not already in set
+          // std::cout << "(nodeIsNewlyActivated) node id = " << elem->node_id(i) << "\n";
+          _newactivated_nodes.insert(elem->node_id(i));
+        }
+      }
+    }
+  }
+
+#ifndef NDEBUG
+  if (_newactivated_nodes.size() > 0)
+  {
+    std::cout << "New activated nodes: ";
+    for (auto node_id : _newactivated_nodes)
+      std::cout << node_id << " ";
+    std::cout << "\n";
+  }
+#endif
 }
 
 bool
@@ -531,9 +592,65 @@ ElementSubdomainModifierBase::nodeIsNewlyReinitialized(dof_id_type node_id) cons
   return true;
 }
 
+bool
+ElementSubdomainModifierBase::nodeIsNewlyActivated(dof_id_type node_id) const
+{
+
+  int total_neighbor_elems;
+  if (!_excluded_originalsubdomainID_neighbors)
+  {
+    total_neighbor_elems = _mesh.nodeToElemMap().at(node_id).size();
+  }
+  else
+  {
+    total_neighbor_elems = 0;
+    for (auto neighbor_elem_id : _mesh.nodeToElemMap().at(node_id))
+      if (_mesh.elemPtr(neighbor_elem_id)->subdomain_id() != _inactive_subdomain_ID
+      /*exclude the element which has the subdomainID the same as the original subdomainID of the newly activated element*/)
+        total_neighbor_elems++;
+  }
+
+  int reinitialized_neighbor_elems = 0;
+  for (auto neighbor_elem_id : _mesh.nodeToElemMap().at(node_id))
+    if (find(_reinitialized_elems.begin(), _reinitialized_elems.end(), neighbor_elem_id) !=
+        _reinitialized_elems.end())
+    {
+      reinitialized_neighbor_elems++;
+    }
+
+  // std::cout << "_inactive_subdomain_ID = " << _inactive_subdomain_ID << "\n";
+  // std::cout << "reinitialized_neighbor_elems = " << reinitialized_neighbor_elems << "\n";
+  // std::cout << "total_neighbor_elems = " << total_neighbor_elems << "\n";
+  if (reinitialized_neighbor_elems == total_neighbor_elems)
+  {
+    auto pt_ptr = _mesh.nodePtr(node_id);
+    auto pt = *pt_ptr;
+    if (_t > _dt)
+    {
+      std::ofstream fout("newly_activated_nodes_" + std::to_string(node_id) + ".txt",
+                         std::ios::app);
+      if (fout.is_open())
+      {
+        fout << pt(0) << ", " << pt(1) << "\n";
+        fout.close();
+      }
+      else
+      {
+        std::cerr << "Error: Unable to open newly_activated_nodes.txt for writing!" << std::endl;
+      }
+    }
+    return true;
+  }
+  // If all elements with the node are reinitialized, then the node is newly reinitialized.
+  return false;
+}
+
 void
 ElementSubdomainModifierBase::applyIC(bool displaced)
 {
+
+  // std::cout << "displaced = " << displaced << "\n";
+
   _fe_problem.projectInitialConditionOnCustomRange(reinitializedElemRange(displaced),
                                                    reinitializedBndNodeRange(displaced));
 
@@ -546,6 +663,11 @@ ElementSubdomainModifierBase::applyIC(bool displaced)
   setOldAndOlderSolutions(_fe_problem.getAuxiliarySystem(),
                           reinitializedElemRange(displaced),
                           reinitializedBndNodeRange(displaced));
+  if (_t > _dt and _inactive_subdomain_ID != -1)
+  {
+    computeSecondNeighborInfo(_fe_problem.getNonlinearSystemBase(_sys.number()), displaced);
+    verifySecondNeighborInfo();
+  }
 
   // Note: Need method to handle solve failures at timesteps where subdomain changes. The old
   // solutions are now set to the reinitialized values. Does this impact restoring solutions
@@ -569,7 +691,10 @@ ElementSubdomainModifierBase::reinitializedElemRange(bool displaced)
   // Create a vector of the newly reinitialized elements
   std::vector<Elem *> elems;
   for (auto elem_id : _reinitialized_elems)
+  {
+    // std::cout << "elem_id = " << elem_id << "\n";
     elems.push_back(displaced ? _displaced_mesh->elemPtr(elem_id) : _mesh.elemPtr(elem_id));
+  }
 
   // Make some fake element iterators defining this vector of elements
   Elem * const * elem_itr_begin = const_cast<Elem * const *>(elems.data());
@@ -604,7 +729,10 @@ ElementSubdomainModifierBase::reinitializedBndNodeRange(bool displaced)
   for (auto bnd_node : *bnd_nodes)
     if (bnd_node->_node)
       if (_reinitialized_nodes.count(bnd_node->_node->id()))
+      {
+        // std::cout << "bnd_node id = " << bnd_node->_node->id() << "\n";
         nodes.push_back(bnd_node);
+      }
 
   // Make some fake node iterators defining this vector of nodes
   BndNode * const * bnd_node_itr_begin = const_cast<BndNode * const *>(nodes.data());
@@ -630,6 +758,20 @@ ElementSubdomainModifierBase::setOldAndOlderSolutions(SystemBase & sys,
                                                       ConstElemRange & elem_range,
                                                       ConstBndNodeRange & bnd_node_range)
 {
+
+  for (auto bnd : bnd_node_range)
+  {
+    const Node * bnode = bnd->_node;
+    if (!bnode)
+      continue;
+
+    dof_id_type bnode_id = bnode->id();
+    Point bnode_pos = *bnode;
+
+    std::cout << "bnode id = " << bnode_id << "\n";
+    std::cout << "bnode pos = " << bnode_pos << "\n";
+  }
+
   // Don't do anything if this is a steady simulation
   if (!sys.hasSolutionState(1))
     return;
@@ -667,4 +809,163 @@ ElementSubdomainModifierBase::setOldAndOlderSolutions(SystemBase & sys,
   old_solution.close();
   if (older_solution)
     older_solution->close();
+}
+
+void
+ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool displaced)
+{
+  // Get the current solution vector
+  NumericVector<Number> & current_solution = *sys.system().current_local_solution;
+
+  // Loop over the reinitialized node IDs
+  for (const auto & newly_activated_node_id : _newactivated_nodes)
+  {
+    const Node * newly_activated_node = _mesh.nodePtr(newly_activated_node_id);
+    if (!newly_activated_node)
+    {
+      mooseWarning("Node pointer is null for node ID {}", newly_activated_node_id);
+      continue;
+    }
+
+    Point newly_activated_node_pos = *newly_activated_node;
+
+    std::cout << "newly_activated_node id = " << newly_activated_node_id << "\n";
+    std::cout << "newly_activated_node pos = " << newly_activated_node_pos << "\n";
+
+    // === First Layer Elements and Nodes ===
+    const auto & first_layer_elems = _mesh.nodeToElemMap().at(newly_activated_node_id);
+    std::set<const Node *> first_layer_nodes;
+
+    for (auto elem_id : first_layer_elems)
+    {
+      if (_mesh.elemPtr(elem_id)->subdomain_id() ==
+              _inactive_subdomain_ID /*means that the element is inactive, and should not be
+                                        considered*/)
+        continue;
+      // Skip if the element is not in the list of reinitialized elements
+      const Elem * elem = _mesh.elemPtr(elem_id);
+      for (unsigned int i = 0; i < elem->n_nodes(); ++i)
+      {
+        const Node * node = elem->node_ptr(i);
+        if (node && node->id() != newly_activated_node_id)
+        {
+          // std::cout << "  First-layer node id = " << node->id() << "\n";
+          first_layer_nodes.insert(node);
+        }
+      }
+    }
+
+    // Debugging output
+    for (auto first_node : first_layer_nodes)
+    {
+      auto pt = *first_node;
+      std::ofstream fout("first_layer_nodes_" + std::to_string(newly_activated_node_id) + ".txt",
+                         std::ios::app);
+      if (fout.is_open())
+      {
+        fout << pt(0) << ", " << pt(1) << "\n";
+        fout.close();
+      }
+      else
+      {
+        std::cerr << "Error: Unable to open newly_activated_nodes.txt for writing!" << std::endl;
+      }
+    }
+
+    // === Second Layer Nodes ===
+    std::set<const Node *> second_layer_nodes;
+
+    for (const Node * first_node : first_layer_nodes)
+    {
+      const auto & second_layer_elems = _mesh.nodeToElemMap().at(first_node->id());
+      for (auto elem_id : second_layer_elems)
+      {
+        if (_mesh.elemPtr(elem_id)->subdomain_id() ==
+                _inactive_subdomain_ID /*means that the element is inactive, and should not be
+                                          considered*/
+            || find(_reinitialized_elems.begin(), _reinitialized_elems.end(), elem_id) !=
+                   _reinitialized_elems.end()/*means that the element is reinitialized here, which
+                   should not be considered as well*/)
+          continue;
+        const Elem * elem = _mesh.elemPtr(elem_id);
+        for (unsigned int i = 0; i < elem->n_nodes(); ++i)
+        {
+          const Node * second_node = elem->node_ptr(i);
+          second_layer_nodes.insert(second_node); // duplicates automatically ignored by std::set
+        }
+      }
+    }
+
+    // === Extract Solution and Distance ===
+    NeighborInfo info;
+
+    for (const Node * second_node : second_layer_nodes)
+    {
+      // const dof_id_type dof =
+      //     second_node->dof_number(_sys.number(),
+      //                             this->_mesh.dimension(), // TODO: fix hardcoded dimension
+      //                             0);                      // assumes using first component
+
+      // std::cout << "dof = " << dof << "\n";
+
+      // const Number sol_val = current_solution(dof);
+      const Real dist = (*second_node - newly_activated_node_pos).norm();
+
+      info.solution_values.push_back(0.0); // Placeholder for solution value
+      info.distances.push_back(dist);
+    }
+
+    _newlyactivated_node_to_second_neighbors[newly_activated_node_id] = std::move(info);
+
+    // Debugging output
+    for (auto second_node : second_layer_nodes)
+    {
+      auto pt = *second_node;
+      std::ofstream fout("second_layer_nodes_" + std::to_string(newly_activated_node_id) + ".txt",
+                         std::ios::app);
+      if (fout.is_open())
+      {
+        fout << pt(0) << ", " << pt(1) << "\n";
+        fout.close();
+      }
+      else
+      {
+        std::cerr << "Error: Unable to open newly_activated_nodes.txt for writing!" << std::endl;
+      }
+    }
+  }
+}
+
+void
+ElementSubdomainModifierBase::verifySecondNeighborInfo()
+{
+  mooseInfo("Verifying _newlyactivated_node_to_second_neighbors...");
+
+  if (_newlyactivated_node_to_second_neighbors.empty())
+  {
+    mooseWarning("_newlyactivated_node_to_second_neighbors is empty.");
+    return;
+  }
+
+  for (const auto & [bnode_id, neighbor_info] : _newlyactivated_node_to_second_neighbors)
+  {
+    mooseInfo("Boundary Node ID: {} has {} second-layer neighbors",
+              bnode_id,
+              neighbor_info.solution_values.size());
+
+    if (neighbor_info.solution_values.size() != neighbor_info.distances.size())
+    {
+      mooseError("Mismatch: solution_values.size() != distances.size() for node ID {}", bnode_id);
+    }
+
+    for (std::size_t i = 0; i < neighbor_info.solution_values.size(); ++i)
+    {
+      mooseInfo("  Neighbor {}: solution = {}, distance = {}",
+                i,
+                neighbor_info.solution_values[i],
+                neighbor_info.distances[i]);
+    }
+  }
+
+  mooseInfo("Verification complete.");
 }
