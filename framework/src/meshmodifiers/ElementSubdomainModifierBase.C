@@ -624,7 +624,7 @@ ElementSubdomainModifierBase::nodeIsNewlyActivated(dof_id_type node_id) const
 
   int reinitialized_neighbor_elems = 0;
   for (auto neighbor_elem_id : _mesh.nodeToElemMap().at(node_id))
-    if (find(_reinitialized_elems.begin(), _reinitialized_elems.end(), neighbor_elem_id) !=
+    if (std::find(_reinitialized_elems.begin(), _reinitialized_elems.end(), neighbor_elem_id) !=
         _reinitialized_elems.end())
     {
       reinitialized_neighbor_elems++;
@@ -950,7 +950,7 @@ ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool d
       for (auto elem_id : second_layer_elems)
       {
         if (_mesh.elemPtr(elem_id)->subdomain_id() == _inactive_subdomain_ID ||
-            find(_reinitialized_elems.begin(), _reinitialized_elems.end(), elem_id) !=
+            std::find(_reinitialized_elems.begin(), _reinitialized_elems.end(), elem_id) !=
                 _reinitialized_elems.end())
           continue;
 
