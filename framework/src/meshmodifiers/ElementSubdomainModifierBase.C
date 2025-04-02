@@ -953,9 +953,8 @@ ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool d
         const Node * node = elem->node_ptr(i);
         if (node)
         {
-          if (std::find(
-                  newly_activated_node_ids.begin(), newly_activated_node_ids.end(), node->id()) ==
-              newly_activated_node_ids
+          if (std::find(_newactivated_nodes.begin(), _newactivated_nodes.end(), node->id()) ==
+              _newactivated_nodes
                   .end()) /*the extrapolation nodes should not belong to newly activated node*/
             first_layer_nodes.insert(node);
         }
