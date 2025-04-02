@@ -98,7 +98,6 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
     _displaced_problem(_fe_problem.getDisplacedProblem().get()),
     _displaced_mesh(_displaced_problem ? &_displaced_problem->mesh() : nullptr),
     _old_subdomain_reinitialized(getParam<bool>("old_subdomain_reinitialized")),
-    _excluded_originalsubdomainID_neighbors(true),
     _ic_strategy_string(getParam<std::string>("ic_strategy")),
     _ic_strategy(parseString2ICStrategy(_ic_strategy_string)),
     _inactive_subdomain_ID(getParam<int>("inactive_subdomain_ID"))
@@ -604,23 +603,23 @@ ElementSubdomainModifierBase::nodeIsNewlyReinitialized(dof_id_type node_id) cons
   return true;
 }
 
+/**
+ * * Check if the node is newly activated.
+ */
 bool
 ElementSubdomainModifierBase::nodeIsNewlyActivated(dof_id_type node_id) const
 {
+  auto node = _mesh.nodePtr(node_id);
 
   int total_neighbor_elems;
-  if (!_excluded_originalsubdomainID_neighbors)
-  {
-    total_neighbor_elems = _mesh.nodeToElemMap().at(node_id).size();
-  }
-  else
-  {
-    total_neighbor_elems = 0;
-    for (auto neighbor_elem_id : _mesh.nodeToElemMap().at(node_id))
-      if (_mesh.elemPtr(neighbor_elem_id)->subdomain_id() != _inactive_subdomain_ID
+
+  total_neighbor_elems = 0;
+  for (auto neighbor_elem_id : _mesh.nodeToElemMap().at(node_id))
+    if (_mesh.elemPtr(neighbor_elem_id)->subdomain_id() != _inactive_subdomain_ID
       /*exclude the element which has the subdomainID the same as the original subdomainID of the newly activated element*/)
-        total_neighbor_elems++;
-  }
+    {
+      total_neighbor_elems++;
+    }
 
   int reinitialized_neighbor_elems = 0;
   for (auto neighbor_elem_id : _mesh.nodeToElemMap().at(node_id))
@@ -629,6 +628,20 @@ ElementSubdomainModifierBase::nodeIsNewlyActivated(dof_id_type node_id) const
     {
       reinitialized_neighbor_elems++;
     }
+
+  /// for debug
+  auto pt_ptr = _mesh.nodePtr(node_id);
+  auto pt = *pt_ptr;
+  std::ofstream fout1("nodes_" + std::to_string(node_id) + ".txt", std::ios::app);
+  if (fout1.is_open())
+  {
+    fout1 << pt(0) << ", " << pt(1) << "\n";
+    fout1.close();
+  }
+  else
+  {
+    std::cerr << "Error: Unable to open nodes.txt for writing!" << std::endl;
+  }
 
   // std::cout << "_inactive_subdomain_ID = " << _inactive_subdomain_ID << "\n";
   // std::cout << "reinitialized_neighbor_elems = " << reinitialized_neighbor_elems << "\n";
@@ -938,8 +951,14 @@ ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool d
       for (unsigned int i = 0; i < elem->n_nodes(); ++i)
       {
         const Node * node = elem->node_ptr(i);
-        if (node && node->id() != newly_activated_node_id)
-          first_layer_nodes.insert(node);
+        if (node)
+        {
+          if (std::find(
+                  newly_activated_node_ids.begin(), newly_activated_node_ids.end(), node->id()) ==
+              newly_activated_node_ids
+                  .end()) /*the extrapolation nodes should not belong to newly activated node*/
+            first_layer_nodes.insert(node);
+        }
       }
     }
 
@@ -964,11 +983,7 @@ ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool d
     std::set<const Node *> selected_nodes;
     if (_ic_strategy == ICStrategyForNewlyActivated::IC_EXTRAPOLATE_FIRST_LAYER)
     {
-      for (const auto & node : first_layer_nodes)
-      {
-        if (second_layer_nodes.find(node) != second_layer_nodes.end())
-          selected_nodes.insert(node); // Intersection
-      }
+      selected_nodes = first_layer_nodes;
     }
     else if (_ic_strategy == ICStrategyForNewlyActivated::IC_EXTRAPOLATE_SECOND_LAYER)
     {

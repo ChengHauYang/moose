@@ -167,7 +167,6 @@ private:
   ///
   std::unordered_set<dof_id_type> _newactivated_nodes;
 
-  bool _excluded_originalsubdomainID_neighbors;
   std::string _ic_strategy_string;
   ICStrategyForNewlyActivated::Type _ic_strategy;
   int _inactive_subdomain_ID /*this is actually inactive element*/;
