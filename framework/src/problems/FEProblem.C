@@ -1,5 +1,5 @@
 //* This file is part of the MOOSE framework
-//* https://www.mooseframework.org
+//* https://mooseframework.inl.gov
 //*
 //* All rights reserved, see COPYRIGHT for full restrictions
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
@@ -56,6 +56,10 @@ FEProblem::FEProblem(const InputParameters & parameters)
       _solver_systems[_num_nl_sys + i] =
           std::dynamic_pointer_cast<SolverSystem>(_linear_systems[i]);
     }
+
+  if (_solver_systems.size() > 1)
+    for (auto & solver_system : _solver_systems)
+      solver_system->system().prefix_with_name(true);
 
   _aux = std::make_shared<AuxiliarySystem>(*this, "aux0");
 

@@ -267,8 +267,6 @@ share/
 # Ignore vscode stuff
 .vscode/*
 *.code-workspace
-
-# clangd
 .cache
 
 # App Resource file (including modules/)

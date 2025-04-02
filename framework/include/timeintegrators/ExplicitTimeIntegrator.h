@@ -1,5 +1,5 @@
 //* This file is part of the MOOSE framework
-//* https://www.mooseframework.org
+//* https://mooseframework.inl.gov
 //*
 //* All rights reserved, see COPYRIGHT for full restrictions
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
@@ -77,7 +77,7 @@ protected:
   NumericVector<Real> * _solution_update;
 
   /// Diagonal of the lumped mass matrix (and its inversion)
-  NumericVector<Real> * _mass_matrix_diag;
+  NumericVector<Real> * _mass_matrix_diag_inverted;
 
   /// Vector of 1's to help with creating the lumped mass matrix
   NumericVector<Real> * _ones;

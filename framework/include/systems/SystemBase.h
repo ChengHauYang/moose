@@ -1,5 +1,5 @@
 //* This file is part of the MOOSE framework
-//* https://www.mooseframework.org
+//* https://mooseframework.inl.gov
 //*
 //* All rights reserved, see COPYRIGHT for full restrictions
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
@@ -960,6 +960,11 @@ public:
    * @returns All the time integrators owned by this system
    */
   const std::vector<std::shared_ptr<TimeIntegrator>> & getTimeIntegrators();
+
+  /**
+   * @returns A prefix for solvers
+   */
+  std::string prefix() const;
 
 protected:
   /**

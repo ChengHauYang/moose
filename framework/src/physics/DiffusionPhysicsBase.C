@@ -1,5 +1,5 @@
 //* This file is part of the MOOSE framework
-//* https://www.mooseframework.org
+//* https://mooseframework.inl.gov
 //*
 //* All rights reserved, see COPYRIGHT for full restrictions
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
@@ -172,6 +172,8 @@ DiffusionPhysicsBase::addInitialConditionsFromComponents()
 {
   InputParameters params = getFactory().getValidParams("FunctorIC");
 
+  // ICs from components are considered always set by the user, so we do not skip them when
+  // restarting
   for (const auto & [component_name, component_bc_map] : _components_initial_conditions)
   {
     if (!component_bc_map.count(_var_name))

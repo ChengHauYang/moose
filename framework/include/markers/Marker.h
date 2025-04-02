@@ -1,5 +1,5 @@
 //* This file is part of the MOOSE framework
-//* https://www.mooseframework.org
+//* https://mooseframework.inl.gov
 //*
 //* All rights reserved, see COPYRIGHT for full restrictions
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
@@ -71,6 +71,7 @@ public:
    */
   static MooseEnum markerStates();
 
+  /// Computes and sets the value of the refinement flag
   virtual void computeMarker();
 
   bool isActive() const;
@@ -115,9 +116,12 @@ protected:
 
   Assembly & _assembly;
 
+  /// Reference to this marker as a variable
   MooseVariable & _field_var;
+  /// Pointer to the current element being considered in the marker element-based loop
   const Elem * const & _current_elem;
 
+  /// Reference to the mesh, obtained from the subproblem
   MooseMesh & _mesh;
 
   /// Depend Markers

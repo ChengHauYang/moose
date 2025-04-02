@@ -1,5 +1,5 @@
 //* This file is part of the MOOSE framework
-//* https://www.mooseframework.org
+//* https://mooseframework.inl.gov
 //*
 //* All rights reserved, see COPYRIGHT for full restrictions
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
@@ -37,6 +37,11 @@ ElementGenerator::validParams()
   // Subdomain
   params.addParam<SubdomainName>("subdomain_name", "Subdomain name");
   params.addParam<SubdomainID>("subdomain_id", 0, "Subdomain id");
+  // Sidesets
+  params.addParam<bool>("create_sidesets",
+                        false,
+                        "Create separate sidesets for each side. "
+                        "The side index is used as the boundary ID for each sideset.");
 
   params.addClassDescription("Generates individual elements given a list of nodal positions.");
 
@@ -94,8 +99,11 @@ ElementGenerator::generate()
     {
       elem->set_node(j) = nodes[_element_connectivity[j + i]];
     }
-    elem->subdomain_id() = 0;
   }
+
+  if (getParam<bool>("create_sidesets"))
+    for (const auto i_side : make_range(elem->n_sides()))
+      mesh->get_boundary_info().add_side(elem, i_side, i_side);
 
   return dynamic_pointer_cast<MeshBase>(mesh);
 }
