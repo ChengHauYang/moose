@@ -1,1 +1,1 @@
-    mpirun -np 8 ../../../solid_mechanics-opt        -i esm-debug-faster-newIC-first-layer.i
+ mpirun -np 12 ../../../solid_mechanics-opt        -i first-layer.i 
