@@ -241,17 +241,7 @@ ElementSubdomainModifierBase::modify(
     gatherGlobalNewlyActivatedNodes(moved_elems);
     findNewlyActivatedNodes(moved_elems);
     computeSetDifference();
-
-    for (auto id : _global_newactivated_nodes_diff)
-    {
-      auto node = _mesh.nodePtr(id);
-      if (node->processor_id() == _mesh.processor_id())
-      {
-        std::cout << "[missing]" << "Rank " << _mesh.processor_id() << " node " << id << "\n";
-        _newactivated_nodes.insert(id);
-      }
-    }
-    synchronizeNewActivatedNodes();
+    findMissingNewlyActivatedNodes();
   }
 
   // Reinit equation systems
@@ -620,13 +610,6 @@ ElementSubdomainModifierBase::findNewlyActivatedNodes(
       const dof_id_type node_id = elem->node_id(i);
       const Node * node = _mesh.nodePtr(node_id);
 
-      if (node_id == 722)
-      {
-
-        std::cout << "(Inside findNewlyActivatedNodes) ----------------- node_id = " << node_id
-                  << "checking ----------------- " << "\n";
-      }
-
       if (node->processor_id() != _mesh.processor_id() && nodeIsNewlyActivated(node_id))
       {
         std::cout << "node_id = " << node_id
@@ -665,6 +648,22 @@ ElementSubdomainModifierBase::findNewlyActivatedNodes(
     std::cout << "\n";
   }
 #endif
+}
+
+void
+ElementSubdomainModifierBase::findMissingNewlyActivatedNodes()
+{
+  for (auto id : _global_newactivated_nodes_diff)
+  {
+    auto node = _mesh.nodePtr(id);
+    if (node->processor_id() == _mesh.processor_id())
+    {
+      std::cout << "[missing]" << "Rank " << _mesh.processor_id() << " node " << id << "\n";
+      _newactivated_nodes.insert(id);
+    }
+  }
+
+  synchronizeNewActivatedNodes();
 }
 
 bool
@@ -720,21 +719,6 @@ ElementSubdomainModifierBase::nodeIsNewlyActivated(dof_id_type node_id) const
       reinitialized_neighbor_elems++;
     }
 
-  // if (node_id == 832)
-  // {
-  //   std::cout << "total_neighbor_elems = " << total_neighbor_elems << "\n";
-  //   std::cout << "reinitialized_neighbor_elems = " << reinitialized_neighbor_elems << "\n";
-  // }
-
-  if (node_id == 722)
-  {
-
-    std::cout << "(Inside nodeIsNewlyActivated) ----------------- node_id = " << node_id
-              << "checking ----------------- " << "\n";
-    std::cout << "total_neighbor_elems = " << total_neighbor_elems << "\n";
-    std::cout << "reinitialized_neighbor_elems = " << reinitialized_neighbor_elems << "\n";
-  }
-
 /// for debug
 #ifndef NDEBUG
   auto pt_ptr = _mesh.nodePtr(node_id);
@@ -751,9 +735,6 @@ ElementSubdomainModifierBase::nodeIsNewlyActivated(dof_id_type node_id) const
   }
 #endif
 
-  // std::cout << "_inactive_subdomain_ID = " << _inactive_subdomain_ID << "\n";
-  // std::cout << "reinitialized_neighbor_elems = " << reinitialized_neighbor_elems << "\n";
-  // std::cout << "total_neighbor_elems = " << total_neighbor_elems << "\n";
   if (reinitialized_neighbor_elems == total_neighbor_elems)
   {
 #ifndef NDEBUG
@@ -1013,13 +994,6 @@ ElementSubdomainModifierBase::setCurrentSolutionsOnNewlyActivatedNodes(SystemBas
         }
       }
 
-      // for (int solution_dof = 0; solution_dof < solution_dofs; ++solution_dof)
-      // {
-      //   auto old_value = current_solution(solution_indices[solution_dof]);
-      //   std::cout << "[Before] Node ID " << point_dof_id << " DOF "
-      //             << solution_indices[solution_dof] << " old value = " << old_value << std::endl;
-      // }
-
       for (int solution_dof = 0; solution_dof < solution_dofs; ++solution_dof)
       {
         current_solution.set(solution_indices[solution_dof],
@@ -1130,23 +1104,17 @@ ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool d
       continue;
     }
 
-    std::cout << "newly_activated_node_id = " << newly_activated_node_id << "\n";
-    std::cout << "selected_nodes.size() = " << selected_nodes.size() << "\n";
-
     NeighborInfo info;
     DofMap & dof_map = sys.dofMap();
 
     for (const Node * node : selected_nodes)
     {
-      std::cout << "node id = " << node->id() << "\n";
-
       std::vector<libMesh::dof_id_type> nodal_dofs;
       dof_map.dof_indices(node, nodal_dofs);
 
       std::vector<Real> solution_values;
       for (auto dof : nodal_dofs)
       {
-        std::cout << "dof id = " << dof << "\n";
         solution_values.push_back(current_solution(dof));
       }
 
@@ -1258,8 +1226,9 @@ ElementSubdomainModifierBase::synchronizeNewActivatedNodes2TempGlobal()
 
   _global_newactivated_nodes_temp.assign(unique_nodes.begin(), unique_nodes.end());
 
-  std::cout << "_global_newactivated_nodes_temp.size() = " << _global_newactivated_nodes_temp.size()
-            << "\n";
+  // std::cout << "_global_newactivated_nodes_temp.size() = " <<
+  // _global_newactivated_nodes_temp.size()
+  //           << "\n";
 }
 
 void
@@ -1274,7 +1243,8 @@ ElementSubdomainModifierBase::synchronizeNewActivatedNodes()
   for (const auto & vec : gathered)
     _global_newactivated_nodes.insert(_global_newactivated_nodes.end(), vec.begin(), vec.end());
 
-  std::cout << "_global_newactivated_nodes.size() = " << _global_newactivated_nodes.size() << "\n";
+  // std::cout << "_global_newactivated_nodes.size() = " << _global_newactivated_nodes.size() <<
+  // "\n";
 }
 
 void

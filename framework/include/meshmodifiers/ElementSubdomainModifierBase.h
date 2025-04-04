@@ -236,4 +236,5 @@ private:
   void clearGlobalActivatedNodesAtMaster();
   void synchronizeNewActivatedNodes2TempGlobal();
   void computeSetDifference();
+  void findMissingNewlyActivatedNodes();
 };

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # List of processor counts to try
-for nproc in 1 2 4 8 16; do
+for nproc in 1 2 4 8 12; do
   # Define an output directory for each processor count
   outdir="output_${nproc}proc"
   
