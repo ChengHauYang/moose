@@ -1592,6 +1592,22 @@ SystemBase::serializedSolution()
   return *_serialized_solution;
 }
 
+NumericVector<Number> &
+SystemBase::serializedSolution_Clean()
+{
+  _serialized_solution = NumericVector<Number>::build(_communicator);
+  _serialized_solution->init(system().n_dofs(), false, SERIAL);
+
+  return *_serialized_solution;
+}
+
+void
+SystemBase::cleanserializedSolution()
+{
+  _serialized_solution = NumericVector<Number>::build(_communicator);
+  _serialized_solution->init(system().n_dofs(), false, SERIAL);
+}
+
 void
 SystemBase::addTimeIntegrator(const std::string & type,
                               const std::string & name,

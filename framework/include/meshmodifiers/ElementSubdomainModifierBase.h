@@ -75,6 +75,34 @@ protected:
   /// Boundary names associated with each moving boundary ID
   std::unordered_map<BoundaryID, BoundaryName> _moving_boundary_names;
 
+  inline void MPIAllgatherVectorAll_Int(const std::vector<int> & local_vec,
+                                        std::vector<int> & global_vec,
+                                        MPI_Comm comm = MPI_COMM_WORLD) const
+  {
+    int nProc, myRank;
+    MPI_Comm_size(comm, &nProc);
+    MPI_Comm_rank(comm, &myRank);
+
+    int local_size = static_cast<int>(local_vec.size());
+    std::vector<int> recv_counts(nProc);
+    MPI_Allgather(&local_size, 1, MPI_INT, recv_counts.data(), 1, MPI_INT, comm);
+
+    std::vector<int> displs(nProc, 0);
+    std::partial_sum(recv_counts.begin(), recv_counts.end() - 1, displs.begin() + 1);
+
+    int total_size = std::accumulate(recv_counts.begin(), recv_counts.end(), 0);
+    global_vec.resize(total_size);
+
+    MPI_Allgatherv(local_vec.data(),
+                   local_size,
+                   MPI_INT,
+                   global_vec.data(),
+                   recv_counts.data(),
+                   displs.data(),
+                   MPI_INT,
+                   comm);
+  }
+
 private:
   /// Create moving boundaries
   void createMovingBoundaries(MooseMesh & mesh);
@@ -166,6 +194,7 @@ private:
 
   ///
   std::unordered_set<dof_id_type> _newactivated_nodes;
+  std::unordered_set<dof_id_type> _newactivated_nodes_first_pass;
 
   std::string _ic_strategy_string;
   ICStrategyForNewlyActivated::Type _ic_strategy;
@@ -177,6 +206,8 @@ private:
   void computeSecondNeighborInfo(SystemBase & sys, bool displaced);
   void verifySecondNeighborInfo();
   bool nodeIsNewlyActivated(dof_id_type node_id) const;
+  void gatherGlobalNewlyActivatedNodes(
+      const std::unordered_map<dof_id_type, std::pair<SubdomainID, SubdomainID>> & moved_elems);
   void findNewlyActivatedNodes(
       const std::unordered_map<dof_id_type, std::pair<SubdomainID, SubdomainID>> & moved_elems);
 
@@ -192,4 +223,17 @@ private:
       throw std::invalid_argument("Invalid string for ICStrategyForNewlyActivated: " + input);
   }
   void setCurrentSolutionsOnNewlyActivatedNodes(SystemBase & sys);
+
+  std::vector<dof_id_type> _global_reinitialized_elems;
+  std::vector<dof_id_type> _global_newactivated_nodes;
+  std::vector<dof_id_type> _global_newactivated_nodes_temp;
+  std::vector<dof_id_type> _global_newactivated_nodes_diff;
+
+  void synchronizeReinitializedElems();
+  void synchronizeNewActivatedNodes();
+  void collectNewActivatedNodesToMaster();
+  void requestMasterActivatedNodes();
+  void clearGlobalActivatedNodesAtMaster();
+  void synchronizeNewActivatedNodes2TempGlobal();
+  void computeSetDifference();
 };
