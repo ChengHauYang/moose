@@ -5,7 +5,8 @@ neml2_input = viscoplasticity_isoharden
 
 nx = 36
 ny = 24
-number_elements = 1
+number_elements = 0.5
+output_freq = 100
 
 [Problem]
   kernel_coverage_check = false
@@ -59,14 +60,14 @@ number_elements = 1
     input = block_middle
     block_id = 3
     block_name = material_middle
-    bottom_left = '1.25 1.0 0'
+    bottom_left = '1.25 1.5 0'
     top_right = '1.75 2.0 0'
   []
   use_displaced_mesh = false
 []
 
 [MeshModifiers]
-  [line_filling]
+  [esm]
     type = RowElementModifier
     subdomain_id_change_from = 2
     subdomain_id_change_to = 3
@@ -76,7 +77,12 @@ number_elements = 1
     y_min = 0
     y_max = 2
     change_one_row = true
-    execute_on = 'INITIAL TIMESTEP_BEGIN'
+    execute_on = 'INITIAL TIMESTEP_END'
+
+    # --- new for setting IC --- #
+    inactive_subdomain_ID = 2
+    ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
+
   []
 []
 
@@ -89,6 +95,34 @@ number_elements = 1
   []
 []
 
+[AuxVariables]
+  [ep]
+    #  Auxiliary Kernels override computeValue() instead of computeQpResidual().  Aux Variables
+    #  are calculated either one per elemenet or one per node depending on whether we declare
+    #  them as "Elemental (Constant Monomial)" or "Nodal (First Lagrange)".  No changes to the
+    #  source are necessary to switch from one type or the other.
+    order = CONSTANT
+    family = MONOMIAL
+    block = '0 1 3'
+    [AuxKernel]
+      type = MaterialRealAux
+      property = equivalent_plastic_strain
+      block = '0 1 3'
+      execute_on = 'INITIAL TIMESTEP_END'
+    []
+  []
+  [pid]
+    family = MONOMIAL
+    order = CONSTANT
+    [AuxKernel]
+      type = ProcessorIDAux
+      variable = pid
+      block = '0 1 3'
+      execute_on = 'INITIAL TIMESTEP_END'
+    []
+  []
+[]
+
 [Physics]
   [SolidMechanics]
     [QuasiStatic]
@@ -96,7 +130,7 @@ number_elements = 1
         strain = SMALL
         new_system = true
         formulation = TOTAL
-        #volumetric_locking_correction = true
+        volumetric_locking_correction = true
         block = '0 1 3'
       []
     []
@@ -120,32 +154,32 @@ number_elements = 1
   moose_derivatives = 'neml2_jacobian'
   neml2_derivatives = 'state/S forces/E'
 
-#    moose_input_types = 'MATERIAL     POSTPROCESSOR POSTPROCESSOR MATERIAL'
-#    moose_inputs = '     neml2_strain time          time          plastic_strain'
-#    neml2_inputs = '     forces/E     forces/t      old_forces/t  old_state/internal/Ep'
-#
-#    moose_output_types = 'MATERIAL     MATERIAL'
-#    moose_outputs = '     neml2_stress plastic_strain'
-#    neml2_outputs = '     state/S      state/internal/Ep'
-#
-#    moose_derivative_types = 'MATERIAL'
-#    moose_derivatives = 'neml2_jacobian'
-#    neml2_derivatives = 'state/S forces/E'
+  #    moose_input_types = 'MATERIAL     POSTPROCESSOR POSTPROCESSOR MATERIAL'
+  #    moose_inputs = '     neml2_strain time          time          plastic_strain'
+  #    neml2_inputs = '     forces/E     forces/t      old_forces/t  old_state/internal/Ep'
+  #
+  #    moose_output_types = 'MATERIAL     MATERIAL'
+  #    moose_outputs = '     neml2_stress plastic_strain'
+  #    neml2_outputs = '     state/S      state/internal/Ep'
+  #
+  #    moose_derivative_types = 'MATERIAL'
+  #    moose_derivatives = 'neml2_jacobian'
+  #    neml2_derivatives = 'state/S forces/E'
 
   [A]
     model = 'model'
     block = 'material_left material_middle material_right'
+    # esm_name = 'esm'
   []
-#  [B]
-#    model = 'model'
-#    block = 'material_right'
-#  []
-#  [C]
-#    model = 'model'
-#    block = 'material_middle'
-#  []
+  #  [B]
+  #    model = 'model'
+  #    block = 'material_right'
+  #  []
+  #  [C]
+  #    model = 'model'
+  #    block = 'material_middle'
+  #  []
 []
-
 
 [Materials]
   [convert_strain]
@@ -165,8 +199,7 @@ number_elements = 1
 [Functions]
   [displacement_with_time]
     type = ParsedFunction
-    #expression = '0.05*t + 1'
-    expression = '0.005*t'
+    expression = '0.0008*t'
   []
 []
 
@@ -193,25 +226,7 @@ number_elements = 1
     function = displacement_with_time
     preset = false
   []
-  [displacement_y_right]
-    #Anchors the left side against deformation in the y-direction
-    type = DirichletBC
-    variable = disp_y
-    boundary = 'right'
-    value = 0.0
-  []
 []
-
-#[Executioner]
-#  type = Transient
-#  solve_type = NEWTON
-#  petsc_options_iname = '-pc_type'
-#  petsc_options_value = 'lu'
-#  automatic_scaling = true
-#  dt = 1
-#  end_time = 36
-#  residual_and_jacobian_together = true
-#[]
 
 [Executioner]
   solve_type = NEWTON
@@ -220,11 +235,11 @@ number_elements = 1
   petsc_options_value = 'lu'
   #petsc_options_iname = '-ksp_type -pc_type -sub_pc_type'
   #petsc_options_value = 'bcgs  jacobi lu'
-  nl_max_its = 12
+  nl_max_its = 100
   nl_rel_tol = 1e-6
   nl_abs_tol = 1e-10
   type = Transient
-  dt = 1
+  dt = 0.01
   end_time = 36
   automatic_scaling = true
   residual_and_jacobian_together = true
@@ -245,14 +260,20 @@ number_elements = 1
     block = '3'
     execute_on = 'INITIAL TIMESTEP_END'
   []
+  [ep_post]
+    type = ElementAverageValue
+    variable = ep
+    block = '3'
+    execute_on = 'INITIAL TIMESTEP_END'
+  []
   [time]
-   type = TimePostprocessor
-   execute_on = 'INITIAL TIMESTEP_BEGIN'
+    type = TimePostprocessor
+    execute_on = 'INITIAL TIMESTEP_BEGIN'
   []
 []
 
 [Outputs]
-  vtk = true
+  interval = ${output_freq} # only output every 20
+  exodus = true
   csv = true
 []
-
