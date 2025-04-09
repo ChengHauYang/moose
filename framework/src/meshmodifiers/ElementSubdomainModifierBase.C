@@ -1171,19 +1171,19 @@ ElementSubdomainModifierBase::synchronizeReinitializedElems()
 
   // std::cout << "gathered.size() = " << gathered.size() << "\n";
 
-  for (int i = 0; i < gathered.size(); ++i)
-  {
-    std::cout << "gathered[" << i << "]: ";
-    for (const auto & elem_id : gathered[i])
-      std::cout << elem_id << " ";
-    std::cout << "\n";
-  }
+  // for (int i = 0; i < gathered.size(); ++i)
+  // {
+  //   std::cout << "gathered[" << i << "]: ";
+  //   for (const auto & elem_id : gathered[i])
+  //     std::cout << elem_id << " ";
+  //   std::cout << "\n";
+  // }
 
   _global_reinitialized_elems.clear();
   for (const auto & vec : gathered)
     _global_reinitialized_elems.insert(_global_reinitialized_elems.end(), vec.begin(), vec.end());
 
-  std::cout << "Global reinitialized elements: " << _global_reinitialized_elems.size() << "\n";
+  // std::cout << "Global reinitialized elements: " << _global_reinitialized_elems.size() << "\n";
 }
 
 void

@@ -49,7 +49,7 @@ RowElementModifier::RowElementModifier(const InputParameters & parameters)
     _coord_max(Point(getParam<Real>("x_max"), getParam<Real>("y_max"), getParam<Real>("z_max"))),
     _number_of_elements(getParam<Real>("number_of_elements")),
     _change_one_row(getParam<bool>("change_one_row")),
-    _beginning_activation_of_row(getParam<int>("beginning_activation_of_row")),
+    _beginning_activation_of_row(getParam<int>("beginning_activation_of_row"))
 {
 }
 
@@ -121,6 +121,9 @@ RowElementModifier::computeSubdomainID()
 
   if (elem->subdomain_id() == _subdomain_id_change_from or change_back_to_original)
   {
+
+    // std::cout << "_beginning_activation_of_row: " << _beginning_activation_of_row
+    //           << " _number_of_elements: " << _number_of_elements << std::endl;
     if (_change_one_row)
     {
       double y_shift =
