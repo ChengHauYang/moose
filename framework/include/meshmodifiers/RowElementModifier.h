@@ -43,4 +43,6 @@ private:
   Real _previous_t;
 
   bool _change_one_row;
+
+  int _beginning_activation_of_row;
 };
