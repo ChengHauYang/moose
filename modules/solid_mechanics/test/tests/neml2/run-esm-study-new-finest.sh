@@ -1,6 +1,6 @@
 #!/bin/bash
 #for Ny in 8 16 32; do
-for Ny in 8 16 32 64 128 256; do
+for Ny in 512; do
     Nx=$(awk "BEGIN {print $Ny * 1.5}")
     number_elements=$(awk "BEGIN {print $Ny/8}")
     beginning_activation_of_row=$(awk "BEGIN {print $Ny/8}")
