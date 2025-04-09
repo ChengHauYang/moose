@@ -1100,7 +1100,7 @@ ElementSubdomainModifierBase::computeSecondNeighborInfo(SystemBase & sys, bool d
       info.distances.push_back(dist);
     }
 
-    std::cout << "finishing gathering info for node id = " << newly_activated_node_id << "\n";
+    // std::cout << "finishing gathering info for node id = " << newly_activated_node_id << "\n";
 
     _newlyactivated_node_to_second_neighbors[newly_activated_node_id] = std::move(info);
 
