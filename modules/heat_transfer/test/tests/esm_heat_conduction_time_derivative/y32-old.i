@@ -1,5 +1,9 @@
 [Problem]
-  default_block = '0 1 3'
+  kernel_coverage_check = false
+  material_coverage_check = false
+  #boundary_restricted_node_integrity_check = false
+  #material_dependency_check = false
+  #boundary_restricted_elem_integrity_check = false
 []
 
 [Mesh]
@@ -48,30 +52,30 @@
   use_displaced_mesh = false
 []
 
-# [MeshModifiers]
-#   [line_filling]
-#     type = RowElementModifier
-#     subdomain_id_change_from = 2
-#     subdomain_id_change_to = 3
-#     number_of_elements = 1
-#     x_min = 1.25
-#     x_max = 1.75
-#     y_min = 0
-#     y_max = 2
-#     change_one_row = true
-#     execute_on = 'INITIAL TIMESTEP_END'
+[MeshModifiers]
+  [line_filling]
+    type = RowElementModifier
+    subdomain_id_change_from = 2
+    subdomain_id_change_to = 3
+    number_of_elements = 1
+    x_min = 1.25
+    x_max = 1.75
+    y_min = 0
+    y_max = 2
+    change_one_row = true
+    execute_on = 'INITIAL TIMESTEP_BEGIN'
+  []
+[]
 
-#     # --- new for setting IC --- #
-#     inactive_subdomain_ID = 2
-#     ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
-#   []
-# []
+#[Problem]
+#  solve = false
+#[]
 
 [Variables]
   [cond]
     #order = SECOND
     order = FIRST
-    # block = '0 1 2 3'
+    block = '0 1 3'
   []
 []
 
@@ -79,9 +83,60 @@
   [diff]
     type = HeatConduction
     variable = cond
-    # block = '0 1 2 3'
+    block = '0 1 3'
   []
+
+  [heat_ie]
+    type = HeatConductionTimeDerivative
+    variable = cond
+    block = '0 1 3'
+  []
+  #[null]
+  #  type = NullKernel
+  #  variable = cond
+  #  block = '2'
+  #[]
 []
+
+#[Materials]
+#  [./material_left_cond]
+#    type = HeatConductionMaterial
+#    block = 0
+#    specific_heat = 900
+#    thermal_conductivity = 237 # Aluminum
+#  [../]
+#  [./material_right_cond]
+#    type = HeatConductionMaterial
+#    block = 1
+#    specific_heat = 385
+#    thermal_conductivity = 400 # Copper
+#  [../]
+#  [./material_middle_cond]
+#    type = HeatConductionMaterial
+#    block = 3
+#    specific_heat = 380
+#    thermal_conductivity = 300 # Brass
+#  [../]
+#
+#  [density_left]
+#    type = GenericConstantMaterial
+#    prop_names = 'density'
+#    block = 0
+#    prop_values = 2700.0
+#  []
+#  [density_right]
+#    type = GenericConstantMaterial
+#    prop_names = 'density'
+#    block = 1
+#    prop_values = 8960.0
+#  []
+#  [density_middle]
+#    type = GenericConstantMaterial
+#    prop_names = 'density'
+#    block = 3
+#    prop_values = 8500.0
+#  []
+#[]
 
 [Materials]
   [material_left_cond]
@@ -122,6 +177,11 @@
   []
 []
 
+#[AuxVariables]
+#  [u]
+#  []
+#[]
+
 [BCs]
   [left]
     type = DirichletBC
@@ -139,12 +199,11 @@
 []
 
 [Executioner]
+  petsc_options_iname = '-ksp_type -pc_type -pc_factor_mat_solver_type -ksp_max_it -snes_atol -snes_rtol'
+  petsc_options_value = 'bcgs lu mumps 100 1e-12 1e-12'
   type = Transient
-  solve_type = NEWTON
-  petsc_options_iname = '-pc_type'
-  petsc_options_value = 'lu'
   dt = 1
-  end_time = 1
+  end_time = 36
 []
 
 [Postprocessors]
@@ -157,6 +216,7 @@
 []
 
 [Outputs]
-  exodus = true
+  vtk = true
   csv = true
 []
+
