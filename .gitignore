@@ -345,3 +345,5 @@ share/
 
 # clangd cache data
 .cache
+
+.idea

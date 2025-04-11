@@ -362,7 +362,7 @@ FEProblemBase::validParams()
       "boundary_restricted_elem_integrity_check material_coverage_check "
       "material_coverage_block_list fv_bcs_integrity_check "
       "material_dependency_check check_uo_aux_state error_on_jacobian_nonzero_reallocation",
-      "Simulation checks active_blocks");
+      "Simulation checks");
   params.addParamNamesToGroup("use_nonlinear previous_nl_solution_required nl_sys_names "
                               "ignore_zeros_in_jacobian identify_variable_groups_in_nl",
                               "Nonlinear system(s)");

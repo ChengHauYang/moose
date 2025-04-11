@@ -99,6 +99,7 @@ Setting `default_block` will automatically:
 This provides a more user-friendly and centralized way to handle simulations with a preferred, non-default computational domain.
 
 Example Usage for  `default_block`:
+
 ```
 # Perform kernel and material coverage checks only for block 0, 1, and 3,
 # while excluding block 2 as an inactive region.
