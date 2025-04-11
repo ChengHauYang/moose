@@ -223,7 +223,9 @@ FEProblemBase::validParams()
   };
 
   params.addParam<std::vector<SubdomainName>>(
-      "default_block", {}, "List of subdomains for kernel coverage and material check.");
+      "default_block",
+      {},
+      "Default list of subdomains for block-restrictable objects such as kernels and materials.");
 
   MooseEnum kernel_coverage_check_modes("FALSE TRUE OFF ON SKIP_LIST ONLY_LIST", "TRUE");
   params.addParam<MooseEnum>("kernel_coverage_check",
@@ -450,7 +452,7 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _previous_nl_solution_required(getParam<bool>("previous_nl_solution_required")),
     _has_nonlocal_coupling(false),
     _calculate_jacobian_in_uo(false),
-    _active_blocks(getParam<std::vector<SubdomainName>>("default_block")),
+    _default_blocks(getParam<std::vector<SubdomainName>>("default_block")),
     _kernel_coverage_check(
         isParamSetByUser("kernel_coverage_check") || !isParamSetByUser("default_block")
             ? getParam<MooseEnum>("kernel_coverage_check").getEnum<CoverageCheckMode>()
@@ -458,18 +460,19 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _kernel_coverage_blocks(isParamSetByUser("kernel_coverage_check") ||
                                     !isParamSetByUser("default_block")
                                 ? getParam<std::vector<SubdomainName>>("kernel_coverage_block_list")
-                                : _active_blocks),
+                                : _default_blocks),
     _boundary_restricted_node_integrity_check(
         getParam<bool>("boundary_restricted_node_integrity_check")),
     _boundary_restricted_elem_integrity_check(
         getParam<bool>("boundary_restricted_elem_integrity_check")),
     _material_coverage_check(
-        _active_blocks.empty()
+        isParamSetByUser("material_coverage_check") || !isParamSetByUser("default_block")
             ? getParam<MooseEnum>("material_coverage_check").getEnum<CoverageCheckMode>()
             : CoverageCheckMode::ONLY_LIST),
-    _material_coverage_blocks(_active_blocks.empty() ? getParam<std::vector<SubdomainName>>(
-                                                           "material_coverage_block_list")
-                                                     : _active_blocks),
+    _material_coverage_blocks(
+        isParamSetByUser("material_coverage_check") || !isParamSetByUser("default_block")
+            ? getParam<std::vector<SubdomainName>>("material_coverage_block_list")
+            : _default_blocks),
     _fv_bcs_integrity_check(getParam<bool>("fv_bcs_integrity_check")),
     _material_dependency_check(getParam<bool>("material_dependency_check")),
     _uo_aux_state_check(getParam<bool>("check_uo_aux_state")),
