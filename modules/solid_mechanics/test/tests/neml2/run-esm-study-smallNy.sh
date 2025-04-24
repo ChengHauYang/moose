@@ -1,5 +1,5 @@
 #!/bin/bash
-for Ny in 8 16; do
+for Ny in 8; do
     Nx=$(awk "BEGIN {print $Ny * 1.5}")
     number_elements=$(awk "BEGIN {print $Ny}")
 

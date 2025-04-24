@@ -514,6 +514,21 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _identify_variable_groups_in_nl(getParam<bool>("identify_variable_groups_in_nl")),
     _regard_general_exceptions_as_errors(getParam<bool>("regard_general_exceptions_as_errors"))
 {
+
+  auto checkConflict =
+      [this](const CoverageCheckMode & coverage_check_mode, const std::string & coverage_check)
+  {
+    if ((isParamSetByUser(coverage_check) &&
+         (coverage_check_mode == CoverageCheckMode::ONLY_LIST ||
+          coverage_check_mode == CoverageCheckMode::SKIP_LIST)) &&
+        isParamSetByUser("default_block"))
+      mooseError("Cannot set both '" + coverage_check +
+                 "' as 'ONLY_LIST' or 'SKIP_LIST' and 'default_block'. Please set only one.");
+  };
+
+  checkConflict(_kernel_coverage_check, "kernel_coverage_check");
+  checkConflict(_material_coverage_check, "material_coverage_check");
+
   //  Initialize static do_derivatives member. We initialize this to true so that all the default AD
   //  things that we setup early in the simulation actually get their derivative vectors initalized.
   //  We will toggle this to false when doing residual evaluations

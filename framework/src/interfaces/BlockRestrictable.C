@@ -86,12 +86,9 @@ BlockRestrictable::initializeBlockRestrictable(const MooseObject * moose_object)
   if (_blk_feproblem != NULL)
     _blk_material_data = &_blk_feproblem->getMaterialData(Moose::BLOCK_MATERIAL_DATA, _blk_tid);
 
-  // The 'block' input is defined
-  if (moose_object->isParamValid("block"))
+  // helper function to convert the block names to IDs
+  auto BlocksToIDs = [&]()
   {
-    // Extract the blocks from the input
-    _blocks = moose_object->getParam<std::vector<SubdomainName>>("block");
-
     // Store the IDs in a set, handling ANY_BLOCK_ID if supplied
     if (std::find(_blocks.begin(), _blocks.end(), "ANY_BLOCK_ID") != _blocks.end())
       _blk_ids.insert(Moose::ANY_BLOCK_ID);
@@ -101,8 +98,15 @@ BlockRestrictable::initializeBlockRestrictable(const MooseObject * moose_object)
       _vec_ids = _blk_mesh->getSubdomainIDs(_blocks);
       _blk_ids.insert(_vec_ids.begin(), _vec_ids.end());
     }
+  };
 
-    checkDefaultBlockConsistency();
+  // The 'block' input is defined
+  if (moose_object->isParamValid("block"))
+  {
+    // Extract the blocks from the input
+    _blocks = moose_object->getParam<std::vector<SubdomainName>>("block");
+
+    BlocksToIDs();
   }
 
   // When 'blocks' is not set and there is a "variable", use the blocks from the variable
@@ -116,7 +120,6 @@ BlockRestrictable::initializeBlockRestrictable(const MooseObject * moose_object)
                                    Moose::VarKindType::VAR_ANY,
                                    Moose::VarFieldType::VAR_FIELD_ANY)
                      .activeSubdomains();
-    checkDefaultBlockConsistency();
   }
 
   // when 'default_block' is set at the [Problem] -> 'block and variable' input should come first
@@ -124,10 +127,8 @@ BlockRestrictable::initializeBlockRestrictable(const MooseObject * moose_object)
   else if (_blk_feproblem->isParamSetByUser("default_block"))
   {
     _blocks = _blk_feproblem->getDefaultBlocks();
-    // Get the IDs from the supplied names
-    _vec_ids = _blk_mesh->getSubdomainIDs(_blocks);
 
-    _blk_ids.insert(_vec_ids.begin(), _vec_ids.end());
+    BlocksToIDs();
   }
 
   // Produce error if the object is not allowed to be both block and boundary restricted
@@ -380,17 +381,4 @@ BlockRestrictable::blocksMaxDimension() const
 {
   mooseAssert(_blk_dim != libMesh::invalid_uint, "Block restriction not initialized");
   return _blk_dim;
-}
-
-void
-BlockRestrictable::checkDefaultBlockConsistency() const
-{
-  if (_blk_feproblem->isParamSetByUser("default_block"))
-  {
-    const auto & default_blocks = _blk_feproblem->getDefaultBlocks();
-
-    if (!std::includes(
-            default_blocks.begin(), default_blocks.end(), _blocks.begin(), _blocks.end()))
-      mooseWarning("The supplied block list is not a subset of the default block list");
-  }
 }
