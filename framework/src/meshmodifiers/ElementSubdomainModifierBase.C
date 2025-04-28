@@ -241,6 +241,7 @@ ElementSubdomainModifierBase::modify(
   // Reinit equation systems
   _fe_problem.meshChanged();
 
+  // important
   _sys.cleanserializedSolution();
 
   // Initialize solution and stateful material properties
