@@ -131,6 +131,9 @@ InterceptedElementModifier::computeSubdomainID()
     libMesh::FEType fe_type(elem->default_order(), LAGRANGE);
     std::unique_ptr<libMesh::FEBase> fe(libMesh::FEBase::build(elem->dim(), fe_type));
     libMesh::QGauss qrule(elem->dim(), order);
+    fe->get_xyz(); // this is very important, otherwise the quadrature points are not
+                   // initialized
+    fe->get_JxW();
     fe->attach_quadrature_rule(&qrule);
     fe->reinit(elem);
     return fe;
