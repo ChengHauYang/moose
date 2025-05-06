@@ -36,7 +36,9 @@ SubdomainInterceptedGenerator::validParams()
   params.addParam<Real>("threshold", 0.0, "Threshold for inside/outside classification.");
   params.addRequiredParam<Real>("lambda", "Lambda for false intersection classification.");
   params.addRequiredParam<bool>("outer_boundary", "Flag for outer boundary handling.");
-  params.addParam<bool>("multi_geo", true, "Do you have multiple geometries to do in-out test?");
+  params.addParam<bool>("multi_geo", false, "Do you have multiple geometries to do in-out test?");
+  params.addParam<bool>("keep_inside_as_inside", false, "Keep inside as inside.");
+  params.addParam<bool>("keep_outside_as_outside", false, "Keep outside as outside.");
 
   // Quadrature order used for active‑area estimation when an element straddles the interface
   params.addParam<int>("qrule_order", 6, "Quadrature order used to estimate the active area.");
@@ -55,6 +57,8 @@ SubdomainInterceptedGenerator::SubdomainInterceptedGenerator(const InputParamete
     _lambda(getParam<Real>("lambda")),
     _outer_boundary(getParam<bool>("outer_boundary")),
     _multi_geo(getParam<bool>("multi_geo")),
+    _keep_inside_as_inside(getParam<bool>("keep_inside_as_inside")),
+    _keep_outside_as_outside(getParam<bool>("keep_outside_as_outside")),
     _qrule_order(getParam<int>("qrule_order"))
 {
 
@@ -116,12 +120,15 @@ SubdomainInterceptedGenerator::generate()
 
   for (const auto & elem : mesh->active_local_element_ptr_range())
   {
-
-    // std::cout << "elem->subdomain_id() = " << elem->subdomain_id() << std::endl;
     // (a) Skip elements that have already been explicitly assigned by a
     //       previous geometry in a multi‑geometry workflow.
-    if (_multi_geo && (elem->subdomain_id() == _subdomain_id_inside))
-      continue;
+    if (_multi_geo)
+    {
+      if (elem->subdomain_id() == _subdomain_id_inside && _keep_inside_as_inside)
+        continue;
+      else if (elem->subdomain_id() == _subdomain_id_outside && _keep_outside_as_outside)
+        continue;
+    }
 
     // (b) Evaluate the distance function at the element nodes and capture
     //       the extrema.

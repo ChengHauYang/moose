@@ -68,8 +68,8 @@
   type = Transient
   solve_type = NEWTON
 
-  petsc_options_iname = '-ksp_type -pc_type -snes_type'
-  petsc_options_value = 'bcgs bjacobi test'
+  petsc_options_iname = '-ksp_type -pc_type'
+  petsc_options_value = 'bcgs bjacobi'
 
   end_time = 1.0
 []

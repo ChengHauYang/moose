@@ -1,17 +1,11 @@
-
 [Problem]
   default_block = '0'
 []
 
 [Mesh]
   [gmg]
-    type = GeneratedMeshGenerator
-    dim = 2
-    # xmax = 2
-    # ymax = 2
-    nx = 200
-    ny = 200
-    subdomain_ids = '1'
+    type = FileMeshGenerator
+    file = "weld_boundary_fitted.msh"
   []
 
   [subdomain1]
@@ -19,21 +13,10 @@
     input = 'gmg'
     subdomain_id_inside = 0
     subdomain_id_outside = 1
-    lambda = 1
+    lambda = 0.5
     outer_boundary = false
     function = 'sqrt((x-0.5)^2 + (y-0.5)^2) - 0.38'
   []
-
-  # [subdomain2]
-  #   type = SubdomainInterceptedGenerator
-  #   input = 'subdomain1'
-  #   subdomain_id_inside = 0
-  #   subdomain_id_outside = 1
-  #   lambda = 1
-  #   outer_boundary = true
-  #   function = 'sqrt((x-0.5)^2 + (y-0.5)^2) - 0.2'
-  # []
-
   use_displaced_mesh = false
 []
 
@@ -59,7 +42,13 @@
     radius = 0.03
     target_subdomain = '0'
     block = '0 1'
-    execute_on = 'TIMESTEP_BEGIN'
+    execute_on = 'TIMESTEP_END'
+
+
+    # --- new for setting IC --- #
+    inactive_subdomain_ID = 1
+    ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
+
   []
 []
 

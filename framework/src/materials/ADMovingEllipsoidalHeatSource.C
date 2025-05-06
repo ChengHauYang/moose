@@ -1,6 +1,6 @@
 #include "ADMovingEllipsoidalHeatSource.h"
 
-registerMooseObject("HeatTransferApp", ADMovingEllipsoidalHeatSource);
+registerMooseObject("MooseApp", ADMovingEllipsoidalHeatSource);
 
 InputParameters
 ADMovingEllipsoidalHeatSource::validParams()

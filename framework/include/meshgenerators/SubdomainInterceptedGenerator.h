@@ -45,6 +45,8 @@ protected:
 
   /// MarkNeighborOfIntercept
   bool _multi_geo;
+  bool _keep_inside_as_inside;
+  bool _keep_outside_as_outside;
 
   /// @brief  Quadrature order used for active‑area estimation
   int _qrule_order;

@@ -3,15 +3,14 @@
   default_block = '0'
 []
 
+[GlobalParams]
+  displacements = 'disp_x disp_y'
+[]
+
 [Mesh]
   [gmg]
-    type = GeneratedMeshGenerator
-    dim = 2
-    # xmax = 2
-    # ymax = 2
-    nx = 200
-    ny = 200
-    subdomain_ids = '1'
+    type = FileMeshGenerator
+    file = "weld_boundary_fitted.msh"
   []
 
   [subdomain1]
@@ -19,26 +18,15 @@
     input = 'gmg'
     subdomain_id_inside = 0
     subdomain_id_outside = 1
-    lambda = 1
+    lambda = 0.5
     outer_boundary = false
     function = 'sqrt((x-0.5)^2 + (y-0.5)^2) - 0.38'
   []
-
-  # [subdomain2]
-  #   type = SubdomainInterceptedGenerator
-  #   input = 'subdomain1'
-  #   subdomain_id_inside = 0
-  #   subdomain_id_outside = 1
-  #   lambda = 1
-  #   outer_boundary = true
-  #   function = 'sqrt((x-0.5)^2 + (y-0.5)^2) - 0.2'
-  # []
-
   use_displaced_mesh = false
 []
 
 [Variables]
-  [cond]
+  [T]
     order = FIRST
   []
 []
@@ -46,7 +34,6 @@
 [SpatioTemporalPaths]
   [path]
     type = CSVPiecewiseLinearSpatioTemporalPath
-    # file = 'concentric_circles.csv'
     file = 'concentric_circles_reverse.csv'
     verbose = true
   []
@@ -63,7 +50,42 @@
   []
 []
 
+[Physics/SolidMechanics/QuasiStatic]
+  [all]
+    add_variables = true
+    strain = FINITE
+    automatic_eigenstrain_names = true
+    generate_output = 'vonmises_stress'
+    block = '0'
+  []
+[]
+
 [Materials]
+  [thermal]
+    type = HeatConductionMaterial
+    thermal_conductivity = 45.0
+    specific_heat = 0.5
+  []
+  [density]
+    type = GenericConstantMaterial
+    prop_names = 'density'
+    prop_values = 8000.0
+  []
+  [elasticity]
+    type = ComputeIsotropicElasticityTensor
+    youngs_modulus = 1e9
+    poissons_ratio = 0.0
+  []
+  [expansion1]
+    type = ComputeThermalExpansionEigenstrain
+    temperature = T
+    thermal_expansion_coeff = 1e-7
+    stress_free_temperature = 0
+    eigenstrain_name = thermal_expansion
+  []
+  [stress]
+    type = ComputeFiniteStrainElasticStress
+  []
   [volumetric_heat] # need to be exactly this name!
     type = ADMovingEllipsoidalHeatSource
     path = 'path'
@@ -74,53 +96,67 @@
     b = 0.01
     outputs = exodus
   []
-  [density]
-    type = ADGenericConstantMaterial
-    prop_names = 'density  thermal_conductivity'
-    prop_values = '10431.0 3.0                 '
-  []
 []
 
+
 [Kernels]
-  [heat]
-    type = ADHeatConduction
-    variable = cond
-    thermal_conductivity = thermal_conductivity
+  [heat_conduction]
+    type = HeatConduction
+    variable = T
+  []
+  [time_derivative]
+    type = HeatConductionTimeDerivative
+    variable = T
   []
   [hsource]
     type = ADMatHeatSource
     material_property = 'volumetric_heat'
-    variable = cond
+    variable = T
   []
 []
 
 [BCs]
   [left]
     type = DirichletBC
-    variable = cond
+    variable = T
     boundary = left
     value = 0
   []
 
   [right]
     type = DirichletBC
-    variable = cond
+    variable = T
     boundary = right
     value = 0
   []
 
   [top]
     type = DirichletBC
-    variable = cond
+    variable = T
     boundary = top
     value = 0
   []
 
   [bottom]
     type = DirichletBC
-    variable = cond
+    variable = T
     boundary = bottom
     value = 0
+  []
+
+  [anchor_x]
+    type = DirichletBC
+    variable = disp_x
+    boundary = 'left right top bottom'
+    #boundary = 'left'
+    value = 0.0
+  []
+  [anchor_y]
+    type = DirichletBC
+    variable = disp_y
+    boundary = 'left right top bottom'
+    #boundary =  'bottom'
+    value = 0.0
   []
 []
 
@@ -131,7 +167,7 @@
   petsc_options_value = 'lu'
   nl_max_its = 100
   nl_rel_tol = 1e-6
-  nl_abs_tol = 1e-10
+  nl_abs_tol = 1e-8
   dt = 1
   end_time = 1000
 []
