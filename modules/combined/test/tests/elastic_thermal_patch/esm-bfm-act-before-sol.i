@@ -46,7 +46,7 @@
     radius = 0.03
     target_subdomain = '0'
     block = '0 1'
-    execute_on = 'TIMESTEP_END'
+    execute_on = 'TIMESTEP_BEGIN'
 
     # --- new for setting IC --- #
     inactive_subdomain_ID = 1

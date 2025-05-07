@@ -1,16 +1,22 @@
-
 [Problem]
   default_block = '0'
 []
 
 [GlobalParams]
-  displacements = 'disp_x disp_y'
+  displacements = 'disp_x disp_y disp_z'
 []
 
 [Mesh]
   [gmg]
-    type = FileMeshGenerator
-    file = "weld_boundary_fitted.msh"
+    type = GeneratedMeshGenerator
+    dim = 3
+    xmax = 5
+    ymax = 0.25
+    zmax = 3
+    nx = 100
+    ny = 5
+    nz = 60
+    subdomain_ids = '1'
   []
 
   [subdomain1]
@@ -18,10 +24,37 @@
     input = 'gmg'
     subdomain_id_inside = 0
     subdomain_id_outside = 1
+    keep_inside_as_inside = true
+    multi_geo = true
     lambda = 0.5
-    outer_boundary = false
-    function = 'sqrt((x-0.5)^2 + (y-0.5)^2) - 0.38'
+    outer_boundary = true
+    function = 'z-1.45'
   []
+
+  [subdomain2]
+    type = SubdomainInterceptedGenerator
+    input = 'subdomain1'
+    subdomain_id_inside = 0
+    subdomain_id_outside = 1
+    keep_inside_as_inside = true
+    multi_geo = true
+    lambda = 0.5
+    outer_boundary = true
+    function = '1.55-z'
+  []
+
+  [subdomain3]
+    type = SubdomainInterceptedGenerator
+    input = 'subdomain2'
+    subdomain_id_inside = 0
+    subdomain_id_outside = 1
+    keep_inside_as_inside = true
+    multi_geo = true
+    lambda = 0.5
+    outer_boundary = true
+    function = 'y-0.15'
+  []
+
   use_displaced_mesh = false
 []
 
@@ -34,7 +67,7 @@
 [SpatioTemporalPaths]
   [path]
     type = CSVPiecewiseLinearSpatioTemporalPath
-    file = 'concentric_circles_reverse.csv'
+    file = 'horizontal_lines_with_time.csv'
     verbose = true
   []
 []
@@ -46,7 +79,7 @@
     radius = 0.03
     target_subdomain = '0'
     block = '0 1'
-    execute_on = 'TIMESTEP_END'
+    execute_on = 'TIMESTEP_BEGIN'
 
     # --- new for setting IC --- #
     inactive_subdomain_ID = 1
@@ -55,9 +88,7 @@
 []
 
 [Physics]
-
   [SolidMechanics]
-
     [QuasiStatic]
       [all]
         add_variables = true
@@ -125,26 +156,26 @@
 []
 
 [BCs]
-  [left]
-    type = DirichletBC
-    variable = T
-    boundary = left
-    value = 0
-  []
+  # [left]
+  #   type = DirichletBC
+  #   variable = T
+  #   boundary = left
+  #   value = 0
+  # []
 
-  [right]
-    type = DirichletBC
-    variable = T
-    boundary = right
-    value = 0
-  []
+  # [right]
+  #   type = DirichletBC
+  #   variable = T
+  #   boundary = right
+  #   value = 0
+  # []
 
-  [top]
-    type = DirichletBC
-    variable = T
-    boundary = top
-    value = 0
-  []
+  # [top]
+  #   type = DirichletBC
+  #   variable = T
+  #   boundary = top
+  #   value = 0
+  # []
 
   [bottom]
     type = DirichletBC
@@ -156,15 +187,22 @@
   [anchor_x]
     type = DirichletBC
     variable = disp_x
-    boundary = 'left right top bottom'
-    #boundary = 'left'
+    # boundary = 'left right top bottom'
+    boundary = 'bottom'
     value = 0.0
   []
   [anchor_y]
     type = DirichletBC
     variable = disp_y
-    boundary = 'left right top bottom'
-    #boundary =  'bottom'
+    # boundary = 'left right top bottom'
+    boundary = 'bottom'
+    value = 0.0
+  []
+  [anchor_z]
+    type = DirichletBC
+    variable = disp_z
+    # boundary = 'left right top bottom'
+    boundary = 'bottom'
     value = 0.0
   []
 []
@@ -178,7 +216,7 @@
   nl_rel_tol = 1e-6
   nl_abs_tol = 1e-8
   dt = 1
-  end_time = 1000
+  end_time = 400
 []
 
 [Outputs]
