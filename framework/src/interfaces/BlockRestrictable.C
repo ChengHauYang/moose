@@ -100,36 +100,52 @@ BlockRestrictable::initializeBlockRestrictable(const MooseObject * moose_object)
     }
   };
 
+  bool got_blocks = false;
+
   // The 'block' input is defined
-  if (moose_object->isParamValid("block"))
+  if (!got_blocks && moose_object->isParamValid("block"))
   {
     // Extract the blocks from the input
     _blocks = moose_object->getParam<std::vector<SubdomainName>>("block");
-
-    BlocksToIDs();
+    if (!_blocks.empty())
+    {
+      _blocks = _blk_feproblem->getDefaultBlocks();
+      BlocksToIDs();
+      got_blocks = true;
+    }
   }
 
   // When 'blocks' is not set and there is a "variable", use the blocks from the variable
-  else if (moose_object->isParamValid("variable"))
+  if (!got_blocks && moose_object->isParamValid("variable"))
   {
     std::string variable_name = moose_object->parameters().getMooseType("variable");
     if (!variable_name.empty())
+    {
       _blk_ids = _blk_feproblem
                      ->getVariable(_blk_tid,
                                    variable_name,
                                    Moose::VarKindType::VAR_ANY,
                                    Moose::VarFieldType::VAR_FIELD_ANY)
                      .activeSubdomains();
+      got_blocks = true;
+    }
   }
 
   // when 'default_block' is set at the [Problem] -> 'block and variable' input should come first
   // before this
-  else if (_blk_feproblem->isParamSetByUser("default_block"))
+  if (!got_blocks && _blk_feproblem->isParamSetByUser("default_block"))
   {
-    _blocks = _blk_feproblem->getDefaultBlocks();
-
-    BlocksToIDs();
+    if (!_blk_feproblem->getDefaultBlocks().empty())
+    {
+      _blocks = _blk_feproblem->getDefaultBlocks();
+      BlocksToIDs();
+      got_blocks = true;
+    }
   }
+
+  if (!got_blocks)
+    mooseError("No valid subdomain information found. Please set 'block', 'variable', or "
+               "'default_block'.");
 
   // Produce error if the object is not allowed to be both block and boundary restricted
   if (!_blk_dual_restrictable && !_boundary_ids.empty() && !_boundary_ids.empty())

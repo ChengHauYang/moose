@@ -16,6 +16,8 @@
 
 #include "Action.h"
 
+#include "BlockUtils.h"
+
 class NEML2ActionCommon;
 
 /**

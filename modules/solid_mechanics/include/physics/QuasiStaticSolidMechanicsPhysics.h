@@ -12,6 +12,7 @@
 #include "QuasiStaticSolidMechanicsPhysicsBase.h"
 #include "libmesh/point.h"
 
+#include "BlockUtils.h"
 class QuasiStaticSolidMechanicsPhysics : public QuasiStaticSolidMechanicsPhysicsBase
 {
 public:

@@ -54,6 +54,28 @@
   []
 []
 
+# [HeatPathAction]
+#   type = SpatioTemporalHeatAction
+#   path_file = 'concentric_circles_reverse.csv'
+#   # for path
+#   verbose = true
+#   # for esm
+#   block = '0 1'
+#   target_subdomain = 0
+#   radius = 0.03
+#   execute_on_esm = 'TIMESTEP_BEGIN'
+#   inactive_subdomain_ID = 1
+#   ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
+#   # for heat source
+#   power = 1
+#   a = 0.035
+#   b = 0.01
+#   efficiency = 1
+#   scale = 1
+#   # for kernel
+#   heat_variable = T
+# []
+
 [Physics]
 
   [SolidMechanics]
@@ -64,7 +86,6 @@
         strain = FINITE
         automatic_eigenstrain_names = true
         generate_output = 'vonmises_stress'
-        block = '0'
       []
     []
   []

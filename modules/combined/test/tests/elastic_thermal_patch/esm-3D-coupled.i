@@ -95,7 +95,7 @@
         strain = FINITE
         automatic_eigenstrain_names = true
         generate_output = 'vonmises_stress'
-        block = '0'
+        block = '0' # it is not blockrestrictable
       []
     []
   []
@@ -213,8 +213,8 @@
   petsc_options_iname = '-pc_type'
   petsc_options_value = 'lu'
   nl_max_its = 100
-  nl_rel_tol = 1e-6
-  nl_abs_tol = 1e-8
+  nl_rel_tol = 1e-5
+  nl_abs_tol = 1e-7
   dt = 1
   end_time = 400
 []

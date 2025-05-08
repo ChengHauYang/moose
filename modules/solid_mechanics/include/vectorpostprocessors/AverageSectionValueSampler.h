@@ -12,6 +12,8 @@
 #include "GeneralVectorPostprocessor.h"
 #include "libmesh/communicator.h"
 
+#include "BlockUtils.h"
+
 class AverageSectionValueSampler : public GeneralVectorPostprocessor
 {
 public:

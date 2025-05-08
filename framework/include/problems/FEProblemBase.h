@@ -2965,6 +2965,7 @@ private:
   friend void Moose::PetscSupport::setSinglePetscOption(const std::string & name,
                                                         const std::string & value,
                                                         FEProblemBase * const problem);
+  std::set<subdomain_id_type> getActiveSubdomainsVector(const InputParameters & params);
 };
 
 using FVProblemBase = FEProblemBase;
