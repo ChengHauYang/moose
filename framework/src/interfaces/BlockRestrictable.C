@@ -102,17 +102,22 @@ BlockRestrictable::initializeBlockRestrictable(const MooseObject * moose_object)
 
   bool got_blocks = false;
 
+  // Helper lambda to set _blocks and _blk_ids
+  auto setBlocks = [&]()
+  {
+    if (!_blocks.empty())
+    {
+      BlocksToIDs();
+      got_blocks = true;
+    }
+  };
+
   // The 'block' input is defined
   if (!got_blocks && moose_object->isParamValid("block"))
   {
     // Extract the blocks from the input
     _blocks = moose_object->getParam<std::vector<SubdomainName>>("block");
-    if (!_blocks.empty())
-    {
-      _blocks = _blk_feproblem->getDefaultBlocks();
-      BlocksToIDs();
-      got_blocks = true;
-    }
+    setBlocks();
   }
 
   // When 'blocks' is not set and there is a "variable", use the blocks from the variable
@@ -135,17 +140,9 @@ BlockRestrictable::initializeBlockRestrictable(const MooseObject * moose_object)
   // before this
   if (!got_blocks && _blk_feproblem->isParamSetByUser("default_block"))
   {
-    if (!_blk_feproblem->getDefaultBlocks().empty())
-    {
-      _blocks = _blk_feproblem->getDefaultBlocks();
-      BlocksToIDs();
-      got_blocks = true;
-    }
+    _blocks = _blk_feproblem->getDefaultBlocks();
+    setBlocks();
   }
-
-  if (!got_blocks)
-    mooseError("No valid subdomain information found. Please set 'block', 'variable', or "
-               "'default_block'.");
 
   // Produce error if the object is not allowed to be both block and boundary restricted
   if (!_blk_dual_restrictable && !_boundary_ids.empty() && !_boundary_ids.empty())

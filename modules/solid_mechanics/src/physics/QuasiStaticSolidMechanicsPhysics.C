@@ -966,6 +966,7 @@ QuasiStaticSolidMechanicsPhysics::actLagrangianKernelStrain()
   params.set<std::vector<VariableName>>("displacements") = _coupled_displacements;
   params.set<std::vector<MaterialPropertyName>>("eigenstrain_names") = _eigenstrain_names;
   params.set<bool>("large_kinematics") = _lk_large_kinematics;
+  params.set<std::vector<SubdomainName>>("block") = _subdomain_names;
 
   // Error if volumetric locking correction is on for higher-order elements
   if (_problem->mesh().hasSecondOrderElements() && _lk_locking)

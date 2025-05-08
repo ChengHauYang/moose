@@ -2822,7 +2822,8 @@ FEProblemBase::addVariable(const std::string & var_type,
   const auto family = Utility::string_to_enum<FEFamily>(params.get<MooseEnum>("family"));
   const auto fe_type = FEType(order, family);
 
-  const auto active_subdomains_vector = getActiveSubdomainsVector(params);
+  const auto active_subdomains_vector =
+      _mesh.getSubdomainIDs(params.get<std::vector<SubdomainName>>("block"));
   const std::set<SubdomainID> active_subdomains(active_subdomains_vector.begin(),
                                                 active_subdomains_vector.end());
 
@@ -3105,10 +3106,8 @@ FEProblemBase::addAuxVariable(const std::string & var_type,
   const auto family = Utility::string_to_enum<FEFamily>(params.get<MooseEnum>("family"));
   const auto fe_type = FEType(order, family);
 
-  // if we have a block restriction in the input file, use it, then check whether we have a
-  // default_block to use here
-  const auto active_subdomains_vector = getActiveSubdomainsVector(params);
-
+  const auto active_subdomains_vector =
+      _mesh.getSubdomainIDs(params.get<std::vector<SubdomainName>>("block"));
   const std::set<SubdomainID> active_subdomains(active_subdomains_vector.begin(),
                                                 active_subdomains_vector.end());
 
@@ -3157,8 +3156,7 @@ FEProblemBase::addAuxVariable(const std::string & var_name,
 
   if (active_subdomains)
     for (const SubdomainID & id : *active_subdomains)
-      params.set<std::vector<SubdomainName>>("block").push_back(
-          Moose::stringify(id)); // missing the dafault_block
+      params.set<std::vector<SubdomainName>>("block").push_back(Moose::stringify(id));
 
   logAdd("AuxVariable", var_name, var_type, params);
   _aux->addVariable(var_type, var_name, params);
@@ -3166,15 +3164,6 @@ FEProblemBase::addAuxVariable(const std::string & var_name,
     _displaced_problem->addAuxVariable("MooseVariable", var_name, params);
 
   markFamilyPRefinement(params);
-}
-
-std::set<subdomain_id_type>
-FEProblemBase::getActiveSubdomainsVector(const InputParameters & params)
-{
-  const auto & blocks = params.isParamSetByUser("block")
-                            ? params.get<std::vector<SubdomainName>>("block")
-                            : params.get<std::vector<SubdomainName>>("default_block");
-  return blocks.empty() ? std::set<subdomain_id_type>() : _mesh.getSubdomainIDs(blocks);
 }
 
 void
