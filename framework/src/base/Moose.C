@@ -663,6 +663,11 @@ associateSyntaxInner(Syntax & syntax, ActionFactory & /*action_factory*/)
   registerSyntax("EmptyAction", "SpatioTemporalPaths");
   registerSyntaxTask("AddSpatioTemporalPathAction", "SpatioTemporalPaths/*", "add_user_object");
 
+  // Adds [SpatioTemporalPath] block
+  registerSyntax("EmptyAction", "SpatioTemporalHeatAction");
+  registerSyntaxTask(
+      "AddSpatioTemporalPathAction", "SpatioTemporalHeatAction/*", "add_user_object");
+
   addActionTypes(syntax);
 }
 
