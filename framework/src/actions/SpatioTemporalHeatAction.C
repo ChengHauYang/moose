@@ -14,7 +14,6 @@ SpatioTemporalHeatAction::validParams()
 {
   InputParameters params = Action::validParams();
   params.addRequiredParam<FileName>("path_file", "CSV file for spatiotemporal path");
-  params.addRequiredParam<NonlinearVariableName>("heat_variable", "Temperature variable name");
 
   // for CSVPiecewiseLinearSpatioTemporalPath
   params.addParam<bool>("verbose", false, "Verbose path output");
@@ -41,6 +40,9 @@ SpatioTemporalHeatAction::validParams()
       "b", "Length of the ellipsoid semi-axis perpendicular to the path direction");
   params.addParam<Real>("efficiency", 1.0, "Process efficiency");
   params.addParam<Real>("scale", 1.0, "Scaling factor");
+
+  // for ADMatHeatSource (kernel)
+  params.addRequiredParam<NonlinearVariableName>("heat_variable", "Temperature variable name");
 
   return params;
 }

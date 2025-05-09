@@ -14,6 +14,7 @@ class SpatioTemporalHeatAction : public Action
 {
 public:
   static InputParameters validParams();
+
   SpatioTemporalHeatAction(const InputParameters & parameters);
 
   virtual void act() override;
