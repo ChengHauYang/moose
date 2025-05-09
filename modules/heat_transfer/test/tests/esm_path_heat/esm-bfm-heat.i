@@ -26,62 +26,63 @@
   []
 []
 
-[SpatioTemporalPaths]
-  [path]
-    type = CSVPiecewiseLinearSpatioTemporalPath
-    # file = 'concentric_circles.csv'
-    file = 'concentric_circles_reverse.csv'
-    verbose = true
-  []
-[]
-
-[MeshModifiers]
-  [esm]
-    type = SpatioTemporalPathElementSubdomainModifier
-    path = 'path'
-    radius = 0.03
-    target_subdomain = '0'
-    block = '0 1'
-    execute_on = 'TIMESTEP_END'
-
-    # --- new for setting IC --- #
-    inactive_subdomain_ID = 1
-    ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
-  []
-[]
-
-# [SpatioTemporalHeatAction]
-#   path_file = 'concentric_circles_reverse.csv'
-#   # for path
-#   verbose = true
-#   # for esm
-#   block = '0 1'
-#   target_subdomain = 0
-#   radius = 0.03
-#   execute_on_esm = 'TIMESTEP_BEGIN'
-#   inactive_subdomain_ID = 1
-#   ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
-#   # for heat source
-#   power = 1
-#   a = 0.035
-#   b = 0.01
-#   efficiency = 1
-#   scale = 1
-#   # for kernel
-#   heat_variable = T
+# [SpatioTemporalPaths]
+#   [path]
+#     type = CSVPiecewiseLinearSpatioTemporalPath
+#     # file = 'concentric_circles.csv'
+#     file = 'concentric_circles_reverse.csv'
+#     verbose = true
+#   []
 # []
 
+# [MeshModifiers]
+#   [esm]
+#     type = SpatioTemporalPathElementSubdomainModifier
+#     path = 'path'
+#     radius = 0.03
+#     target_subdomain = '0'
+#     block = '0 1'
+#     execute_on = 'TIMESTEP_END'
+
+#     # --- new for setting IC --- #
+#     inactive_subdomain_ID = 1
+#     ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
+#   []
+# []
+
+[SpatioTemporalHeat]
+  path_file = 'concentric_circles_reverse.csv'
+  ## for path
+  verbose = true
+  ## for esm
+  block = '0 1'
+  target_subdomain = 0
+  radius = 0.03
+  execute_on_esm = 'TIMESTEP_BEGIN'
+  # execute_on_esm = 'TIMESTEP_END'
+  inactive_subdomain_ID = 1
+  ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
+  ## for heat source
+  power = 1
+  a = 0.035
+  b = 0.01
+  efficiency = 1
+  scale = 1
+  ## for kernel
+  heat_variable = cond
+[]
+
 [Materials]
-  [volumetric_heat] # need to be exactly this name!
-    type = ADMovingEllipsoidalHeatSource
-    path = 'path'
-    power = 1
-    efficiency = 1
-    scale = 1
-    a = 0.035
-    b = 0.01
-    outputs = exodus
-  []
+  # [volumetric_heat] # need to be exactly this name!
+  #   type = ADMovingEllipsoidalHeatSource
+  #   path = 'path'
+  #   power = 1
+  #   efficiency = 1
+  #   scale = 1
+  #   a = 0.035
+  #   b = 0.01
+  #   outputs = exodus
+  # []
   [density]
     type = ADGenericConstantMaterial
     prop_names = 'density  thermal_conductivity'
@@ -95,11 +96,11 @@
     variable = cond
     thermal_conductivity = thermal_conductivity
   []
-  [hsource]
-    type = ADMatHeatSource
-    material_property = 'volumetric_heat'
-    variable = cond
-  []
+  # [hsource]
+  #   type = ADMatHeatSource
+  #   material_property = 'volumetric_heat'
+  #   variable = cond
+  # []
 []
 
 [BCs]
