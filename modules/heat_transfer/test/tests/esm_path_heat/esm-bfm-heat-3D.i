@@ -5,15 +5,8 @@
 
 [Mesh]
   [gmg]
-    type = GeneratedMeshGenerator
-    dim = 3
-    xmax = 3
-    ymax = 0.25
-    zmax = 3
-    nx = 60
-    ny = 5
-    nz = 60
-    subdomain_ids = '1'
+    type = FileMeshGenerator
+    file = "cube_cylinder.msh"
   []
 
   [subdomain1]
@@ -21,46 +14,46 @@
     input = 'gmg'
     subdomain_id_inside = 0
     subdomain_id_outside = 1
-    lambda = 1
+    lambda = 0.5
     outer_boundary = false
     function = '(y-0.3)^2+(z-1.5)^2-0.15^2'
   []
 
-  [refine1]
-    type = RefineBlockGenerator
-    input = subdomain1
-    block = '1'
-    refinement = '1'
-    enable_neighbor_refinement = false
-  []
+  # [refine1]
+  #   type = RefineBlockGenerator
+  #   input = subdomain1
+  #   block = '1'
+  #   refinement = '1'
+  #   enable_neighbor_refinement = false
+  # []
 
-  [subdomain2]
-    type = SubdomainInterceptedGenerator
-    input = 'refine1'
-    subdomain_id_inside = 0
-    subdomain_id_outside = 1
-    lambda = 1
-    outer_boundary = false
-    function = '(y-0.3)^2+(z-1.5)^2-0.15^2'
-  []
+  # [subdomain2]
+  #   type = SubdomainInterceptedGenerator
+  #   input = 'refine1'
+  #   subdomain_id_inside = 0
+  #   subdomain_id_outside = 1
+  #   lambda = 1
+  #   outer_boundary = false
+  #   function = '(y-0.3)^2+(z-1.5)^2-0.15^2'
+  # []
 
-  [refine2]
-    type = RefineBlockGenerator
-    input = subdomain2
-    block = '1'
-    refinement = '1'
-    enable_neighbor_refinement = false
-  []
+  # [refine2]
+  #   type = RefineBlockGenerator
+  #   input = subdomain2
+  #   block = '1'
+  #   refinement = '1'
+  #   enable_neighbor_refinement = false
+  # []
 
-  [subdomain3]
-    type = SubdomainInterceptedGenerator
-    input = 'refine2'
-    subdomain_id_inside = 0
-    subdomain_id_outside = 1
-    lambda = 1
-    outer_boundary = false
-    function = '(y-0.3)^2+(z-1.5)^2-0.15^2'
-  []
+  # [subdomain3]
+  #   type = SubdomainInterceptedGenerator
+  #   input = 'refine2'
+  #   subdomain_id_inside = 0
+  #   subdomain_id_outside = 1
+  #   lambda = 1
+  #   outer_boundary = false
+  #   function = '(y-0.3)^2+(z-1.5)^2-0.15^2'
+  # []
 
   # [interface]
   #   type = SideSetsBetweenSubdomainsGenerator
