@@ -23,4 +23,7 @@ protected:
 
   /// Radius
   const Real _r;
+
+  /// Within the element test
+  bool _within_elem;
 };

@@ -6,7 +6,8 @@ y0 = 0.25;
 z0 = 1.5;
 Lx = 3;
 
-lc_core = 0.02;
+//lc_core = 0.02;
+lc_core = 0.06;
 lc_far  = 0.3;
 r_transition = 0.5;
 
@@ -26,7 +27,8 @@ Plane Surface(11) = {10};
 // === Extrude the semicylinder ===
 out[] = Extrude {Lx, 0, 0} {
   Surface{11};
-  Layers{100};
+  //Layers{100};
+  Layers{50};
 };
 
 // === External Box ===

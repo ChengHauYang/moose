@@ -31,7 +31,21 @@ ADMovingHeatSource::ADMovingHeatSource(const InputParameters & params)
 void
 ADMovingHeatSource::computeQpProperties()
 {
+
+  const Point & q_point = _q_point[_qp];
+
   _tangential_distance[_qp] = _path.tangentialDistance(_q_point[_qp]);
   _normal_distance[_qp] = _path.normalDistance(_q_point[_qp]);
   _volumetric_heat[_qp] = computeHeatSource();
+
+  // if (_volumetric_heat[_qp] > 100)
+  // {
+  //   std::cout << "point = ";
+  //   q_point.print();
+  //   std::cout << std::endl;
+  //   std::cout << "tangential_distance = " << _tangential_distance[_qp] << std::endl;
+  //   std::cout << "normal_distance = " << _normal_distance[_qp] << std::endl;
+  //   std::cout << "volumetric_heat = " << _volumetric_heat[_qp] << std::endl;
+  //   std::cout << "----------------------------------------" << std::endl;
+  // }
 }

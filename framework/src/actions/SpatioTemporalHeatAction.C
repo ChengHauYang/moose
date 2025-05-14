@@ -28,12 +28,13 @@ SpatioTemporalHeatAction::validParams()
                                 "The element subdomain is changed to the target subdomain if its "
                                 "centroid is within the radius of the current path front.");
 
-  // params.addRequiredParam<ExecFlagEnum>("execute_on_esm", "Execution flag for the mesh
-  // modifier");
-
   ExecFlagEnum & exec = params.set<ExecFlagEnum>("execute_on_esm");
   exec.addAvailableFlags(EXEC_INITIAL, EXEC_TIMESTEP_BEGIN, EXEC_TIMESTEP_END, EXEC_FINAL);
   params.setDocString("execute_on_esm", exec.getDocString());
+
+  params.addParam<bool>("within_elem_test",
+                        false,
+                        "Switch between using the within element test or the centroid test.");
 
   // for ESM to set the initial condition
   params.addParam<int>("inactive_subdomain_ID", -1, "Subdomain ID to be marked inactive");
@@ -79,6 +80,7 @@ SpatioTemporalHeatAction::act()
     esm_params.set<std::string>("path") = path_name;
     esm_params.set<Real>("radius") = getParam<Real>("radius");
     esm_params.set<SubdomainName>("target_subdomain") = getParam<SubdomainName>("target_subdomain");
+    esm_params.set<bool>("within_elem_test") = getParam<bool>("within_elem_test");
     esm_params.set<std::vector<SubdomainName>>("block") =
         getParam<std::vector<SubdomainName>>("block");
     esm_params.set<ExecFlagEnum>("execute_on") = getParam<ExecFlagEnum>("execute_on_esm");

@@ -6,7 +6,8 @@
 [Mesh]
   [gmg]
     type = FileMeshGenerator
-    file = "cube_cylinder.msh"
+    #file = "cube_cylinder.msh"
+    file = "cube_cylinder_prism.msh"
   []
 
   [subdomain1]
@@ -108,21 +109,22 @@
 []
 
 [SpatioTemporalHeat]
-  path_file = 'filled_semicircle_horizontal_lines_y_first.csv'
+  path_file = 'InsideTriPt_filled_horizontal_lines.csv'
   ## for path
   verbose = true
   ## for esm
   target_subdomain = 2
-  radius = 0.02
+  radius = 0.045
   execute_on_esm = 'TIMESTEP_BEGIN'
   block = '1 2'
+  # within_elem_test = true
   # execute_on_esm = 'TIMESTEP_END'
-  #inactive_subdomain_ID = 1
-  #ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
+  inactive_subdomain_ID = 1
+  ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
   ## for heat source
   power = 1
-  a = 0.035
-  b = 0.01
+  a = 0.2
+  b = 0.1
   efficiency = 1
   scale = 1
   ## for kernel
@@ -132,8 +134,8 @@
 [Materials]
   [density]
     type = ADGenericConstantMaterial
-    prop_names = 'density  thermal_conductivity'
-    prop_values = '10431.0 3.0                 '
+    prop_names = 'density  thermal_conductivity specific_heat'
+    prop_values = '10431.0 3.0  120'
   []
 []
 
@@ -142,6 +144,11 @@
     type = ADHeatConduction
     variable = cond
     thermal_conductivity = thermal_conductivity
+  []
+
+  [heat_ie]
+    type = ADHeatConductionTimeDerivative
+    variable = cond
   []
 []
 
@@ -163,7 +170,7 @@
   nl_rel_tol = 1e-6
   nl_abs_tol = 1e-10
   dt = 1
-  end_time = 2400
+  end_time = 1600
 []
 
 [Outputs]
