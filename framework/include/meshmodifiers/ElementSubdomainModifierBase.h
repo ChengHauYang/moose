@@ -14,12 +14,6 @@
 #include "AuxiliarySystem.h"
 #include "NodalPatchRecoveryBase.h"
 
-struct NeighborInfo
-{
-  std::vector<std::vector<Real>> solution_values;
-  std::vector<Real> distances;
-};
-
 namespace ICStrategyForNewlyActivated
 {
 enum Type
@@ -35,16 +29,6 @@ struct NeighborInfo
   std::vector<std::vector<Real>> solution_values;
   std::vector<Real> distances;
 };
-
-namespace ICStrategyForNewlyActivated
-{
-enum Type
-{
-  IC_DEFAULT,
-  IC_EXTRAPOLATE_FIRST_LAYER,
-  IC_EXTRAPOLATE_SECOND_LAYER
-};
-}
 
 /**
  * Base class for mesh modifiers modifying element subdomains
