@@ -30,6 +30,22 @@ enum Type
 };
 }
 
+struct NeighborInfo
+{
+  std::vector<std::vector<Real>> solution_values;
+  std::vector<Real> distances;
+};
+
+namespace ICStrategyForNewlyActivated
+{
+enum Type
+{
+  IC_DEFAULT,
+  IC_EXTRAPOLATE_FIRST_LAYER,
+  IC_EXTRAPOLATE_SECOND_LAYER
+};
+}
+
 /**
  * Base class for mesh modifiers modifying element subdomains
  */
@@ -231,6 +247,7 @@ private:
   /// after the global gather step to ensure that only owned nodes are used for further
   /// operations such as mesh updates or DoF assignments.
   void identifyLocallyOwnedActivatedNodes(
+
       const std::unordered_map<dof_id_type, std::pair<SubdomainID, SubdomainID>> & moved_elems);
 
   inline ICStrategyForNewlyActivated::Type parseString2ICStrategy(const std::string & input)

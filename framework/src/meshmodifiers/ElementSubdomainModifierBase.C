@@ -685,6 +685,7 @@ ElementSubdomainModifierBase::nodeIsNewlyReinitialized(dof_id_type node_id) cons
   return true;
 }
 
+
 bool
 ElementSubdomainModifierBase::nodeIsNewlyActivated(dof_id_type node_id) const
 {
@@ -750,6 +751,7 @@ ElementSubdomainModifierBase::nodeIsNewlyActivated(dof_id_type node_id) const
 void
 ElementSubdomainModifierBase::applyIC(bool displaced)
 {
+
   switch (_ic_strategy)
   {
     case ICStrategyForNewlyActivated::IC_DEFAULT:
@@ -804,7 +806,6 @@ ElementSubdomainModifierBase::reinitializedElemRange(bool displaced)
   std::vector<Elem *> elems;
   for (auto elem_id : _reinitialized_elems)
   {
-    // _console << "elem_id = " << elem_id << std::endl;
     elems.push_back(displaced ? _displaced_mesh->elemPtr(elem_id) : _mesh.elemPtr(elem_id));
   }
 
@@ -971,6 +972,7 @@ ElementSubdomainModifierBase::firstLayerNeighbours(dof_id_type nid) const
 void
 ElementSubdomainModifierBase::computeFirstLayerNeighborInfo(SystemBase & sys, bool displaced)
 {
+
   // Access solution for postprocessing
   NumericVector<Number> & ghosted = sys.solution();
   ghosted.close();
@@ -1017,6 +1019,7 @@ ElementSubdomainModifierBase::computeFirstLayerNeighborInfo(SystemBase & sys, bo
 
     // Only use first layer neighbors
     std::set<const Node *> selected_nodes = first_layer_nodes;
+
 
     NeighborInfo info;
     DofMap & dof_map = sys.dofMap();
@@ -1356,6 +1359,7 @@ ElementSubdomainModifierBase::gatherCompleteActivatedNodesGlobally()
 {
   std::vector<dof_id_type> local(_first_pass_local_activated_nodes.begin(),
                                  _first_pass_local_activated_nodes.end());
+
   std::vector<std::vector<dof_id_type>> gathered;
 
   _mesh.comm().allgather(local, gathered);
@@ -1424,6 +1428,7 @@ ElementSubdomainModifierBase::computeSetDifference()
     for (const auto & id : _local_own_gather_global_and_complete_activated_nodes_diff)
       _console << id << " ";
     _console << std::endl;
+
   }
 #endif
 }

@@ -1,0 +1,21 @@
+#!/bin/bash
+for Ny in 32; do
+    Nx=$(awk "BEGIN {print $Ny * 1.5}")
+
+    output_dir="NewIC_second_layer_Ny${Ny}"  # Define a unique output folder based on Ny
+    mkdir -p "$output_dir"                   # Ensure the output directory exists
+
+    # Copy input file into output folder
+    cp esm-debug-faster-newIC-second-layer.i "$output_dir/"
+
+    # Enter the folder and run the simulation
+    pushd "$output_dir" > /dev/null
+
+    ../../../../solid_mechanics-opt \
+        -i esm-debug-faster-newIC-second-layer.i --no-color \
+        Outputs/file_base="results" \
+        nx="$Nx" \
+        ny="$Ny" > log_extrapolation_second_layer.txt 2>&1
+
+    popd > /dev/null
+done

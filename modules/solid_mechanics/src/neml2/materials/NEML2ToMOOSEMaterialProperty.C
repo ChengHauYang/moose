@@ -99,6 +99,46 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   if (!_execute_neml2_model.outputReady())
     return;
 
+  // std::cout << "_current_elem->id() = " << _current_elem->id() << "\n";
+  // std::cout << "_current_elem->subdomain_id() = " << _current_elem->subdomain_id() << "\n";
+
+  //   const dof_id_type elem_id = _current_elem->id();
+  //   const SubdomainID sub_id = _current_elem->subdomain_id();
+
+  //   bool mesh_changed = false;
+
+  //   // --- Check whether the subdomain ID for this element has changed ---
+  //   auto it = _elem_to_subdomain_map.find(elem_id);
+  //   if (it != _elem_to_subdomain_map.end())
+  //   {
+  //     if (it->second != sub_id)
+  //     {
+  // #ifndef NDEBUG
+  //       std::cout << "Subdomain ID changed for element\n";
+  // #endif
+  //       it->second = sub_id; // Update to new sub_id
+  //       mesh_changed = true;
+  //     }
+  //   }
+  //   else
+  //   {
+
+  //     // std::cout << "_t = " << _t << "\n";
+  //     // First time seeing this element, store it
+  //     _elem_to_subdomain_map[elem_id] = sub_id;
+
+  //     // Only consider it mesh changed if not the first timestep
+  //     if (_t > 0)
+  //       mesh_changed = true;
+  //   }
+
+  //   if (mesh_changed)
+  //   {
+  // #ifndef NDEBUG
+  //     std::cout << "new element activated\n";
+  // #endif
+  //   }
+
   // look up start index for current element
   const auto i = _execute_neml2_model.getBatchIndex(_current_elem->id());
   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)

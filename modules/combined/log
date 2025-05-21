@@ -1,0 +1,604 @@
+diff --git a/modules/combined/test/tests/elastic_thermal_patch/esm-3D-coupled.i b/modules/combined/test/tests/elastic_thermal_patch/esm-3D-coupled.i
+index 59e3c53e5e..bdcc5f73f6 100644
+--- a/modules/combined/test/tests/elastic_thermal_patch/esm-3D-coupled.i
++++ b/modules/combined/test/tests/elastic_thermal_patch/esm-3D-coupled.i
+@@ -95,7 +95,7 @@
+         strain = FINITE
+         automatic_eigenstrain_names = true
+         generate_output = 'vonmises_stress'
+-        block = '0'
++        block = '0' # it is not blockrestrictable
+       []
+     []
+   []
+@@ -213,8 +213,8 @@
+   petsc_options_iname = '-pc_type'
+   petsc_options_value = 'lu'
+   nl_max_its = 100
+-  nl_rel_tol = 1e-6
+-  nl_abs_tol = 1e-8
++  nl_rel_tol = 1e-5
++  nl_abs_tol = 1e-7
+   dt = 1
+   end_time = 400
+ []
+diff --git a/modules/combined/test/tests/elastic_thermal_patch/esm-bfm-act-before-sol.i b/modules/combined/test/tests/elastic_thermal_patch/esm-bfm-act-before-sol.i
+deleted file mode 100644
+index 379b3541f1..0000000000
+--- a/modules/combined/test/tests/elastic_thermal_patch/esm-bfm-act-before-sol.i
++++ /dev/null
+@@ -1,186 +0,0 @@
+-
+-[Problem]
+-  default_block = '0'
+-[]
+-
+-[GlobalParams]
+-  displacements = 'disp_x disp_y'
+-[]
+-
+-[Mesh]
+-  [gmg]
+-    type = FileMeshGenerator
+-    file = "weld_boundary_fitted.msh"
+-  []
+-
+-  [subdomain1]
+-    type = SubdomainInterceptedGenerator
+-    input = 'gmg'
+-    subdomain_id_inside = 0
+-    subdomain_id_outside = 1
+-    lambda = 0.5
+-    outer_boundary = false
+-    function = 'sqrt((x-0.5)^2 + (y-0.5)^2) - 0.38'
+-  []
+-  use_displaced_mesh = false
+-[]
+-
+-[Variables]
+-  [T]
+-    order = FIRST
+-  []
+-[]
+-
+-[SpatioTemporalPaths]
+-  [path]
+-    type = CSVPiecewiseLinearSpatioTemporalPath
+-    file = 'concentric_circles_reverse.csv'
+-    verbose = true
+-  []
+-[]
+-
+-[MeshModifiers]
+-  [esm]
+-    type = SpatioTemporalPathElementSubdomainModifier
+-    path = 'path'
+-    radius = 0.03
+-    target_subdomain = '0'
+-    block = '0 1'
+-    execute_on = 'TIMESTEP_BEGIN'
+-
+-    # --- new for setting IC --- #
+-    inactive_subdomain_ID = 1
+-    ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
+-  []
+-[]
+-
+-[Physics]
+-
+-  [SolidMechanics]
+-
+-    [QuasiStatic]
+-      [all]
+-        add_variables = true
+-        strain = FINITE
+-        automatic_eigenstrain_names = true
+-        generate_output = 'vonmises_stress'
+-        block = '0'
+-      []
+-    []
+-  []
+-[]
+-
+-[Materials]
+-  [thermal]
+-    type = HeatConductionMaterial
+-    thermal_conductivity = 45.0
+-    specific_heat = 0.5
+-  []
+-  [density]
+-    type = GenericConstantMaterial
+-    prop_names = 'density'
+-    prop_values = 8000.0
+-  []
+-  [elasticity]
+-    type = ComputeIsotropicElasticityTensor
+-    youngs_modulus = 1e9
+-    poissons_ratio = 0.0
+-  []
+-  [expansion1]
+-    type = ComputeThermalExpansionEigenstrain
+-    temperature = T
+-    thermal_expansion_coeff = 1e-7
+-    stress_free_temperature = 0
+-    eigenstrain_name = thermal_expansion
+-  []
+-  [stress]
+-    type = ComputeFiniteStrainElasticStress
+-  []
+-  [volumetric_heat] # need to be exactly this name!
+-    type = ADMovingEllipsoidalHeatSource
+-    path = 'path'
+-    power = 1
+-    efficiency = 1
+-    scale = 1
+-    a = 0.035
+-    b = 0.01
+-    outputs = exodus
+-  []
+-[]
+-
+-[Kernels]
+-  [heat_conduction]
+-    type = HeatConduction
+-    variable = T
+-  []
+-  [time_derivative]
+-    type = HeatConductionTimeDerivative
+-    variable = T
+-  []
+-  [hsource]
+-    type = ADMatHeatSource
+-    material_property = 'volumetric_heat'
+-    variable = T
+-  []
+-[]
+-
+-[BCs]
+-  [left]
+-    type = DirichletBC
+-    variable = T
+-    boundary = left
+-    value = 0
+-  []
+-
+-  [right]
+-    type = DirichletBC
+-    variable = T
+-    boundary = right
+-    value = 0
+-  []
+-
+-  [top]
+-    type = DirichletBC
+-    variable = T
+-    boundary = top
+-    value = 0
+-  []
+-
+-  [bottom]
+-    type = DirichletBC
+-    variable = T
+-    boundary = bottom
+-    value = 0
+-  []
+-
+-  [anchor_x]
+-    type = DirichletBC
+-    variable = disp_x
+-    boundary = 'left right top bottom'
+-    #boundary = 'left'
+-    value = 0.0
+-  []
+-  [anchor_y]
+-    type = DirichletBC
+-    variable = disp_y
+-    boundary = 'left right top bottom'
+-    #boundary =  'bottom'
+-    value = 0.0
+-  []
+-[]
+-
+-[Executioner]
+-  type = Transient
+-  solve_type = NEWTON
+-  petsc_options_iname = '-pc_type'
+-  petsc_options_value = 'lu'
+-  nl_max_its = 100
+-  nl_rel_tol = 1e-6
+-  nl_abs_tol = 1e-8
+-  dt = 1
+-  end_time = 1000
+-[]
+-
+-[Outputs]
+-  exodus = true
+-[]
+diff --git a/modules/combined/test/tests/elastic_thermal_patch/esm-bfm.i b/modules/combined/test/tests/elastic_thermal_patch/esm-bfm.i
+deleted file mode 100644
+index e3d4101e61..0000000000
+--- a/modules/combined/test/tests/elastic_thermal_patch/esm-bfm.i
++++ /dev/null
+@@ -1,186 +0,0 @@
+-
+-[Problem]
+-  default_block = '0'
+-[]
+-
+-[GlobalParams]
+-  displacements = 'disp_x disp_y'
+-[]
+-
+-[Mesh]
+-  [gmg]
+-    type = FileMeshGenerator
+-    file = "weld_boundary_fitted.msh"
+-  []
+-
+-  [subdomain1]
+-    type = SubdomainInterceptedGenerator
+-    input = 'gmg'
+-    subdomain_id_inside = 0
+-    subdomain_id_outside = 1
+-    lambda = 0.5
+-    outer_boundary = false
+-    function = 'sqrt((x-0.5)^2 + (y-0.5)^2) - 0.38'
+-  []
+-  use_displaced_mesh = false
+-[]
+-
+-[Variables]
+-  [T]
+-    order = FIRST
+-  []
+-[]
+-
+-[SpatioTemporalPaths]
+-  [path]
+-    type = CSVPiecewiseLinearSpatioTemporalPath
+-    file = 'concentric_circles_reverse.csv'
+-    verbose = true
+-  []
+-[]
+-
+-[MeshModifiers]
+-  [esm]
+-    type = SpatioTemporalPathElementSubdomainModifier
+-    path = 'path'
+-    radius = 0.03
+-    target_subdomain = '0'
+-    block = '0 1'
+-    execute_on = 'TIMESTEP_END'
+-
+-    # --- new for setting IC --- #
+-    inactive_subdomain_ID = 1
+-    ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
+-  []
+-[]
+-
+-[Physics]
+-
+-  [SolidMechanics]
+-
+-    [QuasiStatic]
+-      [all]
+-        add_variables = true
+-        strain = FINITE
+-        automatic_eigenstrain_names = true
+-        generate_output = 'vonmises_stress'
+-        block = '0'
+-      []
+-    []
+-  []
+-[]
+-
+-[Materials]
+-  [thermal]
+-    type = HeatConductionMaterial
+-    thermal_conductivity = 45.0
+-    specific_heat = 0.5
+-  []
+-  [density]
+-    type = GenericConstantMaterial
+-    prop_names = 'density'
+-    prop_values = 8000.0
+-  []
+-  [elasticity]
+-    type = ComputeIsotropicElasticityTensor
+-    youngs_modulus = 1e9
+-    poissons_ratio = 0.0
+-  []
+-  [expansion1]
+-    type = ComputeThermalExpansionEigenstrain
+-    temperature = T
+-    thermal_expansion_coeff = 1e-7
+-    stress_free_temperature = 0
+-    eigenstrain_name = thermal_expansion
+-  []
+-  [stress]
+-    type = ComputeFiniteStrainElasticStress
+-  []
+-  [volumetric_heat] # need to be exactly this name!
+-    type = ADMovingEllipsoidalHeatSource
+-    path = 'path'
+-    power = 1
+-    efficiency = 1
+-    scale = 1
+-    a = 0.035
+-    b = 0.01
+-    outputs = exodus
+-  []
+-[]
+-
+-[Kernels]
+-  [heat_conduction]
+-    type = HeatConduction
+-    variable = T
+-  []
+-  [time_derivative]
+-    type = HeatConductionTimeDerivative
+-    variable = T
+-  []
+-  [hsource]
+-    type = ADMatHeatSource
+-    material_property = 'volumetric_heat'
+-    variable = T
+-  []
+-[]
+-
+-[BCs]
+-  [left]
+-    type = DirichletBC
+-    variable = T
+-    boundary = left
+-    value = 0
+-  []
+-
+-  [right]
+-    type = DirichletBC
+-    variable = T
+-    boundary = right
+-    value = 0
+-  []
+-
+-  [top]
+-    type = DirichletBC
+-    variable = T
+-    boundary = top
+-    value = 0
+-  []
+-
+-  [bottom]
+-    type = DirichletBC
+-    variable = T
+-    boundary = bottom
+-    value = 0
+-  []
+-
+-  [anchor_x]
+-    type = DirichletBC
+-    variable = disp_x
+-    boundary = 'left right top bottom'
+-    #boundary = 'left'
+-    value = 0.0
+-  []
+-  [anchor_y]
+-    type = DirichletBC
+-    variable = disp_y
+-    boundary = 'left right top bottom'
+-    #boundary =  'bottom'
+-    value = 0.0
+-  []
+-[]
+-
+-[Executioner]
+-  type = Transient
+-  solve_type = NEWTON
+-  petsc_options_iname = '-pc_type'
+-  petsc_options_value = 'lu'
+-  nl_max_its = 100
+-  nl_rel_tol = 1e-6
+-  nl_abs_tol = 1e-8
+-  dt = 1
+-  end_time = 1000
+-[]
+-
+-[Outputs]
+-  exodus = true
+-[]
+diff --git a/modules/solid_mechanics/include/actions/DomainIntegralAction.h b/modules/solid_mechanics/include/actions/DomainIntegralAction.h
+index 86e8bc554b..2ab549e6a7 100644
+--- a/modules/solid_mechanics/include/actions/DomainIntegralAction.h
++++ b/modules/solid_mechanics/include/actions/DomainIntegralAction.h
+@@ -16,6 +16,8 @@
+ 
+ #include "libmesh/vector_value.h"
+ 
++#include "BlockUtils.h"
++
+ /**
+  * Action to set up all objects used in computation of fracture domain integrals
+  */
+diff --git a/modules/solid_mechanics/include/actions/GlobalStrainAction.h b/modules/solid_mechanics/include/actions/GlobalStrainAction.h
+index ce4ca38b98..e6fda9ff78 100644
+--- a/modules/solid_mechanics/include/actions/GlobalStrainAction.h
++++ b/modules/solid_mechanics/include/actions/GlobalStrainAction.h
+@@ -10,6 +10,7 @@
+ #pragma once
+ 
+ #include "Action.h"
++#include "BlockUtils.h"
+ 
+ class GlobalStrainAction : public Action
+ {
+diff --git a/modules/solid_mechanics/include/actions/LineElementAction.h b/modules/solid_mechanics/include/actions/LineElementAction.h
+index 3885757826..5023f19bc2 100644
+--- a/modules/solid_mechanics/include/actions/LineElementAction.h
++++ b/modules/solid_mechanics/include/actions/LineElementAction.h
+@@ -11,6 +11,8 @@
+ 
+ #include "Action.h"
+ 
++#include "BlockUtils.h"
++
+ class LineElementAction : public Action
+ {
+ public:
+diff --git a/modules/solid_mechanics/include/neml2/actions/NEML2Action.h b/modules/solid_mechanics/include/neml2/actions/NEML2Action.h
+index 1411994ada..f3bee79b8b 100644
+--- a/modules/solid_mechanics/include/neml2/actions/NEML2Action.h
++++ b/modules/solid_mechanics/include/neml2/actions/NEML2Action.h
+@@ -16,6 +16,8 @@
+ 
+ #include "Action.h"
+ 
++#include "BlockUtils.h"
++
+ class NEML2ActionCommon;
+ 
+ /**
+diff --git a/modules/solid_mechanics/include/physics/QuasiStaticSolidMechanicsPhysics.h b/modules/solid_mechanics/include/physics/QuasiStaticSolidMechanicsPhysics.h
+index 47ea01f9ea..4a7de25950 100644
+--- a/modules/solid_mechanics/include/physics/QuasiStaticSolidMechanicsPhysics.h
++++ b/modules/solid_mechanics/include/physics/QuasiStaticSolidMechanicsPhysics.h
+@@ -12,6 +12,7 @@
+ #include "QuasiStaticSolidMechanicsPhysicsBase.h"
+ #include "libmesh/point.h"
+ 
++#include "BlockUtils.h"
+ class QuasiStaticSolidMechanicsPhysics : public QuasiStaticSolidMechanicsPhysicsBase
+ {
+ public:
+diff --git a/modules/solid_mechanics/include/vectorpostprocessors/AverageSectionValueSampler.h b/modules/solid_mechanics/include/vectorpostprocessors/AverageSectionValueSampler.h
+index c74c46804f..26d7bbb5cb 100644
+--- a/modules/solid_mechanics/include/vectorpostprocessors/AverageSectionValueSampler.h
++++ b/modules/solid_mechanics/include/vectorpostprocessors/AverageSectionValueSampler.h
+@@ -12,6 +12,8 @@
+ #include "GeneralVectorPostprocessor.h"
+ #include "libmesh/communicator.h"
+ 
++#include "BlockUtils.h"
++
+ class AverageSectionValueSampler : public GeneralVectorPostprocessor
+ {
+ public:
+diff --git a/modules/solid_mechanics/src/actions/CommonSolidMechanicsAction.C b/modules/solid_mechanics/src/actions/CommonSolidMechanicsAction.C
+index feb0b14f78..d28fd474a1 100644
+--- a/modules/solid_mechanics/src/actions/CommonSolidMechanicsAction.C
++++ b/modules/solid_mechanics/src/actions/CommonSolidMechanicsAction.C
+@@ -68,12 +68,21 @@ CommonSolidMechanicsAction::act()
+         }
+ 
+         // with block-restriction?
+-        if (add_variables_block_restricted && action->isParamValid("block") &&
+-            action->getParam<std::vector<SubdomainName>>("block").size())
++        if (add_variables_block_restricted)
+         {
+-          auto action_blocks = action->getParam<std::vector<SubdomainName>>("block");
+-          mooseAssert(action_blocks.size(), "Block restriction must not be empty");
+-          add_variables_blocks.insert(action_blocks.cbegin(), action_blocks.cend());
++          if (action->isParamValid("block") &&
++              action->getParam<std::vector<SubdomainName>>("block").size())
++          {
++            auto action_blocks = action->getParam<std::vector<SubdomainName>>("block");
++            mooseAssert(action_blocks.size(), "Block restriction must not be empty");
++            add_variables_blocks.insert(action_blocks.cbegin(), action_blocks.cend());
++          }
++          else
++          {
++            // if the default block is set, we can use it
++            add_variables_blocks.insert(_problem->getDefaultBlocks().cbegin(),
++                                        _problem->getDefaultBlocks().cend());
++          }
+         }
+         else
+           add_variables_block_restricted = false;
+diff --git a/modules/solid_mechanics/src/actions/DomainIntegralAction.C b/modules/solid_mechanics/src/actions/DomainIntegralAction.C
+index 6e7ed494ce..2b750eba7c 100644
+--- a/modules/solid_mechanics/src/actions/DomainIntegralAction.C
++++ b/modules/solid_mechanics/src/actions/DomainIntegralAction.C
+@@ -258,7 +258,7 @@ DomainIntegralAction::DomainIntegralAction(const InputParameters & params)
+   bool poissons_ratio_set(false);
+ 
+   // All domain integral types block restrict the objects created by this action.
+-  _blocks = getParam<std::vector<SubdomainName>>("block");
++  _blocks = BlockUtils::getBlocksWithDefault(_pars, *_problem);
+ 
+   MultiMooseEnum integral_moose_enums = getParam<MultiMooseEnum>("integrals");
+   for (unsigned int i = 0; i < integral_moose_enums.size(); ++i)
+diff --git a/modules/solid_mechanics/src/actions/GlobalStrainAction.C b/modules/solid_mechanics/src/actions/GlobalStrainAction.C
+index d081ec23da..9edea3a757 100644
+--- a/modules/solid_mechanics/src/actions/GlobalStrainAction.C
++++ b/modules/solid_mechanics/src/actions/GlobalStrainAction.C
+@@ -55,7 +55,7 @@ GlobalStrainAction::GlobalStrainAction(const InputParameters & params)
+     _disp(getParam<std::vector<VariableName>>("displacements")),
+     _aux_disp(getParam<std::vector<AuxVariableName>>("auxiliary_displacements")),
+     _global_disp(getParam<std::vector<AuxVariableName>>("global_displacements")),
+-    _block_names(getParam<std::vector<SubdomainName>>("block")),
++    _block_names(BlockUtils::getBlocksWithDefault(_pars, *_problem)),
+     _block_ids()
+ {
+   if (_aux_disp.size() != _disp.size())
+@@ -69,7 +69,10 @@ GlobalStrainAction::act()
+ {
+   // get subdomain IDs
+   for (auto & name : _block_names)
++  {
++    std::cout << "Block name: " << name << std::endl;
+     _block_ids.insert(_problem->mesh().getSubdomainID(name));
++  }
+ 
+   // user object name
+   const std::string uo_name = _name + "_GlobalStrainUserObject";
+diff --git a/modules/solid_mechanics/src/actions/LineElementAction.C b/modules/solid_mechanics/src/actions/LineElementAction.C
+index 22025fe329..ebaaecbabe 100644
+--- a/modules/solid_mechanics/src/actions/LineElementAction.C
++++ b/modules/solid_mechanics/src/actions/LineElementAction.C
+@@ -210,7 +210,7 @@ LineElementAction::LineElementAction(const InputParameters & params)
+     _accelerations(0),
+     _rot_velocities(0),
+     _rot_accelerations(0),
+-    _subdomain_names(getParam<std::vector<SubdomainName>>("block")),
++    _subdomain_names(BlockUtils::getBlocksWithDefault(_pars, *_problem)),
+     _subdomain_ids(),
+     _add_dynamic_variables(false)
+ {
+diff --git a/modules/solid_mechanics/src/neml2/actions/NEML2Action.C b/modules/solid_mechanics/src/neml2/actions/NEML2Action.C
+index c4777b92e2..938133fee9 100644
+--- a/modules/solid_mechanics/src/neml2/actions/NEML2Action.C
++++ b/modules/solid_mechanics/src/neml2/actions/NEML2Action.C
+@@ -83,7 +83,7 @@ NEML2Action::NEML2Action(const InputParameters & params)
+                             ? getParam<std::string>("batch_index_generator_name")
+                             : "neml2_index_" + getParam<std::string>("model") + "_" + name()),
+     _esm_name(isParamValid("esm_name") ? getParam<std::string>("esm_name") : "none"),
+-    _block(getParam<std::vector<SubdomainName>>("block")),
++    _block(BlockUtils::getBlocksWithDefault(_pars, *_problem)),
+     _copy_value2old(NEML2Utils::parseCopyValueToOld(getParam<std::string>("copy_value2old")))
+ {
+   NEML2Utils::assertNEML2Enabled();
+diff --git a/modules/solid_mechanics/src/physics/QuasiStaticSolidMechanicsPhysics.C b/modules/solid_mechanics/src/physics/QuasiStaticSolidMechanicsPhysics.C
+index e93a359e61..70dde8522e 100644
+--- a/modules/solid_mechanics/src/physics/QuasiStaticSolidMechanicsPhysics.C
++++ b/modules/solid_mechanics/src/physics/QuasiStaticSolidMechanicsPhysics.C
+@@ -133,7 +133,7 @@ QuasiStaticSolidMechanicsPhysics::QuasiStaticSolidMechanicsPhysics(const InputPa
+     _coupled_displacements(_ndisp),
+     _save_in(getParam<std::vector<AuxVariableName>>("save_in")),
+     _diag_save_in(getParam<std::vector<AuxVariableName>>("diag_save_in")),
+-    _subdomain_names(getParam<std::vector<SubdomainName>>("block")),
++    _subdomain_names(BlockUtils::getBlocksWithDefault(_pars, *_problem)),
+     _subdomain_ids(),
+     _strain(getParam<MooseEnum>("strain").getEnum<Strain>()),
+     _planar_formulation(getParam<MooseEnum>("planar_formulation").getEnum<PlanarFormulation>()),
+diff --git a/modules/solid_mechanics/src/vectorpostprocessors/AverageSectionValueSampler.C b/modules/solid_mechanics/src/vectorpostprocessors/AverageSectionValueSampler.C
+index 08a5b6afa2..41e5273d5f 100644
+--- a/modules/solid_mechanics/src/vectorpostprocessors/AverageSectionValueSampler.C
++++ b/modules/solid_mechanics/src/vectorpostprocessors/AverageSectionValueSampler.C
+@@ -208,7 +208,7 @@ AverageSectionValueSampler::finalize()
+ void
+ AverageSectionValueSampler::execute()
+ {
+-  _block_ids = _mesh->getSubdomainIDs(getParam<std::vector<SubdomainName>>("block"));
++  _block_ids = _mesh->getSubdomainIDs(BlockUtils::getBlocksWithDefault(_pars, _vpp_fe_problem));
+ 
+   auto * active_nodes = _mesh->getActiveSemiLocalNodeRange();
+ 

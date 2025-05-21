@@ -12,6 +12,7 @@
 #include "NEML2ModelInterface.h"
 #include "GeneralUserObject.h"
 #include "NEML2BatchIndexGenerator.h"
+#include "ElementSubdomainModifierBase.h"
 
 class MOOSEToNEML2;
 
@@ -35,6 +36,7 @@ public:
   void execute() override {}
   void finalize() override {}
 #else
+  void meshChanged() override;
   void initialize() override;
   void execute() override;
   void finalize() override {}
@@ -43,6 +45,9 @@ public:
 
   /// Get the batch index for the given element ID
   std::size_t getBatchIndex(dof_id_type elem_id) const;
+
+  /// Get the number of Gauss points in one element
+  int getGPs() const;
 
   /// Get a reference(!) to the requested output view
   const neml2::Tensor & getOutput(const neml2::VariableName & output_name) const;
@@ -83,6 +88,13 @@ protected:
   /// The NEML2BatchIndexGenerator used to generate the element-to-batch-index map
   const NEML2BatchIndexGenerator & _batch_index_generator;
 
+  bool _esm_required;
+
+  NEML2Utils::CopyValueToOld _apply_new2old;
+
+  /// The ElementSubdomainModifierBase user object
+  const ElementSubdomainModifierBase * _esm;
+
   /// flag that indicates if output data has been fully computed
   bool _output_ready;
 
@@ -119,5 +131,16 @@ protected:
   /// set of parameter derivatives that were retrieved (by other objects)
   mutable std::map<neml2::VariableName, std::map<std::string, neml2::Tensor>>
       _retrieved_parameter_derivatives;
+
+private:
+  std::map<dof_id_type, SubdomainID> _elem_to_subdomain_map;
+  bool checkElemChanged(const Elem * elem);
+  void applyNewToOld(const neml2::VariableName & current_name);
+  const int findTopNeighbor(const Elem * elem);
+  void applyTopNeighborToOld(const neml2::VariableName & current_name);
+  void printAndCompareTensors(const torch::Tensor & cur_var,
+                              const torch::Tensor & old_var,
+                              const torch::Tensor & idxt);
+
 #endif
 };

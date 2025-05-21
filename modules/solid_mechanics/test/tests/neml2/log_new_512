@@ -1,0 +1,205 @@
+No protocol specified
+
+
+*** Warning, This code is deprecated and will be removed in future versions:
+The --no-color flag is deprecated. Use '--color off' instead.
+
+
+
+*** Info ***
+/home/chenghau.yang/packages/moose-chenghau/modules/solid_mechanics/test/tests/neml2/esm-new.i:133.7:
+The following information occurred in the Action 'all' of type QuasiStaticSolidMechanicsPhysics.
+
+SolidMechanics Action: selecting 'total small strain' formulation. Use `incremental = true` to select 'incremental small strain' instead.
+
+
+*** Warning, This code is deprecated and will be removed in future versions:
+/home/chenghau.yang/packages/moose-chenghau/modules/solid_mechanics/test/tests/neml2/esm-new.i:280: (Outputs/interval):
+'interval' has been deprecated and will be removed on 02/01/2025. Please use 'time_step_interval' instead.
+
+
+NEML2 MATERIAL MODEL SUMMARY BEGIN ********************************************
+NEML2 input file location: /home/chenghau.yang/packages/moose-chenghau/modules/solid_mechanics/test/tests/neml2/models/viscoplasticity_isoharden.i
+NEML2 action path:         NEML2/A
+Material model structure ------------------------------------------------------
+Name:       model
+Dtype:      double
+Device:     cpu
+Input:      forces/E [SR2]
+            forces/t [Scalar]
+            old_forces/E [SR2]
+            old_forces/t [Scalar]
+            old_state/S [SR2]
+            old_state/internal/ep [Scalar]
+            state/S [SR2]
+            state/internal/ep [Scalar]
+Output:     state/S [SR2]
+            state/internal/ep [Scalar]
+Parameters: elasticity_E [Scalar]
+            elasticity_nu [Scalar]
+            flow_rate_eta [Scalar]
+            flow_rate_n [Scalar]
+            isoharden_K [Scalar]
+            yield_sy [Scalar]
+Buffers:    Eerate_c_0 [Scalar]
+            Eerate_c_1 [Scalar]
+Transfer between MOOSE and NEML2 ----------------------------------------------
+                   neml2_strain --> forces/E
+             (old) neml2_strain --> old_forces/E
+                           time --> forces/t
+                     (old) time --> old_forces/t
+             (old) neml2_stress --> old_state/S
+(old) equivalent_plastic_strain --> old_state/internal/ep
+                   neml2_stress <-- state/S
+      equivalent_plastic_strain <-- state/internal/ep
+                 neml2_jacobian <-- d(state/S)/d(forces/E)
+NEML2 MATERIAL MODEL SUMMARY END **********************************************
+
+Finished Setting Up                                                                      [  6.00 s] [  501 MB]
+Framework Information:
+MOOSE Version:           git commit 988c9bb4df on 2025-04-09
+LibMesh Version:         c4791b4af32e3864d5160663d2c9e61989fe8d69
+PETSc Version:           3.22.1
+SLEPc Version:           3.22.1
+Libtorch Version:        2.2.0
+Current Time:            Wed Apr  9 14:57:20 2025
+Executable Timestamp:    Wed Apr  9 14:55:45 2025
+
+Input File(s):
+  /home/chenghau.yang/packages/moose-chenghau/modules/solid_mechanics/test/tests/neml2/esm-new.i
+
+Command Line Argument(s):
+  --no-color
+
+Command Line Input Argument(s):
+  Outputs/file_base=new_output_Ny512/results
+  nx=768
+  ny=512
+  number_elements=64
+  beginning_activation_of_row=64
+
+Checkpoint:
+  Wall Time Interval:      Every 3600 s
+  User Checkpoint:         Disabled
+  # Checkpoints Kept:      2
+  Execute On:              TIMESTEP_END 
+
+Parallelism:
+  Num Processors:          12
+  Num Threads:             1
+
+Mesh: 
+  Parallel Type:           replicated
+  Mesh Dimension:          2
+  Spatial Dimension:       2
+  Nodes:                   
+    Total:                 394497
+    Local:                 33198
+    Min/Max/Avg:           32561/33198/32874
+  Elems:                   
+    Total:                 393216
+    Local:                 32774
+    Min/Max/Avg:           32738/32793/32768
+  Num Subdomains:          4
+  Num Partitions:          12
+  Partitioner:             metis
+
+Nonlinear System:
+  Num DOFs:                691458
+  Num Local DOFs:          50832
+  Variables:               { "disp_x" "disp_y" } 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Auxiliary System:
+  Num DOFs:                737280
+  Num Local DOFs:          57780
+  Variables:               "ep" "pid" 
+  Finite Element Types:    "MONOMIAL" "MONOMIAL" 
+  Approximation Orders:    "CONSTANT" "CONSTANT" 
+
+Execution Information:
+  Executioner:             Transient
+  TimeStepper:             ConstantDT
+  TimeIntegrator(s):       ImplicitEuler
+  Solver Mode:             NEWTON
+  PETSc Preconditioner:    lu 
+  MOOSE Preconditioner:    SMP (auto)
+
+Currently Executing
+  Performing Initial Setup
+    Setting Up Materials
+      Finished Computing Initial Material Values                                         [  0.18 s] [  625 MB]
+    Finished Setting Up Materials                                                        [  0.18 s] [  625 MB]
+    Finished Computing User Objects                                                      [  3.99 s] [  814 MB]
+  Finished Performing Initial Setup                                                      [  5.32 s] [  814 MB]
+
+Time Step 0, time = 0
+
+Postprocessor Values:
++----------------+----------------+----------------+----------------+----------------+
+| time           | Ux             | Uy             | ep_post        | time           |
++----------------+----------------+----------------+----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |   0.000000e+00 |   0.000000e+00 |   0.000000e+00 |
++----------------+----------------+----------------+----------------+----------------+
+
+
+Time Step 1, time = 0.01, dt = 0.01
+
+Performing automatic scaling calculation
+
+
+    Computing Automatic Scaling
+      Computing Jacobian
+        Finished Computing User Objects                                                  [  1.52 s] [ 1850 MB]
+      Finished Computing Jacobian                                                        [  4.91 s] [ 1850 MB]
+    Finished Computing Automatic Scaling                                                 [  4.92 s] [ 1850 MB]
+    Finished Computing User Objects                                                      [  2.54 s] [ 2625 MB]
+ Solve Converged!
+  Finished Solving                                                                       [ 22.70 s] [ 2518 MB]
+
+Time Step 2, time = 0.02, dt = 0.01
+ Solve Converged!
+  Finished Solving                                                                       [ 17.19 s] [ 2518 MB]
+  Finished Computing User Objects                                                        [  6.13 s] [ 2518 MB]
+
+Time Step 3, time = 0.03, dt = 0.01
+ Solve Converged!
+  Finished Solving                                                                       [ 23.87 s] [ 2581 MB]
+
+Time Step 4, time = 0.04, dt = 0.01
+ Solve Converged!
+  Finished Solving                                                                       [ 25.70 s] [ 2647 MB]
+  Finished Computing User Objects                                                        [  6.14 s] [ 2647 MB]
+
+Time Step 5, time = 0.05, dt = 0.01
+ Solve Converged!
+  Finished Solving                                                                       [ 23.61 s] [ 2647 MB]
+  Finished Computing User Objects                                                        [  6.16 s] [ 2647 MB]
+
+Time Step 6, time = 0.06, dt = 0.01
+ Solve Converged!
+  Finished Solving                                                                       [ 23.93 s] [ 2647 MB]
+
+Time Step 7, time = 0.07, dt = 0.01
+ Solve Converged!
+  Finished Solving                                                                       [ 25.77 s] [ 2680 MB]
+  Finished Computing User Objects                                                        [  6.19 s] [ 2680 MB]
+
+Time Step 8, time = 0.08, dt = 0.01
+ Solve Converged!
+  Finished Solving                                                                       [ 33.32 s] [ 2680 MB]
+  Finished Computing User Objects                                                        [  6.21 s] [ 2680 MB]
+
+Time Step 9, time = 0.09, dt = 0.01
+ Solve Converged!
+  Finished Solving                                                                       [ 32.59 s] [ 2680 MB]
+
+Time Step 10, time = 0.1, dt = 0.01
+ Solve Converged!
+  Finished Solving                                                                       [ 27.41 s] [ 2776 MB]
+  Finished Computing User Objects                                                        [  6.25 s] [ 2776 MB]
+
+Time Step 11, time = 0.11, dt = 0.01
+ Solve Converged!
+  Finished Solving                                                                       [ 36.31 s] [ 2680 MB]

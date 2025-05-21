@@ -27,3 +27,31 @@ Contributing
 ============
 
 For information on how to contribute code changes to MOOSE please [see this article](https://mooseframework.inl.gov/framework/contributing.html).
+
+
+Compilation NEML2
+============
+```bash
+git submodule update --checkout --init --recursive modules/solid_mechanics/contrib/neml2
+cd /Users/chenghau.yang/Documents/Package/moose
+Open setup_libtorch.sh in a text editor:
+Change VERSION=2.1.0 to VERSION=2.2.0
+./scripts/setup_libtorch.sh
+./configure --with-libtorch
+
+or
+
+rm -rf framework/contrib/libtorch # need to do this!
+./configure --with-libtorch=/Users/cheng-hauyang/miniforge/envs/moose/lib/python3.11/site-packages/torch
+
+cd /Users/chenghau.yang/Documents/Package/moose/modules/solid_mechanics
+
+make clobberall
+make clean
+make -j10
+
+If HPC, such as mom show error regarding libmesh, you may need to do
+* git submodule update --init --recursive
+*./scripts/update_and_rebuild_libmesh.sh
+```
+

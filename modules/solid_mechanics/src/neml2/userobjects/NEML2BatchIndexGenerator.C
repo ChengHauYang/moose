@@ -105,3 +105,9 @@ NEML2BatchIndexGenerator::getBatchIndex(dof_id_type elem_id) const
   _elem_to_batch_index_cache = *it;
   return it->second;
 }
+
+int
+NEML2BatchIndexGenerator::getGPs() const
+{
+  return _qrule->n_points();
+}

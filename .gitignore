@@ -345,3 +345,6 @@ share/
 
 # clangd cache data
 .cache
+
+.idea
+modules/heat_transfer/test/tests/esm_path_heat/log

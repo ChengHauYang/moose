@@ -1,0 +1,266 @@
+diff --git a/modules/combined/test/tests/elastic_thermal_patch/esm-bfm.i b/modules/combined/test/tests/elastic_thermal_patch/esm-bfm.i
+index 85a1c4de48..e3d4101e61 100644
+--- a/modules/combined/test/tests/elastic_thermal_patch/esm-bfm.i
++++ b/modules/combined/test/tests/elastic_thermal_patch/esm-bfm.i
+@@ -46,17 +46,27 @@
+     radius = 0.03
+     target_subdomain = '0'
+     block = '0 1'
+-    execute_on = 'TIMESTEP_BEGIN'
++    execute_on = 'TIMESTEP_END'
++
++    # --- new for setting IC --- #
++    inactive_subdomain_ID = 1
++    ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
+   []
+ []
+ 
+-[Physics/SolidMechanics/QuasiStatic]
+-  [all]
+-    add_variables = true
+-    strain = FINITE
+-    automatic_eigenstrain_names = true
+-    generate_output = 'vonmises_stress'
+-    block = '0'
++[Physics]
++
++  [SolidMechanics]
++
++    [QuasiStatic]
++      [all]
++        add_variables = true
++        strain = FINITE
++        automatic_eigenstrain_names = true
++        generate_output = 'vonmises_stress'
++        block = '0'
++      []
++    []
+   []
+ []
+ 
+@@ -98,7 +108,6 @@
+   []
+ []
+ 
+-
+ [Kernels]
+   [heat_conduction]
+     type = HeatConduction
+diff --git a/modules/heat_transfer/test/tests/esm_path_heat/esm-csv-circle-new.i b/modules/heat_transfer/test/tests/esm_path_heat/esm-csv-circle-new.i
+deleted file mode 100644
+index cc47b8bbf2..0000000000
+--- a/modules/heat_transfer/test/tests/esm_path_heat/esm-csv-circle-new.i
++++ /dev/null
+@@ -1,141 +0,0 @@
+-
+-[Problem]
+-  default_block = '0'
+-[]
+-
+-[Mesh]
+-  [gmg]
+-    type = GeneratedMeshGenerator
+-    dim = 2
+-    # xmax = 2
+-    # ymax = 2
+-    nx = 200
+-    ny = 200
+-    subdomain_ids = '1'
+-  []
+-
+-  [subdomain1]
+-    type = SubdomainInterceptedGenerator
+-    input = 'gmg'
+-    subdomain_id_inside = 0
+-    subdomain_id_outside = 1
+-    lambda = 1
+-    outer_boundary = false
+-    function = 'sqrt((x-0.5)^2 + (y-0.5)^2) - 0.38'
+-  []
+-
+-  # [subdomain2]
+-  #   type = SubdomainInterceptedGenerator
+-  #   input = 'subdomain1'
+-  #   subdomain_id_inside = 0
+-  #   subdomain_id_outside = 1
+-  #   lambda = 1
+-  #   outer_boundary = true
+-  #   function = 'sqrt((x-0.5)^2 + (y-0.5)^2) - 0.2'
+-  # []
+-
+-  use_displaced_mesh = false
+-[]
+-
+-[Variables]
+-  [cond]
+-    order = FIRST
+-  []
+-[]
+-
+-[SpatioTemporalPaths]
+-  [path]
+-    type = CSVPiecewiseLinearSpatioTemporalPath
+-    # file = 'concentric_circles.csv'
+-    file = 'concentric_circles_reverse.csv'
+-    verbose = true
+-  []
+-[]
+-
+-[MeshModifiers]
+-  [esm]
+-    type = SpatioTemporalPathElementSubdomainModifier
+-    path = 'path'
+-    radius = 0.03
+-    target_subdomain = '0'
+-    block = '0 1'
+-    execute_on = 'TIMESTEP_BEGIN'
+-  []
+-[]
+-
+-[Materials]
+-  [volumetric_heat] # need to be exactly this name!
+-    type = ADMovingEllipsoidalHeatSource
+-    path = 'path'
+-    power = 1
+-    efficiency = 1
+-    scale = 1
+-    a = 0.035
+-    b = 0.01
+-    outputs = exodus
+-  []
+-  [density]
+-    type = ADGenericConstantMaterial
+-    prop_names = 'density  thermal_conductivity'
+-    prop_values = '10431.0 3.0                 '
+-  []
+-[]
+-
+-[Kernels]
+-  [heat]
+-    type = ADHeatConduction
+-    variable = cond
+-    thermal_conductivity = thermal_conductivity
+-  []
+-  [hsource]
+-    type = ADMatHeatSource
+-    material_property = 'volumetric_heat'
+-    variable = cond
+-  []
+-[]
+-
+-[BCs]
+-  [left]
+-    type = DirichletBC
+-    variable = cond
+-    boundary = left
+-    value = 0
+-  []
+-
+-  [right]
+-    type = DirichletBC
+-    variable = cond
+-    boundary = right
+-    value = 0
+-  []
+-
+-  [top]
+-    type = DirichletBC
+-    variable = cond
+-    boundary = top
+-    value = 0
+-  []
+-
+-  [bottom]
+-    type = DirichletBC
+-    variable = cond
+-    boundary = bottom
+-    value = 0
+-  []
+-[]
+-
+-[Executioner]
+-  type = Transient
+-  solve_type = NEWTON
+-  petsc_options_iname = '-pc_type'
+-  petsc_options_value = 'lu'
+-  nl_max_its = 100
+-  nl_rel_tol = 1e-6
+-  nl_abs_tol = 1e-10
+-  dt = 1
+-  end_time = 1000
+-[]
+-
+-[Outputs]
+-  exodus = true
+-[]
+diff --git a/modules/heat_transfer/test/tests/esm_path_heat/esm-csv-circle.i b/modules/heat_transfer/test/tests/esm_path_heat/esm-csv-circle.i
+deleted file mode 100644
+index 836af01795..0000000000
+--- a/modules/heat_transfer/test/tests/esm_path_heat/esm-csv-circle.i
++++ /dev/null
+@@ -1,65 +0,0 @@
+-[Mesh]
+-  [gmg]
+-    type = GeneratedMeshGenerator
+-    dim = 2
+-    nx = 200
+-    ny = 200
+-  []
+-  [solid]
+-    type = SubdomainBoundingBoxGenerator
+-    input = gmg
+-    block_id = 0
+-    block_name = solid
+-    bottom_left = '0 0 0'
+-    top_right = '1 1 0'
+-  []
+-  [liquid]
+-    type = SubdomainBoundingBoxGenerator
+-    input = solid
+-    block_id = 1
+-    block_name = liquid
+-    bottom_left = '0.7 0.5 0'
+-    top_right = '0.71 0.51 0'
+-  []
+-  use_displaced_mesh = false
+-[]
+-
+-[Problem]
+-  solve = false
+-[]
+-
+-[AuxVariables]
+-  [u]
+-  []
+-[]
+-
+-[SpatioTemporalPaths]
+-  [path]
+-    type = CSVPiecewiseLinearSpatioTemporalPath
+-    file = 'concentric_circles.csv'
+-    #update_interval = 1
+-    #file = 'outward_spiral.csv'
+-    verbose = true
+-  []
+-[]
+-
+-[UserObjects]
+-  [esm]
+-    type = SpatioTemporalPathElementSubdomainModifier
+-    path = 'path'
+-    radius = 0.03
+-    target_subdomain = 'liquid'
+-    #radius_based = true
+-    execute_on = 'INITIAL TIMESTEP_BEGIN'
+-  []
+-[]
+-
+-[Executioner]
+-  type = Transient
+-  dt = 1
+-  end_time = 1000
+-[]
+-
+-[Outputs]
+-  exodus = true
+-[]

@@ -94,7 +94,13 @@
   solve_type = NEWTON
 
   petsc_options_iname = '-ksp_type -pc_type -snes_type'
-  petsc_options_value = 'bcgs bjacobi test'
-
+  petsc_options_value = 'bcgs bjacobi newtonls'
+  dt = 0.1
   end_time = 1.0
 []
+
+[Outputs]
+  execute_on = 'timestep_end'
+  exodus = true
+[]
+

@@ -10,6 +10,7 @@
 #pragma once
 
 #include "Action.h"
+#include "BlockUtils.h"
 
 class GlobalStrainAction : public Action
 {

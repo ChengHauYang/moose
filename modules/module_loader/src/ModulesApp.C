@@ -614,7 +614,6 @@ ModulesApp::registerAll(Factory & f, ActionFactory & af, Syntax & s)
 #ifdef EXTERNAL_PETSC_SOLVER_ENABLED
   ExternalPetscSolverApp::registerAll(f, af, s);
 #endif
-
   libmesh_ignore(f, s, af);
 }
 
