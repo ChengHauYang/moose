@@ -175,7 +175,7 @@ neml2_input = viscoplasticity_isoharden
   [volumetric_heat] # need to be exactly this name!
     type = ADMovingEllipsoidalHeatSource
     path = 'path'
-    power = 50
+    power = 20
     efficiency = 1
     scale = 1
     a = 0.02
@@ -268,7 +268,7 @@ neml2_input = viscoplasticity_isoharden
 [Functions]
   [displacement_with_time]
     type = ParsedFunction
-    expression = '1e-8*t'
+    expression = '1e-9*t'
   []
 []
 
