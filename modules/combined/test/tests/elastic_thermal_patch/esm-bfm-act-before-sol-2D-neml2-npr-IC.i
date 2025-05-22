@@ -175,7 +175,7 @@ neml2_input = viscoplasticity_isoharden
   [volumetric_heat] # need to be exactly this name!
     type = ADMovingEllipsoidalHeatSource
     path = 'path'
-    power = 20
+    power = 200
     efficiency = 1
     scale = 1
     a = 0.02
@@ -239,7 +239,7 @@ neml2_input = viscoplasticity_isoharden
   [anchor_y]
     type = DirichletBC
     variable = disp_y
-    boundary = 'left top bottom'
+    boundary = 'right left top bottom'
     #boundary =  'bottom'
     value = 0.0
   []
@@ -268,7 +268,7 @@ neml2_input = viscoplasticity_isoharden
 [Functions]
   [displacement_with_time]
     type = ParsedFunction
-    expression = '1e-9*t'
+    expression = '5e-9*t'
   []
 []
 
@@ -279,8 +279,8 @@ neml2_input = viscoplasticity_isoharden
   petsc_options_iname = '-pc_type -pc_factor_mat_solver_type'
   petsc_options_value = 'lu mumps'
   nl_max_its = 100
-  nl_rel_tol = 1e-5
-  nl_abs_tol = 1e-6
+  nl_rel_tol = 1e-6
+  nl_abs_tol = 1e-7
   dt = 1
   end_time = 1000
   automatic_scaling = true

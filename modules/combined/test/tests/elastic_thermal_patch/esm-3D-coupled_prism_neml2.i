@@ -35,30 +35,63 @@ neml2_input = viscoplasticity_perfect
   []
 []
 
-[SpatioTemporalHeat]
-  path_file = 'InsideTriPt_filled_horizontal_lines.csv'
-  ## for path
-  verbose = true
-  ## for esm
-  # target_subdomain = 2
-  target_subdomain = 0
-  radius = 0.045
-  execute_on_esm = 'TIMESTEP_BEGIN'
-  # block = '1 2'
-  block = '0 1'
-  # within_elem_test = true
-  # execute_on_esm = 'TIMESTEP_END'
-  inactive_subdomain_ID = 1
-  ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
-  ## for heat source
-  power = 1
-  a = 0.2
-  b = 0.1
-  efficiency = 1
-  scale = 1
-  ## for kernel
-  heat_variable = T
+
+[SpatioTemporalPaths]
+  [path]
+    type = CSVPiecewiseLinearSpatioTemporalPath
+    file = 'InsideTriPt_filled_horizontal_lines.csv'
+    verbose = true
+  []
 []
+
+[UserObjects]
+  [extrapolation_patch_T]
+    type = NodalPatchRecoveryVariable
+    patch_polynomial_order = FIRST
+    use_specific_elements = true
+    var = 'T'
+    execute_on = 'TIMESTEP_BEGIN'
+  []
+  [extrapolation_patch_disp_x]
+    type = NodalPatchRecoveryVariable
+    patch_polynomial_order = FIRST
+    use_specific_elements = true
+    var = 'disp_x'
+    execute_on = 'TIMESTEP_BEGIN'
+  []
+  [extrapolation_patch_disp_y]
+    type = NodalPatchRecoveryVariable
+    patch_polynomial_order = FIRST
+    use_specific_elements = true
+    var = 'disp_y'
+    execute_on = 'TIMESTEP_BEGIN'
+  []
+  [extrapolation_patch_disp_z]
+    type = NodalPatchRecoveryVariable
+    patch_polynomial_order = FIRST
+    use_specific_elements = true
+    var = 'disp_z'
+    execute_on = 'TIMESTEP_BEGIN'
+  []
+[]
+
+[MeshModifiers]
+  [esm]
+    type = SpatioTemporalPathElementSubdomainModifier
+    path = 'path'
+    radius = 0.045
+    target_subdomain = '0'
+    block = '0 1'
+    execute_on = 'TIMESTEP_BEGIN'
+
+    # --- new for setting IC --- #
+    inactive_subdomain_ID = 1
+    ic_strategy = "IC_POLYNOMIAL"
+
+    nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y extrapolation_patch_disp_z'
+  []
+[]
+
 
 [Physics]
   [SolidMechanics]
@@ -127,6 +160,16 @@ neml2_input = viscoplasticity_perfect
     stress_free_temperature = 0
     eigenstrain_name = thermal_expansion
   []
+  [volumetric_heat] # need to be exactly this name!
+    type = ADMovingEllipsoidalHeatSource
+    path = 'path'
+    power = 1
+    efficiency = 1
+    scale = 1
+    a = 0.2
+    b = 0.1
+    outputs = exodus
+  []
 []
 
 [Kernels]
@@ -136,6 +179,11 @@ neml2_input = viscoplasticity_perfect
   []
   [time_derivative]
     type = HeatConductionTimeDerivative
+    variable = T
+  []
+  [hsource]
+    type = ADMatHeatSource
+    material_property = 'volumetric_heat'
     variable = T
   []
 []
@@ -174,13 +222,24 @@ neml2_input = viscoplasticity_perfect
 [Executioner]
   type = Transient
   solve_type = NEWTON
-  petsc_options_iname = '-pc_type'
-  petsc_options_value = 'lu'
+  petsc_options_iname = '-pc_type -pc_factor_mat_solver_type'
+  petsc_options_value = 'lu mumps'
   nl_max_its = 100
-  nl_rel_tol = 1e-5
+  nl_rel_tol = 1e-6
   nl_abs_tol = 1e-7
   dt = 1
-  end_time = 1600
+  end_time = 1000
+  automatic_scaling = true
+  residual_and_jacobian_together = true
+  line_search = none
+  abort_on_solve_fail = true
+[]
+
+[Postprocessors]
+  [time]
+   type = TimePostprocessor
+   execute_on = 'INITIAL TIMESTEP_BEGIN'
+  []
 []
 
 [Outputs]
