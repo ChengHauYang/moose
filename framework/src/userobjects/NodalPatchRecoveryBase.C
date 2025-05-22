@@ -62,7 +62,6 @@ NodalPatchRecoveryBase::nodalPatchRecovery(const Point & x,
     mooseError("There are not enough sample points to recover the nodal value, try reducing the "
                "polynomial order or using a higher-order quadrature scheme.");
 
-  _console << "nodalPatchRecovery." << std::endl;
   // Assemble the least squares problem over the patch
   RealEigenMatrix A = RealEigenMatrix::Zero(_q, _q);
   RealEigenVector b = RealEigenVector::Zero(_q);
@@ -124,7 +123,7 @@ NodalPatchRecoveryBase::execute()
 
     // print node position
     Point node_pos = *node_ptr;
-
+#ifndef NDEBUG
     std::ofstream fout1("assembly_nodes.txt", std::ios::app);
     if (fout1.is_open())
     {
@@ -135,11 +134,10 @@ NodalPatchRecoveryBase::execute()
     {
       std::cerr << "Error: Unable to open assembly_nodes.txt for writing!" << std::endl;
     }
+#endif
   }
   _Ae[elem_id] = Ae;
   _be[elem_id] = be;
-
-  _console << "[Rank " << processor_id() << "] assembled elem " << elem_id << std::endl;
 }
 
 void

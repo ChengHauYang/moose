@@ -118,7 +118,7 @@ SubdomainInterceptedGenerator::generate()
   // Take ownership of the input mesh (already cloned by getMesh()).
   std::unique_ptr<libMesh::MeshBase> mesh = std::move(_input);
 
-  for (const auto & elem : mesh->active_local_element_ptr_range())
+  for (const auto & elem : mesh->active_element_ptr_range() /*gen only run rank = 0*/)
   {
     // (a) Skip elements that have already been explicitly assigned by a
     //       previous geometry in a multi‑geometry workflow.

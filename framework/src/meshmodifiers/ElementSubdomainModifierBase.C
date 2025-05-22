@@ -685,7 +685,6 @@ ElementSubdomainModifierBase::nodeIsNewlyReinitialized(dof_id_type node_id) cons
   return true;
 }
 
-
 bool
 ElementSubdomainModifierBase::nodeIsNewlyActivated(dof_id_type node_id) const
 {
@@ -1020,7 +1019,6 @@ ElementSubdomainModifierBase::computeFirstLayerNeighborInfo(SystemBase & sys, bo
     // Only use first layer neighbors
     std::set<const Node *> selected_nodes = first_layer_nodes;
 
-
     NeighborInfo info;
     DofMap & dof_map = sys.dofMap();
 
@@ -1175,7 +1173,7 @@ ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes()
   {
     // print node position
     Point node_pos = *_mesh.nodePtr(new_id);
-
+#ifndef NDEBUG
     std::ofstream fout2("newly_activated_nodes.txt", std::ios::app);
     if (fout2.is_open())
     {
@@ -1186,6 +1184,7 @@ ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes()
     {
       std::cerr << "Error: Unable to open newly_activated_nodes.txt for writing!" << std::endl;
     }
+#endif
   }
 
   // 0.  Pre-checks and caching
@@ -1210,10 +1209,12 @@ ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes()
 
   // Pass 1: Traverse local active elements to find neighbors sharing nodes with reinit elements
   std::unordered_set<dof_id_type> patch_elem_set; // Prevent duplicates
+
+#ifndef NDEBUG
   std::ofstream fout("boundary_nodes.txt", std::ios::out | std::ios::trunc);
   if (!fout.is_open())
     mooseError("Unable to open boundary_nodes.txt for writing!");
-
+#endif
   for (const auto & elem : _mesh.getMesh().active_element_ptr_range())
   {
     const dof_id_type eid = elem->id();
@@ -1244,7 +1245,7 @@ ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes()
     {
       patch_elem_set.insert(eid);
       _neighbor_solved_elem_ids.push_back(eid);
-
+#ifndef NDEBUG
       // Write all node coordinates to debug file
       for (unsigned n = 0; n < elem->n_nodes(); ++n)
       {
@@ -1256,10 +1257,13 @@ ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes()
         fout << p(0) << ", " << p(1) << ", " << p(2) << '\n';
 #endif
       }
+#endif
     }
   }
 
+#ifndef NDEBUG
   fout.close();
+#endif
 
   std::vector<dof_id_type> local(_neighbor_solved_elem_ids.begin(),
                                  _neighbor_solved_elem_ids.end());
@@ -1428,7 +1432,6 @@ ElementSubdomainModifierBase::computeSetDifference()
     for (const auto & id : _local_own_gather_global_and_complete_activated_nodes_diff)
       _console << id << " ";
     _console << std::endl;
-
   }
 #endif
 }
