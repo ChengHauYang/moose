@@ -252,6 +252,7 @@ ElementSubdomainModifierBase::modify(
     computeSetDifference();
     findMissingNewlyActivatedNodes();
     gatherNeighborElementsForActivatedNodes();
+
     for (const auto & _npr : _npr_vec)
     {
       _npr->cacheAdditionalElements(_neighbor_solved_elem_ids);
