@@ -1,5 +1,6 @@
+neml2_input = viscoplasticity_perfect
+
 [Problem]
-  # default_block = '0 2'
   default_block = '0'
 []
 
@@ -63,15 +64,40 @@
   [SolidMechanics]
     [QuasiStatic]
       [all]
+        strain = SMALL
+        new_system = true
         add_variables = true
-        strain = FINITE
+        formulation = TOTAL
+        volumetric_locking_correction = true
         automatic_eigenstrain_names = true
-        generate_output = 'vonmises_stress'
-        # block = '0 2'
+        generate_output = 'vonmises_cauchy_stress'
       []
     []
   []
 []
+
+
+[NEML2]
+  input = 'models/${neml2_input}.i'
+  [all]
+    model = 'model'
+    verbose = true
+    device = 'cpu'
+
+    moose_input_types = 'MATERIAL     MATERIAL     POSTPROCESSOR POSTPROCESSOR MATERIAL'
+    moose_inputs = '     neml2_strain neml2_strain time          time          neml2_stress'
+    neml2_inputs = '     forces/E     old_forces/E forces/t      old_forces/t  old_state/S'
+
+    moose_output_types = 'MATERIAL'
+    moose_outputs = '     neml2_stress'
+    neml2_outputs = '     state/S'
+
+    moose_derivative_types = 'MATERIAL'
+    moose_derivatives = 'neml2_jacobian'
+    neml2_derivatives = 'state/S forces/E'
+  []
+[]
+
 
 [Materials]
   [thermal]
@@ -84,20 +110,22 @@
     prop_names = 'density'
     prop_values = 8000.0
   []
-  [elasticity]
-    type = ComputeIsotropicElasticityTensor
-    youngs_modulus = 1e9
-    poissons_ratio = 0.0
+  [convert_strain]
+    type = RankTwoTensorToSymmetricRankTwoTensor
+    from = 'mechanical_strain'
+    to = 'neml2_strain'
+  []
+  [stress]
+    type = ComputeLagrangianObjectiveCustomSymmetricStress
+    custom_small_stress = 'neml2_stress'
+    custom_small_jacobian = 'neml2_jacobian'
   []
   [expansion1]
     type = ComputeThermalExpansionEigenstrain
     temperature = T
-    thermal_expansion_coeff = 1e-7
+    thermal_expansion_coeff = 5e-7
     stress_free_temperature = 0
     eigenstrain_name = thermal_expansion
-  []
-  [stress]
-    type = ComputeFiniteStrainElasticStress
   []
 []
 
@@ -111,23 +139,6 @@
     variable = T
   []
 []
-
-# [AuxVariables]
-#   [vonmises_stress]
-#     order = CONSTANT
-#     family = MONOMIAL
-#   []
-# []
-
-# [AuxKernels]
-#   [vonmises_stress]
-#     type = RankTwoScalarAux
-#     variable = vonmises_stress
-#     rank_two_tensor = stress
-#     scalar_type = VonMisesStress
-#     execute_on = timestep_end
-#   []
-# []
 
 [BCs]
   [bottom]

@@ -130,6 +130,16 @@ SpatioTemporalPath::velocity(Real t) const
 }
 
 RealVectorValue
+SpatioTemporalPath::smoothVelocity(Real t) const
+{
+  auto dt = _smooth_window / (_smooth_points - 1);
+  RealVectorValue vel;
+  for (auto i : make_range(_smooth_points))
+    vel += velocity(t - _smooth_window / 2 + i * dt);
+  return vel / _smooth_points;
+}
+
+RealVectorValue
 SpatioTemporalPath::direction(Real t) const
 {
   auto dt = _rel_epsilon * std::abs(t);

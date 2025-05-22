@@ -1,5 +1,5 @@
 
-neml2_input = rate_independent_plasticity_isoharden
+neml2_input = viscoplasticity_isoharden
 
 [Problem]
   default_block = '0'
@@ -125,26 +125,24 @@ neml2_input = rate_independent_plasticity_isoharden
 
 [NEML2]
   input = 'models/${neml2_input}.i'
-  verbose = true
-  device = 'cpu'
-
-  moose_input_types = 'MATERIAL     POSTPROCESSOR POSTPROCESSOR MATERIAL              MATERIAL'
-  moose_inputs = '     neml2_strain time          time          plastic_strain        equivalent_plastic_strain'
-  neml2_inputs = '     forces/E     forces/t      old_forces/t  old_state/internal/Ep old_state/internal/ep'
-
-  moose_output_types = 'MATERIAL     MATERIAL          MATERIAL'
-  moose_outputs = '     neml2_stress plastic_strain    equivalent_plastic_strain'
-  neml2_outputs = '     state/S      state/internal/Ep state/internal/ep'
-
-  moose_derivative_types = 'MATERIAL'
-  moose_derivatives = 'neml2_jacobian'
-  neml2_derivatives = 'state/S forces/E'
-
-  [A]
+  [all]
     model = 'model'
+    verbose = true
+    device = 'cpu'
+
+    moose_input_types = 'MATERIAL     MATERIAL     POSTPROCESSOR POSTPROCESSOR MATERIAL     MATERIAL'
+    moose_inputs = '     neml2_strain neml2_strain time          time          neml2_stress equivalent_plastic_strain'
+    neml2_inputs = '     forces/E     old_forces/E forces/t      old_forces/t  old_state/S  old_state/internal/ep'
+
+    moose_output_types = 'MATERIAL     MATERIAL'
+    moose_outputs = '     neml2_stress equivalent_plastic_strain'
+    neml2_outputs = '     state/S      state/internal/ep'
+
+    moose_derivative_types = 'MATERIAL'
+    moose_derivatives = 'neml2_jacobian'
+    neml2_derivatives = 'state/S forces/E'
   []
 []
-
 
 [Materials]
   [thermal]
@@ -170,18 +168,18 @@ neml2_input = rate_independent_plasticity_isoharden
   [expansion1]
     type = ComputeThermalExpansionEigenstrain
     temperature = T
-    thermal_expansion_coeff = 1e-6
+    thermal_expansion_coeff = 5e-7
     stress_free_temperature = 0
     eigenstrain_name = thermal_expansion
   []
   [volumetric_heat] # need to be exactly this name!
     type = ADMovingEllipsoidalHeatSource
     path = 'path'
-    power = 1000
+    power = 50
     efficiency = 1
     scale = 1
-    a = 0.035
-    b = 0.01
+    a = 0.02
+    b = 0.005
     outputs = exodus
   []
 []
@@ -270,7 +268,7 @@ neml2_input = rate_independent_plasticity_isoharden
 [Functions]
   [displacement_with_time]
     type = ParsedFunction
-    expression = '0.0000001*t'
+    expression = '1e-8*t'
   []
 []
 
@@ -278,12 +276,12 @@ neml2_input = rate_independent_plasticity_isoharden
 [Executioner]
   type = Transient
   solve_type = NEWTON
-  petsc_options_iname = '-pc_type'
-  petsc_options_value = 'lu'
+  petsc_options_iname = '-pc_type -pc_factor_mat_solver_type'
+  petsc_options_value = 'lu mumps'
   nl_max_its = 100
-  nl_rel_tol = 1e-6
-  nl_abs_tol = 1e-8
-  dt = 0.2
+  nl_rel_tol = 1e-5
+  nl_abs_tol = 1e-6
+  dt = 1
   end_time = 1000
   automatic_scaling = true
   residual_and_jacobian_together = true
@@ -300,5 +298,5 @@ neml2_input = rate_independent_plasticity_isoharden
 
 [Outputs]
   exodus = true
-  interval = 5
+  interval = 1
 []

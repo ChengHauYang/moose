@@ -1,0 +1,699 @@
+test:ad_viscoplasticity_stress_update.lps_single: Working Directory: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/ad_viscoplasticity_stress_update
+test:ad_viscoplasticity_stress_update.lps_single: Running command: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/solid_mechanics-opt -i lps_single.i --error --error-override --color off --libtorch-device cpu
+test:ad_viscoplasticity_stress_update.lps_single: 
+test:ad_viscoplasticity_stress_update.lps_single: ################################################################################
+test:ad_viscoplasticity_stress_update.lps_single: Begin runner_run output
+test:ad_viscoplasticity_stress_update.lps_single: 
+test:ad_viscoplasticity_stress_update.lps_single: *** Info ***
+test:ad_viscoplasticity_stress_update.lps_single: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/ad_viscoplasticity_stress_update/lps_single.i:16.1:
+test:ad_viscoplasticity_stress_update.lps_single: The following information occurred in the Action 'All' of type QuasiStaticSolidMechanicsPhysics.
+test:ad_viscoplasticity_stress_update.lps_single: 
+test:ad_viscoplasticity_stress_update.lps_single: SolidMechanics Action: selecting 'incremental finite strain' formulation.
+test:ad_viscoplasticity_stress_update.lps_single: JIT object load failed.
+test:ad_viscoplasticity_stress_update.lps_single: 
+test:ad_viscoplasticity_stress_update.lps_single: 
+test:ad_viscoplasticity_stress_update.lps_single: *** ERROR ***
+test:ad_viscoplasticity_stress_update.lps_single: ADFParser::JITCompile() failed. Evaluation not possible.
+test:ad_viscoplasticity_stress_update.lps_single: 
+test:ad_viscoplasticity_stress_update.lps_single: Stack frames: 20
+test:ad_viscoplasticity_stress_update.lps_single: 0: 0   libmesh_opt.0.dylib                 0x0000000106754e9c libMesh::print_trace(std::__1::basic_ostream<char, std::__1::char_traits<char>>&) + 916
+test:ad_viscoplasticity_stress_update.lps_single: 1: 1   libmoose-opt.0.dylib                0x0000000104418c7c moose::internal::mooseErrorRaw(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>) + 668
+test:ad_viscoplasticity_stress_update.lps_single: 2: 2   libmoose-opt.0.dylib                0x000000010337bc54 void mooseError<char const (&) [57]>(char const (&) [57]) + 236
+test:ad_viscoplasticity_stress_update.lps_single: 3: 3   libmoose-opt.0.dylib                0x0000000103b75630 ADFParser::JITCompile() + 1192
+test:ad_viscoplasticity_stress_update.lps_single: 4: 4   libmoose-opt.0.dylib                0x000000010354e1f0 ParsedMaterialHelper<true>::functionsPostParse() + 60
+test:ad_viscoplasticity_stress_update.lps_single: 5: 5   libmoose-opt.0.dylib                0x000000010357fde8 ParsedMaterialHelper<true>::functionParse(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<PostprocessorName, std::__1::allocator<PostprocessorName>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<double, std::__1::allocator<double>> const&, std::__1::vector<MooseFunctorName, std::__1::allocator<MooseFunctorName>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&) + 3412
+test:ad_viscoplasticity_stress_update.lps_single: 6: 6   libmoose-opt.0.dylib                0x00000001035c6440 ParsedMaterialTempl<true>::ParsedMaterialTempl(InputParameters const&) + 596
+test:ad_viscoplasticity_stress_update.lps_single: 7: 7   libmoose-opt.0.dylib                0x00000001035c61bc RegistryEntry<ParsedMaterialTempl<true>>::build(InputParameters const&) + 44
+test:ad_viscoplasticity_stress_update.lps_single: 8: 8   libmoose-opt.0.dylib                0x0000000104461c08 Factory::createUnique(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int, bool) + 436
+test:ad_viscoplasticity_stress_update.lps_single: 9: 9   libmoose-opt.0.dylib                0x0000000103b21920 std::__1::unique_ptr<MaterialBase, std::__1::default_delete<MaterialBase>> Factory::createUnique<MaterialBase>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 56
+test:ad_viscoplasticity_stress_update.lps_single: 10: 10  libmoose-opt.0.dylib                0x0000000103b217fc std::__1::shared_ptr<MaterialBase> Factory::create<MaterialBase>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 48
+test:ad_viscoplasticity_stress_update.lps_single: 11: 11  libmoose-opt.0.dylib                0x0000000103aa813c FEProblemBase::addMaterialHelper(std::__1::vector<MaterialWarehouse*, std::__1::allocator<MaterialWarehouse*>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 572
+test:ad_viscoplasticity_stress_update.lps_single: 12: 12  libmoose-opt.0.dylib                0x0000000103aa7ea4 FEProblemBase::addMaterial(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 108
+test:ad_viscoplasticity_stress_update.lps_single: 13: 13  libmoose-opt.0.dylib                0x00000001040b509c ActionWarehouse::executeActionsWithAction(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 1176
+test:ad_viscoplasticity_stress_update.lps_single: 14: 14  libmoose-opt.0.dylib                0x00000001040b4a64 ActionWarehouse::executeAllActions() + 272
+test:ad_viscoplasticity_stress_update.lps_single: 15: 15  libmoose-opt.0.dylib                0x0000000104412f40 MooseApp::runInputFile() + 160
+test:ad_viscoplasticity_stress_update.lps_single: 16: 16  libsolid_mechanics-opt.0.dylib      0x0000000102085190 SolidMechanicsApp::runInputFile() + 40
+test:ad_viscoplasticity_stress_update.lps_single: 17: 17  libmoose-opt.0.dylib                0x000000010440f6ec MooseApp::run() + 1624
+test:ad_viscoplasticity_stress_update.lps_single: 18: 18  solid_mechanics-opt                 0x0000000100b77bd8 int Moose::main<SolidMechanicsTestApp>(int, char**) + 156
+test:ad_viscoplasticity_stress_update.lps_single: 19: 19  dyld                                0x000000018a8b2b4c start + 6000
+test:ad_viscoplasticity_stress_update.lps_single: --------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.lps_single: MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+test:ad_viscoplasticity_stress_update.lps_single: with errorcode 1.
+test:ad_viscoplasticity_stress_update.lps_single: 
+test:ad_viscoplasticity_stress_update.lps_single: NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+test:ad_viscoplasticity_stress_update.lps_single: You may or may not see output from other processes, depending on
+test:ad_viscoplasticity_stress_update.lps_single: exactly when Open MPI kills them.
+test:ad_viscoplasticity_stress_update.lps_single: --------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.lps_single: 
+test:ad_viscoplasticity_stress_update.lps_single: ################################################################################
+test:ad_viscoplasticity_stress_update.lps_single: End runner_run output
+test:ad_viscoplasticity_stress_update.lps_single: 
+test:ad_viscoplasticity_stress_update.lps_single: ################################################################################
+test:ad_viscoplasticity_stress_update.lps_single: Begin tester output
+test:ad_viscoplasticity_stress_update.lps_single: 
+test:ad_viscoplasticity_stress_update.lps_single: Exit Code: 1
+test:ad_viscoplasticity_stress_update.lps_single: Tester failed, reason: ERRMSG
+test:ad_viscoplasticity_stress_update.lps_single: 
+test:ad_viscoplasticity_stress_update.lps_single: ################################################################################
+test:ad_viscoplasticity_stress_update.lps_single: End tester output
+test:ad_viscoplasticity_stress_update.lps_single: 
+test:ad_viscoplasticity_stress_update.lps_single ............................................. FAILED (ERRMSG)
+test:uel.small_test: Working Directory: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel
+test:uel.small_test: Running command: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/solid_mechanics-opt -i small_test.i --required-capabilities="'method=dbg | method=opt'" --error --error-override --color off --libtorch-device cpu
+test:uel.small_test: 
+test:uel.small_test: ################################################################################
+test:uel.small_test: Begin runner_run output
+test:uel.small_test: 
+test:uel.small_test: *** ERROR ***
+test:uel.small_test: Failed to load library '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_tests/uel-opt.plugin' in DynamicLibraryLoader: dlopen(/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_tests/uel-opt.plugin, 0x0001): tried: '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/System/Volumes/Preboot/Cryptexes/OS/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_tests/uel-opt.plugin' (no such file), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_tri_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/System/Volumes/Preboot/Cryptexes/OS/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_tri_tests/uel-opt.plugin' (no such file), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_tri_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib')
+test:uel.small_test: 
+test:uel.small_test: Stack frames: 18
+test:uel.small_test: 0: 0   libmesh_opt.0.dylib                 0x0000000107d3ce9c libMesh::print_trace(std::__1::basic_ostream<char, std::__1::char_traits<char>>&) + 916
+test:uel.small_test: 1: 1   libmoose-opt.0.dylib                0x0000000105a00c7c moose::internal::mooseErrorRaw(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>) + 668
+test:uel.small_test: 2: 2   libsolid_mechanics-opt.0.dylib      0x00000001035df748 void mooseError<char const (&) [25], std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, char const (&) [28], char*>(char const (&) [25], std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, char const (&) [28], char*&&) + 340
+test:uel.small_test: 3: 3   libsolid_mechanics-opt.0.dylib      0x00000001035df5c4 DynamicLibraryLoader::DynamicLibraryLoader(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 296
+test:uel.small_test: 4: 4   libsolid_mechanics-opt.0.dylib      0x000000010353d338 AbaqusUserElement::AbaqusUserElement(InputParameters const&) + 752
+test:uel.small_test: 5: 5   libsolid_mechanics-opt.0.dylib      0x000000010353a924 RegistryEntry<AbaqusUserElement>::build(InputParameters const&) + 44
+test:uel.small_test: 6: 6   libmoose-opt.0.dylib                0x0000000105a49c08 Factory::createUnique(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int, bool) + 436
+test:uel.small_test: 7: 7   libmoose-opt.0.dylib                0x000000010510b8ec std::__1::unique_ptr<UserObject, std::__1::default_delete<UserObject>> Factory::createUnique<UserObject>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 56
+test:uel.small_test: 8: 8   libmoose-opt.0.dylib                0x000000010510b4f8 std::__1::shared_ptr<UserObject> Factory::create<UserObject>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 48
+test:uel.small_test: 9: 9   libmoose-opt.0.dylib                0x0000000105091c50 FEProblemBase::addUserObject(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 268
+test:uel.small_test: 10: 10  libmoose-opt.0.dylib                0x0000000105678364 AddUserObjectAction::act() + 76
+test:uel.small_test: 11: 11  libmoose-opt.0.dylib                0x000000010569d09c ActionWarehouse::executeActionsWithAction(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 1176
+test:uel.small_test: 12: 12  libmoose-opt.0.dylib                0x000000010569ca64 ActionWarehouse::executeAllActions() + 272
+test:uel.small_test: 13: 13  libmoose-opt.0.dylib                0x00000001059faf40 MooseApp::runInputFile() + 160
+test:uel.small_test: 14: 14  libsolid_mechanics-opt.0.dylib      0x000000010366d190 SolidMechanicsApp::runInputFile() + 40
+test:uel.small_test: 15: 15  libmoose-opt.0.dylib                0x00000001059f76ec MooseApp::run() + 1624
+test:uel.small_test: 16: 16  solid_mechanics-opt                 0x0000000102183bd8 int Moose::main<SolidMechanicsTestApp>(int, char**) + 156
+test:uel.small_test: 17: 17  dyld                                0x000000018a8b2b4c start + 6000
+test:uel.small_test: --------------------------------------------------------------------------
+test:uel.small_test: MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+test:uel.small_test: with errorcode 1.
+test:uel.small_test: 
+test:uel.small_test: NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+test:uel.small_test: You may or may not see output from other processes, depending on
+test:uel.small_test: exactly when Open MPI kills them.
+test:uel.small_test: --------------------------------------------------------------------------
+test:uel.small_test: 
+test:uel.small_test: ################################################################################
+test:uel.small_test: End runner_run output
+test:uel.small_test: 
+test:uel.small_test: ################################################################################
+test:uel.small_test: Begin tester output
+test:uel.small_test: 
+test:uel.small_test: Exit Code: 1
+test:uel.small_test: Tester failed, reason: ERRMSG
+test:uel.small_test: 
+test:uel.small_test: ################################################################################
+test:uel.small_test: End tester output
+test:uel.small_test: 
+test:uel.small_test .......................................................................... FAILED (ERRMSG)
+test:ad_viscoplasticity_stress_update.lps_single_split: Working Directory: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/ad_viscoplasticity_stress_update
+test:ad_viscoplasticity_stress_update.lps_single_split: Running command: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/solid_mechanics-opt -i lps_single_split.i --error --error-override --color off --libtorch-device cpu
+test:ad_viscoplasticity_stress_update.lps_single_split: 
+test:ad_viscoplasticity_stress_update.lps_single_split: ################################################################################
+test:ad_viscoplasticity_stress_update.lps_single_split: Begin runner_run output
+test:ad_viscoplasticity_stress_update.lps_single_split: 
+test:ad_viscoplasticity_stress_update.lps_single_split: *** Info ***
+test:ad_viscoplasticity_stress_update.lps_single_split: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/ad_viscoplasticity_stress_update/lps_single_split.i:17.1:
+test:ad_viscoplasticity_stress_update.lps_single_split: The following information occurred in the Action 'All' of type QuasiStaticSolidMechanicsPhysics.
+test:ad_viscoplasticity_stress_update.lps_single_split: 
+test:ad_viscoplasticity_stress_update.lps_single_split: SolidMechanics Action: selecting 'incremental finite strain' formulation.
+test:ad_viscoplasticity_stress_update.lps_single_split: JIT object load failed.
+test:ad_viscoplasticity_stress_update.lps_single_split: 
+test:ad_viscoplasticity_stress_update.lps_single_split: 
+test:ad_viscoplasticity_stress_update.lps_single_split: *** ERROR ***
+test:ad_viscoplasticity_stress_update.lps_single_split: ADFParser::JITCompile() failed. Evaluation not possible.
+test:ad_viscoplasticity_stress_update.lps_single_split: 
+test:ad_viscoplasticity_stress_update.lps_single_split: Stack frames: 20
+test:ad_viscoplasticity_stress_update.lps_single_split: 0: 0   libmesh_opt.0.dylib                 0x0000000107c84e9c libMesh::print_trace(std::__1::basic_ostream<char, std::__1::char_traits<char>>&) + 916
+test:ad_viscoplasticity_stress_update.lps_single_split: 1: 1   libmoose-opt.0.dylib                0x0000000105948c7c moose::internal::mooseErrorRaw(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>) + 668
+test:ad_viscoplasticity_stress_update.lps_single_split: 2: 2   libmoose-opt.0.dylib                0x00000001048abc54 void mooseError<char const (&) [57]>(char const (&) [57]) + 236
+test:ad_viscoplasticity_stress_update.lps_single_split: 3: 3   libmoose-opt.0.dylib                0x00000001050a5630 ADFParser::JITCompile() + 1192
+test:ad_viscoplasticity_stress_update.lps_single_split: 4: 4   libmoose-opt.0.dylib                0x0000000104a7e1f0 ParsedMaterialHelper<true>::functionsPostParse() + 60
+test:ad_viscoplasticity_stress_update.lps_single_split: 5: 5   libmoose-opt.0.dylib                0x0000000104aafde8 ParsedMaterialHelper<true>::functionParse(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<PostprocessorName, std::__1::allocator<PostprocessorName>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<double, std::__1::allocator<double>> const&, std::__1::vector<MooseFunctorName, std::__1::allocator<MooseFunctorName>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&) + 3412
+test:ad_viscoplasticity_stress_update.lps_single_split: 6: 6   libmoose-opt.0.dylib                0x0000000104af6440 ParsedMaterialTempl<true>::ParsedMaterialTempl(InputParameters const&) + 596
+test:ad_viscoplasticity_stress_update.lps_single_split: 7: 7   libmoose-opt.0.dylib                0x0000000104af61bc RegistryEntry<ParsedMaterialTempl<true>>::build(InputParameters const&) + 44
+test:ad_viscoplasticity_stress_update.lps_single_split: 8: 8   libmoose-opt.0.dylib                0x0000000105991c08 Factory::createUnique(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int, bool) + 436
+test:ad_viscoplasticity_stress_update.lps_single_split: 9: 9   libmoose-opt.0.dylib                0x0000000105051920 std::__1::unique_ptr<MaterialBase, std::__1::default_delete<MaterialBase>> Factory::createUnique<MaterialBase>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 56
+test:ad_viscoplasticity_stress_update.lps_single_split: 10: 10  libmoose-opt.0.dylib                0x00000001050517fc std::__1::shared_ptr<MaterialBase> Factory::create<MaterialBase>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 48
+test:ad_viscoplasticity_stress_update.lps_single_split: 11: 11  libmoose-opt.0.dylib                0x0000000104fd813c FEProblemBase::addMaterialHelper(std::__1::vector<MaterialWarehouse*, std::__1::allocator<MaterialWarehouse*>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 572
+test:ad_viscoplasticity_stress_update.lps_single_split: 12: 12  libmoose-opt.0.dylib                0x0000000104fd7ea4 FEProblemBase::addMaterial(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 108
+test:ad_viscoplasticity_stress_update.lps_single_split: 13: 13  libmoose-opt.0.dylib                0x00000001055e509c ActionWarehouse::executeActionsWithAction(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 1176
+test:ad_viscoplasticity_stress_update.lps_single_split: 14: 14  libmoose-opt.0.dylib                0x00000001055e4a64 ActionWarehouse::executeAllActions() + 272
+test:ad_viscoplasticity_stress_update.lps_single_split: 15: 15  libmoose-opt.0.dylib                0x0000000105942f40 MooseApp::runInputFile() + 160
+test:ad_viscoplasticity_stress_update.lps_single_split: 16: 16  libsolid_mechanics-opt.0.dylib      0x00000001035b5190 SolidMechanicsApp::runInputFile() + 40
+test:ad_viscoplasticity_stress_update.lps_single_split: 17: 17  libmoose-opt.0.dylib                0x000000010593f6ec MooseApp::run() + 1624
+test:ad_viscoplasticity_stress_update.lps_single_split: 18: 18  solid_mechanics-opt                 0x000000010219fbd8 int Moose::main<SolidMechanicsTestApp>(int, char**) + 156
+test:ad_viscoplasticity_stress_update.lps_single_split: 19: 19  dyld                                0x000000018a8b2b4c start + 6000
+test:ad_viscoplasticity_stress_update.lps_single_split: --------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.lps_single_split: MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+test:ad_viscoplasticity_stress_update.lps_single_split: with errorcode 1.
+test:ad_viscoplasticity_stress_update.lps_single_split: 
+test:ad_viscoplasticity_stress_update.lps_single_split: NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+test:ad_viscoplasticity_stress_update.lps_single_split: You may or may not see output from other processes, depending on
+test:ad_viscoplasticity_stress_update.lps_single_split: exactly when Open MPI kills them.
+test:ad_viscoplasticity_stress_update.lps_single_split: --------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.lps_single_split: 
+test:ad_viscoplasticity_stress_update.lps_single_split: ################################################################################
+test:ad_viscoplasticity_stress_update.lps_single_split: End runner_run output
+test:ad_viscoplasticity_stress_update.lps_single_split: 
+test:ad_viscoplasticity_stress_update.lps_single_split: ################################################################################
+test:ad_viscoplasticity_stress_update.lps_single_split: Begin tester output
+test:ad_viscoplasticity_stress_update.lps_single_split: 
+test:ad_viscoplasticity_stress_update.lps_single_split: Exit Code: 1
+test:ad_viscoplasticity_stress_update.lps_single_split: Tester failed, reason: ERRMSG
+test:ad_viscoplasticity_stress_update.lps_single_split: 
+test:ad_viscoplasticity_stress_update.lps_single_split: ################################################################################
+test:ad_viscoplasticity_stress_update.lps_single_split: End tester output
+test:ad_viscoplasticity_stress_update.lps_single_split: 
+test:ad_viscoplasticity_stress_update.lps_single_split ....................................... FAILED (ERRMSG)
+test:uel.uel_test_print: Working Directory: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel
+test:uel.uel_test_print: Running command: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/solid_mechanics-opt -i uel_test_print.i --required-capabilities="'method=dbg | method=opt'" --error --error-override --color off --libtorch-device cpu
+test:uel.uel_test_print: 
+test:uel.uel_test_print: ################################################################################
+test:uel.uel_test_print: Begin runner_run output
+test:uel.uel_test_print: 
+test:uel.uel_test_print: *** ERROR ***
+test:uel.uel_test_print: Failed to load library '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../../solid_mechanics/examples/uel_build_tests/uel-opt.plugin' in DynamicLibraryLoader: dlopen(/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../../solid_mechanics/examples/uel_build_tests/uel-opt.plugin, 0x0001): tried: '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../../solid_mechanics/examples/uel_build_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/System/Volumes/Preboot/Cryptexes/OS/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../../solid_mechanics/examples/uel_build_tests/uel-opt.plugin' (no such file), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../../solid_mechanics/examples/uel_build_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_build_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/System/Volumes/Preboot/Cryptexes/OS/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_build_tests/uel-opt.plugin' (no such file), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_build_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib')
+test:uel.uel_test_print: 
+test:uel.uel_test_print: Stack frames: 18
+test:uel.uel_test_print: 0: 0   libmesh_opt.0.dylib                 0x000000010886ce9c libMesh::print_trace(std::__1::basic_ostream<char, std::__1::char_traits<char>>&) + 916
+test:uel.uel_test_print: 1: 1   libmoose-opt.0.dylib                0x0000000106530c7c moose::internal::mooseErrorRaw(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>) + 668
+test:uel.uel_test_print: 2: 2   libsolid_mechanics-opt.0.dylib      0x000000010410f748 void mooseError<char const (&) [25], std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, char const (&) [28], char*>(char const (&) [25], std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, char const (&) [28], char*&&) + 340
+test:uel.uel_test_print: 3: 3   libsolid_mechanics-opt.0.dylib      0x000000010410f5c4 DynamicLibraryLoader::DynamicLibraryLoader(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 296
+test:uel.uel_test_print: 4: 4   libsolid_mechanics-opt.0.dylib      0x000000010406d338 AbaqusUserElement::AbaqusUserElement(InputParameters const&) + 752
+test:uel.uel_test_print: 5: 5   libsolid_mechanics-opt.0.dylib      0x000000010406a924 RegistryEntry<AbaqusUserElement>::build(InputParameters const&) + 44
+test:uel.uel_test_print: 6: 6   libmoose-opt.0.dylib                0x0000000106579c08 Factory::createUnique(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int, bool) + 436
+test:uel.uel_test_print: 7: 7   libmoose-opt.0.dylib                0x0000000105c3b8ec std::__1::unique_ptr<UserObject, std::__1::default_delete<UserObject>> Factory::createUnique<UserObject>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 56
+test:uel.uel_test_print: 8: 8   libmoose-opt.0.dylib                0x0000000105c3b4f8 std::__1::shared_ptr<UserObject> Factory::create<UserObject>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 48
+test:uel.uel_test_print: 9: 9   libmoose-opt.0.dylib                0x0000000105bc1c50 FEProblemBase::addUserObject(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 268
+test:uel.uel_test_print: 10: 10  libmoose-opt.0.dylib                0x00000001061a8364 AddUserObjectAction::act() + 76
+test:uel.uel_test_print: 11: 11  libmoose-opt.0.dylib                0x00000001061cd09c ActionWarehouse::executeActionsWithAction(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 1176
+test:uel.uel_test_print: 12: 12  libmoose-opt.0.dylib                0x00000001061cca64 ActionWarehouse::executeAllActions() + 272
+test:uel.uel_test_print: 13: 13  libmoose-opt.0.dylib                0x000000010652af40 MooseApp::runInputFile() + 160
+test:uel.uel_test_print: 14: 14  libsolid_mechanics-opt.0.dylib      0x000000010419d190 SolidMechanicsApp::runInputFile() + 40
+test:uel.uel_test_print: 15: 15  libmoose-opt.0.dylib                0x00000001065276ec MooseApp::run() + 1624
+test:uel.uel_test_print: 16: 16  solid_mechanics-opt                 0x0000000102cbbbd8 int Moose::main<SolidMechanicsTestApp>(int, char**) + 156
+test:uel.uel_test_print: 17: 17  dyld                                0x000000018a8b2b4c start + 6000
+test:uel.uel_test_print: --------------------------------------------------------------------------
+test:uel.uel_test_print: MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+test:uel.uel_test_print: with errorcode 1.
+test:uel.uel_test_print: 
+test:uel.uel_test_print: NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+test:uel.uel_test_print: You may or may not see output from other processes, depending on
+test:uel.uel_test_print: exactly when Open MPI kills them.
+test:uel.uel_test_print: --------------------------------------------------------------------------
+test:uel.uel_test_print: 
+test:uel.uel_test_print: ################################################################################
+test:uel.uel_test_print: End runner_run output
+test:uel.uel_test_print: 
+test:uel.uel_test_print: ################################################################################
+test:uel.uel_test_print: Begin tester output
+test:uel.uel_test_print: 
+test:uel.uel_test_print: ################################################################################
+test:uel.uel_test_print: 
+test:uel.uel_test_print: Unable to match the following pattern against the program's output:
+test:uel.uel_test_print: 
+test:uel.uel_test_print: Number of predefined variables:            2\n External field number            1  for node            1  is:    1500.0000000000000     \n External field number            1  for node            2  is:    1500.0000000000000     \n External field number            1  for node            3  is:    1500.0000000000000     \n External field number            1  for node            4  is:    1500.0000000000000     \n External field number            1  for node            5  is:    1500.0000000000000     \n External field number            1  for node            6  is:    1500.0000000000000     \n External field number            1  for node            7  is:    1500.0000000000000     \n External field number            1  for node            8  is:    1500.0000000000000     \n External field number            2  for node            1  is:    210.00000000000000     \n External field number            2  for node            2  is:    210.00000000000000     \n External field number            2  for node            3  is:    210.00000000000000     \n External field number            2  for node            4  is:    210.00000000000000     \n External field number            2  for node            5  is:    210.00000000000000     \n External field number            2  for node            6  is:    210.00000000000000     \n External field number            2  for node            7  is:    210.00000000000000     \n External field number            2  for node            8  is:    210.00000000000000     \n Time increment is:    10.000000000000000     \n Coordinates for node            1  are:   0.66666666666666663      ,   0.33333333333333331      ,   0.66666666666666663     \n Coordinates for node            2  are:    1.0000000000000000      ,   0.33333333333333331      ,   0.66666666666666663     \n Coordinates for node            3  are:    1.0000000000000000      ,   0.66666666666666663      ,   0.66666666666666663     \n Coordinates for node            4  are:   0.66666666666666663      ,   0.66666666666666663      ,   0.66666666666666663     \n Coordinates for node            5  are:   0.66666666666666663      ,   0.33333333333333331      ,    1.0000000000000000     \n Coordinates for node            6  are:    1.0000000000000000      ,   0.33333333333333331      ,    1.0000000000000000     \n Coordinates for node            7  are:    1.0000000000000000      ,   0.66666666666666663      ,    1.0000000000000000     \n Coordinates for node            8  are:   0.66666666666666663      ,   0.66666666666666663      ,    1.0000000000000000     \n Element number is:           25\n Number of coordinates at a node:            3\n Element type is:           10\n Number of UEL properties is:            5\n Property            1  is:    2.0000000000000000     \n Property            2  is:    1.0000000000000000     \n Property            3  is:    2.0000000000000000     \n Property            4  is:    210000.00000000000     \n Property            5  is:   0.29999999999999999     \n Number of nodes in this element:            8\n Number of state variables is:           96\n State variable            1  is:    0.0000000000000000     \n State variable            2  is:    0.0000000000000000     \n State variable            3  is:    0.0000000000000000     \n
+test:uel.uel_test_print: 
+test:uel.uel_test_print: Tester failed, reason: EXPECTED OUTPUT MISSING
+test:uel.uel_test_print: 
+test:uel.uel_test_print: ################################################################################
+test:uel.uel_test_print: End tester output
+test:uel.uel_test_print: 
+test:uel.uel_test_print ..................................................... FAILED (EXPECTED OUTPUT MISSING)
+test:ad_viscoplasticity_stress_update.lps_dual: Working Directory: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/ad_viscoplasticity_stress_update
+test:ad_viscoplasticity_stress_update.lps_dual: Running command: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/solid_mechanics-opt -i lps_dual.i --error --error-override --color off --libtorch-device cpu
+test:ad_viscoplasticity_stress_update.lps_dual: 
+test:ad_viscoplasticity_stress_update.lps_dual: ################################################################################
+test:ad_viscoplasticity_stress_update.lps_dual: Begin runner_run output
+test:ad_viscoplasticity_stress_update.lps_dual: 
+test:ad_viscoplasticity_stress_update.lps_dual: *** Info ***
+test:ad_viscoplasticity_stress_update.lps_dual: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/ad_viscoplasticity_stress_update/lps_dual.i:34.1:
+test:ad_viscoplasticity_stress_update.lps_dual: The following information occurred in the Action 'All' of type QuasiStaticSolidMechanicsPhysics.
+test:ad_viscoplasticity_stress_update.lps_dual: 
+test:ad_viscoplasticity_stress_update.lps_dual: SolidMechanics Action: selecting 'incremental finite strain' formulation.
+test:ad_viscoplasticity_stress_update.lps_dual: JIT object load failed.
+test:ad_viscoplasticity_stress_update.lps_dual: 
+test:ad_viscoplasticity_stress_update.lps_dual: 
+test:ad_viscoplasticity_stress_update.lps_dual: *** ERROR ***
+test:ad_viscoplasticity_stress_update.lps_dual: ADFParser::JITCompile() failed. Evaluation not possible.
+test:ad_viscoplasticity_stress_update.lps_dual: 
+test:ad_viscoplasticity_stress_update.lps_dual: Stack frames: 20
+test:ad_viscoplasticity_stress_update.lps_dual: 0: 0   libmesh_opt.0.dylib                 0x0000000109b20e9c libMesh::print_trace(std::__1::basic_ostream<char, std::__1::char_traits<char>>&) + 916
+test:ad_viscoplasticity_stress_update.lps_dual: 1: 1   libmoose-opt.0.dylib                0x00000001077e4c7c moose::internal::mooseErrorRaw(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>) + 668
+test:ad_viscoplasticity_stress_update.lps_dual: 2: 2   libmoose-opt.0.dylib                0x0000000106747c54 void mooseError<char const (&) [57]>(char const (&) [57]) + 236
+test:ad_viscoplasticity_stress_update.lps_dual: 3: 3   libmoose-opt.0.dylib                0x0000000106f41630 ADFParser::JITCompile() + 1192
+test:ad_viscoplasticity_stress_update.lps_dual: 4: 4   libmoose-opt.0.dylib                0x000000010691a1f0 ParsedMaterialHelper<true>::functionsPostParse() + 60
+test:ad_viscoplasticity_stress_update.lps_dual: 5: 5   libmoose-opt.0.dylib                0x000000010694bde8 ParsedMaterialHelper<true>::functionParse(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<PostprocessorName, std::__1::allocator<PostprocessorName>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<double, std::__1::allocator<double>> const&, std::__1::vector<MooseFunctorName, std::__1::allocator<MooseFunctorName>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&) + 3412
+test:ad_viscoplasticity_stress_update.lps_dual: 6: 6   libmoose-opt.0.dylib                0x0000000106992440 ParsedMaterialTempl<true>::ParsedMaterialTempl(InputParameters const&) + 596
+test:ad_viscoplasticity_stress_update.lps_dual: 7: 7   libmoose-opt.0.dylib                0x00000001069921bc RegistryEntry<ParsedMaterialTempl<true>>::build(InputParameters const&) + 44
+test:ad_viscoplasticity_stress_update.lps_dual: 8: 8   libmoose-opt.0.dylib                0x000000010782dc08 Factory::createUnique(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int, bool) + 436
+test:ad_viscoplasticity_stress_update.lps_dual: 9: 9   libmoose-opt.0.dylib                0x0000000106eed920 std::__1::unique_ptr<MaterialBase, std::__1::default_delete<MaterialBase>> Factory::createUnique<MaterialBase>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 56
+test:ad_viscoplasticity_stress_update.lps_dual: 10: 10  libmoose-opt.0.dylib                0x0000000106eed7fc std::__1::shared_ptr<MaterialBase> Factory::create<MaterialBase>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 48
+test:ad_viscoplasticity_stress_update.lps_dual: 11: 11  libmoose-opt.0.dylib                0x0000000106e7413c FEProblemBase::addMaterialHelper(std::__1::vector<MaterialWarehouse*, std::__1::allocator<MaterialWarehouse*>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 572
+test:ad_viscoplasticity_stress_update.lps_dual: 12: 12  libmoose-opt.0.dylib                0x0000000106e73ea4 FEProblemBase::addMaterial(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 108
+test:ad_viscoplasticity_stress_update.lps_dual: 13: 13  libmoose-opt.0.dylib                0x000000010748109c ActionWarehouse::executeActionsWithAction(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 1176
+test:ad_viscoplasticity_stress_update.lps_dual: 14: 14  libmoose-opt.0.dylib                0x0000000107480a64 ActionWarehouse::executeAllActions() + 272
+test:ad_viscoplasticity_stress_update.lps_dual: 15: 15  libmoose-opt.0.dylib                0x00000001077def40 MooseApp::runInputFile() + 160
+test:ad_viscoplasticity_stress_update.lps_dual: 16: 16  libsolid_mechanics-opt.0.dylib      0x00000001054b5190 SolidMechanicsApp::runInputFile() + 40
+test:ad_viscoplasticity_stress_update.lps_dual: 17: 17  libmoose-opt.0.dylib                0x00000001077db6ec MooseApp::run() + 1624
+test:ad_viscoplasticity_stress_update.lps_dual: 18: 18  solid_mechanics-opt                 0x000000010406fbd8 int Moose::main<SolidMechanicsTestApp>(int, char**) + 156
+test:ad_viscoplasticity_stress_update.lps_dual: 19: 19  dyld                                0x000000018a8b2b4c start + 6000
+test:ad_viscoplasticity_stress_update.lps_dual: --------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.lps_dual: MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+test:ad_viscoplasticity_stress_update.lps_dual: with errorcode 1.
+test:ad_viscoplasticity_stress_update.lps_dual: 
+test:ad_viscoplasticity_stress_update.lps_dual: NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+test:ad_viscoplasticity_stress_update.lps_dual: You may or may not see output from other processes, depending on
+test:ad_viscoplasticity_stress_update.lps_dual: exactly when Open MPI kills them.
+test:ad_viscoplasticity_stress_update.lps_dual: --------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.lps_dual: 
+test:ad_viscoplasticity_stress_update.lps_dual: ################################################################################
+test:ad_viscoplasticity_stress_update.lps_dual: End runner_run output
+test:ad_viscoplasticity_stress_update.lps_dual: 
+test:ad_viscoplasticity_stress_update.lps_dual: ################################################################################
+test:ad_viscoplasticity_stress_update.lps_dual: Begin tester output
+test:ad_viscoplasticity_stress_update.lps_dual: 
+test:ad_viscoplasticity_stress_update.lps_dual: Exit Code: 1
+test:ad_viscoplasticity_stress_update.lps_dual: Tester failed, reason: ERRMSG
+test:ad_viscoplasticity_stress_update.lps_dual: 
+test:ad_viscoplasticity_stress_update.lps_dual: ################################################################################
+test:ad_viscoplasticity_stress_update.lps_dual: End tester output
+test:ad_viscoplasticity_stress_update.lps_dual: 
+test:ad_viscoplasticity_stress_update.lps_dual ............................................... FAILED (ERRMSG)
+test:uel.small_test_uel_umat: Working Directory: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel
+test:uel.small_test_uel_umat: Running command: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/solid_mechanics-opt -i small_test_expanded.i --required-capabilities="'method=dbg | method=opt'" --error --error-override --color off --libtorch-device cpu
+test:uel.small_test_uel_umat: 
+test:uel.small_test_uel_umat: ################################################################################
+test:uel.small_test_uel_umat: Begin runner_run output
+test:uel.small_test_uel_umat: 
+test:uel.small_test_uel_umat: *** ERROR ***
+test:uel.small_test_uel_umat: Failed to load library '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_tests/uel-opt.plugin' in DynamicLibraryLoader: dlopen(/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_tests/uel-opt.plugin, 0x0001): tried: '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/System/Volumes/Preboot/Cryptexes/OS/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_tests/uel-opt.plugin' (no such file), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_tri_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/System/Volumes/Preboot/Cryptexes/OS/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_tri_tests/uel-opt.plugin' (no such file), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_tri_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib')
+test:uel.small_test_uel_umat: 
+test:uel.small_test_uel_umat: Stack frames: 18
+test:uel.small_test_uel_umat: 0: 0   libmesh_opt.0.dylib                 0x0000000105dc0e9c libMesh::print_trace(std::__1::basic_ostream<char, std::__1::char_traits<char>>&) + 916
+test:uel.small_test_uel_umat: 1: 1   libmoose-opt.0.dylib                0x0000000103a84c7c moose::internal::mooseErrorRaw(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>) + 668
+test:uel.small_test_uel_umat: 2: 2   libsolid_mechanics-opt.0.dylib      0x0000000101663748 void mooseError<char const (&) [25], std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, char const (&) [28], char*>(char const (&) [25], std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, char const (&) [28], char*&&) + 340
+test:uel.small_test_uel_umat: 3: 3   libsolid_mechanics-opt.0.dylib      0x00000001016635c4 DynamicLibraryLoader::DynamicLibraryLoader(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 296
+test:uel.small_test_uel_umat: 4: 4   libsolid_mechanics-opt.0.dylib      0x00000001015c1338 AbaqusUserElement::AbaqusUserElement(InputParameters const&) + 752
+test:uel.small_test_uel_umat: 5: 5   libsolid_mechanics-opt.0.dylib      0x00000001015be924 RegistryEntry<AbaqusUserElement>::build(InputParameters const&) + 44
+test:uel.small_test_uel_umat: 6: 6   libmoose-opt.0.dylib                0x0000000103acdc08 Factory::createUnique(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int, bool) + 436
+test:uel.small_test_uel_umat: 7: 7   libmoose-opt.0.dylib                0x000000010318f8ec std::__1::unique_ptr<UserObject, std::__1::default_delete<UserObject>> Factory::createUnique<UserObject>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 56
+test:uel.small_test_uel_umat: 8: 8   libmoose-opt.0.dylib                0x000000010318f4f8 std::__1::shared_ptr<UserObject> Factory::create<UserObject>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 48
+test:uel.small_test_uel_umat: 9: 9   libmoose-opt.0.dylib                0x0000000103115c50 FEProblemBase::addUserObject(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 268
+test:uel.small_test_uel_umat: 10: 10  libmoose-opt.0.dylib                0x00000001036fc364 AddUserObjectAction::act() + 76
+test:uel.small_test_uel_umat: 11: 11  libmoose-opt.0.dylib                0x000000010372109c ActionWarehouse::executeActionsWithAction(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 1176
+test:uel.small_test_uel_umat: 12: 12  libmoose-opt.0.dylib                0x0000000103720a64 ActionWarehouse::executeAllActions() + 272
+test:uel.small_test_uel_umat: 13: 13  libmoose-opt.0.dylib                0x0000000103a7ef40 MooseApp::runInputFile() + 160
+test:uel.small_test_uel_umat: 14: 14  libsolid_mechanics-opt.0.dylib      0x00000001016f1190 SolidMechanicsApp::runInputFile() + 40
+test:uel.small_test_uel_umat: 15: 15  libmoose-opt.0.dylib                0x0000000103a7b6ec MooseApp::run() + 1624
+test:uel.small_test_uel_umat: 16: 16  solid_mechanics-opt                 0x00000001002cfbd8 int Moose::main<SolidMechanicsTestApp>(int, char**) + 156
+test:uel.small_test_uel_umat: 17: 17  dyld                                0x000000018a8b2b4c start + 6000
+test:uel.small_test_uel_umat: --------------------------------------------------------------------------
+test:uel.small_test_uel_umat: MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+test:uel.small_test_uel_umat: with errorcode 1.
+test:uel.small_test_uel_umat: 
+test:uel.small_test_uel_umat: NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+test:uel.small_test_uel_umat: You may or may not see output from other processes, depending on
+test:uel.small_test_uel_umat: exactly when Open MPI kills them.
+test:uel.small_test_uel_umat: --------------------------------------------------------------------------
+test:uel.small_test_uel_umat: 
+test:uel.small_test_uel_umat: ################################################################################
+test:uel.small_test_uel_umat: End runner_run output
+test:uel.small_test_uel_umat: 
+test:uel.small_test_uel_umat: ################################################################################
+test:uel.small_test_uel_umat: Begin tester output
+test:uel.small_test_uel_umat: 
+test:uel.small_test_uel_umat: Exit Code: 1
+test:uel.small_test_uel_umat: Tester failed, reason: ERRMSG
+test:uel.small_test_uel_umat: 
+test:uel.small_test_uel_umat: ################################################################################
+test:uel.small_test_uel_umat: End tester output
+test:uel.small_test_uel_umat: 
+test:uel.small_test_uel_umat ................................................................. FAILED (ERRMSG)
+test:ad_viscoplasticity_stress_update.gtn_single: Working Directory: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/ad_viscoplasticity_stress_update
+test:ad_viscoplasticity_stress_update.gtn_single: Running command: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/solid_mechanics-opt -i gtn_single.i --error --error-override --color off --libtorch-device cpu
+test:ad_viscoplasticity_stress_update.gtn_single: 
+test:ad_viscoplasticity_stress_update.gtn_single: ################################################################################
+test:ad_viscoplasticity_stress_update.gtn_single: Begin runner_run output
+test:ad_viscoplasticity_stress_update.gtn_single: 
+test:ad_viscoplasticity_stress_update.gtn_single: *** Info ***
+test:ad_viscoplasticity_stress_update.gtn_single: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/ad_viscoplasticity_stress_update/gtn_single.i:16.1:
+test:ad_viscoplasticity_stress_update.gtn_single: The following information occurred in the Action 'All' of type QuasiStaticSolidMechanicsPhysics.
+test:ad_viscoplasticity_stress_update.gtn_single: 
+test:ad_viscoplasticity_stress_update.gtn_single: SolidMechanics Action: selecting 'incremental finite strain' formulation.
+test:ad_viscoplasticity_stress_update.gtn_single: JIT object load failed.
+test:ad_viscoplasticity_stress_update.gtn_single: 
+test:ad_viscoplasticity_stress_update.gtn_single: 
+test:ad_viscoplasticity_stress_update.gtn_single: *** ERROR ***
+test:ad_viscoplasticity_stress_update.gtn_single: ADFParser::JITCompile() failed. Evaluation not possible.
+test:ad_viscoplasticity_stress_update.gtn_single: 
+test:ad_viscoplasticity_stress_update.gtn_single: Stack frames: 20
+test:ad_viscoplasticity_stress_update.gtn_single: 0: 0   libmesh_opt.0.dylib                 0x00000001062c0e9c libMesh::print_trace(std::__1::basic_ostream<char, std::__1::char_traits<char>>&) + 916
+test:ad_viscoplasticity_stress_update.gtn_single: 1: 1   libmoose-opt.0.dylib                0x0000000103f84c7c moose::internal::mooseErrorRaw(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>) + 668
+test:ad_viscoplasticity_stress_update.gtn_single: 2: 2   libmoose-opt.0.dylib                0x0000000102ee7c54 void mooseError<char const (&) [57]>(char const (&) [57]) + 236
+test:ad_viscoplasticity_stress_update.gtn_single: 3: 3   libmoose-opt.0.dylib                0x00000001036e1630 ADFParser::JITCompile() + 1192
+test:ad_viscoplasticity_stress_update.gtn_single: 4: 4   libmoose-opt.0.dylib                0x00000001030ba1f0 ParsedMaterialHelper<true>::functionsPostParse() + 60
+test:ad_viscoplasticity_stress_update.gtn_single: 5: 5   libmoose-opt.0.dylib                0x00000001030ebde8 ParsedMaterialHelper<true>::functionParse(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<PostprocessorName, std::__1::allocator<PostprocessorName>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<double, std::__1::allocator<double>> const&, std::__1::vector<MooseFunctorName, std::__1::allocator<MooseFunctorName>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&) + 3412
+test:ad_viscoplasticity_stress_update.gtn_single: 6: 6   libmoose-opt.0.dylib                0x0000000103132440 ParsedMaterialTempl<true>::ParsedMaterialTempl(InputParameters const&) + 596
+test:ad_viscoplasticity_stress_update.gtn_single: 7: 7   libmoose-opt.0.dylib                0x00000001031321bc RegistryEntry<ParsedMaterialTempl<true>>::build(InputParameters const&) + 44
+test:ad_viscoplasticity_stress_update.gtn_single: 8: 8   libmoose-opt.0.dylib                0x0000000103fcdc08 Factory::createUnique(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int, bool) + 436
+test:ad_viscoplasticity_stress_update.gtn_single: 9: 9   libmoose-opt.0.dylib                0x000000010368d920 std::__1::unique_ptr<MaterialBase, std::__1::default_delete<MaterialBase>> Factory::createUnique<MaterialBase>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 56
+test:ad_viscoplasticity_stress_update.gtn_single: 10: 10  libmoose-opt.0.dylib                0x000000010368d7fc std::__1::shared_ptr<MaterialBase> Factory::create<MaterialBase>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 48
+test:ad_viscoplasticity_stress_update.gtn_single: 11: 11  libmoose-opt.0.dylib                0x000000010361413c FEProblemBase::addMaterialHelper(std::__1::vector<MaterialWarehouse*, std::__1::allocator<MaterialWarehouse*>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 572
+test:ad_viscoplasticity_stress_update.gtn_single: 12: 12  libmoose-opt.0.dylib                0x0000000103613ea4 FEProblemBase::addMaterial(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 108
+test:ad_viscoplasticity_stress_update.gtn_single: 13: 13  libmoose-opt.0.dylib                0x0000000103c2109c ActionWarehouse::executeActionsWithAction(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 1176
+test:ad_viscoplasticity_stress_update.gtn_single: 14: 14  libmoose-opt.0.dylib                0x0000000103c20a64 ActionWarehouse::executeAllActions() + 272
+test:ad_viscoplasticity_stress_update.gtn_single: 15: 15  libmoose-opt.0.dylib                0x0000000103f7ef40 MooseApp::runInputFile() + 160
+test:ad_viscoplasticity_stress_update.gtn_single: 16: 16  libsolid_mechanics-opt.0.dylib      0x0000000101bf1190 SolidMechanicsApp::runInputFile() + 40
+test:ad_viscoplasticity_stress_update.gtn_single: 17: 17  libmoose-opt.0.dylib                0x0000000103f7b6ec MooseApp::run() + 1624
+test:ad_viscoplasticity_stress_update.gtn_single: 18: 18  solid_mechanics-opt                 0x000000010064bbd8 int Moose::main<SolidMechanicsTestApp>(int, char**) + 156
+test:ad_viscoplasticity_stress_update.gtn_single: 19: 19  dyld                                0x000000018a8b2b4c start + 6000
+test:ad_viscoplasticity_stress_update.gtn_single: --------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.gtn_single: MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+test:ad_viscoplasticity_stress_update.gtn_single: with errorcode 1.
+test:ad_viscoplasticity_stress_update.gtn_single: 
+test:ad_viscoplasticity_stress_update.gtn_single: NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+test:ad_viscoplasticity_stress_update.gtn_single: You may or may not see output from other processes, depending on
+test:ad_viscoplasticity_stress_update.gtn_single: exactly when Open MPI kills them.
+test:ad_viscoplasticity_stress_update.gtn_single: --------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.gtn_single: 
+test:ad_viscoplasticity_stress_update.gtn_single: ################################################################################
+test:ad_viscoplasticity_stress_update.gtn_single: End runner_run output
+test:ad_viscoplasticity_stress_update.gtn_single: 
+test:ad_viscoplasticity_stress_update.gtn_single: ################################################################################
+test:ad_viscoplasticity_stress_update.gtn_single: Begin tester output
+test:ad_viscoplasticity_stress_update.gtn_single: 
+test:ad_viscoplasticity_stress_update.gtn_single: Exit Code: 1
+test:ad_viscoplasticity_stress_update.gtn_single: Tester failed, reason: ERRMSG
+test:ad_viscoplasticity_stress_update.gtn_single: 
+test:ad_viscoplasticity_stress_update.gtn_single: ################################################################################
+test:ad_viscoplasticity_stress_update.gtn_single: End tester output
+test:ad_viscoplasticity_stress_update.gtn_single: 
+test:ad_viscoplasticity_stress_update.gtn_single ............................................. FAILED (ERRMSG)
+test:uel.small_test_uel_states_fields: Working Directory: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel
+test:uel.small_test_uel_states_fields: Running command: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/solid_mechanics-opt -i small_test_uel_states_fields.i --required-capabilities="'method=dbg | method=opt'" --error --error-override --color off --libtorch-device cpu
+test:uel.small_test_uel_states_fields: 
+test:uel.small_test_uel_states_fields: ################################################################################
+test:uel.small_test_uel_states_fields: Begin runner_run output
+test:uel.small_test_uel_states_fields: 
+test:uel.small_test_uel_states_fields: *** ERROR ***
+test:uel.small_test_uel_states_fields: Failed to load library '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_states_tests/uel-opt.plugin' in DynamicLibraryLoader: dlopen(/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_states_tests/uel-opt.plugin, 0x0001): tried: '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_states_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/System/Volumes/Preboot/Cryptexes/OS/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_states_tests/uel-opt.plugin' (no such file), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_states_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_tri_states_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/System/Volumes/Preboot/Cryptexes/OS/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_tri_states_tests/uel-opt.plugin' (no such file), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_tri_states_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib')
+test:uel.small_test_uel_states_fields: 
+test:uel.small_test_uel_states_fields: Stack frames: 18
+test:uel.small_test_uel_states_fields: 0: 0   libmesh_opt.0.dylib                 0x00000001082f4e9c libMesh::print_trace(std::__1::basic_ostream<char, std::__1::char_traits<char>>&) + 916
+test:uel.small_test_uel_states_fields: 1: 1   libmoose-opt.0.dylib                0x0000000105fb8c7c moose::internal::mooseErrorRaw(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>) + 668
+test:uel.small_test_uel_states_fields: 2: 2   libsolid_mechanics-opt.0.dylib      0x0000000103b97748 void mooseError<char const (&) [25], std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, char const (&) [28], char*>(char const (&) [25], std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, char const (&) [28], char*&&) + 340
+test:uel.small_test_uel_states_fields: 3: 3   libsolid_mechanics-opt.0.dylib      0x0000000103b975c4 DynamicLibraryLoader::DynamicLibraryLoader(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 296
+test:uel.small_test_uel_states_fields: 4: 4   libsolid_mechanics-opt.0.dylib      0x0000000103af5338 AbaqusUserElement::AbaqusUserElement(InputParameters const&) + 752
+test:uel.small_test_uel_states_fields: 5: 5   libsolid_mechanics-opt.0.dylib      0x0000000103af2924 RegistryEntry<AbaqusUserElement>::build(InputParameters const&) + 44
+test:uel.small_test_uel_states_fields: 6: 6   libmoose-opt.0.dylib                0x0000000106001c08 Factory::createUnique(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int, bool) + 436
+test:uel.small_test_uel_states_fields: 7: 7   libmoose-opt.0.dylib                0x00000001056c38ec std::__1::unique_ptr<UserObject, std::__1::default_delete<UserObject>> Factory::createUnique<UserObject>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 56
+test:uel.small_test_uel_states_fields: 8: 8   libmoose-opt.0.dylib                0x00000001056c34f8 std::__1::shared_ptr<UserObject> Factory::create<UserObject>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 48
+test:uel.small_test_uel_states_fields: 9: 9   libmoose-opt.0.dylib                0x0000000105649c50 FEProblemBase::addUserObject(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 268
+test:uel.small_test_uel_states_fields: 10: 10  libmoose-opt.0.dylib                0x0000000105c30364 AddUserObjectAction::act() + 76
+test:uel.small_test_uel_states_fields: 11: 11  libmoose-opt.0.dylib                0x0000000105c5509c ActionWarehouse::executeActionsWithAction(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 1176
+test:uel.small_test_uel_states_fields: 12: 12  libmoose-opt.0.dylib                0x0000000105c54a64 ActionWarehouse::executeAllActions() + 272
+test:uel.small_test_uel_states_fields: 13: 13  libmoose-opt.0.dylib                0x0000000105fb2f40 MooseApp::runInputFile() + 160
+test:uel.small_test_uel_states_fields: 14: 14  libsolid_mechanics-opt.0.dylib      0x0000000103c25190 SolidMechanicsApp::runInputFile() + 40
+test:uel.small_test_uel_states_fields: 15: 15  libmoose-opt.0.dylib                0x0000000105faf6ec MooseApp::run() + 1624
+test:uel.small_test_uel_states_fields: 16: 16  solid_mechanics-opt                 0x00000001026ffbd8 int Moose::main<SolidMechanicsTestApp>(int, char**) + 156
+test:uel.small_test_uel_states_fields: 17: 17  dyld                                0x000000018a8b2b4c start + 6000
+test:uel.small_test_uel_states_fields: --------------------------------------------------------------------------
+test:uel.small_test_uel_states_fields: MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+test:uel.small_test_uel_states_fields: with errorcode 1.
+test:uel.small_test_uel_states_fields: 
+test:uel.small_test_uel_states_fields: NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+test:uel.small_test_uel_states_fields: You may or may not see output from other processes, depending on
+test:uel.small_test_uel_states_fields: exactly when Open MPI kills them.
+test:uel.small_test_uel_states_fields: --------------------------------------------------------------------------
+test:uel.small_test_uel_states_fields: 
+test:uel.small_test_uel_states_fields: ################################################################################
+test:uel.small_test_uel_states_fields: End runner_run output
+test:uel.small_test_uel_states_fields: 
+test:uel.small_test_uel_states_fields: ################################################################################
+test:uel.small_test_uel_states_fields: Begin tester output
+test:uel.small_test_uel_states_fields: 
+test:uel.small_test_uel_states_fields: Exit Code: 1
+test:uel.small_test_uel_states_fields: Tester failed, reason: ERRMSG
+test:uel.small_test_uel_states_fields: 
+test:uel.small_test_uel_states_fields: ################################################################################
+test:uel.small_test_uel_states_fields: End tester output
+test:uel.small_test_uel_states_fields: 
+test:uel.small_test_uel_states_fields ........................................................ FAILED (ERRMSG)
+test:ad_viscoplasticity_stress_update.negative/zero: Working Directory: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/ad_viscoplasticity_stress_update
+test:ad_viscoplasticity_stress_update.negative/zero: Running command: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/solid_mechanics-opt -i negative_porosity.i Outputs/file_base=negative_porosity_zero_out Materials/lps/negative_behavior=ZERO --error --error-override --color off --libtorch-device cpu
+test:ad_viscoplasticity_stress_update.negative/zero: 
+test:ad_viscoplasticity_stress_update.negative/zero: ################################################################################
+test:ad_viscoplasticity_stress_update.negative/zero: Begin runner_run output
+test:ad_viscoplasticity_stress_update.negative/zero: 
+test:ad_viscoplasticity_stress_update.negative/zero: *** Info ***
+test:ad_viscoplasticity_stress_update.negative/zero: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/ad_viscoplasticity_stress_update/negative_porosity.i:16.1:
+test:ad_viscoplasticity_stress_update.negative/zero: The following information occurred in the Action 'All' of type QuasiStaticSolidMechanicsPhysics.
+test:ad_viscoplasticity_stress_update.negative/zero: 
+test:ad_viscoplasticity_stress_update.negative/zero: SolidMechanics Action: selecting 'incremental finite strain' formulation.
+test:ad_viscoplasticity_stress_update.negative/zero: JIT object load failed.
+test:ad_viscoplasticity_stress_update.negative/zero: 
+test:ad_viscoplasticity_stress_update.negative/zero: 
+test:ad_viscoplasticity_stress_update.negative/zero: *** ERROR ***
+test:ad_viscoplasticity_stress_update.negative/zero: ADFParser::JITCompile() failed. Evaluation not possible.
+test:ad_viscoplasticity_stress_update.negative/zero: 
+test:ad_viscoplasticity_stress_update.negative/zero: Stack frames: 20
+test:ad_viscoplasticity_stress_update.negative/zero: 0: 0   libmesh_opt.0.dylib                 0x000000010aa7ce9c libMesh::print_trace(std::__1::basic_ostream<char, std::__1::char_traits<char>>&) + 916
+test:ad_viscoplasticity_stress_update.negative/zero: 1: 1   libmoose-opt.0.dylib                0x0000000108740c7c moose::internal::mooseErrorRaw(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>) + 668
+test:ad_viscoplasticity_stress_update.negative/zero: 2: 2   libmoose-opt.0.dylib                0x00000001076a3c54 void mooseError<char const (&) [57]>(char const (&) [57]) + 236
+test:ad_viscoplasticity_stress_update.negative/zero: 3: 3   libmoose-opt.0.dylib                0x0000000107e9d630 ADFParser::JITCompile() + 1192
+test:ad_viscoplasticity_stress_update.negative/zero: 4: 4   libmoose-opt.0.dylib                0x00000001078761f0 ParsedMaterialHelper<true>::functionsPostParse() + 60
+test:ad_viscoplasticity_stress_update.negative/zero: 5: 5   libmoose-opt.0.dylib                0x00000001078a7de8 ParsedMaterialHelper<true>::functionParse(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<PostprocessorName, std::__1::allocator<PostprocessorName>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<double, std::__1::allocator<double>> const&, std::__1::vector<MooseFunctorName, std::__1::allocator<MooseFunctorName>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&) + 3412
+test:ad_viscoplasticity_stress_update.negative/zero: 6: 6   libmoose-opt.0.dylib                0x00000001078ee440 ParsedMaterialTempl<true>::ParsedMaterialTempl(InputParameters const&) + 596
+test:ad_viscoplasticity_stress_update.negative/zero: 7: 7   libmoose-opt.0.dylib                0x00000001078ee1bc RegistryEntry<ParsedMaterialTempl<true>>::build(InputParameters const&) + 44
+test:ad_viscoplasticity_stress_update.negative/zero: 8: 8   libmoose-opt.0.dylib                0x0000000108789c08 Factory::createUnique(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int, bool) + 436
+test:ad_viscoplasticity_stress_update.negative/zero: 9: 9   libmoose-opt.0.dylib                0x0000000107e49920 std::__1::unique_ptr<MaterialBase, std::__1::default_delete<MaterialBase>> Factory::createUnique<MaterialBase>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 56
+test:ad_viscoplasticity_stress_update.negative/zero: 10: 10  libmoose-opt.0.dylib                0x0000000107e497fc std::__1::shared_ptr<MaterialBase> Factory::create<MaterialBase>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 48
+test:ad_viscoplasticity_stress_update.negative/zero: 11: 11  libmoose-opt.0.dylib                0x0000000107dd013c FEProblemBase::addMaterialHelper(std::__1::vector<MaterialWarehouse*, std::__1::allocator<MaterialWarehouse*>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 572
+test:ad_viscoplasticity_stress_update.negative/zero: 12: 12  libmoose-opt.0.dylib                0x0000000107dcfea4 FEProblemBase::addMaterial(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 108
+test:ad_viscoplasticity_stress_update.negative/zero: 13: 13  libmoose-opt.0.dylib                0x00000001083dd09c ActionWarehouse::executeActionsWithAction(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 1176
+test:ad_viscoplasticity_stress_update.negative/zero: 14: 14  libmoose-opt.0.dylib                0x00000001083dca64 ActionWarehouse::executeAllActions() + 272
+test:ad_viscoplasticity_stress_update.negative/zero: 15: 15  libmoose-opt.0.dylib                0x000000010873af40 MooseApp::runInputFile() + 160
+test:ad_viscoplasticity_stress_update.negative/zero: 16: 16  libsolid_mechanics-opt.0.dylib      0x00000001063ad190 SolidMechanicsApp::runInputFile() + 40
+test:ad_viscoplasticity_stress_update.negative/zero: 17: 17  libmoose-opt.0.dylib                0x00000001087376ec MooseApp::run() + 1624
+test:ad_viscoplasticity_stress_update.negative/zero: 18: 18  solid_mechanics-opt                 0x0000000104e83bd8 int Moose::main<SolidMechanicsTestApp>(int, char**) + 156
+test:ad_viscoplasticity_stress_update.negative/zero: 19: 19  dyld                                0x000000018a8b2b4c start + 6000
+test:ad_viscoplasticity_stress_update.negative/zero: --------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.negative/zero: MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+test:ad_viscoplasticity_stress_update.negative/zero: with errorcode 1.
+test:ad_viscoplasticity_stress_update.negative/zero: 
+test:ad_viscoplasticity_stress_update.negative/zero: NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+test:ad_viscoplasticity_stress_update.negative/zero: You may or may not see output from other processes, depending on
+test:ad_viscoplasticity_stress_update.negative/zero: exactly when Open MPI kills them.
+test:ad_viscoplasticity_stress_update.negative/zero: --------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.negative/zero: 
+test:ad_viscoplasticity_stress_update.negative/zero: ################################################################################
+test:ad_viscoplasticity_stress_update.negative/zero: End runner_run output
+test:ad_viscoplasticity_stress_update.negative/zero: 
+test:ad_viscoplasticity_stress_update.negative/zero: ################################################################################
+test:ad_viscoplasticity_stress_update.negative/zero: Begin tester output
+test:ad_viscoplasticity_stress_update.negative/zero: 
+test:ad_viscoplasticity_stress_update.negative/zero: Exit Code: 1
+test:ad_viscoplasticity_stress_update.negative/zero: Tester failed, reason: ERRMSG
+test:ad_viscoplasticity_stress_update.negative/zero: 
+test:ad_viscoplasticity_stress_update.negative/zero: ################################################################################
+test:ad_viscoplasticity_stress_update.negative/zero: End tester output
+test:ad_viscoplasticity_stress_update.negative/zero: 
+test:ad_viscoplasticity_stress_update.negative/zero .......................................... FAILED (ERRMSG)
+test:uel.small_test_uel_states_fields_gradient: Working Directory: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel
+test:uel.small_test_uel_states_fields_gradient: Running command: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/solid_mechanics-opt -i small_test_uel_states_fields_gradient.i --required-capabilities="'method=dbg | method=opt'" --error --error-override --color off --libtorch-device cpu
+test:uel.small_test_uel_states_fields_gradient: 
+test:uel.small_test_uel_states_fields_gradient: ################################################################################
+test:uel.small_test_uel_states_fields_gradient: Begin runner_run output
+test:uel.small_test_uel_states_fields_gradient: 
+test:uel.small_test_uel_states_fields_gradient: *** ERROR ***
+test:uel.small_test_uel_states_fields_gradient: Failed to load library '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_states_tests/uel-opt.plugin' in DynamicLibraryLoader: dlopen(/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_states_tests/uel-opt.plugin, 0x0001): tried: '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_states_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/System/Volumes/Preboot/Cryptexes/OS/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_states_tests/uel-opt.plugin' (no such file), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/uel/../../../examples/uel_tri_states_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_tri_states_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib'), '/System/Volumes/Preboot/Cryptexes/OS/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_tri_states_tests/uel-opt.plugin' (no such file), '/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/examples/uel_tri_states_tests/uel-opt.plugin' (duplicate LC_RPATH '/Users/chenghau.yang/miniforge/envs/moose/lib')
+test:uel.small_test_uel_states_fields_gradient: 
+test:uel.small_test_uel_states_fields_gradient: Stack frames: 18
+test:uel.small_test_uel_states_fields_gradient: 0: 0   libmesh_opt.0.dylib                 0x00000001081d4e9c libMesh::print_trace(std::__1::basic_ostream<char, std::__1::char_traits<char>>&) + 916
+test:uel.small_test_uel_states_fields_gradient: 1: 1   libmoose-opt.0.dylib                0x0000000105e98c7c moose::internal::mooseErrorRaw(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>) + 668
+test:uel.small_test_uel_states_fields_gradient: 2: 2   libsolid_mechanics-opt.0.dylib      0x0000000103a77748 void mooseError<char const (&) [25], std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, char const (&) [28], char*>(char const (&) [25], std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, char const (&) [28], char*&&) + 340
+test:uel.small_test_uel_states_fields_gradient: 3: 3   libsolid_mechanics-opt.0.dylib      0x0000000103a775c4 DynamicLibraryLoader::DynamicLibraryLoader(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 296
+test:uel.small_test_uel_states_fields_gradient: 4: 4   libsolid_mechanics-opt.0.dylib      0x00000001039d5338 AbaqusUserElement::AbaqusUserElement(InputParameters const&) + 752
+test:uel.small_test_uel_states_fields_gradient: 5: 5   libsolid_mechanics-opt.0.dylib      0x00000001039d2924 RegistryEntry<AbaqusUserElement>::build(InputParameters const&) + 44
+test:uel.small_test_uel_states_fields_gradient: 6: 6   libmoose-opt.0.dylib                0x0000000105ee1c08 Factory::createUnique(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int, bool) + 436
+test:uel.small_test_uel_states_fields_gradient: 7: 7   libmoose-opt.0.dylib                0x00000001055a38ec std::__1::unique_ptr<UserObject, std::__1::default_delete<UserObject>> Factory::createUnique<UserObject>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 56
+test:uel.small_test_uel_states_fields_gradient: 8: 8   libmoose-opt.0.dylib                0x00000001055a34f8 std::__1::shared_ptr<UserObject> Factory::create<UserObject>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 48
+test:uel.small_test_uel_states_fields_gradient: 9: 9   libmoose-opt.0.dylib                0x0000000105529c50 FEProblemBase::addUserObject(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 268
+test:uel.small_test_uel_states_fields_gradient: 10: 10  libmoose-opt.0.dylib                0x0000000105b10364 AddUserObjectAction::act() + 76
+test:uel.small_test_uel_states_fields_gradient: 11: 11  libmoose-opt.0.dylib                0x0000000105b3509c ActionWarehouse::executeActionsWithAction(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 1176
+test:uel.small_test_uel_states_fields_gradient: 12: 12  libmoose-opt.0.dylib                0x0000000105b34a64 ActionWarehouse::executeAllActions() + 272
+test:uel.small_test_uel_states_fields_gradient: 13: 13  libmoose-opt.0.dylib                0x0000000105e92f40 MooseApp::runInputFile() + 160
+test:uel.small_test_uel_states_fields_gradient: 14: 14  libsolid_mechanics-opt.0.dylib      0x0000000103b05190 SolidMechanicsApp::runInputFile() + 40
+test:uel.small_test_uel_states_fields_gradient: 15: 15  libmoose-opt.0.dylib                0x0000000105e8f6ec MooseApp::run() + 1624
+test:uel.small_test_uel_states_fields_gradient: 16: 16  solid_mechanics-opt                 0x0000000102567bd8 int Moose::main<SolidMechanicsTestApp>(int, char**) + 156
+test:uel.small_test_uel_states_fields_gradient: 17: 17  dyld                                0x000000018a8b2b4c start + 6000
+test:uel.small_test_uel_states_fields_gradient: --------------------------------------------------------------------------
+test:uel.small_test_uel_states_fields_gradient: MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+test:uel.small_test_uel_states_fields_gradient: with errorcode 1.
+test:uel.small_test_uel_states_fields_gradient: 
+test:uel.small_test_uel_states_fields_gradient: NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+test:uel.small_test_uel_states_fields_gradient: You may or may not see output from other processes, depending on
+test:uel.small_test_uel_states_fields_gradient: exactly when Open MPI kills them.
+test:uel.small_test_uel_states_fields_gradient: --------------------------------------------------------------------------
+test:uel.small_test_uel_states_fields_gradient: 
+test:uel.small_test_uel_states_fields_gradient: ################################################################################
+test:uel.small_test_uel_states_fields_gradient: End runner_run output
+test:uel.small_test_uel_states_fields_gradient: 
+test:uel.small_test_uel_states_fields_gradient: ################################################################################
+test:uel.small_test_uel_states_fields_gradient: Begin tester output
+test:uel.small_test_uel_states_fields_gradient: 
+test:uel.small_test_uel_states_fields_gradient: Exit Code: 1
+test:uel.small_test_uel_states_fields_gradient: Tester failed, reason: ERRMSG
+test:uel.small_test_uel_states_fields_gradient: 
+test:uel.small_test_uel_states_fields_gradient: ################################################################################
+test:uel.small_test_uel_states_fields_gradient: End tester output
+test:uel.small_test_uel_states_fields_gradient: 
+test:uel.small_test_uel_states_fields_gradient ............................................... FAILED (ERRMSG)
+test:ad_viscoplasticity_stress_update.negative/initial: Working Directory: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/ad_viscoplasticity_stress_update
+test:ad_viscoplasticity_stress_update.negative/initial: Running command: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/solid_mechanics-opt -i negative_porosity.i Outputs/file_base=negative_porosity_initial_out Materials/lps/negative_behavior=INITIAL_CONDITION --error --error-override --color off --libtorch-device cpu
+test:ad_viscoplasticity_stress_update.negative/initial: 
+test:ad_viscoplasticity_stress_update.negative/initial: ################################################################################
+test:ad_viscoplasticity_stress_update.negative/initial: Begin runner_run output
+test:ad_viscoplasticity_stress_update.negative/initial: 
+test:ad_viscoplasticity_stress_update.negative/initial: *** Info ***
+test:ad_viscoplasticity_stress_update.negative/initial: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/ad_viscoplasticity_stress_update/negative_porosity.i:16.1:
+test:ad_viscoplasticity_stress_update.negative/initial: The following information occurred in the Action 'All' of type QuasiStaticSolidMechanicsPhysics.
+test:ad_viscoplasticity_stress_update.negative/initial: 
+test:ad_viscoplasticity_stress_update.negative/initial: SolidMechanics Action: selecting 'incremental finite strain' formulation.
+test:ad_viscoplasticity_stress_update.negative/initial: JIT object load failed.
+test:ad_viscoplasticity_stress_update.negative/initial: 
+test:ad_viscoplasticity_stress_update.negative/initial: 
+test:ad_viscoplasticity_stress_update.negative/initial: *** ERROR ***
+test:ad_viscoplasticity_stress_update.negative/initial: ADFParser::JITCompile() failed. Evaluation not possible.
+test:ad_viscoplasticity_stress_update.negative/initial: 
+test:ad_viscoplasticity_stress_update.negative/initial: Stack frames: 20
+test:ad_viscoplasticity_stress_update.negative/initial: 0: 0   libmesh_opt.0.dylib                 0x0000000107e80e9c libMesh::print_trace(std::__1::basic_ostream<char, std::__1::char_traits<char>>&) + 916
+test:ad_viscoplasticity_stress_update.negative/initial: 1: 1   libmoose-opt.0.dylib                0x0000000105b44c7c moose::internal::mooseErrorRaw(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>) + 668
+test:ad_viscoplasticity_stress_update.negative/initial: 2: 2   libmoose-opt.0.dylib                0x0000000104aa7c54 void mooseError<char const (&) [57]>(char const (&) [57]) + 236
+test:ad_viscoplasticity_stress_update.negative/initial: 3: 3   libmoose-opt.0.dylib                0x00000001052a1630 ADFParser::JITCompile() + 1192
+test:ad_viscoplasticity_stress_update.negative/initial: 4: 4   libmoose-opt.0.dylib                0x0000000104c7a1f0 ParsedMaterialHelper<true>::functionsPostParse() + 60
+test:ad_viscoplasticity_stress_update.negative/initial: 5: 5   libmoose-opt.0.dylib                0x0000000104cabde8 ParsedMaterialHelper<true>::functionParse(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<PostprocessorName, std::__1::allocator<PostprocessorName>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<double, std::__1::allocator<double>> const&, std::__1::vector<MooseFunctorName, std::__1::allocator<MooseFunctorName>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&) + 3412
+test:ad_viscoplasticity_stress_update.negative/initial: 6: 6   libmoose-opt.0.dylib                0x0000000104cf2440 ParsedMaterialTempl<true>::ParsedMaterialTempl(InputParameters const&) + 596
+test:ad_viscoplasticity_stress_update.negative/initial: 7: 7   libmoose-opt.0.dylib                0x0000000104cf21bc RegistryEntry<ParsedMaterialTempl<true>>::build(InputParameters const&) + 44
+test:ad_viscoplasticity_stress_update.negative/initial: 8: 8   libmoose-opt.0.dylib                0x0000000105b8dc08 Factory::createUnique(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int, bool) + 436
+test:ad_viscoplasticity_stress_update.negative/initial: 9: 9   libmoose-opt.0.dylib                0x000000010524d920 std::__1::unique_ptr<MaterialBase, std::__1::default_delete<MaterialBase>> Factory::createUnique<MaterialBase>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 56
+test:ad_viscoplasticity_stress_update.negative/initial: 10: 10  libmoose-opt.0.dylib                0x000000010524d7fc std::__1::shared_ptr<MaterialBase> Factory::create<MaterialBase>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 48
+test:ad_viscoplasticity_stress_update.negative/initial: 11: 11  libmoose-opt.0.dylib                0x00000001051d413c FEProblemBase::addMaterialHelper(std::__1::vector<MaterialWarehouse*, std::__1::allocator<MaterialWarehouse*>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 572
+test:ad_viscoplasticity_stress_update.negative/initial: 12: 12  libmoose-opt.0.dylib                0x00000001051d3ea4 FEProblemBase::addMaterial(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 108
+test:ad_viscoplasticity_stress_update.negative/initial: 13: 13  libmoose-opt.0.dylib                0x00000001057e109c ActionWarehouse::executeActionsWithAction(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 1176
+test:ad_viscoplasticity_stress_update.negative/initial: 14: 14  libmoose-opt.0.dylib                0x00000001057e0a64 ActionWarehouse::executeAllActions() + 272
+test:ad_viscoplasticity_stress_update.negative/initial: 15: 15  libmoose-opt.0.dylib                0x0000000105b3ef40 MooseApp::runInputFile() + 160
+test:ad_viscoplasticity_stress_update.negative/initial: 16: 16  libsolid_mechanics-opt.0.dylib      0x0000000103879190 SolidMechanicsApp::runInputFile() + 40
+test:ad_viscoplasticity_stress_update.negative/initial: 17: 17  libmoose-opt.0.dylib                0x0000000105b3b6ec MooseApp::run() + 1624
+test:ad_viscoplasticity_stress_update.negative/initial: 18: 18  solid_mechanics-opt                 0x0000000102453bd8 int Moose::main<SolidMechanicsTestApp>(int, char**) + 156
+test:ad_viscoplasticity_stress_update.negative/initial: 19: 19  dyld                                0x000000018a8b2b4c start + 6000
+test:ad_viscoplasticity_stress_update.negative/initial: --------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.negative/initial: MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+test:ad_viscoplasticity_stress_update.negative/initial: with errorcode 1.
+test:ad_viscoplasticity_stress_update.negative/initial: 
+test:ad_viscoplasticity_stress_update.negative/initial: NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+test:ad_viscoplasticity_stress_update.negative/initial: You may or may not see output from other processes, depending on
+test:ad_viscoplasticity_stress_update.negative/initial: exactly when Open MPI kills them.
+test:ad_viscoplasticity_stress_update.negative/initial: --------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.negative/initial: 
+test:ad_viscoplasticity_stress_update.negative/initial: ################################################################################
+test:ad_viscoplasticity_stress_update.negative/initial: End runner_run output
+test:ad_viscoplasticity_stress_update.negative/initial: 
+test:ad_viscoplasticity_stress_update.negative/initial: ################################################################################
+test:ad_viscoplasticity_stress_update.negative/initial: Begin tester output
+test:ad_viscoplasticity_stress_update.negative/initial: 
+test:ad_viscoplasticity_stress_update.negative/initial: Exit Code: 1
+test:ad_viscoplasticity_stress_update.negative/initial: Tester failed, reason: ERRMSG
+test:ad_viscoplasticity_stress_update.negative/initial: 
+test:ad_viscoplasticity_stress_update.negative/initial: ################################################################################
+test:ad_viscoplasticity_stress_update.negative/initial: End tester output
+test:ad_viscoplasticity_stress_update.negative/initial: 
+test:ad_viscoplasticity_stress_update.negative/initial ....................................... FAILED (ERRMSG)
+test:ad_viscoplasticity_stress_update.negative/exception: Working Directory: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/ad_viscoplasticity_stress_update
+test:ad_viscoplasticity_stress_update.negative/exception: Running command: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/solid_mechanics-opt -i negative_porosity.i Materials/lps/negative_behavior=EXCEPTION --error --error-override --color off --libtorch-device cpu
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception: ################################################################################
+test:ad_viscoplasticity_stress_update.negative/exception: Begin runner_run output
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception: *** Info ***
+test:ad_viscoplasticity_stress_update.negative/exception: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/solid_mechanics/test/tests/ad_viscoplasticity_stress_update/negative_porosity.i:16.1:
+test:ad_viscoplasticity_stress_update.negative/exception: The following information occurred in the Action 'All' of type QuasiStaticSolidMechanicsPhysics.
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception: SolidMechanics Action: selecting 'incremental finite strain' formulation.
+test:ad_viscoplasticity_stress_update.negative/exception: JIT object load failed.
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception: *** ERROR ***
+test:ad_viscoplasticity_stress_update.negative/exception: ADFParser::JITCompile() failed. Evaluation not possible.
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception: Stack frames: 20
+test:ad_viscoplasticity_stress_update.negative/exception: 0: 0   libmesh_opt.0.dylib                 0x00000001081d8e9c libMesh::print_trace(std::__1::basic_ostream<char, std::__1::char_traits<char>>&) + 916
+test:ad_viscoplasticity_stress_update.negative/exception: 1: 1   libmoose-opt.0.dylib                0x0000000105e9cc7c moose::internal::mooseErrorRaw(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>) + 668
+test:ad_viscoplasticity_stress_update.negative/exception: 2: 2   libmoose-opt.0.dylib                0x0000000104dffc54 void mooseError<char const (&) [57]>(char const (&) [57]) + 236
+test:ad_viscoplasticity_stress_update.negative/exception: 3: 3   libmoose-opt.0.dylib                0x00000001055f9630 ADFParser::JITCompile() + 1192
+test:ad_viscoplasticity_stress_update.negative/exception: 4: 4   libmoose-opt.0.dylib                0x0000000104fd21f0 ParsedMaterialHelper<true>::functionsPostParse() + 60
+test:ad_viscoplasticity_stress_update.negative/exception: 5: 5   libmoose-opt.0.dylib                0x0000000105003de8 ParsedMaterialHelper<true>::functionParse(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<PostprocessorName, std::__1::allocator<PostprocessorName>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, std::__1::vector<double, std::__1::allocator<double>> const&, std::__1::vector<MooseFunctorName, std::__1::allocator<MooseFunctorName>> const&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&) + 3412
+test:ad_viscoplasticity_stress_update.negative/exception: 6: 6   libmoose-opt.0.dylib                0x000000010504a440 ParsedMaterialTempl<true>::ParsedMaterialTempl(InputParameters const&) + 596
+test:ad_viscoplasticity_stress_update.negative/exception: 7: 7   libmoose-opt.0.dylib                0x000000010504a1bc RegistryEntry<ParsedMaterialTempl<true>>::build(InputParameters const&) + 44
+test:ad_viscoplasticity_stress_update.negative/exception: 8: 8   libmoose-opt.0.dylib                0x0000000105ee5c08 Factory::createUnique(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int, bool) + 436
+test:ad_viscoplasticity_stress_update.negative/exception: 9: 9   libmoose-opt.0.dylib                0x00000001055a5920 std::__1::unique_ptr<MaterialBase, std::__1::default_delete<MaterialBase>> Factory::createUnique<MaterialBase>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 56
+test:ad_viscoplasticity_stress_update.negative/exception: 10: 10  libmoose-opt.0.dylib                0x00000001055a57fc std::__1::shared_ptr<MaterialBase> Factory::create<MaterialBase>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters const&, unsigned int) + 48
+test:ad_viscoplasticity_stress_update.negative/exception: 11: 11  libmoose-opt.0.dylib                0x000000010552c13c FEProblemBase::addMaterialHelper(std::__1::vector<MaterialWarehouse*, std::__1::allocator<MaterialWarehouse*>>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 572
+test:ad_viscoplasticity_stress_update.negative/exception: 12: 12  libmoose-opt.0.dylib                0x000000010552bea4 FEProblemBase::addMaterial(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, InputParameters&) + 108
+test:ad_viscoplasticity_stress_update.negative/exception: 13: 13  libmoose-opt.0.dylib                0x0000000105b3909c ActionWarehouse::executeActionsWithAction(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 1176
+test:ad_viscoplasticity_stress_update.negative/exception: 14: 14  libmoose-opt.0.dylib                0x0000000105b38a64 ActionWarehouse::executeAllActions() + 272
+test:ad_viscoplasticity_stress_update.negative/exception: 15: 15  libmoose-opt.0.dylib                0x0000000105e96f40 MooseApp::runInputFile() + 160
+test:ad_viscoplasticity_stress_update.negative/exception: 16: 16  libsolid_mechanics-opt.0.dylib      0x0000000103b6d190 SolidMechanicsApp::runInputFile() + 40
+test:ad_viscoplasticity_stress_update.negative/exception: 17: 17  libmoose-opt.0.dylib                0x0000000105e936ec MooseApp::run() + 1624
+test:ad_viscoplasticity_stress_update.negative/exception: 18: 18  solid_mechanics-opt                 0x0000000102723bd8 int Moose::main<SolidMechanicsTestApp>(int, char**) + 156
+test:ad_viscoplasticity_stress_update.negative/exception: 19: 19  dyld                                0x000000018a8b2b4c start + 6000
+test:ad_viscoplasticity_stress_update.negative/exception: --------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.negative/exception: MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+test:ad_viscoplasticity_stress_update.negative/exception: with errorcode 1.
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception: NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+test:ad_viscoplasticity_stress_update.negative/exception: You may or may not see output from other processes, depending on
+test:ad_viscoplasticity_stress_update.negative/exception: exactly when Open MPI kills them.
+test:ad_viscoplasticity_stress_update.negative/exception: --------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception: ################################################################################
+test:ad_viscoplasticity_stress_update.negative/exception: End runner_run output
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception: ################################################################################
+test:ad_viscoplasticity_stress_update.negative/exception: Begin tester output
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception: ################################################################################
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception: Unable to match the following pattern against the program's output:
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception: porosity is negative
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception: Tester failed, reason: EXPECTED ERROR MISSING
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception: ################################################################################
+test:ad_viscoplasticity_stress_update.negative/exception: End tester output
+test:ad_viscoplasticity_stress_update.negative/exception: 
+test:ad_viscoplasticity_stress_update.negative/exception ..................... FAILED (EXPECTED ERROR MISSING)
+
+
+Final Test Results:
+--------------------------------------------------------------------------------------------------------------
+test:ad_viscoplasticity_stress_update.lps_single ............................................. FAILED (ERRMSG)
+test:uel.small_test .......................................................................... FAILED (ERRMSG)
+test:ad_viscoplasticity_stress_update.lps_single_split ....................................... FAILED (ERRMSG)
+test:uel.uel_test_print ..................................................... FAILED (EXPECTED OUTPUT MISSING)
+test:ad_viscoplasticity_stress_update.lps_dual ............................................... FAILED (ERRMSG)
+test:uel.small_test_uel_umat ................................................................. FAILED (ERRMSG)
+test:ad_viscoplasticity_stress_update.gtn_single ............................................. FAILED (ERRMSG)
+test:uel.small_test_uel_states_fields ........................................................ FAILED (ERRMSG)
+test:ad_viscoplasticity_stress_update.negative/zero .......................................... FAILED (ERRMSG)
+test:uel.small_test_uel_states_fields_gradient ............................................... FAILED (ERRMSG)
+test:ad_viscoplasticity_stress_update.negative/initial ....................................... FAILED (ERRMSG)
+test:ad_viscoplasticity_stress_update.negative/exception ..................... FAILED (EXPECTED ERROR MISSING)
+--------------------------------------------------------------------------------------------------------------
+Ran 12 tests in 14.1 seconds. Average test time 1.0 seconds, maximum test time 1.7 seconds.
+0 passed, 0 skipped, 12 FAILED
