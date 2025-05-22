@@ -117,6 +117,7 @@ neml2_input = rate_independent_plasticity_isoharden
         formulation = TOTAL
         volumetric_locking_correction = true
         automatic_eigenstrain_names = true
+        generate_output = 'vonmises_cauchy_stress'
       []
     []
   []
@@ -169,14 +170,14 @@ neml2_input = rate_independent_plasticity_isoharden
   [expansion1]
     type = ComputeThermalExpansionEigenstrain
     temperature = T
-    thermal_expansion_coeff = 1e-7
+    thermal_expansion_coeff = 1e-6
     stress_free_temperature = 0
     eigenstrain_name = thermal_expansion
   []
   [volumetric_heat] # need to be exactly this name!
     type = ADMovingEllipsoidalHeatSource
     path = 'path'
-    power = 1
+    power = 1000
     efficiency = 1
     scale = 1
     a = 0.035
@@ -233,16 +234,24 @@ neml2_input = rate_independent_plasticity_isoharden
   [anchor_x]
     type = DirichletBC
     variable = disp_x
-    boundary = 'left right top bottom'
+    boundary = 'left top bottom'
     #boundary = 'left'
     value = 0.0
   []
   [anchor_y]
     type = DirichletBC
     variable = disp_y
-    boundary = 'left right top bottom'
+    boundary = 'left top bottom'
     #boundary =  'bottom'
     value = 0.0
+  []
+  [displacement_x_right]
+    #Anchors the left side against deformation in the x-direction
+    type = FunctionDirichletBC
+    variable = disp_x
+    boundary = 'right'
+    function = displacement_with_time
+    preset = false
   []
 []
 
@@ -258,6 +267,14 @@ neml2_input = rate_independent_plasticity_isoharden
   []
 []
 
+[Functions]
+  [displacement_with_time]
+    type = ParsedFunction
+    expression = '0.0000001*t'
+  []
+[]
+
+
 [Executioner]
   type = Transient
   solve_type = NEWTON
@@ -266,8 +283,12 @@ neml2_input = rate_independent_plasticity_isoharden
   nl_max_its = 100
   nl_rel_tol = 1e-6
   nl_abs_tol = 1e-8
-  dt = 1
+  dt = 0.2
   end_time = 1000
+  automatic_scaling = true
+  residual_and_jacobian_together = true
+  line_search = none
+  abort_on_solve_fail = true
 []
 
 [Postprocessors]
@@ -279,4 +300,5 @@ neml2_input = rate_independent_plasticity_isoharden
 
 [Outputs]
   exodus = true
+  interval = 5
 []
