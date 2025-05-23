@@ -17,6 +17,14 @@ ix1 = '${fparse nx - ix0}'
     subdomain_id = '0 1'
   []
 
+  [interface_0_1]
+    type = SideSetsBetweenSubdomainsGenerator
+    input = gmg
+    primary_block = 0
+    paired_block = 1
+    new_boundary = 'right_original_boundary'
+  []
+
   use_displaced_mesh = false
   add_subdomain_ids = 2
 []
@@ -99,7 +107,7 @@ ix1 = '${fparse nx - ix0}'
   [right]
     type = FunctionDirichletBC
     variable = diff
-    boundary = right
+    boundary = right_original_boundary
     function = mms_bc
   []
 
@@ -161,7 +169,6 @@ ix1 = '${fparse nx - ix0}'
     block = '2'
   []
 []
-
 
 [Outputs]
   execute_on = 'TIMESTEP_BEGIN'

@@ -58,44 +58,44 @@ NodalPatchRecoveryBase::nodalPatchRecovery(const Point & x,
                                            const std::vector<dof_id_type> & elem_ids) const
 {
 
-  std::vector<dof_id_type> key = elem_ids;
-  std::sort(key.begin(), key.end());
+  // std::vector<dof_id_type> key = elem_ids;
+  // std::sort(key.begin(), key.end());
 
-  // Check cache
-  auto it = _cached_coef.find(key);
-  RealEigenVector coef;
+  // // Check cache
+  // auto it = _cached_coef.find(key);
+  // RealEigenVector coef;
 
-  if (it != _cached_coef.end())
-    coef = it->second;
-  else
+  // if (it != _cached_coef.end())
+  //   coef = it->second;
+  // else
+  // {
+  // Before we go, check if we have enough sample points for solving the least square fitting
+  if (_q_point.size() * elem_ids.size() < _q)
+    mooseError("There are not enough sample points to recover the nodal value, try reducing the "
+               "polynomial order or using a higher-order quadrature scheme.");
+
+  // Assemble the least squares problem over the patch
+  RealEigenMatrix A = RealEigenMatrix::Zero(_q, _q);
+  RealEigenVector b = RealEigenVector::Zero(_q);
+  for (auto elem_id : elem_ids)
   {
-    // Before we go, check if we have enough sample points for solving the least square fitting
-    if (_q_point.size() * elem_ids.size() < _q)
-      mooseError("There are not enough sample points to recover the nodal value, try reducing the "
-                 "polynomial order or using a higher-order quadrature scheme.");
-
-    // Assemble the least squares problem over the patch
-    RealEigenMatrix A = RealEigenMatrix::Zero(_q, _q);
-    RealEigenVector b = RealEigenVector::Zero(_q);
-    for (auto elem_id : elem_ids)
-    {
-      A += libmesh_map_find(_Ae, elem_id);
-      b += libmesh_map_find(_be, elem_id);
-    }
-
-    // Solve the least squares fitting
-    RealEigenVector coef = A.completeOrthogonalDecomposition().solve(b);
-
-    Eigen::JacobiSVD<RealEigenMatrix> svd_cond(A);
-    double cond = svd_cond.singularValues()(0) / svd_cond.singularValues().tail(1)(0);
-    std::cout << "Condition number = " << cond << std::endl;
-    std::cout << "coef: " << coef.transpose() << std::endl;
-
-    // Eigen::BDCSVD<RealEigenMatrix> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    // svd.setThreshold(1e-10);
-    // RealEigenVector coef = svd.solve(b);
-    _cached_coef[key] = coef; // Save to cache
+    A += libmesh_map_find(_Ae, elem_id);
+    b += libmesh_map_find(_be, elem_id);
   }
+
+  // Solve the least squares fitting
+  RealEigenVector coef = A.completeOrthogonalDecomposition().solve(b);
+
+  // Eigen::JacobiSVD<RealEigenMatrix> svd_cond(A);
+  // double cond = svd_cond.singularValues()(0) / svd_cond.singularValues().tail(1)(0);
+  // std::cout << "Condition number = " << cond << std::endl;
+  // std::cout << "coef: " << coef.transpose() << std::endl;
+
+  // Eigen::BDCSVD<RealEigenMatrix> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  // svd.setThreshold(1e-10);
+  // RealEigenVector coef = svd.solve(b);
+  // _cached_coef[key] = coef; // Save to cache
+  // }
 
   // Compute the fitted nodal value
   RealEigenVector p = evaluateBasisFunctions(x);
