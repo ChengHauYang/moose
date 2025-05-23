@@ -235,7 +235,7 @@ neml2_input = voce_isotropic_hardening
   [expansion1]
     type = ComputeThermalExpansionEigenstrain
     temperature = T
-    thermal_expansion_coeff = 2e-5
+    thermal_expansion_coeff = 1e-5
     stress_free_temperature = 0
     eigenstrain_name = thermal_expansion
   []
@@ -336,7 +336,7 @@ neml2_input = voce_isotropic_hardening
   nl_rel_tol = 1e-5
   nl_abs_tol = 1e-6
   dt = 1
-  end_time = 130
+  end_time = 125
   automatic_scaling = true
   residual_and_jacobian_together = true
   line_search = 'bt'
