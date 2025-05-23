@@ -65,7 +65,6 @@ neml2_input = viscoplasticity_isoharden
   []
 []
 
-
 [MeshModifiers]
   [esm]
     type = SpatioTemporalPathElementSubdomainModifier
@@ -175,7 +174,7 @@ neml2_input = viscoplasticity_isoharden
   [volumetric_heat] # need to be exactly this name!
     type = ADMovingEllipsoidalHeatSource
     path = 'path'
-    power = 200
+    power = 100
     efficiency = 1
     scale = 1
     a = 0.02
@@ -232,14 +231,14 @@ neml2_input = viscoplasticity_isoharden
   [anchor_x]
     type = DirichletBC
     variable = disp_x
-    boundary = 'left top bottom'
+    boundary = 'left'
     #boundary = 'left'
     value = 0.0
   []
   [anchor_y]
     type = DirichletBC
     variable = disp_y
-    boundary = 'right left top bottom'
+    boundary = 'right left'
     #boundary =  'bottom'
     value = 0.0
   []
@@ -268,10 +267,9 @@ neml2_input = viscoplasticity_isoharden
 [Functions]
   [displacement_with_time]
     type = ParsedFunction
-    expression = '5e-9*t'
+    expression = '1e-6*t'
   []
 []
-
 
 [Executioner]
   type = Transient
@@ -285,14 +283,14 @@ neml2_input = viscoplasticity_isoharden
   end_time = 1000
   automatic_scaling = true
   residual_and_jacobian_together = true
-  line_search = none
+  line_search = 'bt'
   abort_on_solve_fail = true
 []
 
 [Postprocessors]
   [time]
-   type = TimePostprocessor
-   execute_on = 'INITIAL TIMESTEP_BEGIN'
+    type = TimePostprocessor
+    execute_on = 'INITIAL TIMESTEP_BEGIN'
   []
 []
 
