@@ -1,4 +1,4 @@
-neml2_input = voce_isotropic_hardening
+neml2_input = elasticity
 
 # [Problem]
 #   default_block = '0 2'
@@ -20,65 +20,12 @@ neml2_input = voce_isotropic_hardening
     nz = 40
     subdomain_ids = '1'
   []
-
-  [subdomain1]
-    type = SubdomainInterceptedGenerator
-    input = 'gmg'
-    subdomain_id_inside = 0
-    subdomain_id_outside = 1
-    keep_inside_as_inside = true
-    multi_geo = true
-    lambda = 0.5
-    outer_boundary = true
-    function = 'z-0.3'
-  []
-
-  [subdomain2]
-    type = SubdomainInterceptedGenerator
-    input = 'subdomain1'
-    subdomain_id_inside = 0
-    subdomain_id_outside = 1
-    keep_inside_as_inside = true
-    multi_geo = true
-    lambda = 0.5
-    outer_boundary = true
-    function = '0.7-z'
-  []
-
-  [subdomain3]
-    type = SubdomainInterceptedGenerator
-    input = 'subdomain2'
-    subdomain_id_inside = 0
-    subdomain_id_outside = 1
-    keep_inside_as_inside = true
-    multi_geo = true
-    lambda = 0.5
-    outer_boundary = true
-    function = 'y-0.1'
-  []
-
-  # [refine]
-  #   type = RefineBlockGenerator
-  #   input = subdomain3
-  #   block = '1'
-  #   refinement = '2'
-  # []
-
   use_displaced_mesh = false
-  add_subdomain_ids = 2
 []
 
 [Variables]
   [T]
     order = FIRST
-  []
-[]
-
-[SpatioTemporalPaths]
-  [path]
-    type = CSVPiecewiseLinearSpatioTemporalPath
-    file = 'horizontal_lines_with_time.csv'
-    verbose = true
   []
 []
 
@@ -113,67 +60,6 @@ neml2_input = voce_isotropic_hardening
   []
 []
 
-[AuxVariables]
-  [u]
-    block = '0 1 2'
-  []
-[]
-
-[AuxKernels]
-  [cut]
-    type = ParsedAux
-    variable = 'u'
-    # expression = 'y-(0.1+0.025*t)'
-    # expression = 'x-0.1*t'
-    constant_names = 'x0 y0 Lx vx dy'
-    constant_expressions = '0.0 0.10 2.0 0.10 0.025'
-
-    expression = '
-      max(
-        y - (y0 +dy+ dy * floor(t / ((Lx+vx) / vx))),
-        x - (x0 + vx * (t - ((Lx+vx) / vx) * floor(t / ((Lx+vx) / vx))))
-      )'
-    use_xyzt = true
-    block = '1 2'
-    execute_on = 'INITIAL TIMESTEP_BEGIN'
-  []
-[]
-
-# [MeshModifiers]
-#   [cut]
-#     type = CoupledVarThresholdElementSubdomainModifier
-#     coupled_var = 'u'
-#     criterion_type = 'BELOW'
-#     threshold = 0
-#     subdomain_id = 2
-#     execute_on = 'TIMESTEP_BEGIN'
-#     block = '1 2'
-
-#     # --- new for setting IC --- #
-#     inactive_subdomain_ID = 1
-#     ic_strategy = "IC_POLYNOMIAL"
-
-#     nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y extrapolation_patch_disp_z'
-#   []
-# []
-
-# [MeshModifiers]
-#   [esm]
-#     type = SpatioTemporalPathElementSubdomainModifier
-#     path = 'path'
-#     radius = 0.03
-#     target_subdomain = '0'
-#     block = '0 1'
-#     execute_on = 'TIMESTEP_BEGIN'
-
-#     # --- new for setting IC --- #
-#     inactive_subdomain_ID = 1
-#     ic_strategy = "IC_POLYNOMIAL"
-
-#     nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y extrapolation_patch_disp_z'
-#   []
-# []
-
 [Physics]
   [SolidMechanics]
     [QuasiStatic]
@@ -191,19 +77,37 @@ neml2_input = voce_isotropic_hardening
 []
 
 [NEML2]
+  # input = 'models/${neml2_input}.i'
+  # [all]
+  #   model = 'model'
+  #   verbose = true
+  #   device = 'cpu'
+
+  #   moose_input_types = 'MATERIAL     POSTPROCESSOR POSTPROCESSOR MATERIAL                  MATERIAL'
+  #   moose_inputs = '     neml2_strain time          time          equivalent_plastic_strain plastic_strain'
+  #   neml2_inputs = '     forces/E     forces/t      old_forces/t  old_state/internal/ep     old_state/internal/Ep'
+
+  #   moose_output_types = 'MATERIAL MATERIAL MATERIAL'
+  #   moose_outputs = '     neml2_stress equivalent_plastic_strain plastic_strain'
+  #   neml2_outputs = '     state/S state/internal/ep state/internal/Ep'
+
+  #   moose_derivative_types = 'MATERIAL'
+  #   moose_derivatives = 'neml2_jacobian'
+  #   neml2_derivatives = 'state/S forces/E'
+  # []
   input = 'models/${neml2_input}.i'
   [all]
     model = 'model'
     verbose = true
     device = 'cpu'
 
-    moose_input_types = 'MATERIAL     POSTPROCESSOR POSTPROCESSOR MATERIAL                  MATERIAL'
-    moose_inputs = '     neml2_strain time          time          equivalent_plastic_strain plastic_strain'
-    neml2_inputs = '     forces/E     forces/t      old_forces/t  old_state/internal/ep     old_state/internal/Ep'
+    moose_input_types = 'MATERIAL'
+    moose_inputs = 'neml2_strain'
+    neml2_inputs = 'forces/E'
 
-    moose_output_types = 'MATERIAL MATERIAL MATERIAL'
-    moose_outputs = '     neml2_stress equivalent_plastic_strain plastic_strain'
-    neml2_outputs = '     state/S state/internal/ep state/internal/Ep'
+    moose_output_types = 'MATERIAL'
+    moose_outputs = 'neml2_stress'
+    neml2_outputs = 'state/S'
 
     moose_derivative_types = 'MATERIAL'
     moose_derivatives = 'neml2_jacobian'
@@ -252,16 +156,6 @@ neml2_input = voce_isotropic_hardening
   # []
 []
 
-[Functions]
-  [volumetric_heat]
-    type = ParsedFunction
-    symbol_names = 'q x0 y0 Lx vx dy z_middle'
-    symbol_values = '100000 0.0 0.10 2.0 0.10 0.025 0.5'
-
-    expression = 'q * exp(-pow(x - (x0 + vx * (t - ((Lx+vx) / vx) * floor(t / ((Lx+vx) / vx)))),2) - pow(y - (y0 +dy+ dy * floor(t / ((Lx+vx) / vx))),2)) - pow(z-z_middle,2)'
-  []
-[]
-
 [Kernels]
   [heat_conduction]
     type = HeatConduction
@@ -270,12 +164,6 @@ neml2_input = voce_isotropic_hardening
   [time_derivative]
     type = HeatConductionTimeDerivative
     variable = T
-  []
-  [hsource]
-    type = HeatSource
-    function = 'volumetric_heat'
-    variable = T
-    block = '2'
   []
 []
 
@@ -324,18 +212,6 @@ neml2_input = voce_isotropic_hardening
   []
 []
 
-[AuxVariables]
-  [ep]
-    order = CONSTANT
-    family = MONOMIAL
-    [AuxKernel]
-      type = MaterialRealAux
-      property = equivalent_plastic_strain
-      execute_on = 'INITIAL TIMESTEP_END'
-    []
-  []
-[]
-
 [Executioner]
   type = Transient
   solve_type = NEWTON
@@ -367,12 +243,6 @@ neml2_input = voce_isotropic_hardening
     type = NodalExtremeValue
     variable = T
     value_type = max
-    execute_on = 'INITIAL TIMESTEP_END'
-  []
-  [max_ep]
-    type = ElementExtremeMaterialProperty
-    mat_prop = equivalent_plastic_strain
-    value_type = MAX
     execute_on = 'INITIAL TIMESTEP_END'
   []
 []

@@ -113,7 +113,8 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
     mooseError("The inactive subdomain ID must be set to use the extrapolation strategy.");
   if (_ic_strategy == ICStrategyForNewlyActivated::IC_DEFAULT and _inactive_subdomain_ID != -1)
     mooseError("The inactive subdomain ID should not be set to use the default strategy.");
-  if (_ic_strategy == ICStrategyForNewlyActivated::IC_POLYNOMIAL and
+  if ((_ic_strategy == ICStrategyForNewlyActivated::IC_POLYNOMIAL ||
+       _ic_strategy == ICStrategyForNewlyActivated::IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN) and
       (_inactive_subdomain_ID == -1 or _npr_vec.empty()))
     mooseError(
         "The inactive subdomain ID and the NodalPatchRecovery UserObject must be set to use the "
@@ -766,6 +767,7 @@ ElementSubdomainModifierBase::applyIC(bool displaced)
       break;
 
     case ICStrategyForNewlyActivated::IC_POLYNOMIAL:
+    case ICStrategyForNewlyActivated::IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN:
       applyIC_Polynomial(_fe_problem.getNonlinearSystemBase(_sys.number()));
       break;
     default:
@@ -1166,6 +1168,12 @@ ElementSubdomainModifierBase::applyICForNodeList(SystemBase & sys,
 void
 ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes()
 {
+  if (_ic_strategy != ICStrategyForNewlyActivated::IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN and
+      _ic_strategy != ICStrategyForNewlyActivated::IC_POLYNOMIAL)
+    return;
+
+  bool find_first_neighbor_only = (_ic_strategy == ICStrategyForNewlyActivated::IC_POLYNOMIAL);
+
   _neighbor_solved_elem_ids.clear();
   _console << "(local) Number of newly activated nodes: " << _newactivated_nodes.size()
            << std::endl;
@@ -1232,33 +1240,41 @@ ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes()
     if (elem->subdomain_id() == _inactive_subdomain_ID)
       continue;
 
-    // (d) Check if any node is in reinit_node_set
-    bool share_with_reinit = false;
-    for (unsigned n = 0; n < elem->n_nodes(); ++n)
-      if (reinit_node_set.count(elem->node_id(n)))
-      {
-        share_with_reinit = true;
-        break;
-      }
+    if (find_first_neighbor_only)
+    {
+      // (d) Check if any node is in reinit_node_set
+      bool share_with_reinit = false;
+      for (unsigned n = 0; n < elem->n_nodes(); ++n)
+        if (reinit_node_set.count(elem->node_id(n)))
+        {
+          share_with_reinit = true;
+          break;
+        }
 
-    // (e) If shares node with reinit element, add to patch
-    if (share_with_reinit)
+      // (e) If shares node with reinit element, add to patch
+      if (share_with_reinit)
+      {
+        patch_elem_set.insert(eid);
+        _neighbor_solved_elem_ids.push_back(eid);
+#ifndef NDEBUG
+        // Write all node coordinates to debug file
+        for (unsigned n = 0; n < elem->n_nodes(); ++n)
+        {
+          const Node * node_ptr = elem->node_ptr(n);
+          const Point & p = *node_ptr;
+#if LIBMESH_DIM == 2
+          fout << p(0) << ", " << p(1) << '\n';
+#else
+          fout << p(0) << ", " << p(1) << ", " << p(2) << '\n';
+#endif
+        }
+#endif
+      }
+    }
+    else
     {
       patch_elem_set.insert(eid);
       _neighbor_solved_elem_ids.push_back(eid);
-#ifndef NDEBUG
-      // Write all node coordinates to debug file
-      for (unsigned n = 0; n < elem->n_nodes(); ++n)
-      {
-        const Node * node_ptr = elem->node_ptr(n);
-        const Point & p = *node_ptr;
-#if LIBMESH_DIM == 2
-        fout << p(0) << ", " << p(1) << '\n';
-#else
-        fout << p(0) << ", " << p(1) << ", " << p(2) << '\n';
-#endif
-      }
-#endif
     }
   }
 

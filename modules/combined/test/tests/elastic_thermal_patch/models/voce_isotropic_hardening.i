@@ -7,7 +7,7 @@
 [Models]
   [isoharden]
     type = VoceIsotropicHardening
-    saturated_hardening = 100
+    saturated_hardening = 10
     saturation_rate = 1.2
   []
   [elastic_strain]
@@ -32,7 +32,7 @@
   []
   [yield]
     type = YieldFunction
-    yield_stress = 5
+    yield_stress = 100
     isotropic_hardening = 'state/internal/k'
   []
   [flow]
@@ -49,7 +49,7 @@
   [flow_rate]
     type = PerzynaPlasticFlowRate
     reference_stress = 100
-    exponent = 2
+    exponent = 8
   []
   [eprate]
     type = AssociativeIsotropicPlasticHardening

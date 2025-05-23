@@ -24,6 +24,8 @@ ix1 = '${fparse nx - ix0}'
 [Variables]
   [diff]
     order = FIRST
+    #order = SECOND #Finite element LAGRANGE on geometric element QUAD4
+    # only supports FEInterface::max_order = 1, not fe_type.order = 2
   []
 []
 
@@ -67,7 +69,8 @@ ix1 = '${fparse nx - ix0}'
 
     # --- new for setting IC --- #
     inactive_subdomain_ID = 1
-    ic_strategy = "IC_POLYNOMIAL"
+    #ic_strategy = "IC_POLYNOMIAL"
+    ic_strategy = "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN"
 
     nodal_patch_recovery_uo = 'extrapolation_patch'
   []
@@ -148,6 +151,17 @@ ix1 = '${fparse nx - ix0}'
   dt = 1
   end_time = 3
 []
+
+[Postprocessors]
+  [l2_error]
+    execute_on = 'TIMESTEP_BEGIN'
+    type = ElementL2Error
+    variable = diff
+    function = mms_bc
+    block = '2'
+  []
+[]
+
 
 [Outputs]
   execute_on = 'TIMESTEP_BEGIN'

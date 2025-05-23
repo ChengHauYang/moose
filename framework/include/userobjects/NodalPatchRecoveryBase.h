@@ -12,6 +12,26 @@
 // MOOSE includes
 #include "ElementUserObject.h"
 
+// Hash and equality function for using std::vector<dof_id_type> as unordered_map key
+struct DofIDVectorHash
+{
+  std::size_t operator()(const std::vector<dof_id_type> & vec) const
+  {
+    std::size_t hash_value = 0;
+    for (const auto & id : vec)
+      hash_value ^= std::hash<dof_id_type>()(id);
+    return hash_value;
+  }
+};
+
+struct DofIDVectorEqual
+{
+  bool operator()(const std::vector<dof_id_type> & a, const std::vector<dof_id_type> & b) const
+  {
+    return a == b;
+  }
+};
+
 class NodalPatchRecoveryBase : public ElementUserObject
 {
 public:
@@ -100,4 +120,9 @@ private:
 
   /// @brief Whether we want to specify the elements for the patch recovery
   bool _use_specific_elements;
+
+  /// @brief Cache for least-squares coefficients used in nodal patch recovery.
+  mutable std::
+      unordered_map<std::vector<dof_id_type>, RealEigenVector, DofIDVectorHash, DofIDVectorEqual>
+          _cached_coef;
 };

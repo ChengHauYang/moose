@@ -20,7 +20,8 @@ enum Type
 {
   IC_DEFAULT,
   IC_EXTRAPOLATE_FIRST_LAYER,
-  IC_POLYNOMIAL
+  IC_POLYNOMIAL,
+  IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN
 };
 }
 
@@ -242,6 +243,8 @@ private:
       return ICStrategyForNewlyActivated::IC_DEFAULT;
     else if (input == "IC_POLYNOMIAL")
       return ICStrategyForNewlyActivated::IC_POLYNOMIAL;
+    else if (input == "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN")
+      return ICStrategyForNewlyActivated::IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN;
     else
       throw std::invalid_argument("Invalid string for ICStrategyForNewlyActivated: " + input);
   }
