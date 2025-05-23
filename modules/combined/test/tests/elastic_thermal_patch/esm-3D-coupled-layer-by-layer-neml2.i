@@ -61,7 +61,7 @@ neml2_input = voce_isotropic_hardening
     type = RefineBlockGenerator
     input = subdomain3
     block = '1'
-    refinement = '3'
+    refinement = '2'
   []
 
   use_displaced_mesh = false
@@ -324,17 +324,19 @@ neml2_input = voce_isotropic_hardening
 [Executioner]
   type = Transient
   solve_type = NEWTON
-  petsc_options_iname = '-pc_type -pc_factor_mat_solver_type'
-  petsc_options_value = 'lu mumps'
+  # petsc_options_iname = '-pc_type -pc_factor_mat_solver_type'
+  # petsc_options_value = 'lu mumps'
   #petsc_options_iname = '-ksp_type -pc_type -ksp_rtol -pc_gamg_threshold -mg_levels_ksp_type'
   #petsc_options_value = 'gmres gamg 1e-6 0.02 richardson'
-  #petsc_options_iname = "-ksp_type -pc_type -pc_gamg_asm_use_agg -mg_levels_ksp_type -mg_levels_pc_type -mg_levels_sub_pc_type -mg_levels_ksp_max_it -ksp_rtol -ksp_max_it"
-  #petsc_options_value = "fgmres gamg true gmres lu lu 5 1e-6 100"
+  petsc_options_iname = "-ksp_type -pc_type -pc_gamg_asm_use_agg -mg_levels_ksp_type "
+                        "-mg_levels_pc_type -mg_levels_sub_pc_type -mg_levels_ksp_max_it -ksp_rtol "
+                        "-ksp_max_it"
+  petsc_options_value = "fgmres gamg true gmres sor lu 5 1e-6 100"
   nl_max_its = 100
-  nl_rel_tol = 1e-6
-  nl_abs_tol = 1e-7
+  nl_rel_tol = 1e-5
+  nl_abs_tol = 1e-6
   dt = 1
-  end_time = 200
+  end_time = 130
   automatic_scaling = true
   residual_and_jacobian_together = true
   line_search = 'bt'
