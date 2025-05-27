@@ -1,9 +1,5 @@
-
-[Problem]
-  default_block = '0'
-[]
-
 [GlobalParams]
+  block = '0'
   displacements = 'disp_x disp_y'
 []
 

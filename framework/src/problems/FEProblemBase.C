@@ -223,7 +223,7 @@ FEProblemBase::validParams()
   };
 
   params.addParam<std::vector<SubdomainName>>(
-      "default_block",
+      "block",
       {},
       "Default list of subdomains for block-restrictable objects such as kernels and materials.");
 
@@ -452,27 +452,26 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _previous_nl_solution_required(getParam<bool>("previous_nl_solution_required")),
     _has_nonlocal_coupling(false),
     _calculate_jacobian_in_uo(false),
-    _default_blocks(getParam<std::vector<SubdomainName>>("default_block")),
+    _blocks(getParam<std::vector<SubdomainName>>("block")),
     _kernel_coverage_check(
-        isParamSetByUser("kernel_coverage_check") || !isParamSetByUser("default_block")
+        isParamSetByUser("kernel_coverage_check") || !isParamValid("block")
             ? getParam<MooseEnum>("kernel_coverage_check").getEnum<CoverageCheckMode>()
             : CoverageCheckMode::ONLY_LIST),
-    _kernel_coverage_blocks(isParamSetByUser("kernel_coverage_check") ||
-                                    !isParamSetByUser("default_block")
+    _kernel_coverage_blocks(isParamSetByUser("kernel_coverage_check") || !isParamValid("block")
                                 ? getParam<std::vector<SubdomainName>>("kernel_coverage_block_list")
-                                : _default_blocks),
+                                : _blocks),
     _boundary_restricted_node_integrity_check(
         getParam<bool>("boundary_restricted_node_integrity_check")),
     _boundary_restricted_elem_integrity_check(
         getParam<bool>("boundary_restricted_elem_integrity_check")),
     _material_coverage_check(
-        isParamSetByUser("material_coverage_check") || !isParamSetByUser("default_block")
+        isParamSetByUser("material_coverage_check") || !isParamValid("block")
             ? getParam<MooseEnum>("material_coverage_check").getEnum<CoverageCheckMode>()
             : CoverageCheckMode::ONLY_LIST),
     _material_coverage_blocks(
-        isParamSetByUser("material_coverage_check") || !isParamSetByUser("default_block")
+        isParamSetByUser("material_coverage_check") || !isParamValid("block")
             ? getParam<std::vector<SubdomainName>>("material_coverage_block_list")
-            : _default_blocks),
+            : _blocks),
     _fv_bcs_integrity_check(getParam<bool>("fv_bcs_integrity_check")),
     _material_dependency_check(getParam<bool>("material_dependency_check")),
     _uo_aux_state_check(getParam<bool>("check_uo_aux_state")),
@@ -521,9 +520,9 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     if ((isParamSetByUser(coverage_check) &&
          (coverage_check_mode == CoverageCheckMode::ONLY_LIST ||
           coverage_check_mode == CoverageCheckMode::SKIP_LIST)) &&
-        isParamSetByUser("default_block"))
+        isParamSetByUser("block"))
       mooseError("Cannot set both '" + coverage_check +
-                 "' as 'ONLY_LIST' or 'SKIP_LIST' and 'default_block'. Please set only one.");
+                 "' as 'ONLY_LIST' or 'SKIP_LIST' and 'block'. Please set only one.");
   };
 
   checkConflict(_kernel_coverage_check, "kernel_coverage_check");
@@ -2826,7 +2825,7 @@ FEProblemBase::addVariable(const std::string & var_type,
       _mesh.getSubdomainIDs(params.get<std::vector<SubdomainName>>("block"));
 
   if (active_subdomains_vector.empty())
-    active_subdomains_vector = _mesh.getSubdomainIDs(_default_blocks);
+    active_subdomains_vector = _mesh.getSubdomainIDs(_blocks);
 
   const std::set<SubdomainID> active_subdomains(active_subdomains_vector.begin(),
                                                 active_subdomains_vector.end());
@@ -3110,12 +3109,8 @@ FEProblemBase::addAuxVariable(const std::string & var_type,
   const auto family = Utility::string_to_enum<FEFamily>(params.get<MooseEnum>("family"));
   const auto fe_type = FEType(order, family);
 
-  auto active_subdomains_vector =
+  const auto active_subdomains_vector =
       _mesh.getSubdomainIDs(params.get<std::vector<SubdomainName>>("block"));
-
-  if (active_subdomains_vector.empty())
-    active_subdomains_vector = _mesh.getSubdomainIDs(_default_blocks);
-
   const std::set<SubdomainID> active_subdomains(active_subdomains_vector.begin(),
                                                 active_subdomains_vector.end());
 

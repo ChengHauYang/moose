@@ -1,9 +1,5 @@
 neml2_input = voce_isotropic_hardening
 
-# [Problem]
-#   default_block = '0 2'
-# []
-
 [GlobalParams]
   displacements = 'disp_x disp_y disp_z'
 []

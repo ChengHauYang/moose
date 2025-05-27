@@ -1,11 +1,8 @@
 
 neml2_input = rate_independent_plasticity_isoharden
 
-[Problem]
-  default_block = '0'
-[]
-
 [GlobalParams]
+  block = '0'
   displacements = 'disp_x disp_y'
 []
 
@@ -44,7 +41,6 @@ neml2_input = rate_independent_plasticity_isoharden
     verbose = true
   []
 []
-
 
 [UserObjects]
   [extrapolation_patch_T]
@@ -103,7 +99,6 @@ neml2_input = rate_independent_plasticity_isoharden
     []
   []
 []
-
 
 [NEML2]
   input = 'models/${neml2_input}.i'
@@ -212,11 +207,10 @@ neml2_input = rate_independent_plasticity_isoharden
 
 [Postprocessors]
   [time]
-   type = TimePostprocessor
-   execute_on = 'INITIAL TIMESTEP_BEGIN'
+    type = TimePostprocessor
+    execute_on = 'INITIAL TIMESTEP_BEGIN'
   []
 []
-
 
 [Outputs]
   exodus = true

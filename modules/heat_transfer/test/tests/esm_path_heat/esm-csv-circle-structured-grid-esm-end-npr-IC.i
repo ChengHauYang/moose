@@ -1,6 +1,5 @@
-
-[Problem]
-  default_block = '0'
+[GlobalParams]
+  block = '0'
 []
 
 [Mesh]
@@ -51,7 +50,6 @@
     verbose = true
   []
 []
-
 
 [UserObjects]
   [extrapolation_patch]
@@ -104,11 +102,11 @@
     variable = cond
     thermal_conductivity = thermal_conductivity
   []
-#  [hsource]
-#    type = ADMatHeatSource
-#    material_property = 'volumetric_heat'
-#    variable = cond
-#  []
+  #  [hsource]
+  #    type = ADMatHeatSource
+  #    material_property = 'volumetric_heat'
+  #    variable = cond
+  #  []
 []
 
 [BCs]

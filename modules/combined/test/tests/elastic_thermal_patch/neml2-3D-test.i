@@ -1,9 +1,5 @@
 neml2_input = elasticity
 
-# [Problem]
-#   default_block = '0 2'
-# []
-
 [GlobalParams]
   displacements = 'disp_x disp_y disp_z'
 []

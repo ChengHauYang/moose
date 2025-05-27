@@ -94,7 +94,7 @@ NodalPatchRecoveryBase::nodalPatchRecovery(const Point & x,
   // Eigen::BDCSVD<RealEigenMatrix> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
   // svd.setThreshold(1e-10);
   // RealEigenVector coef = svd.solve(b);
-  // _cached_coef[key] = coef; // Save to cache
+  //   _cached_coef[key] = coef; // Save to cache
   // }
 
   // Compute the fitted nodal value

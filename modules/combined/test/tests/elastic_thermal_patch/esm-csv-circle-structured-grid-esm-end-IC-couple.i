@@ -1,6 +1,6 @@
 
-[Problem]
-  default_block = '0'
+[GlobalParams]
+  block = '0'
 []
 
 [GlobalParams]
@@ -44,7 +44,6 @@
     verbose = true
   []
 []
-
 
 [UserObjects]
   [extrapolation_patch_T]
@@ -102,7 +101,6 @@
   []
 []
 
-
 [Materials]
   [thermal]
     type = HeatConductionMaterial
@@ -150,10 +148,10 @@
     type = HeatConductionTimeDerivative
     variable = T
   []
-#    type = ADMatHeatSource
-#    material_property = 'volumetric_heat'
-#    variable = T
-#  []
+  #    type = ADMatHeatSource
+  #    material_property = 'volumetric_heat'
+  #    variable = T
+  #  []
 []
 
 [BCs]

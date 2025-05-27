@@ -1,5 +1,5 @@
-[Problem]
-  default_block = '0'
+[GlobalParams]
+  block = '0'
 []
 
 [Mesh]

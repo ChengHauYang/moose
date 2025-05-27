@@ -1,5 +1,5 @@
 //* This file is part of the MOOSE framework
-//* https://mooseframework.inl.gov
+//* https://www.mooseframework.org
 //*
 //* All rights reserved, see COPYRIGHT for full restrictions
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
@@ -26,9 +26,7 @@
 
 registerMooseAction("SolidMechanicsApp", QuasiStaticSolidMechanicsPhysics, "meta_action");
 
-registerMooseAction("SolidMechanicsApp",
-                    QuasiStaticSolidMechanicsPhysics,
-                    "create_problem_complete");
+registerMooseAction("SolidMechanicsApp", QuasiStaticSolidMechanicsPhysics, "setup_mesh_complete");
 
 registerMooseAction("SolidMechanicsApp",
                     QuasiStaticSolidMechanicsPhysics,
@@ -517,13 +515,9 @@ void
 QuasiStaticSolidMechanicsPhysics::actSubdomainChecks()
 {
   // Do the coordinate system check only once the problem is created
-
-  if (_current_task == "create_problem_complete")
+  if (_current_task == "setup_mesh_complete")
   {
-    if (_subdomain_names.empty() && _problem->isParamSetByUser("default_block"))
-      for (auto & name : _problem->getDefaultBlocks())
-        _subdomain_names.push_back(name);
-
+    // get subdomain IDs
     for (auto & name : _subdomain_names)
     {
       auto id = _mesh->getSubdomainID(name);

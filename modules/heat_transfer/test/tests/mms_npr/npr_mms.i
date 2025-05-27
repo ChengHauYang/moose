@@ -2,8 +2,8 @@ nx = 20
 ix0 = '${fparse 0.9 * nx}'
 ix1 = '${fparse nx - ix0}'
 
-[Problem]
-  default_block = '0 2'
+[GlobalParams]
+  block = '0 2'
 []
 
 [Mesh]

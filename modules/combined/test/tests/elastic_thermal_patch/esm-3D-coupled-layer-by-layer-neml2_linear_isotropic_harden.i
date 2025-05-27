@@ -1,7 +1,7 @@
-neml2_input = voce_isotropic_hardening
+neml2_input = linear_isotropic_hardening
 
 [GlobalParams]
-  block = '0'
+  block = '0 2'
 []
 
 [GlobalParams]
@@ -10,9 +10,15 @@ neml2_input = voce_isotropic_hardening
 
 [Mesh]
   [gmg]
-    type = FileMeshGenerator
-    #file = "cube_cylinder.msh"
-    file = "cube_cylinder_prism.msh"
+    type = GeneratedMeshGenerator
+    dim = 3
+    xmax = 2
+    ymax = 0.25
+    zmax = 1
+    nx = 20
+    ny = 20
+    nz = 40
+    subdomain_ids = '1'
   []
 
   [subdomain1]
@@ -20,26 +26,44 @@ neml2_input = voce_isotropic_hardening
     input = 'gmg'
     subdomain_id_inside = 0
     subdomain_id_outside = 1
+    keep_inside_as_inside = true
+    multi_geo = true
     lambda = 0.5
-    outer_boundary = false
-    function = '(y-0.3)^2+(z-1.5)^2-0.15^2'
+    outer_boundary = true
+    function = 'z-0.3'
   []
 
-  # add_subdomain_ids = 2 # activated elements
+  [subdomain2]
+    type = SubdomainInterceptedGenerator
+    input = 'subdomain1'
+    subdomain_id_inside = 0
+    subdomain_id_outside = 1
+    keep_inside_as_inside = true
+    multi_geo = true
+    lambda = 0.5
+    outer_boundary = true
+    function = '0.7-z'
+  []
+
+  [subdomain3]
+    type = SubdomainInterceptedGenerator
+    input = 'subdomain2'
+    subdomain_id_inside = 0
+    subdomain_id_outside = 1
+    keep_inside_as_inside = true
+    multi_geo = true
+    lambda = 0.5
+    outer_boundary = true
+    function = 'y-0.1'
+  []
+
   use_displaced_mesh = false
+  add_subdomain_ids = 2
 []
 
 [Variables]
   [T]
     order = FIRST
-  []
-[]
-
-[SpatioTemporalPaths]
-  [path]
-    type = CSVPiecewiseLinearSpatioTemporalPath
-    file = 'InsideTriPt_filled_horizontal_lines.csv'
-    verbose = true
   []
 []
 
@@ -74,14 +98,41 @@ neml2_input = voce_isotropic_hardening
   []
 []
 
+[AuxVariables]
+  [u]
+    block = '1 2'
+  []
+[]
+
+[AuxKernels]
+  [cut]
+    type = ParsedAux
+    variable = 'u'
+    # expression = 'y-(0.1+0.025*t)'
+    # expression = 'x-0.1*t'
+    constant_names = 'x0 y0 Lx vx dy'
+    constant_expressions = '0.0 0.10 2.0 0.10 0.025'
+
+    expression = '
+      max(
+        y - (y0 +dy+ dy * floor(t / ((Lx+vx) / vx))),
+        x - (x0 + vx * (t - ((Lx+vx) / vx) * floor(t / ((Lx+vx) / vx))))
+      )'
+    use_xyzt = true
+    block = '1 2'
+    execute_on = 'INITIAL TIMESTEP_BEGIN'
+  []
+[]
+
 [MeshModifiers]
-  [esm]
-    type = SpatioTemporalPathElementSubdomainModifier
-    path = 'path'
-    radius = 0.05
-    target_subdomain = '0'
-    block = '0 1'
+  [cut]
+    type = CoupledVarThresholdElementSubdomainModifier
+    coupled_var = 'u'
+    criterion_type = 'BELOW'
+    threshold = 0
+    subdomain_id = 2
     execute_on = 'TIMESTEP_BEGIN'
+    block = '1 2'
 
     # --- new for setting IC --- #
     inactive_subdomain_ID = 1
@@ -90,6 +141,23 @@ neml2_input = voce_isotropic_hardening
     nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y extrapolation_patch_disp_z'
   []
 []
+
+# [MeshModifiers]
+#   [esm]
+#     type = SpatioTemporalPathElementSubdomainModifier
+#     path = 'path'
+#     radius = 0.03
+#     target_subdomain = '0'
+#     block = '0 1'
+#     execute_on = 'TIMESTEP_BEGIN'
+
+#     # --- new for setting IC --- #
+#     inactive_subdomain_ID = 1
+#     ic_strategy = "IC_POLYNOMIAL"
+
+#     nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y extrapolation_patch_disp_z'
+#   []
+# []
 
 [Physics]
   [SolidMechanics]
@@ -152,19 +220,20 @@ neml2_input = voce_isotropic_hardening
   [expansion1]
     type = ComputeThermalExpansionEigenstrain
     temperature = T
-    thermal_expansion_coeff = 1e-6
+    thermal_expansion_coeff = 5e-5
+    # thermal_expansion_coeff = 0
     stress_free_temperature = 0
     eigenstrain_name = thermal_expansion
   []
-  [volumetric_heat] # need to be exactly this name!
-    type = ADMovingEllipsoidalHeatSource
-    path = 'path'
-    power = 2000
-    efficiency = 1
-    scale = 1
-    a = 0.05
-    b = 0.02
-    outputs = exodus
+[]
+
+[Functions]
+  [volumetric_heat]
+    type = ParsedFunction
+    symbol_names = 'q x0 y0 Lx vx dy z_middle'
+    symbol_values = '100000 0.0 0.10 2.0 0.10 0.025 0.5'
+
+    expression = 'q * exp(-pow(x - (x0 + vx * (t - ((Lx+vx) / vx) * floor(t / ((Lx+vx) / vx)))),2) - pow(y - (y0 +dy+ dy * floor(t / ((Lx+vx) / vx))),2)) - pow(z-z_middle,2)'
   []
 []
 
@@ -178,9 +247,10 @@ neml2_input = voce_isotropic_hardening
     variable = T
   []
   [hsource]
-    type = ADMatHeatSource
-    material_property = 'volumetric_heat'
+    type = HeatSource
+    function = 'volumetric_heat'
     variable = T
+    block = '2'
   []
 []
 
@@ -213,6 +283,20 @@ neml2_input = voce_isotropic_hardening
     boundary = 'bottom'
     value = 0.0
   []
+
+  # [disp_z]
+  #   type = FunctionDirichletBC
+  #   function = 0.0005*t
+  #   variable = disp_z
+  #   boundary = 'front'
+  # []
+
+  # [fix_disp_z]
+  #   type = DirichletBC
+  #   value = 0
+  #   variable = disp_z
+  #   boundary = 'back'
+  # []
 []
 
 [AuxVariables]
@@ -230,22 +314,22 @@ neml2_input = voce_isotropic_hardening
 [Executioner]
   type = Transient
   solve_type = NEWTON
-  #petsc_options_iname = '-pc_type -pc_factor_mat_solver_type'
-  #petsc_options_value = 'lu mumps'
+  petsc_options_iname = '-pc_type -pc_factor_mat_solver_type'
+  petsc_options_value = 'lu mumps'
   #petsc_options_iname = '-ksp_type -pc_type -ksp_rtol -pc_gamg_threshold -mg_levels_ksp_type'
   #petsc_options_value = 'gmres gamg 1e-6 0.02 richardson'
-  petsc_options_iname = "-ksp_type -pc_type -pc_gamg_asm_use_agg -mg_levels_ksp_type "
-                        "-mg_levels_pc_type -mg_levels_sub_pc_type -mg_levels_ksp_max_it -ksp_rtol "
-                        "-ksp_max_it"
-  petsc_options_value = "fgmres gamg true gmres lu lu 5 1e-6 100"
+  # petsc_options_iname = "-ksp_type -pc_type -pc_gamg_asm_use_agg -mg_levels_ksp_type "
+  #                       "-mg_levels_pc_type -mg_levels_sub_pc_type -mg_levels_ksp_max_it -ksp_rtol "
+  #                       "-ksp_max_it"
+  # petsc_options_value = "fgmres gamg true gmres sor lu 5 1e-6 100"
   nl_max_its = 100
-  nl_rel_tol = 1e-6
-  nl_abs_tol = 1e-7
+  nl_rel_tol = 1e-5
+  nl_abs_tol = 1e-6
   dt = 1
-  end_time = 1000
+  end_time = 125
   automatic_scaling = true
   residual_and_jacobian_together = true
-  line_search = 'bt'
+  line_search = 'none'
   abort_on_solve_fail = true
 []
 
@@ -271,4 +355,5 @@ neml2_input = voce_isotropic_hardening
 [Outputs]
   interval = 1
   exodus = true
+  execute_on = 'timestep_end'
 []
