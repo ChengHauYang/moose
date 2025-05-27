@@ -196,8 +196,9 @@ FEProblemBase::validParams()
   ///    be set for the whole domain
   /// 2. _blocks.size() > 0 and no coordinate system was specified, then the whole domain will be XYZ.
   /// 3. _blocks.size() > 0 and one coordinate system was specified, then the whole domain will be that system.
-  params.addDeprecatedParam<std::vector<SubdomainName>>(
-      "block", {}, "Block IDs for the coordinate systems", "Please use 'Mesh/coord_block' instead");
+  /*params.addDeprecatedParam<std::vector<SubdomainName>>(
+      "block", {}, "Block IDs for the coordinate systems", "Please use 'Mesh/coord_block'
+     instead");*/
   MultiMooseEnum coord_types("XYZ RZ RSPHERICAL", "XYZ");
   MooseEnum rz_coord_axis("X=0 Y=1", "Y");
   params.addDeprecatedParam<MultiMooseEnum>("coord_type",
@@ -520,7 +521,7 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     if ((isParamSetByUser(coverage_check) &&
          (coverage_check_mode == CoverageCheckMode::ONLY_LIST ||
           coverage_check_mode == CoverageCheckMode::SKIP_LIST)) &&
-        isParamSetByUser("block"))
+        isParamValid("block"))
       mooseError("Cannot set both '" + coverage_check +
                  "' as 'ONLY_LIST' or 'SKIP_LIST' and 'block'. Please set only one.");
   };
@@ -528,9 +529,18 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
   checkConflict(_kernel_coverage_check, "kernel_coverage_check");
   checkConflict(_material_coverage_check, "material_coverage_check");
 
-  //  Initialize static do_derivatives member. We initialize this to true so that all the default AD
-  //  things that we setup early in the simulation actually get their derivative vectors initalized.
-  //  We will toggle this to false when doing residual evaluations
+  const auto & block_in_global = _app.builder().root()->find(
+      _app.syntax().getSyntaxByAction("GlobalParamsAction").front() + "/block");
+
+  if (isParamValid("block") && !block_in_global)
+    mooseWarning("The block parameter is valid in the Problem block, but this has no effect "
+                 "on the block restrictions of kernels, BCs, or other block-restrictable objects. "
+                 "If your intent was to apply this setting globally, please use GlobalParams "
+                 "instead.");
+
+  //  Initialize static do_derivatives member. We initialize this to true so that all the
+  //  default AD things that we setup early in the simulation actually get their derivative
+  //  vectors initalized. We will toggle this to false when doing residual evaluations
   ADReal::do_derivatives = true;
 
   _solver_params.reserve(_num_nl_sys + _num_linear_sys);
@@ -2821,12 +2831,8 @@ FEProblemBase::addVariable(const std::string & var_type,
   const auto family = Utility::string_to_enum<FEFamily>(params.get<MooseEnum>("family"));
   const auto fe_type = FEType(order, family);
 
-  auto active_subdomains_vector =
+  const auto active_subdomains_vector =
       _mesh.getSubdomainIDs(params.get<std::vector<SubdomainName>>("block"));
-
-  if (active_subdomains_vector.empty())
-    active_subdomains_vector = _mesh.getSubdomainIDs(_blocks);
-
   const std::set<SubdomainID> active_subdomains(active_subdomains_vector.begin(),
                                                 active_subdomains_vector.end());
 
