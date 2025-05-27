@@ -13,14 +13,20 @@
 #include "ElementUserObject.h"
 
 // Hash and equality function for using std::vector<dof_id_type> as unordered_map key
+inline void
+hash_combine(std::size_t & seed, std::size_t value)
+{
+  seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
 struct DofIDVectorHash
 {
   std::size_t operator()(const std::vector<dof_id_type> & vec) const
   {
-    std::size_t hash_value = 0;
+    std::size_t seed = vec.size(); // Include size to differentiate [1,2] and [1,2,0]
     for (const auto & id : vec)
-      hash_value ^= std::hash<dof_id_type>()(id);
-    return hash_value;
+      hash_combine(seed, std::hash<dof_id_type>()(id));
+    return seed;
   }
 };
 

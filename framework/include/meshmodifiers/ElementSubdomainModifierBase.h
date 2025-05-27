@@ -217,12 +217,12 @@ private:
    */
   bool nodeIsNewlyActivated(dof_id_type node_id) const;
 
-  /// @brief Collect all newly activated nodes globally across processors
+  /// @brief Collect the complete set of newly activated nodes globally across processors
   /// @param moved_elems Map from element ID to a pair of (old subdomain ID, new subdomain ID)
   /// @details This function gathers all nodes associated with moved elements that are newly
-  /// activated, regardless of processor ownership. This is typically the first pass in
-  /// a parallel algorithm and is followed by synchronization to build a global view.
-  void identifyFirstPassActivatedNodes(
+  /// activated, regardless of processor ownership. This is the authoritative global pass
+  /// in a parallel algorithm and is used to build the correct global view.
+  void identifyGloballyActivatedNodes(
       const std::unordered_map<dof_id_type, std::pair<SubdomainID, SubdomainID>> & moved_elems);
 
   /// @brief Identify newly activated nodes that are locally owned by the current processor
@@ -232,7 +232,6 @@ private:
   /// after the global gather step to ensure that only owned nodes are used for further
   /// operations such as mesh updates or DoF assignments.
   void identifyLocallyOwnedActivatedNodes(
-
       const std::unordered_map<dof_id_type, std::pair<SubdomainID, SubdomainID>> & moved_elems);
 
   inline ICStrategyForNewlyActivated::Type parseString2ICStrategy(const std::string & input)
@@ -299,13 +298,6 @@ private:
 
   /// @brief Identify the processor that is missing the newly activated nodes
   void findMissingNewlyActivatedNodes();
-
-  /// @brief Find the first layer of neighbors for a given node (need to safisfy
-  /// (a) the neighbor node should belong to the active subdomain
-  /// (b) the neighbor node be solved previously if it is in inactive subdomain)
-  /// @param nid The ID of the node
-  /// @return A vector of pointers to the neighboring nodes
-  std::vector<const Node *> firstLayerNeighbours(dof_id_type nid) const;
 
   /// @brief Apply initial conditions for a list of nodes
   void applyICForNodeList(SystemBase & sys, const std::vector<dof_id_type> & nodes);
