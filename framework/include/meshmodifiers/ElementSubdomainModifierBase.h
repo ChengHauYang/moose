@@ -308,8 +308,13 @@ private:
   /// @brief Apply initial conditions using polynomial extrapolation
   std::vector<const NodalPatchRecoveryBase *> _npr_vec;
 
+  /// @brief List of neighbor elements that share nodes with reinitialized elements
   std::vector<dof_id_type> _neighbor_solved_elem_ids;
 
+  /// @brief Apply initial conditions using polynomial nodal patch recovery
+  /// @param sys
   void applyIC_Polynomial(SystemBase & sys);
+
+  /// @brief Gather neighbor elements for newly activated nodes
   void gatherNeighborElementsForActivatedNodes();
 };
