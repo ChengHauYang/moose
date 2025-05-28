@@ -7,9 +7,14 @@ elem = QUAD4
 order = FIRST
 order_number = 1
 
+number_of_element = '${fparse nx/10}' # make the extrapolation region fix
+nearby_element_threshold = 1
+
 domain_length = 1
 #left_domain = '${fparse domain_length*10/11}'
 left_domain = '${fparse domain_length*9/10}'
+
+radius_search_threshold = '${fparse domain_length*number_of_element/nx}'
 
 [GlobalParams]
   block = '0 2'
@@ -101,10 +106,14 @@ left_domain = '${fparse domain_length*9/10}'
 
     # --- new for setting IC --- #
     inactive_subdomain_ID = 1
-    ic_strategy = "IC_POLYNOMIAL"
+    # ic_strategy = "IC_POLYNOMIAL"
     # ic_strategy = "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN"
+    ic_strategy = "IC_POLYNOMIAL_THRESHOLD"
 
     nodal_patch_recovery_uo = 'extrapolation_patch'
+
+    nearby_element_threshold = ${nearby_element_threshold}
+    radius_search_threshold = ${radius_search_threshold}
   []
 []
 
@@ -157,7 +166,8 @@ left_domain = '${fparse domain_length*9/10}'
   []
   [mms_bc_approx]
     type = ParsedFunction
-    expression = 'if(${order_number} < 2, 1.1183 * x + 0.1833 * y - 0.0319, -0.1981 * x^2 - 0.1981 * y^2 - 0.4001 * x * y + 1.1183 * x + 0.1833 * y - 0.0319)'
+    # expression = 'if(${order_number} < 2, 1.1183 * x + 0.1833 * y - 0.0319, -0.1981 * x^2 - 0.1981 * y^2 - 0.4001 * x * y + 1.1183 * x + 0.1833 * y - 0.0319)'
+    expression = 'if(${order_number} < 2, 1.1079 * x + 0.2620 * y - 0.0441, -0.2153 * x^2 - 0.2153 * y^2 - 0.4415 * x * y + 1.1079 * x + 0.2620 * y - 0.0441)'
   []
   [mms_force]
     type = ParsedFunction
