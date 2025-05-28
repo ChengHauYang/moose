@@ -962,9 +962,7 @@ ElementSubdomainModifierBase::computeFirstLayerNeighborInfo(SystemBase & sys, bo
 
       std::vector<Real> solution_values;
       for (auto dof : nodal_dofs)
-      {
         solution_values.push_back(current_solution(dof));
-      }
 
       const Real dist = (*node - newly_activated_node_pos).norm();
 
@@ -1064,7 +1062,7 @@ ElementSubdomainModifierBase::applyICForNodeList(SystemBase & sys,
 void
 ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes()
 {
-  if (_ic_strategy != ICStrategyForNewlyActivated::IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN and
+  if (_ic_strategy != ICStrategyForNewlyActivated::IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN &&
       _ic_strategy != ICStrategyForNewlyActivated::IC_POLYNOMIAL)
     return;
 

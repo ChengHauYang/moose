@@ -39,6 +39,8 @@ NodalPatchRecoveryBase::validParams()
   params.addParam<bool>(
       "use_specific_elements", false, "Whether to use specific elements for patch recovery");
 
+  params.addParam<bool>("verbose", false, "Set to true to print coefficient of the polynomial.");
+
   return params;
 }
 
@@ -49,7 +51,8 @@ NodalPatchRecoveryBase::NodalPatchRecoveryBase(const InputParameters & parameter
         static_cast<unsigned int>(getParam<MooseEnum>("patch_polynomial_order"))),
     _multi_index(MathUtils::multiIndex(_mesh.dimension(), _patch_polynomial_order)),
     _q(_multi_index.size()),
-    _use_specific_elements(getParam<bool>("use_specific_elements"))
+    _use_specific_elements(getParam<bool>("use_specific_elements")),
+    _verbose(getParam<bool>("verbose"))
 {
 }
 
@@ -87,6 +90,13 @@ NodalPatchRecoveryBase::nodalPatchRecovery(const Point & x,
     coef = A.completeOrthogonalDecomposition().solve(b);
 
     _cached_coef[key] = coef; // Save to cache
+
+    if (_verbose)
+    {
+      for (const auto & coef_i : coef)
+        _console << coef_i << " ";
+      _console << std::endl;
+    }
   }
 
   // Compute the fitted nodal value

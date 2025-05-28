@@ -131,4 +131,7 @@ private:
   mutable std::
       unordered_map<std::vector<dof_id_type>, RealEigenVector, DofIDVectorHash, DofIDVectorEqual>
           _cached_coef;
+
+  /// Print coefficients of the polynomial to console
+  const bool _verbose;
 };

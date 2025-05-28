@@ -1,6 +1,10 @@
 nx = 20
-ix0 = '${fparse 0.9 * nx}'
-ix1 = '${fparse nx - ix0}'
+# ix0 = '${fparse 0.9 * nx}'
+# ix1 = '${fparse nx - ix0}'
+elem = QUAD9
+order = SECOND
+# elem = QUAD4
+# order = FIRST
 
 [GlobalParams]
   block = '0 2'
@@ -8,18 +12,31 @@ ix1 = '${fparse nx - ix0}'
 
 [Mesh]
   [gmg]
-    type = CartesianMeshGenerator
+    type = GeneratedMeshGenerator
     dim = 2
-    dx = '0.9 0.1'
-    dy = '1'
-    ix = '${ix0} ${ix1}'
-    iy = '${nx}'
-    subdomain_id = '0 1'
+    nx = ${nx}
+    ny = ${nx}
+    elem_type = ${elem}
+  []
+
+  [block1]
+    type = SubdomainBoundingBoxGenerator
+    block_id = 0
+    bottom_left = '0 0 0'
+    top_right = '0.9 1 0'
+    input = gmg
+  []
+  [block2]
+    type = SubdomainBoundingBoxGenerator
+    block_id = 1
+    bottom_left = '0.9 0 0'
+    top_right = '1 1 0'
+    input = block1
   []
 
   [interface_0_1]
     type = SideSetsBetweenSubdomainsGenerator
-    input = gmg
+    input = block2
     primary_block = 0
     paired_block = 1
     new_boundary = 'right_original_boundary'
@@ -31,8 +48,8 @@ ix1 = '${fparse nx - ix0}'
 
 [Variables]
   [diff]
-    order = FIRST
-    #order = SECOND #Finite element LAGRANGE on geometric element QUAD4
+    # order = FIRST
+    order = ${order} #Finite element LAGRANGE on geometric element QUAD4
     # only supports FEInterface::max_order = 1, not fe_type.order = 2
   []
 []
@@ -40,7 +57,7 @@ ix1 = '${fparse nx - ix0}'
 [UserObjects]
   [extrapolation_patch]
     type = NodalPatchRecoveryVariable
-    patch_polynomial_order = FIRST
+    patch_polynomial_order = ${order}
     use_specific_elements = true
     var = 'diff'
     execute_on = 'TIMESTEP_END'
@@ -77,8 +94,8 @@ ix1 = '${fparse nx - ix0}'
 
     # --- new for setting IC --- #
     inactive_subdomain_ID = 1
-    #ic_strategy = "IC_POLYNOMIAL"
-    ic_strategy = "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN"
+    ic_strategy = "IC_POLYNOMIAL"
+    # ic_strategy = "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN"
 
     nodal_patch_recovery_uo = 'extrapolation_patch'
   []
@@ -126,27 +143,49 @@ ix1 = '${fparse nx - ix0}'
   []
 []
 
+[Functions]
+  [mms_bc]
+    type = ParsedFunction
+    expression = 'sin(x) * cos(y)'
+  []
+  [mms_force]
+    type = ParsedFunction
+    expression = '2 * sin(x) * cos(y)' # -(-2 * sin(x) * cos(y))
+  []
+[]
+
 # [Functions]
-#   [mms_force]
-#     type = ParsedFunction
-#     expression = '-2*y^2 - 2*x^2' # -Laplace(x^2*y^2)
-#   []
 #   [mms_bc]
 #     type = ParsedFunction
-#     expression = 'x^2 * y^2'
+#     expression = 'x * tan(y)'
+#   []
+#   [mms_force]
+#     type = ParsedFunction
+#     expression = '-2 * x * sec(y)^2 * tan(y)'
 #   []
 # []
 
-[Functions]
-  [mms_force]
-    type = ParsedFunction
-    expression = '0' # Laplacian of 2x - 3y + 1
-  []
-  [mms_bc]
-    type = ParsedFunction
-    expression = '2*x - 3*y + 1'
-  []
-[]
+# [Functions]
+#   [mms_force]
+#     type = ParsedFunction
+#     expression = '-4- 6' # -Laplace(mms_bc)
+#   []
+#   [mms_bc]
+#     type = ParsedFunction
+#     expression = 'x*y + 2*x^2 + 3*y^2 -x -y + 1'
+#   []
+# []
+
+# [Functions]
+#   [mms_force]
+#     type = ParsedFunction
+#     expression = '0' # Laplacian of 2x - 3y + 1
+#   []
+#   [mms_bc]
+#     type = ParsedFunction
+#     expression = '2*x - 3*y + 1'
+#   []
+# []
 
 [Executioner]
   type = Transient
