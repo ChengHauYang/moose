@@ -1053,7 +1053,7 @@ ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes()
     for (const auto & vec : gathered)
       global_ids.insert(global_ids.end(), vec.begin(), vec.end());
 
-    if (remove_duplicates)
+    if (sort_and_remove_duplicates)
     { // remove duplicates cause issue for std::vector<Point>
       std::sort(global_ids.begin(), global_ids.end());
       global_ids.erase(std::unique(global_ids.begin(), global_ids.end()), global_ids.end());
