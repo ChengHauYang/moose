@@ -16,8 +16,6 @@
 
 #include "libmesh/vector_value.h"
 
-#include "BlockUtils.h"
-
 /**
  * Action to set up all objects used in computation of fracture domain integrals
  */

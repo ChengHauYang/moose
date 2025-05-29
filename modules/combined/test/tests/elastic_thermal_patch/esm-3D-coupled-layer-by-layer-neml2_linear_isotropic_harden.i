@@ -115,8 +115,8 @@ neml2_input = linear_isotropic_hardening
 
     expression = '
       max(
-        y - (y0 +dy+ dy * floor(t / ((Lx+vx) / vx))),
-        x - (x0 + vx * (t - ((Lx+vx) / vx) * floor(t / ((Lx+vx) / vx))))
+        y - (y0 +dy+ dy * floor(t / (Lx / vx))),
+        x - (x0 + vx * (t - ((Lx+vx) / vx) * ceil(t / ((Lx+vx) / vx))))
       )'
     use_xyzt = true
     block = '1 2'

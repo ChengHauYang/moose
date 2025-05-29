@@ -11,8 +11,6 @@
 
 #include "Action.h"
 
-#include "BlockUtils.h"
-
 class LineElementAction : public Action
 {
 public:
