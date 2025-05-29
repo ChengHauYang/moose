@@ -16,6 +16,7 @@
 #include "timpi/communicator.h"
 #include "timpi/parallel_sync.h"
 #include "libmesh/parallel_eigen.h"
+#include <iomanip>
 
 InputParameters
 NodalPatchRecoveryBase::validParams()
@@ -93,9 +94,12 @@ NodalPatchRecoveryBase::nodalPatchRecovery(const Point & x,
 
     if (_verbose)
     {
+      _console << std::setprecision(15) << std::scientific;
       for (const auto & coef_i : coef)
         _console << coef_i << " ";
       _console << std::endl;
+
+      _console << std::defaultfloat;
     }
   }
 

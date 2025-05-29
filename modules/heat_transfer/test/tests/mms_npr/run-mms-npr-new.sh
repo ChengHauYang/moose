@@ -1,7 +1,8 @@
 #!/bin/bash
 EXE="../../../*opt"
 # INPUT="npr_mms_same_threshold.i"
-INPUT="npr_mms.i"
+ INPUT="npr_mms.i"
+#INPUT="npr_mms_whole.i"
 
 NX_VALUES=(10 20 40 80 160 320)
 ELEMENTS=("QUAD4" "QUAD9")

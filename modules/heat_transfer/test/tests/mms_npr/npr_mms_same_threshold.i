@@ -73,6 +73,7 @@ radius_search_threshold = '${fparse domain_length*number_of_element/nx}'
     use_specific_elements = true
     var = 'diff'
     execute_on = 'TIMESTEP_END'
+    verbose = true
   []
 []
 
@@ -86,7 +87,6 @@ radius_search_threshold = '${fparse domain_length*number_of_element/nx}'
   [cut]
     type = ParsedAux
     variable = 'u'
-
     expression = 'x-0.5*${domain_length}*t'
     use_xyzt = true
     block = '1 2'
@@ -167,7 +167,8 @@ radius_search_threshold = '${fparse domain_length*number_of_element/nx}'
   [mms_bc_approx]
     type = ParsedFunction
     # expression = 'if(${order_number} < 2, 1.1183 * x + 0.1833 * y - 0.0319, -0.1981 * x^2 - 0.1981 * y^2 - 0.4001 * x * y + 1.1183 * x + 0.1833 * y - 0.0319)'
-    expression = 'if(${order_number} < 2, 1.1079 * x + 0.2620 * y - 0.0441, -0.2153 * x^2 - 0.2153 * y^2 - 0.4415 * x * y + 1.1079 * x + 0.2620 * y - 0.0441)'
+    # expression = 'if(${order_number} < 2, 1.1079 * x + 0.2620 * y - 0.0441, -0.2153 * x^2 - 0.2153 * y^2 - 0.4415 * x * y + 1.1079 * x + 0.2620 * y - 0.0441)'
+    expression = 'if(${order_number} < 2, 3.355380839936167e-01 -3.511119826922077e-01  * y + 5.552175754015332e-01* x,-7.758964289738352e-02 + 2.347835487006705e-01 * y + 1.246724062984605e+00 * x - 3.236743925655277e-01 * y^2 - 3.084956046608329e-01 * y * x - 3.160343803808951e-01 * x^2)'
   []
   [mms_force]
     type = ParsedFunction

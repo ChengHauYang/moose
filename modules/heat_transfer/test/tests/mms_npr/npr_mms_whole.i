@@ -7,9 +7,14 @@ elem = QUAD4
 order = FIRST
 order_number = 1
 
+number_of_element = '${fparse nx/10}' # make the extrapolation region fix
+nearby_element_threshold = 1
+
 domain_length = 1
 #left_domain = '${fparse domain_length*10/11}'
 left_domain = '${fparse domain_length*9/10}'
+
+radius_search_threshold = '${fparse domain_length*number_of_element/nx}'
 
 [GlobalParams]
   block = '0 2'
@@ -82,7 +87,6 @@ left_domain = '${fparse domain_length*9/10}'
   [cut]
     type = ParsedAux
     variable = 'u'
-
     expression = 'x-0.5*${domain_length}*t'
     use_xyzt = true
     block = '1 2'
@@ -102,10 +106,14 @@ left_domain = '${fparse domain_length*9/10}'
 
     # --- new for setting IC --- #
     inactive_subdomain_ID = 1
-    ic_strategy = "IC_POLYNOMIAL"
-    # ic_strategy = "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN"
+    # ic_strategy = "IC_POLYNOMIAL"
+    ic_strategy = "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN"
+    #ic_strategy = "IC_POLYNOMIAL_THRESHOLD"
 
     nodal_patch_recovery_uo = 'extrapolation_patch'
+
+    nearby_element_threshold = ${nearby_element_threshold}
+    radius_search_threshold = ${radius_search_threshold}
   []
 []
 
@@ -159,11 +167,21 @@ left_domain = '${fparse domain_length*9/10}'
   [mms_bc_approx]
     type = ParsedFunction
     # expression = 'if(${order_number} < 2, 1.1183 * x + 0.1833 * y - 0.0319, -0.1981 * x^2 - 0.1981 * y^2 - 0.4001 * x * y + 1.1183 * x + 0.1833 * y - 0.0319)'
-    expression = 'if(${order_number} < 2, 3.709307137947722e-01 -3.660143390922946e-01  * y + 5.235813196693577e-01* x,3.583340447690454e-01 + 2.329959819569409e-01 * y + 2.810640261603539e-01 * x - 3.374122072254255e-01 * y^2 - 2.909172488339279e-01 * y * x + 2.157295116082268e-01 * x^2)'
+    # expression = 'if(${order_number} < 2, 1.1079 * x + 0.2620 * y - 0.0441, -0.2153 * x^2 - 0.2153 * y^2 - 0.4415 * x * y + 1.1079 * x + 0.2620 * y - 0.0441)'
+    # expression = 'if(${order_number} < 2, 3.355380839936167e-01 -3.511119826922077e-01 * x + 5.552175754015332e-01, -3.236743925655277e-01 * x^2 -3.160343803808951e-01 * y^2 -3.084956046608329e-01 * x * y + 2.347835487006705e-01 * x + 1.246724062984605e+00 * y -7.758964289738352e-02)'
+    # expression = 'if(${order_number} < 2, 1.1051 * x + 0.1579 * y - 0.0255, -0.1866 * x^2 - 0.1866 * y^2 - 0.3761 * x * y + 1.1051 * x + 0.1579 * y - 0.0255)' # from python
+    #expression = 'if(${order_number} < 2, 1.179581070019192e-01 -1.965718003017350e-01 * x + 7.424660370740080e-01*y, -0.1866 * x^2 - 0.1866 * y^2 - 0.3761 * x * y + 1.1051 * x + 0.1579 * y - 0.0255)'
+    # c/y/x in coefficient -> p1
+    # c/y/x/y^2/y*x/x^2 in coefficient -> p2
+    expression = 'if(${order_number} < 2,1.179582397365143e-01 -1.965720375559514e-01 * y + 7.424669343534810e-01 * x,-2.941472935822537e-02 +1.702804690950137e-01*y+ 1.111071580716906e+00*x -1.812109463880138e-01*y^2 -4.125369549692947e-01*y*x -1.803732289559293e-01*x^2 )'
   []
   [mms_force]
     type = ParsedFunction
     expression = '2 * sin(x) * cos(y)' # -(-2 * sin(x) * cos(y))
+  []
+  [dummy_use]
+    type = ParsedFunction
+    expression = '${order_number} * 0'
   []
 []
 
