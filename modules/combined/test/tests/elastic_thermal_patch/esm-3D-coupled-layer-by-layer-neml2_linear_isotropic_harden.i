@@ -1,10 +1,11 @@
 neml2_input = linear_isotropic_hardening
 
-[GlobalParams]
-  block = '0 2'
+[Problem]
+  #solve =false
 []
 
 [GlobalParams]
+  block = '0 2'
   displacements = 'disp_x disp_y disp_z'
 []
 
@@ -116,7 +117,7 @@ neml2_input = linear_isotropic_hardening
     expression = '
       max(
         y - (y0 +dy+ dy * floor(t / (Lx / vx))),
-        x - (x0 + vx * (t - ((Lx+vx) / vx) * ceil(t / ((Lx+vx) / vx))))
+        x - (x0 + vx + vx * (t - (Lx / vx) * floor(t / (Lx / vx))))
       )'
     use_xyzt = true
     block = '1 2'
@@ -233,7 +234,7 @@ neml2_input = linear_isotropic_hardening
     symbol_names = 'q x0 y0 Lx vx dy z_middle'
     symbol_values = '100000 0.0 0.10 2.0 0.10 0.025 0.5'
 
-    expression = 'q * exp(-pow(x - (x0 + vx * (t - ((Lx+vx) / vx) * floor(t / ((Lx+vx) / vx)))),2) - pow(y - (y0 +dy+ dy * floor(t / ((Lx+vx) / vx))),2)) - pow(z-z_middle,2)'
+    expression = 'q * exp(-pow(x - (x0 + vx + vx * (t - (Lx / vx) * floor(t / (Lx / vx)))),2) - pow(y - (y0 +dy+ dy * floor(t / (Lx / vx))),2)) - pow(z-z_middle,2)'
   []
 []
 
@@ -326,7 +327,7 @@ neml2_input = linear_isotropic_hardening
   nl_rel_tol = 1e-5
   nl_abs_tol = 1e-6
   dt = 1
-  end_time = 125
+  end_time = 120
   automatic_scaling = true
   residual_and_jacobian_together = true
   line_search = 'none'
