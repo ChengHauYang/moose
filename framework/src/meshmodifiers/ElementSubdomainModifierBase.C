@@ -1042,7 +1042,7 @@ ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes()
   auto local2Global =
       [&](const auto & local_ids,
           std::vector<typename std::decay<decltype(local_ids[0])>::type> & global_ids,
-          bool remove_duplicates = false) -> void
+          bool sort_and_remove_duplicates = false) -> void
   {
     using IDType = typename std::decay<decltype(local_ids[0])>::type;
 
@@ -1199,28 +1199,8 @@ ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes()
     }
   }
 
-  local2Global(_solved_elem_ids_for_npr, _solved_elem_ids_for_npr, true);
-
-  // #ifndef NDEBUG
-  std::ofstream fout("npr_nodes.txt", std::ios::out | std::ios::trunc);
-  if (!fout.is_open())
-    mooseError("Unable to open npr_nodes.txt for writing!");
-  for (const auto & elem_id : _solved_elem_ids_for_npr)
-  {
-    const Elem * elem = _mesh.elemPtr(elem_id);
-    // Write all node coordinates to debug file
-    for (unsigned n = 0; n < elem->n_nodes(); ++n)
-    {
-      const Node * node_ptr = elem->node_ptr(n);
-      const Point & p = *node_ptr;
-#if LIBMESH_DIM == 2
-      fout << p(0) << ", " << p(1) << '\n';
-#else
-      fout << p(0) << ", " << p(1) << ", " << p(2) << '\n';
-#endif
-    }
-  }
-  // #endif
+  local2Global(
+      _solved_elem_ids_for_npr, _solved_elem_ids_for_npr, true /*sort_and_remove_duplicates*/);
 }
 
 void
@@ -1240,7 +1220,8 @@ ElementSubdomainModifierBase::applyIC_Polynomial(SystemBase & sys)
     std::vector<Real> recovered_vals;
     unsigned int num_components = _npr_vec.size();
     for (unsigned int comp = 0; comp < num_components; ++comp)
-      recovered_vals.push_back(_npr_vec[comp]->nodalPatchRecovery(x, _solved_elem_ids_for_npr));
+      recovered_vals.push_back(
+          _npr_vec[comp]->nodalPatchRecovery(x, _solved_elem_ids_for_npr /*has already sorted*/));
 
     std::vector<dof_id_type> dofs;
     dof_map.dof_indices(node, dofs);
