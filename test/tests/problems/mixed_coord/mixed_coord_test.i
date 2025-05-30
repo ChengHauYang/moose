@@ -1,5 +1,6 @@
 [Mesh]
   file = rz_xyz.e
+  coord_block ='1 2'
 []
 
 [Variables]
@@ -70,5 +71,4 @@
 
 [Problem]
   coord_type = 'RZ XYZ'
-  block = '1 2'
 []

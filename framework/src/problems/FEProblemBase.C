@@ -191,14 +191,6 @@ FEProblemBase::validParams()
                         "True to allow the user to specify initial conditions when restarting. "
                         "Initial conditions can override any restarted field");
 
-  /// One entry of coord system per block, the size of _blocks and _coord_sys has to match, except:
-  /// 1. _blocks.size() == 0, then there needs to be just one entry in _coord_sys, which will
-  ///    be set for the whole domain
-  /// 2. _blocks.size() > 0 and no coordinate system was specified, then the whole domain will be XYZ.
-  /// 3. _blocks.size() > 0 and one coordinate system was specified, then the whole domain will be that system.
-  /*params.addDeprecatedParam<std::vector<SubdomainName>>(
-      "block", {}, "Block IDs for the coordinate systems", "Please use 'Mesh/coord_block'
-     instead");*/
   MultiMooseEnum coord_types("XYZ RZ RSPHERICAL", "XYZ");
   MooseEnum rz_coord_axis("X=0 Y=1", "Y");
   params.addDeprecatedParam<MultiMooseEnum>("coord_type",
@@ -454,11 +446,15 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _has_nonlocal_coupling(false),
     _calculate_jacobian_in_uo(false),
     _blocks(getParam<std::vector<SubdomainName>>("block")),
+    _has_block_in_global(static_cast<bool>(_app.builder().root()->find(
+        _app.syntax().getSyntaxByAction("GlobalParamsAction").front() + "/block"))),
     _kernel_coverage_check(
-        isParamSetByUser("kernel_coverage_check") || !isParamValid("block")
+        isParamSetByUser("kernel_coverage_check") ||
+                (!_has_block_in_global && !isParamSetByUser("block"))
             ? getParam<MooseEnum>("kernel_coverage_check").getEnum<CoverageCheckMode>()
             : CoverageCheckMode::ONLY_LIST),
-    _kernel_coverage_blocks(isParamSetByUser("kernel_coverage_check") || !isParamValid("block")
+    _kernel_coverage_blocks(isParamSetByUser("kernel_coverage_check") ||
+                                    (!_has_block_in_global && !isParamSetByUser("block"))
                                 ? getParam<std::vector<SubdomainName>>("kernel_coverage_block_list")
                                 : _blocks),
     _boundary_restricted_node_integrity_check(
@@ -466,11 +462,13 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _boundary_restricted_elem_integrity_check(
         getParam<bool>("boundary_restricted_elem_integrity_check")),
     _material_coverage_check(
-        isParamSetByUser("material_coverage_check") || !isParamValid("block")
+        isParamSetByUser("material_coverage_check") ||
+                (!_has_block_in_global && !isParamSetByUser("block"))
             ? getParam<MooseEnum>("material_coverage_check").getEnum<CoverageCheckMode>()
             : CoverageCheckMode::ONLY_LIST),
     _material_coverage_blocks(
-        isParamSetByUser("material_coverage_check") || !isParamValid("block")
+        isParamSetByUser("material_coverage_check") ||
+                (!_has_block_in_global && !isParamSetByUser("block"))
             ? getParam<std::vector<SubdomainName>>("material_coverage_block_list")
             : _blocks),
     _fv_bcs_integrity_check(getParam<bool>("fv_bcs_integrity_check")),
@@ -529,11 +527,8 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
   checkConflict(_kernel_coverage_check, "kernel_coverage_check");
   checkConflict(_material_coverage_check, "material_coverage_check");
 
-  const auto & block_in_global = _app.builder().root()->find(
-      _app.syntax().getSyntaxByAction("GlobalParamsAction").front() + "/block");
-
-  if (isParamValid("block") && !block_in_global)
-    mooseWarning("The block parameter is valid in the Problem block, but this has no effect "
+  if (isParamSetByUser("block") && !_has_block_in_global)
+    mooseWarning("The block parameter is set by user in the Problem block, but this has no effect "
                  "on the block restrictions of kernels, BCs, or other block-restrictable objects. "
                  "If your intent was to apply this setting globally, please use GlobalParams "
                  "instead.");
