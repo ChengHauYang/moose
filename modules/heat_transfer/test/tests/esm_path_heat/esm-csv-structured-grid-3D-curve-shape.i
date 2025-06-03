@@ -123,7 +123,7 @@
   execute_on_esm = 'TIMESTEP_BEGIN'
   block = '1 2'
   # execute_on_esm = 'TIMESTEP_END'
-  #inactive_subdomain_ID = 1
+  #unsolved_blocks = '1'
   #ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
   ## for heat source
   power = 1

@@ -105,7 +105,7 @@ radius_search_threshold = '${fparse domain_length*number_of_element/nx}'
     execute_on = 'TIMESTEP_END'
 
     # --- new for setting IC --- #
-    inactive_subdomain_ID = 1
+    unsolved_blocks = '1'
     # ic_strategy = "IC_POLYNOMIAL"
     ic_strategy = "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN"
     #ic_strategy = "IC_POLYNOMIAL_THRESHOLD"
@@ -174,7 +174,7 @@ radius_search_threshold = '${fparse domain_length*number_of_element/nx}'
     # c/y/x in coefficient -> p1
     # c/y/x/y^2/y*x/x^2 in coefficient -> p2
     #expression = 'if(${order_number} < 2,1.179582397365143e-01 -1.965720375559514e-01 * y + 7.424669343534810e-01 * x,-2.941472935822537e-02 +1.702804690950137e-01*y+ 1.111071580716906e+00*x -1.812109463880138e-01*y^2 -4.125369549692947e-01*y*x -1.803732289559293e-01*x^2 )'
-    expression = 'if(${order_number} < 2,1.179582397365143e-01 -1.965720375559514e-01 * y + 7.424669343534810e-01 * x,-2.941472935822537e-02 +1.702804690950137e-01*y+ 1.111071580716906e+00*x -1.812109463880138e-01*y^2 -4.125369549692947e-01*y*x -1.803732289559293e-01*x^2 )'
+    expression = 'if(${order_number} < 2, 0.117958283980534  -0.196572116640925  * y + 0.742467233448669* x,-2.941474961696769e-02 + 1.702804805621453e-01 * y +1.111071637989758e+00 * x -1.812109569080837e-01 * y^2 -4.125369784332500e-01 * x * y -1.803732392494518e-01 * x^2)'
   []
   [mms_force]
     type = ParsedFunction

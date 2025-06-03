@@ -37,7 +37,11 @@ SpatioTemporalHeatAction::validParams()
                         "Switch between using the within element test or the centroid test.");
 
   // for ESM to set the initial condition
-  params.addParam<int>("inactive_subdomain_ID", -1, "Subdomain ID to be marked inactive");
+  params.addParam<std::vector<SubdomainName>>(
+      "unsolved_blocks",
+      {},
+      "If the region has the unsolved blocks, you should set this parameter to turn on the "
+      "extrapolation of the solution to the newly activated elements.");
   params.addParam<std::string>("ic_strategy", "default_value", "Initial condition strategy string");
 
   // for ADMovingEllipsoidalHeatSource
@@ -84,7 +88,8 @@ SpatioTemporalHeatAction::act()
     esm_params.set<std::vector<SubdomainName>>("block") =
         getParam<std::vector<SubdomainName>>("block");
     esm_params.set<ExecFlagEnum>("execute_on") = getParam<ExecFlagEnum>("execute_on_esm");
-    esm_params.set<int>("inactive_subdomain_ID") = getParam<int>("inactive_subdomain_ID");
+    esm_params.set<std::vector<SubdomainName>>("unsolved_blocks") =
+        getParam<std::vector<SubdomainName>>("unsolved_blocks");
     esm_params.set<std::string>("ic_strategy") = getParam<std::string>("ic_strategy");
 
     _problem->addUserObject("SpatioTemporalPathElementSubdomainModifier", "esm", esm_params);

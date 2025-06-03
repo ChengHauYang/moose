@@ -84,7 +84,7 @@ neml2_input = voce_isotropic_hardening
     execute_on = 'TIMESTEP_BEGIN'
 
     # --- new for setting IC --- #
-    inactive_subdomain_ID = 1
+    unsolved_blocks = '1'
     ic_strategy = "IC_POLYNOMIAL"
 
     nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y extrapolation_patch_disp_z'

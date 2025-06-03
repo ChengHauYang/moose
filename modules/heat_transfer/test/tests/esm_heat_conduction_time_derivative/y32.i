@@ -62,7 +62,7 @@
     execute_on = 'INITIAL TIMESTEP_END'
 
     # --- new for setting IC --- #
-    inactive_subdomain_ID = 2
+    unsolved_blocks = '2'
     ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
 
     block = '0 1 2 3'

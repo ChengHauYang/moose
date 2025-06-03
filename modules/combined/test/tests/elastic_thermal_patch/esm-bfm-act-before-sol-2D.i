@@ -45,7 +45,7 @@
     execute_on = 'TIMESTEP_BEGIN'
 
     # --- new for setting IC --- #
-    inactive_subdomain_ID = 1
+    unsolved_blocks = '1'
     ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
   []
 []
@@ -60,7 +60,7 @@
 #   target_subdomain = 0
 #   radius = 0.03
 #   execute_on_esm = 'TIMESTEP_BEGIN'
-#   inactive_subdomain_ID = 1
+#   unsolved_blocks = '1'
 #   ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
 #   # for heat source
 #   power = 1

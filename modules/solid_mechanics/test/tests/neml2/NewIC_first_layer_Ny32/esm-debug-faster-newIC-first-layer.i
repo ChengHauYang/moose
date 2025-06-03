@@ -78,7 +78,7 @@ number_elements = 10
     y_max = 2
     change_one_row = true
     execute_on = 'INITIAL TIMESTEP_END'
-    inactive_subdomain_ID = 2
+    unsolved_blocks = '2'
     ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
   []
 []

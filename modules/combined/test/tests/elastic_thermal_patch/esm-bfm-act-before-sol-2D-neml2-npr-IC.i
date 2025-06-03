@@ -72,7 +72,7 @@ neml2_input = viscoplasticity_isoharden
     execute_on = 'TIMESTEP_BEGIN'
 
     # --- new for setting IC --- #
-    inactive_subdomain_ID = 1
+    unsolved_blocks = '1'
     ic_strategy = "IC_POLYNOMIAL"
 
     nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y'
@@ -89,7 +89,7 @@ neml2_input = viscoplasticity_isoharden
 #   target_subdomain = 0
 #   radius = 0.03
 #   execute_on_esm = 'TIMESTEP_BEGIN'
-#   inactive_subdomain_ID = 1
+#   unsolved_blocks = '1'
 #   ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
 #   # for heat source
 #   power = 1

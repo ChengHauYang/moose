@@ -101,7 +101,7 @@ left_domain = '${fparse domain_length*9/10}'
     execute_on = 'TIMESTEP_END'
 
     # --- new for setting IC --- #
-    inactive_subdomain_ID = 1
+    unsolved_blocks = '1'
     ic_strategy = "IC_POLYNOMIAL"
     # ic_strategy = "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN"
 

@@ -105,7 +105,7 @@ radius_search_threshold = '${fparse domain_length*number_of_element/nx}'
     execute_on = 'TIMESTEP_END'
 
     # --- new for setting IC --- #
-    inactive_subdomain_ID = 1
+    unsolved_blocks = '1'
     # ic_strategy = "IC_POLYNOMIAL"
     # ic_strategy = "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN"
     ic_strategy = "IC_POLYNOMIAL_THRESHOLD"

@@ -82,7 +82,7 @@ output_freq = 100
     execute_on = 'INITIAL TIMESTEP_END'
 
     # --- new for setting IC --- #
-    inactive_subdomain_ID = 2
+    unsolved_blocks = '2'
     ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
 
   []
@@ -242,7 +242,7 @@ output_freq = 100
   nl_abs_tol = 1e-10
   type = Transient
   dt = 0.01
-  end_time = 10 
+  end_time = 10
   automatic_scaling = true
   residual_and_jacobian_together = true
   line_search = none

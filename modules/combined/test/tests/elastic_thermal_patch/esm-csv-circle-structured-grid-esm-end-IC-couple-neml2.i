@@ -76,7 +76,7 @@ neml2_input = rate_independent_plasticity_isoharden
     execute_on = 'TIMESTEP_END'
 
     # --- new for setting IC --- #
-    inactive_subdomain_ID = 1
+    unsolved_blocks = '1'
     ic_strategy = "IC_POLYNOMIAL"
 
     nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y'
