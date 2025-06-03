@@ -79,34 +79,6 @@ protected:
   /// Boundary names associated with each moving boundary ID
   std::unordered_map<BoundaryID, BoundaryName> _moving_boundary_names;
 
-  inline void MPIAllgatherVectorAll_Int(const std::vector<int> & local_vec,
-                                        std::vector<int> & global_vec,
-                                        MPI_Comm comm = MPI_COMM_WORLD) const
-  {
-    int nProc, myRank;
-    MPI_Comm_size(comm, &nProc);
-    MPI_Comm_rank(comm, &myRank);
-
-    int local_size = static_cast<int>(local_vec.size());
-    std::vector<int> recv_counts(nProc);
-    MPI_Allgather(&local_size, 1, MPI_INT, recv_counts.data(), 1, MPI_INT, comm);
-
-    std::vector<int> displs(nProc, 0);
-    std::partial_sum(recv_counts.begin(), recv_counts.end() - 1, displs.begin() + 1);
-
-    int total_size = std::accumulate(recv_counts.begin(), recv_counts.end(), 0);
-    global_vec.resize(total_size);
-
-    MPI_Allgatherv(local_vec.data(),
-                   local_size,
-                   MPI_INT,
-                   global_vec.data(),
-                   recv_counts.data(),
-                   displs.data(),
-                   MPI_INT,
-                   comm);
-  }
-
 private:
   /// Create moving boundaries
   void createMovingBoundaries(MooseMesh & mesh);
@@ -194,22 +166,24 @@ private:
   /// Range of reinitialized boundary nodes on the displaced mesh
   std::unique_ptr<ConstBndNodeRange> _reinitialized_displaced_bnd_node_range;
 
-  std::map<dof_id_type, NeighborInfo> _newlyactivated_node_to_first_neighbors;
+  /// @brief Map from newly-activated node ID to a NeighborInfo structure (distances and solutions)
+  std::map<dof_id_type, NeighborInfo> _newlyactivated_node_to_first_layer_neighbors_info;
 
-  ///
+  /// @brief Set of newly activated nodes
   std::unordered_set<dof_id_type> _newactivated_nodes;
   std::unordered_set<dof_id_type> _first_pass_local_activated_nodes;
 
   std::string _ic_strategy_string;
   ICStrategyForNewlyActivated::Type _ic_strategy;
 
-  /// Inactive subdomain ID
-  int _inactive_subdomain_ID;
+  /// Unsolved block names
+  std::vector<SubdomainName> _unsolved_blocks;
+  /// Unsolved block IDs
+  std::set<SubdomainID> _unsolved_block_ids;
 
   /// @brief find the first layer of neighbors for each element
   /// @param sys
   void computeFirstLayerNeighborInfo(SystemBase & sys);
-  void verifySecondNeighborInfo();
 
   /**
    * * Check if the node is newly activated.
@@ -274,7 +248,7 @@ private:
   int _nearby_element_threshold = 1;
 
   /// @brief centroids of the element
-  std::vector<Point> _centroids_elements;
+  std::vector<Point> _centroids_of_elements;
 
   /// @brief Maximum number of elements in a leaf node of the k-d tree
   int _leaf_max_size = 10;
