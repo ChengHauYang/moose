@@ -27,49 +27,49 @@
   []
 []
 
-[SpatioTemporalPaths]
-  [path]
-    type = CSVPiecewiseLinearSpatioTemporalPath
-    file = 'concentric_circles_reverse.csv'
-    verbose = true
-  []
+[SpatioTemporalHeat]
+  path_file = 'concentric_circles_reverse.csv'
+  # for path
+  verbose = true
+  # for esm
+  block = '0 1'
+  target_subdomain = 0
+  radius = 0.03
+  execute_on_esm = 'TIMESTEP_BEGIN'
+  unsolved_blocks = '1'
+  ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
+  # for heat source
+  power = 1
+  a = 0.035
+  b = 0.01
+  efficiency = 1
+  scale = 1
+  # for kernel
+  heat_variable = T
 []
 
-[MeshModifiers]
-  [esm]
-    type = SpatioTemporalPathElementSubdomainModifier
-    path = 'path'
-    radius = 0.03
-    target_subdomain = '0'
-    block = '0 1'
-    execute_on = 'TIMESTEP_BEGIN'
 
-    # --- new for setting IC --- #
-    unsolved_blocks = '1'
-    ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
-  []
-[]
+# [SpatioTemporalPaths]
+#   [path]
+#     type = CSVPiecewiseLinearSpatioTemporalPath
+#     file = 'concentric_circles_reverse.csv'
+#     verbose = true
+#   []
+# []
 
-# [HeatPathAction]
-#   type = SpatioTemporalHeatAction
-#   path_file = 'concentric_circles_reverse.csv'
-#   # for path
-#   verbose = true
-#   # for esm
-#   block = '0 1'
-#   target_subdomain = 0
-#   radius = 0.03
-#   execute_on_esm = 'TIMESTEP_BEGIN'
-#   unsolved_blocks = '1'
-#   ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
-#   # for heat source
-#   power = 1
-#   a = 0.035
-#   b = 0.01
-#   efficiency = 1
-#   scale = 1
-#   # for kernel
-#   heat_variable = T
+# [MeshModifiers]
+#   [esm]
+#     type = SpatioTemporalPathElementSubdomainModifier
+#     path = 'path'
+#     radius = 0.03
+#     target_subdomain = '0'
+#     block = '0 1'
+#     execute_on = 'TIMESTEP_BEGIN'
+
+#     # --- new for setting IC --- #
+#     unsolved_blocks = '1'
+#     ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
+#   []
 # []
 
 [Physics]
@@ -113,16 +113,16 @@
   [stress]
     type = ComputeFiniteStrainElasticStress
   []
-  [volumetric_heat] # need to be exactly this name!
-    type = ADMovingEllipsoidalHeatSource
-    path = 'path'
-    power = 1
-    efficiency = 1
-    scale = 1
-    a = 0.035
-    b = 0.01
-    outputs = exodus
-  []
+  # [volumetric_heat] # need to be exactly this name!
+  #   type = ADMovingEllipsoidalHeatSource
+  #   path = 'path'
+  #   power = 1
+  #   efficiency = 1
+  #   scale = 1
+  #   a = 0.035
+  #   b = 0.01
+  #   outputs = exodus
+  # []
 []
 
 [Kernels]
@@ -134,11 +134,11 @@
     type = HeatConductionTimeDerivative
     variable = T
   []
-  [hsource]
-    type = ADMatHeatSource
-    material_property = 'volumetric_heat'
-    variable = T
-  []
+  # [hsource]
+  #   type = ADMatHeatSource
+  #   material_property = 'volumetric_heat'
+  #   variable = T
+  # []
 []
 
 [BCs]

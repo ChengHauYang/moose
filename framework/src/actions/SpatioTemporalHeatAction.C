@@ -44,6 +44,11 @@ SpatioTemporalHeatAction::validParams()
       "extrapolation of the solution to the newly activated elements.");
   params.addParam<std::string>("ic_strategy", "default_value", "Initial condition strategy string");
 
+  params.addParam<std::vector<UserObjectName>>(
+      "nodal_patch_recovery_uo",
+      {},
+      "List of NodalPatchRecovery UserObjects for each component (e.g., u, v)");
+
   // for ADMovingEllipsoidalHeatSource
   params.addRequiredParam<MaterialPropertyName>("power", "Input power of the heat source.");
   params.addRequiredParam<MaterialPropertyName>(
@@ -66,7 +71,7 @@ SpatioTemporalHeatAction::SpatioTemporalHeatAction(const InputParameters & param
 void
 SpatioTemporalHeatAction::act()
 {
-  const std::string path_name = "path";
+  const std::string path_name = _name + "path";
 
   if (_current_task == "add_user_object")
   {
@@ -91,6 +96,8 @@ SpatioTemporalHeatAction::act()
     esm_params.set<std::vector<SubdomainName>>("unsolved_blocks") =
         getParam<std::vector<SubdomainName>>("unsolved_blocks");
     esm_params.set<std::string>("ic_strategy") = getParam<std::string>("ic_strategy");
+    esm_params.set<std::vector<UserObjectName>>("nodal_patch_recovery_uo") =
+        getParam<std::vector<UserObjectName>>("nodal_patch_recovery_uo");
 
     _problem->addUserObject("SpatioTemporalPathElementSubdomainModifier", "esm", esm_params);
   }

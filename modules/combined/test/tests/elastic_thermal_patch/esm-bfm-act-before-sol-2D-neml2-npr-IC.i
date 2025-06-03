@@ -62,44 +62,44 @@ neml2_input = viscoplasticity_isoharden
   []
 []
 
-[MeshModifiers]
-  [esm]
-    type = SpatioTemporalPathElementSubdomainModifier
-    path = 'path'
-    radius = 0.03
-    target_subdomain = '0'
-    block = '0 1'
-    execute_on = 'TIMESTEP_BEGIN'
+# [MeshModifiers]
+#   [esm]
+#     type = SpatioTemporalPathElementSubdomainModifier
+#     path = 'path'
+#     radius = 0.03
+#     target_subdomain = '0'
+#     block = '0 1'
+#     execute_on = 'TIMESTEP_BEGIN'
 
-    # --- new for setting IC --- #
-    unsolved_blocks = '1'
-    ic_strategy = "IC_POLYNOMIAL"
+#     # --- new for setting IC --- #
+#     unsolved_blocks = '1'
+#     ic_strategy = "IC_POLYNOMIAL"
 
-    nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y'
-  []
-[]
-
-# [HeatPathAction]
-#   type = SpatioTemporalHeatAction
-#   path_file = 'concentric_circles_reverse.csv'
-#   # for path
-#   verbose = true
-#   # for esm
-#   block = '0 1'
-#   target_subdomain = 0
-#   radius = 0.03
-#   execute_on_esm = 'TIMESTEP_BEGIN'
-#   unsolved_blocks = '1'
-#   ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
-#   # for heat source
-#   power = 1
-#   a = 0.035
-#   b = 0.01
-#   efficiency = 1
-#   scale = 1
-#   # for kernel
-#   heat_variable = T
+#     nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y'
+#   []
 # []
+
+[SpatioTemporalHeat]
+  path_file = 'concentric_circles_reverse.csv'
+  # for path
+  verbose = true
+  # for esm
+  block = '0 1'
+  target_subdomain = 0
+  radius = 0.03
+  execute_on_esm = 'TIMESTEP_BEGIN'
+  unsolved_blocks = '1'
+  ic_strategy = "IC_POLYNOMIAL"
+  nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y'
+  # for heat source
+  power = 100
+  a = 0.02
+  b = 0.005
+  efficiency = 1
+  scale = 1
+  # for kernel
+  heat_variable = T
+[]
 
 [Physics]
 
@@ -168,16 +168,16 @@ neml2_input = viscoplasticity_isoharden
     stress_free_temperature = 0
     eigenstrain_name = thermal_expansion
   []
-  [volumetric_heat] # need to be exactly this name!
-    type = ADMovingEllipsoidalHeatSource
-    path = 'path'
-    power = 100
-    efficiency = 1
-    scale = 1
-    a = 0.02
-    b = 0.005
-    outputs = exodus
-  []
+  # [volumetric_heat] # need to be exactly this name!
+  #   type = ADMovingEllipsoidalHeatSource
+  #   path = 'path'
+  #   power = 100
+  #   efficiency = 1
+  #   scale = 1
+  #   a = 0.02
+  #   b = 0.005
+  #   outputs = exodus
+  # []
 []
 
 [Kernels]
@@ -189,11 +189,11 @@ neml2_input = viscoplasticity_isoharden
     type = HeatConductionTimeDerivative
     variable = T
   []
-  [hsource]
-    type = ADMatHeatSource
-    material_property = 'volumetric_heat'
-    variable = T
-  []
+  # [hsource]
+  #   type = ADMatHeatSource
+  #   material_property = 'volumetric_heat'
+  #   variable = T
+  # []
 []
 
 [BCs]
