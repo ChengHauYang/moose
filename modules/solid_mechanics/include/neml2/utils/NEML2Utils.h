@@ -11,9 +11,12 @@
 
 #ifdef NEML2_ENABLED
 
-#include "neml2/misc/parser_utils.h"
+#include <optional>
+
 #include "neml2/tensors/tensors.h"
-#include "neml2/models/LabeledAxisAccessor.h"
+#include "neml2/base/LabeledAxisAccessor.h"
+#include "neml2/base/Parser.h"
+#include "neml2/models/Model.h"
 #include "RankTwoTensor.h"
 #include "RankFourTensor.h"
 #include "SymmetricRankTwoTensor.h"
@@ -121,7 +124,7 @@ struct Layout<SymmetricRankFourTensor>
  * can potentially be used as NEML2 input variables.
  *
  * For this method to work, the underlying data in \p data must be reinterpretable as Real
- * (neml2::kFloat64). The data class T must also be aligned and follow the striding implied by
+ * (torch::kFloat64). The data class T must also be aligned and follow the striding implied by
  * Layout<T>::shape. The data class T must also have no padding or overhead.
  */
 template <typename T>
