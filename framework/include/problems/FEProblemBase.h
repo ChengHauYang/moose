@@ -66,7 +66,7 @@ class MultiApp;
 class TransientMultiApp;
 class ScalarInitialCondition;
 class Indicator;
-class InternalSideIndicator;
+class InternalSideIndicatorBase;
 class Marker;
 class Material;
 class Transfer;
@@ -893,15 +893,6 @@ public:
   void projectInitialConditionOnCustomRange(libMesh::ConstElemRange & elem_range,
                                             ConstBndNodeRange & bnd_node_range);
 
-  /**
-   * Project initial conditions onto a specified set of elements and boundary nodes
-   * for a user-defined subset of variables.
-   */
-  void projectInitialConditionOnCustomRangeForSpecificVars(
-      libMesh::ConstElemRange & elem_range,
-      ConstBndNodeRange & bnd_node_range,
-      const std::set<unsigned int> & selected_var_nums);
-
   // Materials /////
   virtual void addMaterial(const std::string & material_name,
                            const std::string & name,
@@ -1668,7 +1659,7 @@ public:
    */
   ///@{
   const MooseObjectWarehouse<Indicator> & getIndicatorWarehouse() { return _indicators; }
-  const MooseObjectWarehouse<InternalSideIndicator> & getInternalSideIndicatorWarehouse()
+  const MooseObjectWarehouse<InternalSideIndicatorBase> & getInternalSideIndicatorWarehouse()
   {
     return _internal_side_indicators;
   }
@@ -2403,6 +2394,13 @@ public:
    * @returns the linear system names in the problem
    */
   const std::vector<LinearSystemName> & getLinearSystemNames() const { return _linear_sys_names; }
+  /**
+   * @returns the solver system names in the problem
+   */
+  const std::vector<SolverSystemName> & getSolverSystemNames() const { return _solver_sys_names; }
+
+  /// @returns true if either the [Problem/block] parameter or the [GlobalParams/block] parameter is set by user
+  bool isBlockSetByUserOrGlobalParams() const;
 
 protected:
   /// Create extra tagged vectors and matrices
@@ -2522,7 +2520,7 @@ protected:
   std::map<SolverSystemName, unsigned int> _solver_sys_name_to_num;
 
   /// The union of nonlinear and linear system names
-  std::vector<std::string> _solver_sys_names;
+  std::vector<SolverSystemName> _solver_sys_names;
 
   /// The auxiliary system
   std::shared_ptr<AuxiliarySystem> _aux;
@@ -2579,7 +2577,7 @@ protected:
   ///@{
   // Indicator Warehouses
   MooseObjectWarehouse<Indicator> _indicators;
-  MooseObjectWarehouse<InternalSideIndicator> _internal_side_indicators;
+  MooseObjectWarehouse<InternalSideIndicatorBase> _internal_side_indicators;
   ///@}
 
   // Marker Warehouse
@@ -2741,11 +2739,17 @@ protected:
 
   std::vector<SolverParams> _solver_params;
 
-  /// Default blocks for block restriction (kernel and material coverage check only for the default blocks)
-  std::vector<SubdomainName> _blocks;
+  /**
+   * @brief Whether [GlobalParams/block] is specified by the user
+   *
+   * [GlobalParams] only apply if there is a [Problem] block in the input file. We need this
+   * additional flag to handle the case where the user specifies a [GlobalParams] block but not a
+   * [Problem] block.
+   */
+  const bool _has_block_in_global_params;
 
-  /// Whether the user set a block in the GlobalParams
-  bool _has_block_in_global;
+  /// Default blocks for block restriction (kernel and material coverage check only for the default blocks)
+  const std::vector<SubdomainName> _blocks;
 
   /// Determines whether and which subdomains are to be checked to ensure that they have an active kernel
   CoverageCheckMode _kernel_coverage_check;
@@ -2792,6 +2796,9 @@ protected:
 
   /// Whether or not to be verbose with multiapps
   bool _verbose_multiapps;
+
+  /// Whether or not to be verbose on solution restoration post a failed time step
+  bool _verbose_restore;
 
   /// The error message to go with an exception
   std::string _exception_message;

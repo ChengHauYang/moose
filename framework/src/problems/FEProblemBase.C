@@ -75,7 +75,7 @@
 #include "InterfaceUserObject.h"
 #include "GeneralUserObject.h"
 #include "ThreadedGeneralUserObject.h"
-#include "InternalSideIndicator.h"
+#include "InternalSideIndicatorBase.h"
 #include "Transfer.h"
 #include "MultiAppTransfer.h"
 #include "MultiMooseEnum.h"
@@ -191,16 +191,6 @@ FEProblemBase::validParams()
                         "True to allow the user to specify initial conditions when restarting. "
                         "Initial conditions can override any restarted field");
 
-  MultiMooseEnum coord_types("XYZ RZ RSPHERICAL", "XYZ");
-  MooseEnum rz_coord_axis("X=0 Y=1", "Y");
-  params.addDeprecatedParam<MultiMooseEnum>("coord_type",
-                                            coord_types,
-                                            "Type of the coordinate system per block param",
-                                            "Please use 'Mesh/coord_type' instead");
-  params.addDeprecatedParam<MooseEnum>("rz_coord_axis",
-                                       rz_coord_axis,
-                                       "The rotation axis (X | Y) for axisymetric coordinates",
-                                       "Please use 'Mesh/rz_coord_axis' instead");
   auto coverage_check_description = [](std::string scope, std::string list_param_name)
   {
     return "Controls, if and how a " + scope +
@@ -274,6 +264,10 @@ FEProblemBase::validParams()
   params.addParam<bool>("verbose_multiapps",
                         false,
                         "Set to True to enable verbose screen printing related to MultiApps");
+  params.addParam<bool>(
+      "verbose_restore",
+      false,
+      "Set to True to enable verbose screen printing related to solution restoration");
 
   params.addParam<FileNameNoExtension>("restart_file_base",
                                        "File base name used for restart (e.g. "
@@ -361,8 +355,8 @@ FEProblemBase::validParams()
                               "Nonlinear system(s)");
   params.addParamNamesToGroup(
       "restart_file_base force_restart allow_initial_conditions_with_restart", "Restart");
-  params.addParamNamesToGroup("verbose_setup verbose_multiapps parallel_barrier_messaging",
-                              "Verbosity");
+  params.addParamNamesToGroup(
+      "verbose_setup verbose_multiapps verbose_restore parallel_barrier_messaging", "Verbosity");
   params.addParamNamesToGroup(
       "null_space_dimension transpose_null_space_dimension near_null_space_dimension",
       "Null space removal");
@@ -445,17 +439,16 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _previous_nl_solution_required(getParam<bool>("previous_nl_solution_required")),
     _has_nonlocal_coupling(false),
     _calculate_jacobian_in_uo(false),
+    _has_block_in_global_params(
+        _app.builder().root() ? static_cast<bool>(_app.builder().root()->find("GlobalParams/block"))
+                              : false),
     _blocks(getParam<std::vector<SubdomainName>>("block")),
-    _has_block_in_global(_app.builder().root()
-                             ? static_cast<bool>(_app.builder().root()->find("GlobalParams/block"))
-                             : false),
     _kernel_coverage_check(
-        isParamSetByUser("kernel_coverage_check") ||
-                (!_has_block_in_global && !isParamSetByUser("block"))
+        isParamSetByUser("kernel_coverage_check") || !isBlockSetByUserOrGlobalParams()
             ? getParam<MooseEnum>("kernel_coverage_check").getEnum<CoverageCheckMode>()
             : CoverageCheckMode::ONLY_LIST),
     _kernel_coverage_blocks(isParamSetByUser("kernel_coverage_check") ||
-                                    (!_has_block_in_global && !isParamSetByUser("block"))
+                                    !isBlockSetByUserOrGlobalParams()
                                 ? getParam<std::vector<SubdomainName>>("kernel_coverage_block_list")
                                 : _blocks),
     _boundary_restricted_node_integrity_check(
@@ -463,13 +456,11 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _boundary_restricted_elem_integrity_check(
         getParam<bool>("boundary_restricted_elem_integrity_check")),
     _material_coverage_check(
-        isParamSetByUser("material_coverage_check") ||
-                (!_has_block_in_global && !isParamSetByUser("block"))
+        isParamSetByUser("material_coverage_check") || !isBlockSetByUserOrGlobalParams()
             ? getParam<MooseEnum>("material_coverage_check").getEnum<CoverageCheckMode>()
             : CoverageCheckMode::ONLY_LIST),
     _material_coverage_blocks(
-        isParamSetByUser("material_coverage_check") ||
-                (!_has_block_in_global && !isParamSetByUser("block"))
+        isParamSetByUser("material_coverage_check") || !isBlockSetByUserOrGlobalParams()
             ? getParam<std::vector<SubdomainName>>("material_coverage_block_list")
             : _blocks),
     _fv_bcs_integrity_check(getParam<bool>("fv_bcs_integrity_check")),
@@ -482,6 +473,7 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _parallel_barrier_messaging(getParam<bool>("parallel_barrier_messaging")),
     _verbose_setup(getParam<MooseEnum>("verbose_setup")),
     _verbose_multiapps(getParam<bool>("verbose_multiapps")),
+    _verbose_restore(getParam<bool>("verbose_restore")),
     _current_execute_on_flag(EXEC_NONE),
     _control_warehouse(_app.getExecuteOnEnum(), /*threaded=*/false),
     _is_petsc_options_inserted(false),
@@ -520,19 +512,20 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     if ((isParamSetByUser(coverage_check) &&
          (coverage_check_mode == CoverageCheckMode::ONLY_LIST ||
           coverage_check_mode == CoverageCheckMode::SKIP_LIST)) &&
-        (_has_block_in_global || isParamSetByUser("block")))
-      mooseError("Cannot set both '" + coverage_check +
-                 "' as 'ONLY_LIST' or 'SKIP_LIST' and 'block'. Please set only one.");
+        isBlockSetByUserOrGlobalParams())
+      paramError("block",
+                 "Cannot set both '" + coverage_check +
+                     "' as 'ONLY_LIST' or 'SKIP_LIST' and 'block'. Please set only one.");
   };
 
   checkConflict(_kernel_coverage_check, "kernel_coverage_check");
   checkConflict(_material_coverage_check, "material_coverage_check");
 
-  if (isParamSetByUser("block") && !_has_block_in_global)
-    mooseWarning("The block parameter is set by user in the Problem block, but this has no effect "
-                 "on the block restrictions of kernels, BCs, or other block-restrictable objects. "
-                 "If your intent was to apply this setting globally, please use GlobalParams "
-                 "instead.");
+  if (isParamSetByUser("block") && !_has_block_in_global_params)
+    mooseWarning(
+        "The block parameter is set by user in the Problem block, but this has no effect on the "
+        "block restrictions of kernels, BCs, or other block-restrictable objects. If your intent "
+        "was to apply this setting globally, please use [GlobalParams/block] instead.");
 
   //  Initialize static do_derivatives member. We initialize this to true so that all the
   //  default AD things that we setup early in the simulation actually get their derivative
@@ -596,12 +589,6 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
 
   es().parameters.set<FEProblemBase *>("_fe_problem_base") = this;
 
-  if (parameters.isParamSetByUser("coord_type"))
-    setCoordSystem(getParam<std::vector<SubdomainName>>("block"),
-                   getParam<MultiMooseEnum>("coord_type"));
-  if (parameters.isParamSetByUser("rz_coord_axis"))
-    setAxisymmetricCoordAxis(getParam<MooseEnum>("rz_coord_axis"));
-
   if (isParamValid("restart_file_base"))
   {
     std::string restart_file_base = getParam<FileNameNoExtension>("restart_file_base");
@@ -642,6 +629,12 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     // We don't want petscSetOptions being called in solve and clearing the option that was just set
     _is_petsc_options_inserted = true;
   }
+}
+
+bool
+FEProblemBase::isBlockSetByUserOrGlobalParams() const
+{
+  return isParamSetByUser("block") || _has_block_in_global_params;
 }
 
 const MooseMesh &
@@ -1265,7 +1258,11 @@ FEProblemBase::initialSetup()
   // interfaces. This map will then be used by the AgumentSparsityOnInterface ghosting functor to
   // know which dofs we need ghosted when we call EquationSystems::reinit
   if (_displaced_problem && _mortar_data.hasDisplacedObjects())
+  {
     _displaced_problem->updateMesh();
+    // if displacements were applied to the mesh, the mortar mesh should be updated too
+    updateMortarMesh();
+  }
 
   // Possibly reinit one more time to get ghosting correct
   reinitBecauseOfGhostingOrNewGeomObjects();
@@ -3732,65 +3729,6 @@ FEProblemBase::projectInitialConditionOnCustomRange(ConstElemRange & elem_range,
   _aux->solution().localize(*_aux->sys().current_local_solution, _aux->dofMap().get_send_list());
 }
 
-void
-FEProblemBase::projectInitialConditionOnCustomRangeForSpecificVars(
-    ConstElemRange & elem_range,
-    ConstBndNodeRange & bnd_nodes,
-    const std::set<unsigned int> & ic_target_vars)
-{
-  ComputeInitialConditionThread cic(*this);
-  Threads::parallel_reduce(elem_range, cic);
-
-  // Need to close the solution vector here so that boundary ICs take precendence
-  for (auto & nl : _nl)
-    nl->solution().close();
-  _aux->solution().close();
-
-  ComputeBoundaryInitialConditionThread cbic(*this);
-  Threads::parallel_reduce(bnd_nodes, cbic);
-
-  for (auto & nl : _nl)
-    nl->solution().close();
-  _aux->solution().close();
-
-  // Also, load values into the SCALAR dofs
-  // Note: We assume that all SCALAR dofs are on the
-  // processor with highest ID
-  if (processor_id() == (n_processors() - 1) && _scalar_ics.hasActiveObjects())
-  {
-    const auto & ics = _scalar_ics.getActiveObjects();
-    for (const auto & ic : ics)
-    {
-      MooseVariableScalar & var = ic->variable();
-
-      if (!ic_target_vars.empty() && !ic_target_vars.count(var.number()))
-        continue;
-
-      var.reinit();
-
-      DenseVector<Number> vals(var.order());
-      ic->compute(vals);
-
-      const unsigned int n_SCALAR_dofs = var.dofIndices().size();
-      for (unsigned int i = 0; i < n_SCALAR_dofs; i++)
-      {
-        const dof_id_type global_index = var.dofIndices()[i];
-        var.sys().solution().set(global_index, vals(i));
-        var.setValue(i, vals(i));
-      }
-    }
-  }
-
-  for (auto & nl : _nl)
-  {
-    nl->solution().close();
-    nl->solution().localize(*nl->system().current_local_solution, nl->dofMap().get_send_list());
-  }
-
-  _aux->solution().close();
-  _aux->solution().localize(*_aux->sys().current_local_solution, _aux->dofMap().get_send_list());
-}
-
 std::shared_ptr<MaterialBase>
 FEProblemBase::getMaterial(std::string name,
                            Moose::MaterialDataType type,
@@ -5238,8 +5176,8 @@ FEProblemBase::addIndicator(const std::string & indicator_name,
     std::shared_ptr<Indicator> indicator =
         _factory.create<Indicator>(indicator_name, name, parameters, tid);
     logAdd("Indicator", name, indicator_name, parameters);
-    std::shared_ptr<InternalSideIndicator> isi =
-        std::dynamic_pointer_cast<InternalSideIndicator>(indicator);
+    std::shared_ptr<InternalSideIndicatorBase> isi =
+        std::dynamic_pointer_cast<InternalSideIndicatorBase>(indicator);
     if (isi)
       _internal_side_indicators.addObject(isi, tid);
     else
@@ -6666,8 +6604,19 @@ FEProblemBase::restoreSolutions()
   TIME_SECTION("restoreSolutions", 5, "Restoring Solutions");
 
   for (auto & sys : _solver_systems)
+  {
+    if (_verbose_restore)
+      _console << "Restoring solutions on system " << sys->name() << "..." << std::endl;
     sys->restoreSolutions();
+  }
+
+  if (_verbose_restore)
+    _console << "Restoring solutions on Auxiliary system..." << std::endl;
   _aux->restoreSolutions();
+
+  if (_verbose_restore)
+    _console << "Restoring postprocessor, vector-postprocessor, and reporter data..." << std::endl;
+  _reporter_data.restoreState(_verbose_restore);
 
   if (_displaced_problem)
     _displaced_problem->updateMesh();
@@ -6703,6 +6652,7 @@ FEProblemBase::outputStep(ExecFlagType type)
   for (auto & sys : _solver_systems)
     sys->update();
   _aux->update();
+
   if (_displaced_problem)
     _displaced_problem->syncSolutions();
   _app.getOutputWarehouse().outputStep(type);
@@ -7995,6 +7945,11 @@ FEProblemBase::adaptMesh()
     }
     else
     {
+      // If the mesh didn't change, we still need to update the displaced mesh
+      // to undo the undisplacement performed in Adaptivity::adaptMesh
+      if (_displaced_problem)
+        _displaced_problem->updateMesh();
+
       _console << "Mesh unchanged, skipping remaining steps..." << std::endl;
       break;
     }
@@ -8007,6 +7962,9 @@ FEProblemBase::adaptMesh()
   // for real if necessary.
   if (mesh_changed)
     es().reinit_systems();
+
+  // Execute multi-apps that need to run after adaptivity, but before the next timestep.
+  execMultiApps(EXEC_POST_ADAPTIVITY);
 
   return mesh_changed;
 }
@@ -8363,6 +8321,17 @@ FEProblemBase::checkProblemIntegrity()
 
   // Verify that we don't have any Element type/Coordinate Type conflicts
   checkCoordinateSystems();
+
+  // Coordinate transforms are only intended for use with MultiApps at this time. If you are not
+  // using multiapps but still require these, contact a moose developer
+  if (_mesh.coordTransform().hasScalingOrRotationTransformation() && _app.isUltimateMaster() &&
+      !hasMultiApps())
+    mooseError("Coordinate transformation parameters, listed below, are only to be used in the "
+               "context of application to application field transfers at this time. The mesh is "
+               "not modified by these parameters within an application.\n"
+               "You should likely use a 'TransformGenerator' in the [Mesh] block to achieve the "
+               "desired mesh modification.\n\n",
+               Moose::stringify(MooseAppCoordTransform::validParams()));
 
   // If using displacements, verify that the order of the displacement
   // variables matches the order of the elements in the displaced
@@ -9168,6 +9137,7 @@ FEProblemBase::setVerboseProblem(bool verbose)
 {
   _verbose_setup = verbose ? "true" : "false";
   _verbose_multiapps = verbose;
+  _verbose_restore = verbose;
 }
 
 void

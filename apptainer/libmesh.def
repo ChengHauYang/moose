@@ -62,6 +62,7 @@ Fingerprints: 0CFFCAB55E806363601C442D211817B01E0911DB
 
         # Build VTK
         cd ${ROOT_BUILD_DIR}/$(basename ${VTK_URL} .tar.gz)
+
         mkdir -p build; cd build
         cmake .. \
             -Wno-dev \

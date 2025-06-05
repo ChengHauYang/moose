@@ -51,11 +51,20 @@ MooseVariableFV<OutputType>::validParams()
                                       "Switch that can select between face interpolation methods.");
   params.template addParam<bool>(
       "cache_cell_gradients", true, "Whether to cache cell gradients or re-compute them.");
-  // Just evaluating finite volume variables at an arbitrary location in a cell requires a layer of
-  // ghosting since we will use two term expansions
-  params.addRelationshipManager("ElementSideNeighborLayers",
-                                Moose::RelationshipManagerType::GEOMETRIC |
-                                    Moose::RelationshipManagerType::ALGEBRAIC);
+
+  // Depending on the face interpolation we might have to do more than one layer ghosting.
+  params.addRelationshipManager(
+      "ElementSideNeighborLayers",
+      Moose::RelationshipManagerType::GEOMETRIC | Moose::RelationshipManagerType::ALGEBRAIC |
+          Moose::RelationshipManagerType::COUPLING,
+      [](const InputParameters & obj_params, InputParameters & rm_params)
+      {
+        unsigned short layers = 1;
+        if (obj_params.get<MooseEnum>("face_interp_method") == "skewness-corrected")
+          layers = 2;
+
+        rm_params.set<unsigned short>("layers") = layers;
+      });
   return params;
 }
 
@@ -399,9 +408,6 @@ template <typename OutputType>
 std::pair<bool, const FVDirichletBCBase *>
 MooseVariableFV<OutputType>::getDirichletBC(const FaceInfo & fi) const
 {
-  if (!_dirichlet_map_setup)
-    const_cast<MooseVariableFV<OutputType> *>(this)->determineBoundaryToDirichletBCMap();
-
   for (const auto bnd_id : fi.boundaryIDs())
     if (auto it = _boundary_id_to_dirichlet_bc.find(bnd_id);
         it != _boundary_id_to_dirichlet_bc.end())
@@ -414,24 +420,11 @@ template <typename OutputType>
 std::pair<bool, std::vector<const FVFluxBC *>>
 MooseVariableFV<OutputType>::getFluxBCs(const FaceInfo & fi) const
 {
-  std::vector<const FVFluxBC *> bcs;
+  for (const auto bnd_id : fi.boundaryIDs())
+    if (auto it = _boundary_id_to_flux_bc.find(bnd_id); it != _boundary_id_to_flux_bc.end())
+      return {true, it->second};
 
-  this->_subproblem.getMooseApp()
-      .theWarehouse()
-      .query()
-      .template condition<AttribSystem>("FVFluxBC")
-      .template condition<AttribThread>(_tid)
-      .template condition<AttribBoundaries>(fi.boundaryIDs())
-      .template condition<AttribVar>(_var_num)
-      .template condition<AttribSysNum>(this->_sys.number())
-      .queryInto(bcs);
-
-  bool has_flux_bc = bcs.size() > 0;
-
-  if (has_flux_bc)
-    return std::make_pair(true, bcs);
-  else
-    return std::make_pair(false, std::vector<const FVFluxBC *>());
+  return std::make_pair(false, std::vector<const FVFluxBC *>());
 }
 
 template <typename OutputType>
@@ -690,6 +683,11 @@ template <typename OutputType>
 void
 MooseVariableFV<OutputType>::residualSetup()
 {
+  if (!_dirichlet_map_setup)
+    determineBoundaryToDirichletBCMap();
+  if (!_flux_map_setup)
+    determineBoundaryToFluxBCMap();
+
   clearCaches();
 }
 
@@ -860,6 +858,10 @@ template <typename OutputType>
 void
 MooseVariableFV<OutputType>::determineBoundaryToDirichletBCMap()
 {
+  mooseAssert(!Threads::in_threads,
+              "This routine has not been implemented for threads. Please query this routine before "
+              "a threaded region or contact a MOOSE developer to discuss.");
+
   _boundary_id_to_dirichlet_bc.clear();
   std::vector<FVDirichletBCBase *> bcs;
 
@@ -886,6 +888,41 @@ MooseVariableFV<OutputType>::determineBoundaryToDirichletBCMap()
   }
 
   _dirichlet_map_setup = true;
+}
+
+template <typename OutputType>
+void
+MooseVariableFV<OutputType>::determineBoundaryToFluxBCMap()
+{
+  mooseAssert(!Threads::in_threads,
+              "This routine has not been implemented for threads. Please query this routine before "
+              "a threaded region or contact a MOOSE developer to discuss.");
+
+  _boundary_id_to_flux_bc.clear();
+  std::vector<const FVFluxBC *> bcs;
+
+  // I believe because query() returns by value but condition returns by reference that binding to a
+  // const lvalue reference results in the query() getting destructed and us holding onto a dangling
+  // reference. I think that condition returned by value we would be able to bind to a const lvalue
+  // reference here. But as it is we'll bind to a regular lvalue
+  const auto base_query = this->_subproblem.getMooseApp()
+                              .theWarehouse()
+                              .query()
+                              .template condition<AttribSystem>("FVFluxBC")
+                              .template condition<AttribThread>(_tid)
+                              .template condition<AttribVar>(_var_num)
+                              .template condition<AttribSysNum>(this->_sys.number());
+
+  for (const auto bnd_id : this->_mesh.getBoundaryIDs())
+  {
+    auto base_query_copy = base_query;
+    base_query_copy.template condition<AttribBoundaries>(std::set<BoundaryID>({bnd_id}))
+        .queryInto(bcs);
+    if (!bcs.empty())
+      _boundary_id_to_flux_bc.emplace(bnd_id, bcs);
+  }
+
+  _flux_map_setup = true;
 }
 
 template class MooseVariableFV<Real>;

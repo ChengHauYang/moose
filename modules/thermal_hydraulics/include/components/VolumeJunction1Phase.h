@@ -67,8 +67,13 @@ protected:
    */
   void addJunctionIC(const VariableName & var, Real value);
 
-  /// True if the junction variables are scalar variables
-  const bool _use_scalar_variables;
+  /**
+   * Adds a VolumeJunctionIC to the problem
+   *
+   * @param[in] var  Variable name
+   * @param[in] quantity  Quantity to compute
+   */
+  void addVolumeJunctionIC(const VariableName & var, const std::string & quantity);
 
   /// Volume of the junction
   const Real _volume;
