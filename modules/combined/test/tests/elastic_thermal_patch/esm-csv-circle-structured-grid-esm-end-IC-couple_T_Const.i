@@ -1,6 +1,6 @@
 
 [GlobalParams]
-  block = '0'
+  block = '0 2'
 []
 
 [GlobalParams]
@@ -29,6 +29,8 @@
   []
 
   use_displaced_mesh = false
+
+  add_subdomain_ids = 2
 []
 
 [Variables]
@@ -75,8 +77,8 @@
     type = SpatioTemporalPathElementSubdomainModifier
     path = 'path'
     radius = 0.15
-    target_subdomain = '0'
-    block = '0 1'
+    target_subdomain = '2'
+    block = '1 2'
     execute_on = 'TIMESTEP_END'
 
     # --- new for setting IC --- #

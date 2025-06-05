@@ -146,10 +146,27 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
   // initialize
   const auto ic_strategy_in = getParam<std::vector<MooseEnum>>("ic_strategy");
 
+  /**
+   * Determine the IC strategy for each variable to initialize.
+   *
+   * The logic follows these cases:
+   * (a) If both `ic_strategy` and `ic_variables` are provided and of the same size,
+   *     we perform a 1-to-1 mapping.
+   * (b) If `ic_strategy` is set, but `ic_variables` is empty, and `nodal_patch_recovery_uo` is set:
+   *     (b1) If sizes match -> 1-to-1 mapping.
+   *     (b2) If only one strategy is provided -> apply it to all variables from NPR.
+   *     (b3) Otherwise -> error.
+   * (c) If `ic_strategy` is set, but both `ic_variables` and NPR are empty:
+   *     (c1) If one strategy is provided -> apply to all nonlinear variables.
+   *     (c2) If more than one strategy is provided -> warning + use first for all.
+   * (d) If `ic_strategy` has one value and `ic_variables` is provided -> apply to all
+   * `ic_variables`.
+   * (e) Otherwise -> raise a parameter error.
+   */
   if (!_ic_vars_names.empty() && _ic_vars_names.size() == ic_strategy_in.size())
     for (const auto & e : ic_strategy_in)
       _ic_strategy.push_back(e.getEnum<ICStrategy>());
-  else if (!ic_strategy_in.empty() && !_npr_vec.empty())
+  else if (!ic_strategy_in.empty() && _ic_vars_names.empty() && !_npr_vec.empty())
   {
     // get variable names from the npr vector
     _ic_vars_names.resize(_npr_vec.size());
@@ -182,9 +199,15 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
     _ic_strategy.resize(_ic_vars_names.size(), ic_strategy_in[0].getEnum<ICStrategy>());
   else
     paramError("ic_strategy",
-               "The 'ic_strategy' parameter must have either a single value or a number of values "
-               "equal to the number of variables specified in 'ic_variables'. If only one value is "
-               "provided, it will be applied to all variables in 'ic_variables'.");
+               "The 'ic_strategy' parameter is not used correctly. Please follow one of the "
+               "supported forms:\n"
+               " - Provide a single value to apply the same IC strategy to all variables.\n"
+               " - Provide the same number of values as 'ic_variables' to assign strategies "
+               "individually.\n"
+               " - If using 'nodal_patch_recovery_uo', the number of strategies must be 1 or equal "
+               "to the number of NPR objects.\n"
+               "Ensure that either 'ic_variables' or 'nodal_patch_recovery_uo' is specified for "
+               "multiple strategies.");
 
   _ic_vars_number.resize(_ic_vars_names.size());
   // setup var numbers for the variables that need to be initialized

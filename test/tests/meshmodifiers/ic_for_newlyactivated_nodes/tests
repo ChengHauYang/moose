@@ -7,9 +7,29 @@
 
     [IC_for_newlyactivated_nodes]
       type = 'Exodiff'
-      input = 'external_moving_boundary_polynomial.i'
-      exodiff = 'external_moving_boundary_polynomial_out.e external_moving_boundary_polynomial_out.e-s002 external_moving_boundary_polynomial_out.e-s003 external_moving_boundary_polynomial_out.e-s004'
+      input = 'external_moving_boundary_npr.i'
+      exodiff = 'external_moving_boundary_npr_out.e external_moving_boundary_npr_out.e-s002 external_moving_boundary_npr_out.e-s003 external_moving_boundary_npr_out.e-s004'
       detail = 'set initial condition on the newly-activated nodes during simulation'
     []
+    [IC_for_newlyactivated_nodes_two_variables_different_IC]
+      type = 'Exodiff'
+      input = 'external_moving_boundary_npr_two_variables_only_setIC_for_UO_other_follow_variable.i'
+      exodiff = 'external_moving_boundary_npr_two_variables_only_setIC_for_UO_other_follow_variable_out.e external_moving_boundary_npr_two_variables_only_setIC_for_UO_other_follow_variable_out.e-s002 external_moving_boundary_npr_two_variables_only_setIC_for_UO_other_follow_variable_out.e-s003 external_moving_boundary_npr_two_variables_only_setIC_for_UO_other_follow_variable_out.e-s004'
+      detail = 'User can set different initial conditions for different variables on the newly-activated nodes during simulation.
+                In this case, the initial condition for variable diff is follow nodal patch recovery, while the initial condition for variable diff2 is set to 10.0.'
+    []
+    [IC_for_newlyactivated_nodes_two_variables_different_IC]
+      type = 'Exodiff'
+      input = 'external_moving_boundary_npr_two_variables_npr_for_both.i'
+      exodiff = 'external_moving_boundary_npr_two_variables_npr_for_both_out.e external_moving_boundary_npr_two_variables_npr_for_both_out.e-s002 external_moving_boundary_npr_two_variables_npr_for_both_out.e-s003 external_moving_boundary_npr_two_variables_npr_for_both_out.e-s004'
+      detail = 'User can set same initial conditions for different variables on the newly-activated nodes during simulation. When setting only one ic_strategy, but two nodal_patch_recovery_uo, the same initial condition will be applied to both variables in nodal_patch_recovery_uo.'
+    []
+    [IC_for_newlyactivated_nodes_two_variables_normal_setting]
+      type = 'Exodiff'
+      input = 'external_moving_boundary_npr_two_variables_npr_normal_set.i'
+      exodiff = 'external_moving_boundary_npr_two_variables_npr_for_both_out.e external_moving_boundary_npr_two_variables_npr_for_both_out.e-s002 external_moving_boundary_npr_two_variables_npr_for_both_out.e-s003 external_moving_boundary_npr_two_variables_npr_for_both_out.e-s004'
+      detail = 'User can follow the normal approach to set IC: basically, the same vector size for ic_strategy, ic_variables, and nodal_patch_recovery_uo.'
+    []
+
   []
 []
