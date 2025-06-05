@@ -1668,7 +1668,7 @@ public:
    */
   ///@{
   const MooseObjectWarehouse<Indicator> & getIndicatorWarehouse() { return _indicators; }
-  const MooseObjectWarehouse<InternalSideIndicator> & getInternalSideIndicatorWarehouse()
+  const MooseObjectWarehouse<InternalSideIndicatorBase> & getInternalSideIndicatorWarehouse()
   {
     return _internal_side_indicators;
   }
@@ -2403,6 +2403,13 @@ public:
    * @returns the linear system names in the problem
    */
   const std::vector<LinearSystemName> & getLinearSystemNames() const { return _linear_sys_names; }
+  /**
+   * @returns the solver system names in the problem
+   */
+  const std::vector<SolverSystemName> & getSolverSystemNames() const { return _solver_sys_names; }
+
+  /// @returns true if either the [Problem/block] parameter or the [GlobalParams/block] parameter is set by user
+  bool isBlockSetByUserOrGlobalParams() const;
 
 protected:
   /// Create extra tagged vectors and matrices

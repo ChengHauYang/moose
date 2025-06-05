@@ -18,7 +18,7 @@
       detail = 'User can set different initial conditions for different variables on the newly-activated nodes during simulation.
                 In this case, the initial condition for variable diff is follow nodal patch recovery, while the initial condition for variable diff2 is set to 10.0.'
     []
-    [IC_for_newlyactivated_nodes_two_variables_different_IC]
+    [IC_for_newlyactivated_nodes_two_variables_same_IC]
       type = 'Exodiff'
       input = 'external_moving_boundary_npr_two_variables_npr_for_both.i'
       exodiff = 'external_moving_boundary_npr_two_variables_npr_for_both_out.e external_moving_boundary_npr_two_variables_npr_for_both_out.e-s002 external_moving_boundary_npr_two_variables_npr_for_both_out.e-s003 external_moving_boundary_npr_two_variables_npr_for_both_out.e-s004'
@@ -27,9 +27,25 @@
     [IC_for_newlyactivated_nodes_two_variables_normal_setting]
       type = 'Exodiff'
       input = 'external_moving_boundary_npr_two_variables_npr_normal_set.i'
-      exodiff = 'external_moving_boundary_npr_two_variables_npr_for_both_out.e external_moving_boundary_npr_two_variables_npr_for_both_out.e-s002 external_moving_boundary_npr_two_variables_npr_for_both_out.e-s003 external_moving_boundary_npr_two_variables_npr_for_both_out.e-s004'
+      exodiff = 'external_moving_boundary_npr_two_variables_npr_normal_set_out.e external_moving_boundary_npr_two_variables_npr_normal_set_out.e-s002 external_moving_boundary_npr_two_variables_npr_normal_set_out.e-s003 external_moving_boundary_npr_two_variables_npr_normal_set_out.e-s004'
       detail = 'User can follow the normal approach to set IC: basically, the same vector size for ic_strategy, ic_variables, and nodal_patch_recovery_uo.'
     []
-
   []
+
+  [error_test]
+    requirement = 'The system shall throw an error if the user sets (a) invalid ic_strategy name is provided (b) ic_strategy size not equal to 1, but also not equal to the size of ic_variables or nodal_patch_recovery_uo.'
+    [error_ic_strategy_not_valid]
+      type = RunException
+      input = 'ic_strategy_not_valid.i'
+      expect_err = 'Invalid option "IC_POLYNOMIAL_WHOLE" in MooseEnum.'
+      detail = 'ic_strategy is invalid.'
+    []
+    [error_ic_strategy_more_than_ic_variables]
+      type = RunException
+      input = 'external_moving_boundary_npr_two_variables_npr_more_ic_strategy.i'
+      expect_err = "The 'ic_strategy' parameter is not used correctly"
+      detail = 'ic_strategy size not equal to 1, but also not equal to the size of ic_variables or nodal_patch_recovery_uo.'
+    []
+  []
+
 []
