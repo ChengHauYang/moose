@@ -33,39 +33,8 @@ class SubProblem;
 
 namespace NEML2Utils
 {
-enum CopyValueToOld
-{
-  NewToOld = 0,
-  TopToOld = 1,
-  None = 2
-};
-
-inline CopyValueToOld
-parseCopyValueToOld(const std::string & input)
-{
-  if (input == "NewToOld")
-    return NewToOld;
-  else if (input == "TopToOld")
-    return TopToOld;
-  else if (input == "None")
-    return None;
-  else
-    throw std::invalid_argument("Invalid string for CopyValueToOld: " + input);
-}
 
 #ifdef NEML2_ENABLED
-
-/**
- * @brief Get the NEML2 Model
- *
- * This is mostly the same as the plain neml2::get_model() method, but it also guards the default
- * dtype and sends the model to the target device.
- * @return neml2::Model&
- */
-neml2::Model & getModel(const std::string & name,
-                        std::optional<neml2::Device> device = std::nullopt,
-                        neml2::Dtype dtype = neml2::kFloat64);
-
 /// Assert that the NEML2 variable name sits on either the forces or the state subaxis
 void assertVariable(const neml2::VariableName &);
 
@@ -124,7 +93,7 @@ struct Layout<SymmetricRankFourTensor>
  * can potentially be used as NEML2 input variables.
  *
  * For this method to work, the underlying data in \p data must be reinterpretable as Real
- * (torch::kFloat64). The data class T must also be aligned and follow the striding implied by
+ * (neml2::kFloat64). The data class T must also be aligned and follow the striding implied by
  * Layout<T>::shape. The data class T must also have no padding or overhead.
  */
 template <typename T>

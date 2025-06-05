@@ -893,15 +893,6 @@ public:
   void projectInitialConditionOnCustomRange(libMesh::ConstElemRange & elem_range,
                                             ConstBndNodeRange & bnd_node_range);
 
-  /**
-   * Project initial conditions onto a specified set of elements and boundary nodes
-   * for a user-defined subset of variables.
-   */
-  void projectInitialConditionOnCustomRangeForSpecificVars(
-      libMesh::ConstElemRange & elem_range,
-      ConstBndNodeRange & bnd_node_range,
-      const std::set<unsigned int> & selected_var_nums);
-
   // Materials /////
   virtual void addMaterial(const std::string & material_name,
                            const std::string & name,
@@ -2408,9 +2399,6 @@ public:
    */
   const std::vector<SolverSystemName> & getSolverSystemNames() const { return _solver_sys_names; }
 
-  /// @returns true if either the [Problem/block] parameter or the [GlobalParams/block] parameter is set by user
-  bool isBlockSetByUserOrGlobalParams() const;
-
 protected:
   /// Create extra tagged vectors and matrices
   void createTagVectors();
@@ -2747,15 +2735,6 @@ protected:
   std::vector<unsigned char> _has_active_material_properties;
 
   std::vector<SolverParams> _solver_params;
-
-  /**
-   * @brief Whether [GlobalParams/block] is specified by the user
-   *
-   * [GlobalParams] only apply if there is a [Problem] block in the input file. We need this
-   * additional flag to handle the case where the user specifies a [GlobalParams] block but not a
-   * [Problem] block.
-   */
-  const bool _has_block_in_global_params;
 
   /// Default blocks for block restriction (kernel and material coverage check only for the default blocks)
   const std::vector<SubdomainName> _blocks;

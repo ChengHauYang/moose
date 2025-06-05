@@ -439,16 +439,12 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _previous_nl_solution_required(getParam<bool>("previous_nl_solution_required")),
     _has_nonlocal_coupling(false),
     _calculate_jacobian_in_uo(false),
-    _has_block_in_global_params(
-        _app.builder().root() ? static_cast<bool>(_app.builder().root()->find("GlobalParams/block"))
-                              : false),
     _blocks(getParam<std::vector<SubdomainName>>("block")),
     _kernel_coverage_check(
-        isParamSetByUser("kernel_coverage_check") || !isBlockSetByUserOrGlobalParams()
+        isParamSetByUser("kernel_coverage_check") || !isParamSetByUser("block")
             ? getParam<MooseEnum>("kernel_coverage_check").getEnum<CoverageCheckMode>()
             : CoverageCheckMode::ONLY_LIST),
-    _kernel_coverage_blocks(isParamSetByUser("kernel_coverage_check") ||
-                                    !isBlockSetByUserOrGlobalParams()
+    _kernel_coverage_blocks(isParamSetByUser("kernel_coverage_check") || !isParamSetByUser("block")
                                 ? getParam<std::vector<SubdomainName>>("kernel_coverage_block_list")
                                 : _blocks),
     _boundary_restricted_node_integrity_check(
@@ -456,11 +452,11 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _boundary_restricted_elem_integrity_check(
         getParam<bool>("boundary_restricted_elem_integrity_check")),
     _material_coverage_check(
-        isParamSetByUser("material_coverage_check") || !isBlockSetByUserOrGlobalParams()
+        isParamSetByUser("material_coverage_check") || !isParamSetByUser("block")
             ? getParam<MooseEnum>("material_coverage_check").getEnum<CoverageCheckMode>()
             : CoverageCheckMode::ONLY_LIST),
     _material_coverage_blocks(
-        isParamSetByUser("material_coverage_check") || !isBlockSetByUserOrGlobalParams()
+        isParamSetByUser("material_coverage_check") || !isParamSetByUser("block")
             ? getParam<std::vector<SubdomainName>>("material_coverage_block_list")
             : _blocks),
     _fv_bcs_integrity_check(getParam<bool>("fv_bcs_integrity_check")),
@@ -512,7 +508,7 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     if ((isParamSetByUser(coverage_check) &&
          (coverage_check_mode == CoverageCheckMode::ONLY_LIST ||
           coverage_check_mode == CoverageCheckMode::SKIP_LIST)) &&
-        isBlockSetByUserOrGlobalParams())
+        isParamSetByUser("block"))
       paramError("block",
                  "Cannot set both '" + coverage_check +
                      "' as 'ONLY_LIST' or 'SKIP_LIST' and 'block'. Please set only one.");
@@ -520,12 +516,6 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
 
   checkConflict(_kernel_coverage_check, "kernel_coverage_check");
   checkConflict(_material_coverage_check, "material_coverage_check");
-
-  if (isParamSetByUser("block") && !_has_block_in_global_params)
-    mooseWarning(
-        "The block parameter is set by user in the Problem block, but this has no effect on the "
-        "block restrictions of kernels, BCs, or other block-restrictable objects. If your intent "
-        "was to apply this setting globally, please use [GlobalParams/block] instead.");
 
   //  Initialize static do_derivatives member. We initialize this to true so that all the
   //  default AD things that we setup early in the simulation actually get their derivative
@@ -629,12 +619,6 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     // We don't want petscSetOptions being called in solve and clearing the option that was just set
     _is_petsc_options_inserted = true;
   }
-}
-
-bool
-FEProblemBase::isBlockSetByUserOrGlobalParams() const
-{
-  return isParamSetByUser("block") || _has_block_in_global_params;
 }
 
 const MooseMesh &
@@ -2708,6 +2692,7 @@ FEProblemBase::duplicateVariableCheck(const std::string & var_name,
                                       bool is_aux,
                                       const std::set<SubdomainID> * const active_subdomains)
 {
+
   std::set<SubdomainID> subdomainIDs;
   if (active_subdomains->size() == 0)
   {
@@ -3704,65 +3689,6 @@ FEProblemBase::projectInitialConditionOnCustomRange(ConstElemRange & elem_range,
     for (const auto & ic : ics)
     {
       MooseVariableScalar & var = ic->variable();
-      var.reinit();
-
-      DenseVector<Number> vals(var.order());
-      ic->compute(vals);
-
-      const unsigned int n_SCALAR_dofs = var.dofIndices().size();
-      for (unsigned int i = 0; i < n_SCALAR_dofs; i++)
-      {
-        const dof_id_type global_index = var.dofIndices()[i];
-        var.sys().solution().set(global_index, vals(i));
-        var.setValue(i, vals(i));
-      }
-    }
-  }
-
-  for (auto & nl : _nl)
-  {
-    nl->solution().close();
-    nl->solution().localize(*nl->system().current_local_solution, nl->dofMap().get_send_list());
-  }
-
-  _aux->solution().close();
-  _aux->solution().localize(*_aux->sys().current_local_solution, _aux->dofMap().get_send_list());
-}
-
-void
-FEProblemBase::projectInitialConditionOnCustomRangeForSpecificVars(
-    ConstElemRange & elem_range,
-    ConstBndNodeRange & bnd_nodes,
-    const std::set<unsigned int> & ic_target_vars)
-{
-  ComputeInitialConditionThread cic(*this);
-  Threads::parallel_reduce(elem_range, cic);
-
-  // Need to close the solution vector here so that boundary ICs take precendence
-  for (auto & nl : _nl)
-    nl->solution().close();
-  _aux->solution().close();
-
-  ComputeBoundaryInitialConditionThread cbic(*this);
-  Threads::parallel_reduce(bnd_nodes, cbic);
-
-  for (auto & nl : _nl)
-    nl->solution().close();
-  _aux->solution().close();
-
-  // Also, load values into the SCALAR dofs
-  // Note: We assume that all SCALAR dofs are on the
-  // processor with highest ID
-  if (processor_id() == (n_processors() - 1) && _scalar_ics.hasActiveObjects())
-  {
-    const auto & ics = _scalar_ics.getActiveObjects();
-    for (const auto & ic : ics)
-    {
-      MooseVariableScalar & var = ic->variable();
-
-      if (!ic_target_vars.empty() && !ic_target_vars.count(var.number()))
-        continue;
-
       var.reinit();
 
       DenseVector<Number> vals(var.order());
@@ -5235,8 +5161,8 @@ FEProblemBase::addIndicator(const std::string & indicator_name,
     std::shared_ptr<Indicator> indicator =
         _factory.create<Indicator>(indicator_name, name, parameters, tid);
     logAdd("Indicator", name, indicator_name, parameters);
-    std::shared_ptr<InternalSideIndicatorBase> isi =
-        std::dynamic_pointer_cast<InternalSideIndicatorBase>(indicator);
+    std::shared_ptr<InternalSideIndicator> isi =
+        std::dynamic_pointer_cast<InternalSideIndicator>(indicator);
     if (isi)
       _internal_side_indicators.addObject(isi, tid);
     else
@@ -9196,6 +9122,7 @@ FEProblemBase::setVerboseProblem(bool verbose)
 {
   _verbose_setup = verbose ? "true" : "false";
   _verbose_multiapps = verbose;
+  _verbose_restore = verbose;
 }
 
 void
