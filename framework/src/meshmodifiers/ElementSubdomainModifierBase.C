@@ -866,13 +866,11 @@ ElementSubdomainModifierBase::applyIC(bool displaced)
   for (auto i : index_range(_ic_vars_number))
   {
     if (_ic_strategy[i] == ICStrategy::IC_DEFAULT)
-    {
       // note: from IC -> current
       _fe_problem.projectInitialConditionOnCustomRangeForSpecificVars(
           reinitializedElemRange(displaced),
           reinitializedBndNodeRange(displaced),
           {_ic_vars_number[i]});
-    }
     else if (_ic_strategy[i] == ICStrategy::IC_EXTRAPOLATE_FIRST_LAYER)
     {
       computeFirstLayerNeighborInfo(_fe_problem.getNonlinearSystemBase(_sys.number()),
