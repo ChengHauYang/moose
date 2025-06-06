@@ -418,6 +418,21 @@ NEML2ModelExecutor::expandInputs()
 }
 
 void
+NEML2ModelExecutor::expandInputs()
+{
+  // Figure out what our batch size is
+  std::vector<neml2::Tensor> defined;
+  for (const auto & [key, value] : _in)
+    defined.push_back(value);
+  const auto batch_shape = neml2::utils::broadcast_batch_sizes(defined);
+
+  // Make all inputs conformal
+  for (auto & [key, value] : _in)
+    if (value.batch_sizes() != batch_shape)
+      _in[key] = value.batch_unsqueeze(0).batch_expand(batch_shape);
+}
+
+void
 NEML2ModelExecutor::solve()
 {
   // Evaluate the NEML2 material model

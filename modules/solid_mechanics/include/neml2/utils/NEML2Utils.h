@@ -33,8 +33,19 @@ class SubProblem;
 
 namespace NEML2Utils
 {
-
 #ifdef NEML2_ENABLED
+
+/**
+ * @brief Get the NEML2 Model
+ *
+ * This is mostly the same as the plain neml2::get_model() method, but it also guards the default
+ * dtype and sends the model to the target device.
+ * @return neml2::Model&
+ */
+neml2::Model & getModel(const std::string & name,
+                        std::optional<neml2::Device> device = std::nullopt,
+                        neml2::Dtype dtype = neml2::kFloat64);
+
 /// Assert that the NEML2 variable name sits on either the forces or the state subaxis
 void assertVariable(const neml2::VariableName &);
 
