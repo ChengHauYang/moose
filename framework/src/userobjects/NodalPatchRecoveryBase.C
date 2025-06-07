@@ -65,6 +65,7 @@ NodalPatchRecoveryBase::nodalPatchRecovery(const Point & x,
   // sorting the key vector on every call (expensive).
   std::vector<dof_id_type> key = elem_ids;
 
+  _console << "_Ae.size() = " << _Ae.size() << ", _be.size() = " << _be.size() << std::endl;
   // Check cache
   auto it = _cached_coef.find(key);
   RealEigenVector coef;
@@ -83,6 +84,18 @@ NodalPatchRecoveryBase::nodalPatchRecovery(const Point & x,
     RealEigenVector b = RealEigenVector::Zero(_q);
     for (auto elem_id : elem_ids)
     {
+      // TODO:
+      // if (hasBlocks(_mesh.elemPtr(elem_id)->subdomain_id()))
+      //   mooseError("Element with id = ",
+      //              elem_id,
+      //              " is not in the block. "
+      //              "Please use nodalPatchRecovery with elements in the block only.");
+
+      if (_Ae.find(elem_id) == _Ae.end())
+        mooseError("Missing entry for elem_id = ", elem_id, " in _Ae.");
+      if (_be.find(elem_id) == _be.end())
+        mooseError("Missing entry for elem_id = ", elem_id, " in _be.");
+
       A += libmesh_map_find(_Ae, elem_id);
       b += libmesh_map_find(_be, elem_id);
     }
@@ -170,10 +183,7 @@ NodalPatchRecoveryBase::finalize()
   if (!_use_specific_elements)
     identifyGhostElementsFromOtherProcs();
 
-  /// It become super long in UO and do not know what happened
-  if (_query_ids.empty())
-    // No need to send or receive data
-    return;
+  _console << "_query_ids.size() = " << _query_ids.size() << std::endl;
 
   synchronizeAebe();
 }
@@ -181,6 +191,9 @@ NodalPatchRecoveryBase::finalize()
 void
 NodalPatchRecoveryBase::identifyAdditionalElementsFromOtherProcs() const
 {
+  if (!_use_specific_elements)
+    return;
+
   if (_additional_elems.empty())
     return;
   for (const auto & entry : _additional_elems)
@@ -194,11 +207,38 @@ NodalPatchRecoveryBase::identifyAdditionalElementsFromOtherProcs() const
 void
 NodalPatchRecoveryBase::identifyGhostElementsFromOtherProcs() const
 {
-  const ConstElemRange evaluable_elem_range = _fe_problem.getEvaluableElementRange();
+  // Each processor gathers information about all elements in the computational blocks,
+  // excluding deactivated blocks. This ensures that every processor is aware of all relevant
+  // elements, regardless of how users provide elements to the `nodalPatchRecovery` function.
+  // This approach does not affect the solution, as the actual patch used for recovery
+  // still depends on the elements passed to `nodalPatchRecovery` by the user.
+  // const auto evaluable_elem_range = _fe_problem.getBlockRestrictedEvaluableElementRange();
+  const auto evaluable_elem_range = _fe_problem.getEvaluableElementRange();
 
+  std::vector<dof_id_type> evaluable_elem_ids;
   for (const auto & elem : evaluable_elem_range)
-    if (elem->processor_id() != processor_id())
-      _query_ids[elem->processor_id()].push_back(elem->id());
+    if (hasBlocks(elem->subdomain_id())) // getEvaluableElementRange is not block restricted
+      evaluable_elem_ids.push_back(elem->id());
+
+  std::vector<std::vector<dof_id_type>> gathered_ids;
+  _mesh.comm().allgather(evaluable_elem_ids, gathered_ids);
+
+  _console << "gathered_ids.size() = " << gathered_ids.size() << std::endl;
+  _console << "gathered_ids[0].size() = " << gathered_ids[0].size() << std::endl;
+  _console << "gathered_ids[1].size() = " << gathered_ids[1].size() << std::endl;
+
+  for (const auto & elem_ids : gathered_ids)
+  {
+    for (const auto & elem_id : elem_ids)
+    {
+      const auto * elem = _mesh.elemPtr(elem_id);
+      _console << "elem->id() = " << elem->id()
+               << ", elem->processor_id() = " << elem->processor_id()
+               << ", processor_id() = " << processor_id() << std::endl;
+      if (elem->processor_id() != processor_id())
+        _query_ids[elem->processor_id()].push_back(elem_id);
+    }
+  }
 }
 
 void

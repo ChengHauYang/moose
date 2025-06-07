@@ -127,7 +127,7 @@
 
 [Executioner]
   type = Transient
-  dt = 0.08
+  dt = 0.3
   num_steps = 1
 []
 

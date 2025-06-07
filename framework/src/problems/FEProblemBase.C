@@ -838,6 +838,49 @@ FEProblemBase::getNonlinearEvaluableElementRange()
   return *_nl_evaluable_local_elem_range;
 }
 
+bool
+FEProblemBase::isElemInDefaultBlock(const Elem * elem) const
+{
+  const auto & blocks = getParam<std::vector<SubdomainName>>("block");
+
+  if (blocks.empty())
+    return true;
+
+  const auto active_subdomains_vector =
+      _mesh.getSubdomainIDs(getParam<std::vector<SubdomainName>>("block"));
+  const std::set<SubdomainID> active_subdomains(active_subdomains_vector.begin(),
+                                                active_subdomains_vector.end());
+
+  // If the element is in one of the specified blocks, return true
+  if (active_subdomains.count(elem->subdomain_id()))
+    return true;
+
+  // Otherwise, return false
+  return false;
+}
+
+const std::vector<const Elem *> &
+FEProblemBase::getBlockRestrictedEvaluableElementRange()
+{
+  getEvaluableElementRange();
+
+  _block_restricted_elems.clear();
+
+  if (!isParamValid("block"))
+  {
+    for (const auto & elem : *_evaluable_local_elem_range)
+      _block_restricted_elems.push_back(elem);
+    return _block_restricted_elems;
+  }
+
+  // The element range should be block-restricted
+  for (const auto & elem : *_evaluable_local_elem_range)
+    if (elem && isElemInDefaultBlock(elem))
+      _block_restricted_elems.push_back(elem);
+
+  return _block_restricted_elems;
+}
+
 void
 FEProblemBase::initialSetup()
 {
@@ -3688,6 +3731,65 @@ FEProblemBase::projectInitialConditionOnCustomRange(ConstElemRange & elem_range,
     for (const auto & ic : ics)
     {
       MooseVariableScalar & var = ic->variable();
+      var.reinit();
+
+      DenseVector<Number> vals(var.order());
+      ic->compute(vals);
+
+      const unsigned int n_SCALAR_dofs = var.dofIndices().size();
+      for (unsigned int i = 0; i < n_SCALAR_dofs; i++)
+      {
+        const dof_id_type global_index = var.dofIndices()[i];
+        var.sys().solution().set(global_index, vals(i));
+        var.setValue(i, vals(i));
+      }
+    }
+  }
+
+  for (auto & nl : _nl)
+  {
+    nl->solution().close();
+    nl->solution().localize(*nl->system().current_local_solution, nl->dofMap().get_send_list());
+  }
+
+  _aux->solution().close();
+  _aux->solution().localize(*_aux->sys().current_local_solution, _aux->dofMap().get_send_list());
+}
+
+void
+FEProblemBase::projectInitialConditionOnCustomRangeForSpecificVars(
+    ConstElemRange & elem_range,
+    ConstBndNodeRange & bnd_nodes,
+    const std::set<unsigned int> & ic_target_vars)
+{
+  ComputeInitialConditionThread cic(*this);
+  Threads::parallel_reduce(elem_range, cic);
+
+  // Need to close the solution vector here so that boundary ICs take precendence
+  for (auto & nl : _nl)
+    nl->solution().close();
+  _aux->solution().close();
+
+  ComputeBoundaryInitialConditionThread cbic(*this);
+  Threads::parallel_reduce(bnd_nodes, cbic);
+
+  for (auto & nl : _nl)
+    nl->solution().close();
+  _aux->solution().close();
+
+  // Also, load values into the SCALAR dofs
+  // Note: We assume that all SCALAR dofs are on the
+  // processor with highest ID
+  if (processor_id() == (n_processors() - 1) && _scalar_ics.hasActiveObjects())
+  {
+    const auto & ics = _scalar_ics.getActiveObjects();
+    for (const auto & ic : ics)
+    {
+      MooseVariableScalar & var = ic->variable();
+
+      if (!ic_target_vars.empty() && !ic_target_vars.count(var.number()))
+        continue;
+
       var.reinit();
 
       DenseVector<Number> vals(var.order());
