@@ -46,6 +46,12 @@
       expect_err = "The 'ic_strategy' parameter is not used correctly"
       detail = 'ic_strategy size not equal to 1, but also not equal to the size of ic_variables or nodal_patch_recovery_uo.'
     []
+    [npr_element_not_in_block]
+      type = RunException
+      input = 'external_moving_boundary_npr_element_not_in_block.i'
+      expect_err = "Please use nodalPatchRecovery with elements in the block only."
+      detail = 'the system should throw an error if the element user provided to do nodal patch recovery is not being assembled in the nodal patch recovery preprocess.'
+    []
   []
 
 []
