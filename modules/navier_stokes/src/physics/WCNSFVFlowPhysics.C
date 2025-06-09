@@ -62,7 +62,6 @@ WCNSFVFlowPhysics::validParams()
   // Spatial discretization scheme
   // Specify the numerical schemes for interpolations of velocity and pressure
   params.transferParam<MooseEnum>(NSFVBase::validParams(), "pressure_face_interpolation");
-  params.transferParam<MooseEnum>(NSFVBase::validParams(), "momentum_face_interpolation");
   params.transferParam<MooseEnum>(NSFVBase::validParams(), "mass_advection_interpolation");
   params.transferParam<bool>(NSFVBase::validParams(),
                              "pressure_allow_expansion_on_bernoulli_faces");
@@ -78,7 +77,7 @@ WCNSFVFlowPhysics::validParams()
       "porosity_smoothing_layers use_friction_correction consistent_scaling "
       "pressure_drop_sidesets pressure_drop_form_factors",
       "Flow medium discontinuity treatment");
-  params.addParamNamesToGroup("pressure_face_interpolation momentum_face_interpolation "
+  params.addParamNamesToGroup("pressure_face_interpolation "
                               "mass_advection_interpolation momentum_advection_interpolation "
                               "mass_scaling momentum_scaling characteristic_speed",
                               "Numerical scheme");
@@ -450,6 +449,8 @@ WCNSFVFlowPhysics::addMomentumViscousDissipationKernels()
   params.set<UserObjectName>("rhie_chow_user_object") = rhieChowUOName();
   params.set<MooseFunctorName>(NS::mu) = _dynamic_viscosity_name;
   params.set<MooseEnum>("mu_interp_method") = getParam<MooseEnum>("mu_interp_method");
+  params.set<MooseEnum>("variable_interp_method") =
+      getParam<MooseEnum>("momentum_face_interpolation");
   if (getParam<bool>("include_deviatoric_stress"))
   {
     params.set<bool>("complete_expansion") = true;
@@ -990,6 +991,31 @@ WCNSFVFlowPhysics::addWallsBC()
         getProblem().addFVBC(bc_type, _pressure_name + "_" + boundary_name, params);
       }
     }
+  }
+}
+
+void
+WCNSFVFlowPhysics::addSeparatorBC()
+{
+  if (_hydraulic_separators.size())
+  {
+    std::string bc_type = "INSFVVelocityHydraulicSeparatorBC";
+    InputParameters params = getFactory().getValidParams(bc_type);
+    params.set<std::vector<BoundaryName>>("boundary") = _hydraulic_separators;
+    params.set<UserObjectName>("rhie_chow_user_object") = rhieChowUOName();
+
+    for (const auto d : make_range(dimension()))
+    {
+      params.set<NonlinearVariableName>("variable") = _velocity_names[d];
+      params.set<MooseEnum>("momentum_component") = NS::directions[d];
+      getProblem().addFVBC(bc_type, prefix() + _velocity_names[d] + "_separators", params);
+    }
+
+    bc_type = "INSFVScalarFieldSeparatorBC";
+    params = getFactory().getValidParams(bc_type);
+    params.set<std::vector<BoundaryName>>("boundary") = _hydraulic_separators;
+    params.set<NonlinearVariableName>("variable") = _pressure_name;
+    getProblem().addFVBC(bc_type, prefix() + _pressure_name + "_separators", params);
   }
 }
 

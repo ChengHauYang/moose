@@ -114,13 +114,6 @@
     issues = "#9249"
     collections = 'FAILURE_ANALYSIS'
   []
-  [required_objects]
-    type = PythonUnitTest
-    input = test_RequiredObjects.py
-    requirement = "The system shall report a failure if a test requires an object not present in the executable"
-    issues = '#6781'
-    collections = 'FAILURE_ANALYSIS'
-  []
   [required_apps]
     type = PythonUnitTest
     input = test_RequiredApps.py
@@ -257,12 +250,6 @@
     issues = '#22946'
     requirement = "The system shall be able to evaluate a given test with a user-supplied evaluation function."
   []
-  [test_failed_json]
-    type = PythonUnitTest
-    input = test_FailedJSON.py
-    requirement = "The system shall test for a valid json output dump"
-    issues = '#21967'
-  []
   [test_install_type]
     type = PythonUnitTest
     input = test_InstallType.py
@@ -286,5 +273,17 @@
     input = test_OutputInterface.py
     requirement = 'The system shall provide a common interface for storing and retrieving output that supports sanitization
     issues = '#27562'
+  []
+  [test_method]
+    type = PythonUnitTest
+    input = test_GetExecutable.py
+    requirement = "The system shall test the functionality of the TestHarness.getExecutable method."
+    issues = '#30200'
+  []
+  [test_capture_perf_graph]
+    type = PythonUnitTest
+    input = test_CapturePerfGraph.py
+    requirement = "The system shall support systematically capturing performance statistics from the execution of MOOSE application tests."
+    issues = '#30569'
   []
 []

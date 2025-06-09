@@ -10,9 +10,23 @@
 
 import unittest
 import logging
+import re
+import json
 from MooseDocs import MOOSE_DIR, common, base
 from MooseDocs.test import MooseDocsTestCase
-from MooseDocs.extensions import core, shortcut, command, floats, include, listing, modal
+from MooseDocs.test.extensions.test_appsyntax import AppSyntaxTestCase
+from MooseDocs.extensions import (
+    core,
+    shortcut,
+    command,
+    floats,
+    include,
+    listing,
+    modal,
+    appsyntax,
+)
+from MooseDocs.tree import html
+
 logging.basicConfig()
 
 def extractContent(filename, opts=dict()):
@@ -23,6 +37,7 @@ def extractContent(filename, opts=dict()):
     return content
 
 CODE_STYLE = f'max-height:{listing.LocalListingCommand.DEFAULT_MAX_HEIGHT}px;'
+MAX_HEIGHT = f'{listing.LocalListingCommand.DEFAULT_MAX_HEIGHT}px'
 
 class TestListingNumbers(MooseDocsTestCase):
     EXTENSIONS = [core, shortcut, command, floats, include, listing, modal]
@@ -47,7 +62,7 @@ class TestListingNumbers(MooseDocsTestCase):
             self.assertToken(ast(i), 'Listing', size=2)
             self.assertToken(ast(i,0), 'FloatCaption', key=s, prefix='Listing', number=i + 1)
             self.assertToken(ast(i,1), 'ListingCode', content=s.capitalize(),
-                             style=CODE_STYLE, language=None)
+                             max_height=MAX_HEIGHT, language=None)
 
         self.assertToken(ast(3), 'Paragraph', size=3)
         for i, j, s in zip([0, 1, 2], [4, 5, 6], self.SHORTCUTS):
@@ -80,8 +95,8 @@ class TestListingNumbers(MooseDocsTestCase):
         self.assertHTMLString(p(0,0), content=content + ': ')
         self.assertHTMLTag(p(1), 'span', class_='moose-caption-text')
 
-        self.assertHTMLTag(pre, 'pre', size=1, class_='moose-pre', style=CODE_STYLE)
-        self.assertHTMLTag(pre(0), 'code', size=1, class_='language-None')
+        self.assertHTMLTag(pre, 'pre', size=1, class_='')
+        self.assertHTMLTag(pre(0), 'code', size=1, class_='language-None', style=CODE_STYLE)
         self.assertHTMLString(pre(0,0), content=ref.capitalize())
 
         self.assertHTMLTag(a, 'a', size=1, href='#' + ref)
@@ -121,7 +136,7 @@ class TestListingCaptions(MooseDocsTestCase):
     def testAST(self):
         ast = self.tokenize(self.TEXT[0])
         self.assertSize(ast, 1)
-        self.assertToken(ast(0), 'Code', content=self.CODE[0], style=CODE_STYLE,
+        self.assertToken(ast(0), 'Code', content=self.CODE[0], max_height=MAX_HEIGHT,
                          language=None)
 
         ast = self.tokenize(self.TEXT[1])
@@ -132,7 +147,7 @@ class TestListingCaptions(MooseDocsTestCase):
         self.assertToken(ast(0,0,1), 'Space', count=1)
         self.assertToken(ast(0,0,2), 'Strong', size=1)
         self.assertToken(ast(0,0,2,0), 'Word', content='caption')
-        self.assertToken(ast(0,1), 'ListingCode', content=self.CODE[1], style=CODE_STYLE,
+        self.assertToken(ast(0,1), 'ListingCode', content=self.CODE[1], max_height=MAX_HEIGHT,
                          language=None)
 
         ast = self.tokenize(self.TEXT[2])
@@ -143,7 +158,7 @@ class TestListingCaptions(MooseDocsTestCase):
         self.assertToken(ast(0,0,1), 'Space', count=1)
         self.assertToken(ast(0,0,2), 'Underline', size=1)
         self.assertToken(ast(0,0,2,0), 'Word', content='caption')
-        self.assertToken(ast(0,1), 'ListingCode', content=self.CODE[2], style=CODE_STYLE,
+        self.assertToken(ast(0,1), 'ListingCode', content=self.CODE[2], max_height=MAX_HEIGHT,
                          language=None)
         self.assertToken(ast(1), 'Paragraph', size=1)
         self.assertToken(ast(1,0), 'ShortcutLink', key='file1')
@@ -216,8 +231,8 @@ class TestListingCaptions(MooseDocsTestCase):
         self.assertHTMLString(res(1,0,0), content='File 1')
 
     def _assertHTML(self, res, content):
-        self.assertHTMLTag(res, 'pre', size=1, class_='moose-pre', style=CODE_STYLE)
-        self.assertHTMLTag(res(0), 'code', size=1, class_='language-None')
+        self.assertHTMLTag(res, 'pre', size=1, class_='')
+        self.assertHTMLTag(res(0), 'code', size=1, class_='language-None', style=CODE_STYLE)
         self.assertHTMLString(res(0,0), content=content)
 
     def testLatex(self):
@@ -288,7 +303,7 @@ class TestListingWithSpace(MooseDocsTestCase):
     def testAST(self):
         ast = self.tokenize(self.TEXT)
         self.assertSize(ast, 1)
-        self.assertToken(ast(0), 'Code', content=self.CODE, style='max-height:92px;', language=None)
+        self.assertToken(ast(0), 'Code', content=self.CODE, max_height='92px', language=None)
 
     def testHTML(self):
         _, res = self.execute(self.TEXT)
@@ -301,8 +316,8 @@ class TestListingWithSpace(MooseDocsTestCase):
         self._assertHTML(res(0), self.CODE)
 
     def _assertHTML(self, res, content):
-        self.assertHTMLTag(res, 'pre', size=1, class_='moose-pre', style='max-height:92px;')
-        self.assertHTMLTag(res(0), 'code', size=1, class_='language-None')
+        self.assertHTMLTag(res, 'pre', size=1, class_='')
+        self.assertHTMLTag(res(0), 'code', size=1, class_='language-None', style='max-height:92px;')
         self.assertHTMLString(res(0,0), content=content)
 
     def testLatex(self):
@@ -320,7 +335,7 @@ class TestListingLanguage(MooseDocsTestCase):
     def testAST(self):
         ast = self.tokenize(self.TEXT)
         self.assertSize(ast, 1)
-        self.assertToken(ast(0), 'Code', content=self.CODE, style=CODE_STYLE,
+        self.assertToken(ast(0), 'Code', content=self.CODE, max_height=MAX_HEIGHT,
                          language='c++')
 
     def testHTML(self):
@@ -334,8 +349,8 @@ class TestListingLanguage(MooseDocsTestCase):
         self._assertHTML(res(0), self.CODE)
 
     def _assertHTML(self, res, content):
-        self.assertHTMLTag(res, 'pre', size=1, class_='moose-pre', style=CODE_STYLE)
-        self.assertHTMLTag(res(0), 'code', size=1, class_='language-c++')
+        self.assertHTMLTag(res, 'pre', size=1, class_='')
+        self.assertHTMLTag(res(0), 'code', size=1, class_='language-c++', style=CODE_STYLE)
         self.assertHTMLString(res(0,0), content=content)
 
     def testLatex(self):
@@ -362,14 +377,14 @@ class TestFileListing(MooseDocsTestCase):
         self.assertSize(ast, 2)
         self.assertToken(ast(0), 'Listing', size=2)
         self.assertToken(ast(0,0), 'FloatCaption', key='diffusion-c', prefix='Listing', number=1)
-        self.assertToken(ast(0,1), 'ListingCode', content=self.CODE[0], style=CODE_STYLE,
+        self.assertToken(ast(0,1), 'ListingCode', content=self.CODE[0], max_height=MAX_HEIGHT,
                          language='cpp')
         self.assertToken(ast(1), 'Shortcut', size=1, key='diffusion-c', link='#diffusion-c',
                          string='Listing 1')
 
         ast = self.tokenize(self.TEXT[1])
         self.assertSize(ast, 2)
-        self.assertToken(ast(0), 'Code', content=self.CODE[1], style='max-height:92px;',
+        self.assertToken(ast(0), 'Code', content=self.CODE[1], max_height='92px',
                          language='cpp')
         self.assertToken(ast(1), 'ModalSourceLink', size=0)
 
@@ -408,8 +423,8 @@ class TestFileListing(MooseDocsTestCase):
         self.assertHTMLTag(res(2), 'div', class_='moose-modal modal')
 
     def _assertHTML(self, res, style, content):
-        self.assertHTMLTag(res, 'pre', size=1, class_='moose-pre', style=style)
-        self.assertHTMLTag(res(0), 'code', size=1, class_='language-cpp')
+        self.assertHTMLTag(res, 'pre', size=1, class_='')
+        self.assertHTMLTag(res(0), 'code', size=1, class_='language-cpp', style=style)
         self.assertHTMLString(res(0,0), content=content)
 
     def testLatex(self):
@@ -453,7 +468,7 @@ class TestFileListingDiff(MooseDocsTestCase):
     def testAST(self):
         ast = self.tokenize(self.TEXT)
         self.assertSize(ast, 4)
-        self.assertToken(ast(0), 'Code', content=self.DIFF, style=CODE_STYLE,
+        self.assertToken(ast(0), 'Code', content=self.DIFF, max_height=MAX_HEIGHT,
                          language='diff-cpp diff-highlight')
         self.assertToken(ast(1), 'ModalSourceLink', size=0)
         self.assertEqual(ast(1)['link_prefix'], '-')
@@ -469,8 +484,8 @@ class TestFileListingDiff(MooseDocsTestCase):
     def testHTML(self):
         _, res = self.execute(self.TEXT)
         self.assertHTMLTag(res, 'body', size=4)
-        self.assertHTMLTag(res(0), 'pre', size=1, class_='moose-pre', style=CODE_STYLE)
-        self.assertHTMLTag(res(0)(0), 'code', size=1, class_='language-diff-cpp diff-highlight')
+        self.assertHTMLTag(res(0), 'pre', size=1, class_='')
+        self.assertHTMLTag(res(0)(0), 'code', size=1, class_='language-diff-cpp diff-highlight', style=CODE_STYLE)
         self.assertHTMLString(res(0,0)(0), content=self.DIFF)
         self.assertHTMLTag(res(1), 'span', size=1, class_='moose-source-filename')
         self.assertHTMLString(res(1,0),
@@ -488,8 +503,8 @@ class TestFileListingDiff(MooseDocsTestCase):
     def testMaterialize(self):
         _, res = self.execute(self.TEXT, renderer=base.MaterializeRenderer())
         self.assertHTMLTag(res, 'div', size=6, class_='moose-content')
-        self.assertHTMLTag(res(0), 'pre', size=1, class_='moose-pre', style=CODE_STYLE)
-        self.assertHTMLTag(res(0)(0), 'code', size=1, class_='language-diff-cpp diff-highlight')
+        self.assertHTMLTag(res(0), 'pre', size=1, class_='')
+        self.assertHTMLTag(res(0)(0), 'code', size=1, class_='language-diff-cpp diff-highlight', style=CODE_STYLE)
         self.assertHTMLString(res(0,0)(0), content=self.DIFF)
         self.assertHTMLTag(res(1), 'a', size=1, class_='moose-source-filename tooltipped modal-trigger')
         self.assertHTMLString(res(1,0),
@@ -569,20 +584,31 @@ class TestInputListing(MooseDocsTestCase):
         self.assertSize(ast, 2)
         self.assertToken(ast(0), 'Listing', size=3)
         self.assertToken(ast(0,0), 'FloatCaption', key='prfx', prefix='xxxxx', number=1)
-        self.assertToken(ast(0,1), 'ListingCode', content=self.CODE[0], style=CODE_STYLE,
-                         language='text')
+        lang = common.get_language(self.FILE[0])
+        self.assertToken(
+            ast(0, 1),
+            'ListingCode',
+            content=self.CODE[0],
+            max_height=MAX_HEIGHT,
+            language=lang,
+        )
         self.assertToken(ast(0,2), 'ModalSourceLink', size=0)
         self.assertToken(ast(1), 'Shortcut', size=1, key='prfx', link='#prfx', string='Xxxxx 1')
 
         ast = self.tokenize(self.TEXT[1])
         self.assertSize(ast, 1)
-        self.assertToken(ast(0), 'Code', content=self.CODE[1], style=CODE_STYLE, language='text')
+        lang = common.get_language(self.FILE[1])
+        self.assertToken(
+            ast(0), 'Code', content=self.CODE[1], max_height=MAX_HEIGHT, language=lang
+        )
 
         for i in range(2, 5):
             ast = self.tokenize(self.TEXT[i])
             self.assertSize(ast, 2)
-            self.assertToken(ast(0), 'Code', content=self.CODE[i], style=CODE_STYLE,
-                             language='text')
+            lang = common.get_language(self.FILE[i])
+            self.assertToken(
+                ast(0), 'Code', content=self.CODE[i], max_height=MAX_HEIGHT, language=lang
+            )
             self.assertToken(ast(1), 'ModalSourceLink', size=0)
 
     def testHTML(self):
@@ -593,18 +619,18 @@ class TestInputListing(MooseDocsTestCase):
         self.assertHTMLTag(res(0,0,0), 'span', size=1, class_='moose-caption-heading')
         self.assertHTMLString(res(0,0,0,0), content='xxxxx 1: ')
         self.assertHTMLTag(res(0,0,1), 'span', class_='moose-caption-text')
-        self._assertHTML(res(0,1), CODE_STYLE, self.CODE[0])
+        self._assertHTML(res(0, 1), CODE_STYLE, self.FILE[0], self.CODE[0])
         self.assertHTMLTag(res(0,2), 'span', size=1, class_='moose-source-filename')
         self.assertHTMLString(res(0,2,0), content='({})'.format(self.FILE[0]))
 
         _, res = self.execute(self.TEXT[1])
         self.assertHTMLTag(res, 'body', size=1)
-        self._assertHTML(res(0), CODE_STYLE, self.CODE[1])
+        self._assertHTML(res(0), CODE_STYLE, self.FILE[1], self.CODE[1])
 
         for i in range(2, 5):
             ast, res = self.execute(self.TEXT[i])
             self.assertHTMLTag(res, 'body', size=2)
-            self._assertHTML(res(0), CODE_STYLE, self.CODE[i])
+            self._assertHTML(res(0), CODE_STYLE, self.FILE[i], self.CODE[i])
             self.assertHTMLTag(res(1), 'span', size=1, class_='moose-source-filename')
             self.assertHTMLString(res(1,0), content='({})'.format(self.FILE[i]))
 
@@ -617,24 +643,25 @@ class TestInputListing(MooseDocsTestCase):
         self.assertHTMLTag(res(0,0,0,0), 'span', size=1, class_='moose-caption-heading')
         self.assertHTMLString(res(0,0,0,0,0), content='xxxxx 1: ')
         self.assertHTMLTag(res(0,0,0,1), 'span', class_='moose-caption-text')
-        self._assertHTML(res(0,0,1), CODE_STYLE, self.CODE[0])
+        self._assertHTML(res(0, 0, 1), CODE_STYLE, self.FILE[0], self.CODE[0])
         self.assertHTMLTag(res(0,0,2), 'a', size=1, class_='moose-source-filename tooltipped modal-trigger')
         self.assertHTMLString(res(0,0,2,0), content='({})'.format(self.FILE[0]))
 
         _, res = self.execute(self.TEXT[1], renderer=base.MaterializeRenderer())
         self.assertHTMLTag(res, 'div', size=1, class_='moose-content')
-        self._assertHTML(res(0), CODE_STYLE, self.CODE[1])
+        self._assertHTML(res(0), CODE_STYLE, self.FILE[1], self.CODE[1])
 
         for i in range(2, 5):
             ast, res = self.execute(self.TEXT[i], renderer=base.MaterializeRenderer())
             self.assertHTMLTag(res, 'div', size=3, class_='moose-content')
-            self._assertHTML(res(0), CODE_STYLE, self.CODE[i])
+            self._assertHTML(res(0), CODE_STYLE, self.FILE[i], self.CODE[i])
             self.assertHTMLTag(res(1), 'a', size=1, class_='moose-source-filename tooltipped modal-trigger')
             self.assertHTMLString(res(1,0), content='({})'.format(self.FILE[i]))
 
-    def _assertHTML(self, res, style, content):
-        self.assertHTMLTag(res, 'pre', size=1, class_='moose-pre', style=style)
-        self.assertHTMLTag(res(0), 'code', size=1, class_='language-text')
+    def _assertHTML(self, res, style, file, content):
+        self.assertHTMLTag(res, 'pre', size=1, class_='')
+        lang = common.get_language(file)
+        self.assertHTMLTag(res(0), 'code', size=1, class_=f'language-{lang}', style=style)
         self.assertHTMLString(res(0,0), content=content)
 
     def testLatex(self):
@@ -657,6 +684,111 @@ class TestInputListing(MooseDocsTestCase):
             self.assertLatexEnvironment(res(0), 'verbatim', size=1, escape=False, after_begin='\n',
                                         before_end='\n', info=ast.info)
             self.assertLatexString(res(0,0), content=self.CODE[i].strip('\n'))
+
+
+class TestMooseParsedInput(AppSyntaxTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.EXTENSIONS.append(listing)
+        cls.text = """!listing! language=moose
+[Kernels]
+  [diff]
+    type = Diffusion
+    variable = u
+    unknown_param = foo
+  []
+  [bar]
+    type = UnknownClass
+  []
+[]
+
+[UnknownSyntax]
+[]
+!listing-end!
+"""
+        cls.parsed_text_re = re.compile(
+            r"""\[Kernels\<\<\<(.*?)\>\>\>\]
+  \[diff\]
+    type = Diffusion\<\<\<(.*?)\>\>\>
+    variable\<\<\<(.*?)\>\>\> = u
+    unknown_param = foo
+  \[\]
+  \[bar\]
+    type = UnknownClass
+  \[\]
+\[\]
+
+\[UnknownSyntax\]
+\[\]"""
+        )
+        return super().setUpClass()
+
+    def setupContent(self):
+        """Include some random content to link syntax to."""
+        config = [
+            dict(
+                root_dir='python/MooseDocs/test/content',
+                content=['extensions/special.md', 'extensions/listing_include.md'],
+            )
+        ]
+        return common.get_content(config, '.md')
+
+    def setupExtension(self, ext):
+        """Add included markdown pages as pseudo documentation for syntax"""
+        settings = super().setupExtension(ext)
+        if ext is appsyntax:
+            settings = settings or dict()
+            settings['markdown'] = {
+                '/Kernels': 'special.md',
+                '/Kernels/Diffusion': 'listing_include.md',
+            }
+        return settings
+
+    def testAST(self):
+        ast = self.tokenize(self.text)
+        self.assertSize(ast, 1)
+        self.assertToken(ast(0), 'Code', language='moose')
+        self._assertParsedInput(ast(0)['content'])
+
+    def testHTML(self):
+        _, res = self.execute(self.text)
+        self.assertHTMLTag(res, 'body', size=1)
+        self._assertHTML(res(0))
+
+    def testMaterialize(self):
+        _, res = self.execute(self.text, renderer=base.MaterializeRenderer())
+        self.assertHTMLTag(res, 'div', size=1, class_='moose-content')
+        self._assertHTML(res(0))
+
+    def testLatex(self):
+        # Test latex just to make use it can run and doesn't insert the meta-data
+        ast = self.tokenize(self.text, renderer=base.LatexRenderer())
+        self.assertSize(ast, 1)
+        code = '\n'.join(self.text.splitlines()[1:-1]) + '\n'
+        self.assertToken(ast(0), 'Code', language='moose', content=code)
+
+    def _assertHTML(self, res):
+        self.assertHTMLTag(res, 'pre', size=1, class_='')
+        self.assertHTMLTag(res(0), 'code', size=1, class_='language-moose')
+        self.assertIsInstance(res(0, 0), html.String)
+        self._assertParsedInput(res(0, 0)['content'])
+
+    def _assertParsedInput(self, content):
+        # Check that object meta-data has been inserted
+        match = self.parsed_text_re.match(content)
+        self.assertIsNotNone(match)
+        self.assertSize(match.groups(), 3)
+
+        # Check the meta-data is in a json-readable format with the appropriate keys
+        data = json.loads(match[1])
+        self.assertIn('href', data)
+        data = json.loads(match[2])
+        self.assertIn('href', data)
+        self.assertIn('description', data)
+        data = json.loads(match[3])
+        self.assertIn('description', data)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

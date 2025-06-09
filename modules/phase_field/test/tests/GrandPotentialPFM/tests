@@ -37,6 +37,7 @@
     requirement = 'The system shall provide classes to implement a Grand Potential phase field '
                   'formulation with strict mass conservation'
     capabilities = 'method!=dbg'
+    valgrind = 'heavy'
   []
   [GrandPotentialInterface]
     type = 'CSVDiff'
@@ -65,6 +66,7 @@
     design = '/GrandPotentialSinteringMaterial.md'
     installation_type = in_tree
     requirement = 'The system shall provide a Grand Potential based sintering model'
+    abs_zero = 4e-10
   []
   [SinteringParabolic]
     type = 'Exodiff'

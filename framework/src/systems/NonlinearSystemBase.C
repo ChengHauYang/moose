@@ -47,7 +47,7 @@
 #include "PenetrationLocator.h"
 #include "NodalConstraint.h"
 #include "NodeFaceConstraint.h"
-#include "NodeElemConstraint.h"
+#include "NodeElemConstraintBase.h"
 #include "MortarConstraint.h"
 #include "ElemElemConstraint.h"
 #include "ScalarKernelBase.h"
@@ -1534,11 +1534,12 @@ NonlinearSystemBase::constraintResiduals(NumericVector<Number> & residual, bool 
     }
   }
 
-  // go over NodeELemConstraints
+  // go over NodeElemConstraints
   std::set<dof_id_type> unique_secondary_node_ids;
 
   constraints_applied = false;
   residual_has_inserted_values = false;
+  bool has_writable_variables = false;
   for (const auto & secondary_id : _mesh.meshSubdomains())
   {
     for (const auto & primary_id : _mesh.meshSubdomains())
@@ -1587,6 +1588,16 @@ NonlinearSystemBase::constraintResiduals(NumericVector<Number> & residual, bool 
                   _fe_problem.cacheResidual(0);
                 _fe_problem.cacheResidualNeighbor(0);
               }
+              if (nec->hasWritableCoupledVariables())
+              {
+                Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
+                has_writable_variables = true;
+                for (auto * var : nec->getWritableCoupledVariables())
+                {
+                  if (var->isNodalDefined())
+                    var->insert(_fe_problem.getAuxiliarySystem().solution());
+                }
+              }
             }
             _fe_problem.addCachedResidual(0);
           }
@@ -1609,6 +1620,17 @@ NonlinearSystemBase::constraintResiduals(NumericVector<Number> & residual, bool 
 
     if (_need_residual_ghosted)
       *_residual_ghosted = residual;
+  }
+  _communicator.max(has_writable_variables);
+
+  if (has_writable_variables)
+  {
+    // Explicit contact dynamic constraints write to auxiliary variables and update the old
+    // displacement solution on the constraint boundaries. Close solutions and update system
+    // accordingly.
+    _fe_problem.getAuxiliarySystem().solution().close();
+    _fe_problem.getAuxiliarySystem().system().update();
+    solutionOld().close();
   }
 
   // We may have additional tagged vectors that also need to be accumulated
@@ -2393,7 +2415,7 @@ NonlinearSystemBase::constraintJacobians(bool displaced)
                                    nfc->_Kne,
                                    nfc->primaryVariable().dofIndicesNeighbor(),
                                    nfc->_connected_dof_indices,
-                                   nfc->variable().scalingFactor());
+                                   nfc->primaryVariable().scalingFactor());
 
                   // We've handled Ken and Kne, finally handle Knn
                   _fe_problem.cacheJacobianNeighbor(0);
@@ -2542,7 +2564,7 @@ NonlinearSystemBase::constraintJacobians(bool displaced)
     }
   }
 
-  // go over NodeELemConstraints
+  // go over NodeElemConstraints
   std::set<dof_id_type> unique_secondary_node_ids;
   constraints_applied = false;
   for (const auto & secondary_id : _mesh.meshSubdomains())
@@ -2610,7 +2632,7 @@ NonlinearSystemBase::constraintJacobians(bool displaced)
                                  nec->_Kne,
                                  nec->primaryVariable().dofIndicesNeighbor(),
                                  nec->_connected_dof_indices,
-                                 nec->variable().scalingFactor());
+                                 nec->primaryVariable().scalingFactor());
 
                 _fe_problem.cacheJacobian(0);
                 _fe_problem.cacheJacobianNeighbor(0);

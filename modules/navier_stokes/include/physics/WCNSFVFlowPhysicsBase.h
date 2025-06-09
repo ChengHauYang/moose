@@ -56,9 +56,14 @@ public:
   /// Get the face interpolation method for velocity
   const MooseEnum & getVelocityFaceInterpolationMethod() const { return _velocity_interpolation; }
   /// Get the face interpolation method for momentum in the advection term
-  const MooseEnum & getMomentumFaceInterpolationMethod() const
+  const MooseEnum & getMomentumAdvectionFaceInterpolationMethod() const
   {
     return _momentum_advection_interpolation;
+  }
+  /// Get the face interpolation method for momentum (mostly used in the stress terms)
+  const MooseEnum & getMomentumFaceInterpolationMethod() const
+  {
+    return _momentum_face_interpolation;
   }
   /// Get the inlet boundaries
   const std::vector<BoundaryName> & getInletBoundaries() const { return _inlet_boundaries; }
@@ -66,6 +71,8 @@ public:
   const std::vector<BoundaryName> & getOutletBoundaries() const { return _outlet_boundaries; }
   /// Get the wall boundaries
   const std::vector<BoundaryName> & getWallBoundaries() const { return _wall_boundaries; }
+  /// Get the hydraulic separator boundaries
+  const std::vector<BoundaryName> & getHydraulicSeparators() const { return _hydraulic_separators; }
   /// Get the inlet direction if using a flux inlet
   const std::vector<Point> & getFluxInletDirections() const { return _flux_inlet_directions; }
   /// Get the inlet flux postprocessor if using a flux inlet
@@ -103,6 +110,7 @@ protected:
   virtual void addInletBC() = 0;
   virtual void addOutletBC() = 0;
   virtual void addWallsBC() = 0;
+  virtual void addSeparatorBC() = 0;
 
   /// Return whether a Forchheimer friction model is in use
   virtual bool hasForchheimerFriction() const = 0;
@@ -166,6 +174,8 @@ protected:
   const MooseEnum _velocity_interpolation;
   /// The momentum face interpolation method for being advected
   const MooseEnum _momentum_advection_interpolation;
+  /// The momentum face interpolation method for stress terms
+  const MooseEnum _momentum_face_interpolation;
 
   /// Can be set to a coupled turbulence physics
   const WCNSFVTurbulencePhysics * _turbulence_physics;
@@ -176,6 +186,8 @@ protected:
   const std::vector<BoundaryName> _outlet_boundaries;
   /// Boundaries which define a wall (slip/noslip/etc.)
   const std::vector<BoundaryName> _wall_boundaries;
+  /// Hydraulic separator boundaries
+  const std::vector<BoundaryName> _hydraulic_separators;
 
   /// Momentum inlet boundary types
   std::map<BoundaryName, MooseEnum> _momentum_inlet_types;

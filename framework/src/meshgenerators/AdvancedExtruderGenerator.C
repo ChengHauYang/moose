@@ -491,10 +491,12 @@ AdvancedExtruderGenerator::generate()
           boundary_info.add_node(new_node, ids_to_copy);
         else
           for (const auto & id_to_copy : ids_to_copy)
+          {
             boundary_info.add_node(new_node,
                                    _boundary_swap_pairs[e].count(id_to_copy)
                                        ? _boundary_swap_pairs[e][id_to_copy]
                                        : id_to_copy);
+          }
 
         old_distance = current_distance;
         current_node_layer++;
@@ -534,14 +536,14 @@ AdvancedExtruderGenerator::generate()
           case EDGE2:
           {
             new_elem = std::make_unique<Quad4>();
-            new_elem->set_node(0) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + (current_layer * orig_nodes));
-            new_elem->set_node(1) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + (current_layer * orig_nodes));
-            new_elem->set_node(2) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + ((current_layer + 1) * orig_nodes));
-            new_elem->set_node(3) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + ((current_layer + 1) * orig_nodes));
+            new_elem->set_node(
+                0, mesh->node_ptr(elem->node_ptr(0)->id() + (current_layer * orig_nodes)));
+            new_elem->set_node(
+                1, mesh->node_ptr(elem->node_ptr(1)->id() + (current_layer * orig_nodes)));
+            new_elem->set_node(
+                2, mesh->node_ptr(elem->node_ptr(1)->id() + ((current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                3, mesh->node_ptr(elem->node_ptr(0)->id() + ((current_layer + 1) * orig_nodes)));
 
             if (elem->neighbor_ptr(0) == remote_elem)
               new_elem->set_neighbor(3, const_cast<RemoteElem *>(remote_elem));
@@ -553,24 +555,30 @@ AdvancedExtruderGenerator::generate()
           case EDGE3:
           {
             new_elem = std::make_unique<Quad9>();
-            new_elem->set_node(0) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(1) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(2) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(3) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(4) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(5) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(6) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(7) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(8) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 1) * orig_nodes));
+            new_elem->set_node(
+                0, mesh->node_ptr(elem->node_ptr(0)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                1, mesh->node_ptr(elem->node_ptr(1)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                2,
+                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                3,
+                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                4, mesh->node_ptr(elem->node_ptr(2)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                5,
+                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                6,
+                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                7,
+                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                8,
+                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 1) * orig_nodes)));
 
             if (elem->neighbor_ptr(0) == remote_elem)
               new_elem->set_neighbor(3, const_cast<RemoteElem *>(remote_elem));
@@ -582,18 +590,18 @@ AdvancedExtruderGenerator::generate()
           case TRI3:
           {
             new_elem = std::make_unique<Prism6>();
-            new_elem->set_node(0) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + (current_layer * orig_nodes));
-            new_elem->set_node(1) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + (current_layer * orig_nodes));
-            new_elem->set_node(2) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + (current_layer * orig_nodes));
-            new_elem->set_node(3) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + ((current_layer + 1) * orig_nodes));
-            new_elem->set_node(4) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + ((current_layer + 1) * orig_nodes));
-            new_elem->set_node(5) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + ((current_layer + 1) * orig_nodes));
+            new_elem->set_node(
+                0, mesh->node_ptr(elem->node_ptr(0)->id() + (current_layer * orig_nodes)));
+            new_elem->set_node(
+                1, mesh->node_ptr(elem->node_ptr(1)->id() + (current_layer * orig_nodes)));
+            new_elem->set_node(
+                2, mesh->node_ptr(elem->node_ptr(2)->id() + (current_layer * orig_nodes)));
+            new_elem->set_node(
+                3, mesh->node_ptr(elem->node_ptr(0)->id() + ((current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                4, mesh->node_ptr(elem->node_ptr(1)->id() + ((current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                5, mesh->node_ptr(elem->node_ptr(2)->id() + ((current_layer + 1) * orig_nodes)));
 
             if (elem->neighbor_ptr(0) == remote_elem)
               new_elem->set_neighbor(1, const_cast<RemoteElem *>(remote_elem));
@@ -615,42 +623,54 @@ AdvancedExtruderGenerator::generate()
           case TRI6:
           {
             new_elem = std::make_unique<Prism18>();
-            new_elem->set_node(0) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(1) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(2) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(3) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(4) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(5) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(6) =
-                mesh->node_ptr(elem->node_ptr(3)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(7) =
-                mesh->node_ptr(elem->node_ptr(4)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(8) =
-                mesh->node_ptr(elem->node_ptr(5)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(9) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(10) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(11) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(12) =
-                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(13) =
-                mesh->node_ptr(elem->node_ptr(4)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(14) =
-                mesh->node_ptr(elem->node_ptr(5)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(15) =
-                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(16) =
-                mesh->node_ptr(elem->node_ptr(4)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(17) =
-                mesh->node_ptr(elem->node_ptr(5)->id() + ((2 * current_layer + 1) * orig_nodes));
+            new_elem->set_node(
+                0, mesh->node_ptr(elem->node_ptr(0)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                1, mesh->node_ptr(elem->node_ptr(1)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                2, mesh->node_ptr(elem->node_ptr(2)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                3,
+                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                4,
+                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                5,
+                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                6, mesh->node_ptr(elem->node_ptr(3)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                7, mesh->node_ptr(elem->node_ptr(4)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                8, mesh->node_ptr(elem->node_ptr(5)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                9,
+                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                10,
+                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                11,
+                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                12,
+                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                13,
+                mesh->node_ptr(elem->node_ptr(4)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                14,
+                mesh->node_ptr(elem->node_ptr(5)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                15,
+                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                16,
+                mesh->node_ptr(elem->node_ptr(4)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                17,
+                mesh->node_ptr(elem->node_ptr(5)->id() + ((2 * current_layer + 1) * orig_nodes)));
 
             if (elem->neighbor_ptr(0) == remote_elem)
               new_elem->set_neighbor(1, const_cast<RemoteElem *>(remote_elem));
@@ -675,48 +695,62 @@ AdvancedExtruderGenerator::generate()
           case TRI7:
           {
             new_elem = std::make_unique<Prism21>();
-            new_elem->set_node(0) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(1) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(2) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(3) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(4) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(5) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(6) =
-                mesh->node_ptr(elem->node_ptr(3)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(7) =
-                mesh->node_ptr(elem->node_ptr(4)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(8) =
-                mesh->node_ptr(elem->node_ptr(5)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(9) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(10) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(11) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(12) =
-                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(13) =
-                mesh->node_ptr(elem->node_ptr(4)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(14) =
-                mesh->node_ptr(elem->node_ptr(5)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(15) =
-                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(16) =
-                mesh->node_ptr(elem->node_ptr(4)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(17) =
-                mesh->node_ptr(elem->node_ptr(5)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(18) =
-                mesh->node_ptr(elem->node_ptr(6)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(19) =
-                mesh->node_ptr(elem->node_ptr(6)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(20) =
-                mesh->node_ptr(elem->node_ptr(6)->id() + ((2 * current_layer + 1) * orig_nodes));
+            new_elem->set_node(
+                0, mesh->node_ptr(elem->node_ptr(0)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                1, mesh->node_ptr(elem->node_ptr(1)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                2, mesh->node_ptr(elem->node_ptr(2)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                3,
+                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                4,
+                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                5,
+                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                6, mesh->node_ptr(elem->node_ptr(3)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                7, mesh->node_ptr(elem->node_ptr(4)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                8, mesh->node_ptr(elem->node_ptr(5)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                9,
+                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                10,
+                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                11,
+                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                12,
+                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                13,
+                mesh->node_ptr(elem->node_ptr(4)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                14,
+                mesh->node_ptr(elem->node_ptr(5)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                15,
+                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                16,
+                mesh->node_ptr(elem->node_ptr(4)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                17,
+                mesh->node_ptr(elem->node_ptr(5)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                18, mesh->node_ptr(elem->node_ptr(6)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                19,
+                mesh->node_ptr(elem->node_ptr(6)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                20,
+                mesh->node_ptr(elem->node_ptr(6)->id() + ((2 * current_layer + 1) * orig_nodes)));
 
             if (elem->neighbor_ptr(0) == remote_elem)
               new_elem->set_neighbor(1, const_cast<RemoteElem *>(remote_elem));
@@ -742,22 +776,22 @@ AdvancedExtruderGenerator::generate()
           case QUAD4:
           {
             new_elem = std::make_unique<Hex8>();
-            new_elem->set_node(0) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + (current_layer * orig_nodes));
-            new_elem->set_node(1) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + (current_layer * orig_nodes));
-            new_elem->set_node(2) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + (current_layer * orig_nodes));
-            new_elem->set_node(3) =
-                mesh->node_ptr(elem->node_ptr(3)->id() + (current_layer * orig_nodes));
-            new_elem->set_node(4) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + ((current_layer + 1) * orig_nodes));
-            new_elem->set_node(5) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + ((current_layer + 1) * orig_nodes));
-            new_elem->set_node(6) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + ((current_layer + 1) * orig_nodes));
-            new_elem->set_node(7) =
-                mesh->node_ptr(elem->node_ptr(3)->id() + ((current_layer + 1) * orig_nodes));
+            new_elem->set_node(
+                0, mesh->node_ptr(elem->node_ptr(0)->id() + (current_layer * orig_nodes)));
+            new_elem->set_node(
+                1, mesh->node_ptr(elem->node_ptr(1)->id() + (current_layer * orig_nodes)));
+            new_elem->set_node(
+                2, mesh->node_ptr(elem->node_ptr(2)->id() + (current_layer * orig_nodes)));
+            new_elem->set_node(
+                3, mesh->node_ptr(elem->node_ptr(3)->id() + (current_layer * orig_nodes)));
+            new_elem->set_node(
+                4, mesh->node_ptr(elem->node_ptr(0)->id() + ((current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                5, mesh->node_ptr(elem->node_ptr(1)->id() + ((current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                6, mesh->node_ptr(elem->node_ptr(2)->id() + ((current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                7, mesh->node_ptr(elem->node_ptr(3)->id() + ((current_layer + 1) * orig_nodes)));
 
             if (elem->neighbor_ptr(0) == remote_elem)
               new_elem->set_neighbor(1, const_cast<RemoteElem *>(remote_elem));
@@ -782,46 +816,58 @@ AdvancedExtruderGenerator::generate()
           case QUAD8:
           {
             new_elem = std::make_unique<Hex20>();
-            new_elem->set_node(0) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(1) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(2) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(3) =
-                mesh->node_ptr(elem->node_ptr(3)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(4) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(5) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(6) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(7) =
-                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(8) =
-                mesh->node_ptr(elem->node_ptr(4)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(9) =
-                mesh->node_ptr(elem->node_ptr(5)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(10) =
-                mesh->node_ptr(elem->node_ptr(6)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(11) =
-                mesh->node_ptr(elem->node_ptr(7)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(12) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(13) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(14) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(15) =
-                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(16) =
-                mesh->node_ptr(elem->node_ptr(4)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(17) =
-                mesh->node_ptr(elem->node_ptr(5)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(18) =
-                mesh->node_ptr(elem->node_ptr(6)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(19) =
-                mesh->node_ptr(elem->node_ptr(7)->id() + ((2 * current_layer + 2) * orig_nodes));
+            new_elem->set_node(
+                0, mesh->node_ptr(elem->node_ptr(0)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                1, mesh->node_ptr(elem->node_ptr(1)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                2, mesh->node_ptr(elem->node_ptr(2)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                3, mesh->node_ptr(elem->node_ptr(3)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                4,
+                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                5,
+                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                6,
+                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                7,
+                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                8, mesh->node_ptr(elem->node_ptr(4)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                9, mesh->node_ptr(elem->node_ptr(5)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                10, mesh->node_ptr(elem->node_ptr(6)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                11, mesh->node_ptr(elem->node_ptr(7)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                12,
+                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                13,
+                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                14,
+                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                15,
+                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                16,
+                mesh->node_ptr(elem->node_ptr(4)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                17,
+                mesh->node_ptr(elem->node_ptr(5)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                18,
+                mesh->node_ptr(elem->node_ptr(6)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                19,
+                mesh->node_ptr(elem->node_ptr(7)->id() + ((2 * current_layer + 2) * orig_nodes)));
 
             if (elem->neighbor_ptr(0) == remote_elem)
               new_elem->set_neighbor(1, const_cast<RemoteElem *>(remote_elem));
@@ -850,60 +896,78 @@ AdvancedExtruderGenerator::generate()
           case QUAD9:
           {
             new_elem = std::make_unique<Hex27>();
-            new_elem->set_node(0) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(1) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(2) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(3) =
-                mesh->node_ptr(elem->node_ptr(3)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(4) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(5) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(6) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(7) =
-                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(8) =
-                mesh->node_ptr(elem->node_ptr(4)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(9) =
-                mesh->node_ptr(elem->node_ptr(5)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(10) =
-                mesh->node_ptr(elem->node_ptr(6)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(11) =
-                mesh->node_ptr(elem->node_ptr(7)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(12) =
-                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(13) =
-                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(14) =
-                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(15) =
-                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(16) =
-                mesh->node_ptr(elem->node_ptr(4)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(17) =
-                mesh->node_ptr(elem->node_ptr(5)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(18) =
-                mesh->node_ptr(elem->node_ptr(6)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(19) =
-                mesh->node_ptr(elem->node_ptr(7)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(20) =
-                mesh->node_ptr(elem->node_ptr(8)->id() + (2 * current_layer * orig_nodes));
-            new_elem->set_node(21) =
-                mesh->node_ptr(elem->node_ptr(4)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(22) =
-                mesh->node_ptr(elem->node_ptr(5)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(23) =
-                mesh->node_ptr(elem->node_ptr(6)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(24) =
-                mesh->node_ptr(elem->node_ptr(7)->id() + ((2 * current_layer + 1) * orig_nodes));
-            new_elem->set_node(25) =
-                mesh->node_ptr(elem->node_ptr(8)->id() + ((2 * current_layer + 2) * orig_nodes));
-            new_elem->set_node(26) =
-                mesh->node_ptr(elem->node_ptr(8)->id() + ((2 * current_layer + 1) * orig_nodes));
+            new_elem->set_node(
+                0, mesh->node_ptr(elem->node_ptr(0)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                1, mesh->node_ptr(elem->node_ptr(1)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                2, mesh->node_ptr(elem->node_ptr(2)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                3, mesh->node_ptr(elem->node_ptr(3)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                4,
+                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                5,
+                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                6,
+                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                7,
+                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                8, mesh->node_ptr(elem->node_ptr(4)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                9, mesh->node_ptr(elem->node_ptr(5)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                10, mesh->node_ptr(elem->node_ptr(6)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                11, mesh->node_ptr(elem->node_ptr(7)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                12,
+                mesh->node_ptr(elem->node_ptr(0)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                13,
+                mesh->node_ptr(elem->node_ptr(1)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                14,
+                mesh->node_ptr(elem->node_ptr(2)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                15,
+                mesh->node_ptr(elem->node_ptr(3)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                16,
+                mesh->node_ptr(elem->node_ptr(4)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                17,
+                mesh->node_ptr(elem->node_ptr(5)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                18,
+                mesh->node_ptr(elem->node_ptr(6)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                19,
+                mesh->node_ptr(elem->node_ptr(7)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                20, mesh->node_ptr(elem->node_ptr(8)->id() + (2 * current_layer * orig_nodes)));
+            new_elem->set_node(
+                21,
+                mesh->node_ptr(elem->node_ptr(4)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                22,
+                mesh->node_ptr(elem->node_ptr(5)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                23,
+                mesh->node_ptr(elem->node_ptr(6)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                24,
+                mesh->node_ptr(elem->node_ptr(7)->id() + ((2 * current_layer + 1) * orig_nodes)));
+            new_elem->set_node(
+                25,
+                mesh->node_ptr(elem->node_ptr(8)->id() + ((2 * current_layer + 2) * orig_nodes)));
+            new_elem->set_node(
+                26,
+                mesh->node_ptr(elem->node_ptr(8)->id() + ((2 * current_layer + 1) * orig_nodes)));
 
             if (elem->neighbor_ptr(0) == remote_elem)
               new_elem->set_neighbor(1, const_cast<RemoteElem *>(remote_elem));

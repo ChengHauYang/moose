@@ -67,6 +67,7 @@ WCNSFVFlowPhysicsBase::validParams()
   // Specify the numerical schemes for interpolations of velocity and pressure
   params.transferParam<MooseEnum>(NSFVBase::validParams(), "velocity_interpolation");
   params.transferParam<MooseEnum>(NSFVBase::validParams(), "momentum_advection_interpolation");
+  params.transferParam<MooseEnum>(NSFVBase::validParams(), "momentum_face_interpolation");
   params.transferParam<bool>(NSFVBase::validParams(), "momentum_two_term_bc_expansion");
   params.transferParam<bool>(NSFVBase::validParams(), "pressure_two_term_bc_expansion");
   MooseEnum coeff_interp_method("average harmonic", "harmonic");
@@ -85,7 +86,7 @@ WCNSFVFlowPhysicsBase::validParams()
   params.addParamNamesToGroup("wall_boundaries momentum_wall_types momentum_wall_functors",
                               "Wall boundary conditions");
   params.addParamNamesToGroup(
-      "velocity_interpolation momentum_advection_interpolation "
+      "velocity_interpolation momentum_advection_interpolation momentum_face_interpolation "
       "momentum_two_term_bc_expansion pressure_two_term_bc_expansion mu_interp_method",
       "Numerical scheme");
   params.addParamNamesToGroup("thermal_expansion", "Gravity treatment");
@@ -121,9 +122,11 @@ WCNSFVFlowPhysicsBase::WCNSFVFlowPhysicsBase(const InputParameters & parameters)
     _dynamic_viscosity_name(getParam<MooseFunctorName>("dynamic_viscosity")),
     _velocity_interpolation(getParam<MooseEnum>("velocity_interpolation")),
     _momentum_advection_interpolation(getParam<MooseEnum>("momentum_advection_interpolation")),
+    _momentum_face_interpolation(getParam<MooseEnum>("momentum_face_interpolation")),
     _inlet_boundaries(getParam<std::vector<BoundaryName>>("inlet_boundaries")),
     _outlet_boundaries(getParam<std::vector<BoundaryName>>("outlet_boundaries")),
     _wall_boundaries(getParam<std::vector<BoundaryName>>("wall_boundaries")),
+    _hydraulic_separators(getParam<std::vector<BoundaryName>>("hydraulic_separator_sidesets")),
     _flux_inlet_pps(getParam<std::vector<PostprocessorName>>("flux_inlet_pps")),
     _flux_inlet_directions(getParam<std::vector<Point>>("flux_inlet_directions"))
 {
@@ -249,6 +252,7 @@ WCNSFVFlowPhysicsBase::addFVBCs()
   addInletBC();
   addOutletBC();
   addWallsBC();
+  addSeparatorBC();
 }
 
 void
