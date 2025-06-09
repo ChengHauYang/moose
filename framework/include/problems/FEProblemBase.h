@@ -396,11 +396,6 @@ public:
   virtual void solveLinearSystem(const unsigned int linear_sys_num,
                                  const Moose::PetscSupport::PetscOptions * po = nullptr);
 
-  /**
-   * Whether the element is in the default block setting inside `[GlobalParams]/block`
-   */
-  bool isElemInDefaultBlock(const Elem * elem) const;
-
   ///@{
   /**
    * In general, {evaluable elements} >= {local elements} U {algebraic ghosting elements}. That is,
@@ -417,13 +412,9 @@ public:
    * system dofmap;
    * getEvaluableElementRange() returns the element range that is evaluable based on both the
    * nonlinear dofmap and the auxliary dofmap.
-   * getBlockRestrictedEvaluableElementRange() returns the element range that is evaluable
-   * based on the nonlinear dofmap and the auxliary dofmap, but restricted to the blocks that are
-   * set in [Global]/block.
    */
   const libMesh::ConstElemRange & getEvaluableElementRange();
   const libMesh::ConstElemRange & getNonlinearEvaluableElementRange();
-  const std::vector<const Elem *> & getBlockRestrictedEvaluableElementRange();
   ///@}
 
   ///@{
@@ -2829,8 +2820,6 @@ protected:
   std::unique_ptr<libMesh::ConstElemRange> _evaluable_local_elem_range;
   std::unique_ptr<libMesh::ConstElemRange> _nl_evaluable_local_elem_range;
   std::unique_ptr<libMesh::ConstElemRange> _aux_evaluable_local_elem_range;
-
-  std::vector<const Elem *> _block_restricted_elems;
 
   std::unique_ptr<libMesh::ConstElemRange> _current_algebraic_elem_range;
   std::unique_ptr<libMesh::ConstNodeRange> _current_algebraic_node_range;

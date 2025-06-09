@@ -157,8 +157,9 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
    *     (b2) If only one strategy is provided -> apply it to all variables from NPR.
    *     (b3) Otherwise -> error.
    * (c) If `ic_strategy` is set, but both `ic_variables` and NPR are empty:
-   *     (c1) If one strategy is provided -> apply to all nonlinear variables.
-   *     (c2) If more than one strategy is provided -> warning + use first for all.
+   *     (c1) If one component in `ic_strategy` == IC_POLYNOMIAL... -> mooseError
+   *     (c2) If one strategy is provided -> apply to all nonlinear variables.
+   *     (c3) If more than one strategy is provided -> warning + use first for all.
    * (d) If `ic_strategy` has one value and `ic_variables` is provided -> apply to all
    * `ic_variables`.
    * (e) Otherwise -> raise a parameter error.
@@ -184,8 +185,26 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
           "The 'ic_strategy' parameter must have either a single value or a number of "
           "values equal to the number of nodal_patch_recovery_uo specified in `[MeshModifiers]`.");
   }
-  else if (!ic_strategy_in.empty() && _ic_vars_names.empty())
+  else if (!ic_strategy_in.empty() && _ic_vars_names.empty()) /*_npr_vec is empty*/
   {
+    bool ic_has_polynomial = false;
+    for (const auto & e : ic_strategy_in)
+    {
+      const auto ic_enum = e.getEnum<ICStrategy>();
+      if (ic_enum == ICStrategy::IC_POLYNOMIAL ||
+          ic_enum == ICStrategy::IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN ||
+          ic_enum == ICStrategy::IC_POLYNOMIAL_THRESHOLD)
+      {
+        ic_has_polynomial = true;
+        break;
+      }
+    }
+    if (ic_has_polynomial)
+      mooseError(
+          "The 'ic_strategy' parameter is set to use polynomial extrapolation, but no "
+          "'nodal_patch_recovery_uo' is specified. Please specify at least one NodalPatchRecovery "
+          "UserObject to use polynomial extrapolation.");
+
     // get variable names from the non-linear system
     if (ic_strategy_in.size() > 1)
       mooseWarning("The 'ic_strategy' parameter has more than one value, but no 'ic_variables' are "
@@ -254,11 +273,9 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
 
     // Check size of npr_vec is equal to npr_count
     if (_npr_vec.size() != npr_count)
-      paramError("ic_polynomial",
-                 "Mismatch between number of NPR UserObjects and variables using polynomial "
-                 "strategy (expected: " +
-                     std::to_string(npr_count) + ", given: " + std::to_string(_npr_vec.size()) +
-                     ").");
+      mooseError("Mismatch between number of IC strategies using polynomial "
+                 "extrapolation and NPR UO (expected: " +
+                 std::to_string(npr_count) + ", given: " + std::to_string(_npr_vec.size()) + ").");
   }
 
   if (isParamSetByUser("moving_boundary_name") ||

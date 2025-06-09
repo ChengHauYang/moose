@@ -838,49 +838,6 @@ FEProblemBase::getNonlinearEvaluableElementRange()
   return *_nl_evaluable_local_elem_range;
 }
 
-bool
-FEProblemBase::isElemInDefaultBlock(const Elem * elem) const
-{
-  const auto & blocks = getParam<std::vector<SubdomainName>>("block");
-
-  if (blocks.empty())
-    return true;
-
-  const auto active_subdomains_vector =
-      _mesh.getSubdomainIDs(getParam<std::vector<SubdomainName>>("block"));
-  const std::set<SubdomainID> active_subdomains(active_subdomains_vector.begin(),
-                                                active_subdomains_vector.end());
-
-  // If the element is in one of the specified blocks, return true
-  if (active_subdomains.count(elem->subdomain_id()))
-    return true;
-
-  // Otherwise, return false
-  return false;
-}
-
-const std::vector<const Elem *> &
-FEProblemBase::getBlockRestrictedEvaluableElementRange()
-{
-  getEvaluableElementRange();
-
-  _block_restricted_elems.clear();
-
-  if (!isParamValid("block"))
-  {
-    for (const auto & elem : *_evaluable_local_elem_range)
-      _block_restricted_elems.push_back(elem);
-    return _block_restricted_elems;
-  }
-
-  // The element range should be block-restricted
-  for (const auto & elem : *_evaluable_local_elem_range)
-    if (elem && isElemInDefaultBlock(elem))
-      _block_restricted_elems.push_back(elem);
-
-  return _block_restricted_elems;
-}
-
 void
 FEProblemBase::initialSetup()
 {
