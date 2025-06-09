@@ -1,0 +1,733 @@
+Framework Information:
+MOOSE Version:           git commit 5acd9662ab on 2025-06-09
+LibMesh Version:         
+PETSc Version:           3.23.0
+SLEPc Version:           3.23.0
+Current Time:            Mon Jun  9 15:38:53 2025
+Executable Timestamp:    Mon Jun  9 15:38:49 2025
+
+Input File(s):
+  /Users/chenghau.yang/Documents/Package/moose-subdomain-modifier/test/tests/meshmodifiers/ic_for_newlyactivated_nodes/test.i
+
+Command Line Argument(s):
+  --keep-cout
+
+Checkpoint:
+  Wall Time Interval:      Every 3600 s
+Framework Information:
+MOOSE Version:           git commit 5acd9662ab on 2025-06-09
+LibMesh Version:         
+PETSc Version:           3.23.0
+SLEPc Version:           3.23.0
+Current Time:            Mon Jun  9 15:38:53 2025
+Executable Timestamp:    Mon Jun  9 15:38:49 2025
+
+Input File(s):
+  /Users/chenghau.yang/Documents/Package/moose-subdomain-modifier/test/tests/meshmodifiers/ic_for_newlyactivated_nodes/test.i
+
+Command Line Argument(s):
+  --keep-cout
+
+Checkpoint:
+  Wall Time Interval:      Every 3600 s
+  User Checkpoint:         Disabled
+  # Checkpoints Kept:      2
+  Execute On:              TIMESTEP_END 
+
+Parallelism:
+  Num Processors:          2
+  Num Threads:             1
+
+Mesh: 
+  Parallel Type:           replicated
+  Mesh Dimension:          2
+  Spatial Dimension:       2
+  Nodes:                   
+    Total:                 289
+    Local:                 135
+  Elems:                   
+    Total:                 256
+    Local:                 128
+  Num Subdomains:          2
+  Num Partitions:        User Checkpoint:         Disabled
+  # Checkpoints Kept:      2
+  Execute On:              TIMESTEP_END 
+
+Parallelism:
+  Num Processors:          2
+  Num Threads:             1
+
+Mesh: 
+  Parallel Type:           replicated
+  Mesh Dimension:          2
+  Spatial Dimension:       2
+  Nodes:                   
+    Total:                 289
+    Local:                 154
+    Min/Max/Avg:           135/154/144
+  Elems:                   
+    Total:                 256
+    Local:                 128
+    Min/Max/Avg:           128/128/128
+  Num Subdomains:          2
+  Num Partitions:          2
+  Partitioner:             metis
+
+Nonlinear System:
+  Num DOFs:                85
+  Num Local DOFs:          85
+  Variables:               "diff" 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Auxiliary System:
+  Num DOFs:                289
+  Num Local DOFs:          154
+  Variables:               "phi" 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Execution Inf    2
+ormation:
+  Executioner:             Transient
+  TimeStepper:             ConstantDT
+  TimeIntegrator(s):       ImplicitEuler
+  Solver Mode:             Preconditioned JFNK 
+  Partitioner:             metis
+
+Nonlinear System:
+  Num DOFs:                85
+  Num Local DOFs:          0
+  Variables:               "diff" 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Auxiliary System:
+  Num DOFs:                289
+  Num Local DOFs:          135
+  Variables:               "phi" 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Execution Information:
+  Executioner:             Transient
+  TimeStepper:             ConstantDT
+  TimeIntegrator(s):       ImplicitEuler
+  Solver Mode:             Preconditioned JFNK 
+computeFirstLayerNeighborInfo() called
+computeFirstLayerNeighborInfo() called
+id neighbor = 18
+id neighbor = 19
+id neighbor = 17
+id neighbor = 42
+id neighbor = 43
+id neighbor = 60
+id neighbor = 58
+id neighbor = 76
+id neighbor = 75
+id neighbor = 76
+id neighbor = 93
+id neighbor = 91
+id neighbor = 109
+id neighbor = 108
+id neighbor = 93
+id neighbor = 110
+id neighbor = 109
+id neighbor = 108
+id neighbor = 75
+id neighbor = 60
+id neighbor = 77
+id neighbor = 76
+id neighbor = 16
+id neighbor = 18
+id neighbor = 19
+id neighbor = 19
+id neighbor = 43
+id neighbor = 125
+id neighbor = 124
+id neighbor = 58
+id neighbor = 59
+id neighbor = 76
+id neighbor = 76
+id neighbor = 93
+id neighbor = 42
+id neighbor = 17
+id neighbor = 19
+id neighbor = 92
+id neighbor = 91
+id neighbor = 92
+id neighbor = 109
+id neighbor = 107
+id neighbor = 125
+id neighbor = 124
+id neighbor = 109
+id neighbor = 126
+id neighbor = 125
+id neighbor = 59
+id neighbor = 76
+id neighbor = 75
+id neighbor = 107
+id neighbor = 108
+id neighbor = 43
+id neighbor = 43
+id neighbor = 60
+id neighbor = 59
+id neighbor = 125
+id neighbor = 123
+id neighbor = 141
+id neighbor = 140
+id neighbor = 125
+id neighbor = 142
+id neighbor = 141
+id neighbor = 92
+id neighbor = 109
+id neighbor = 108
+current_solution(dof) = 0
+node2IC_set size = 0
+before communication
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0883883
+id go to map = 10
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0883883
+id go to map = 56
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0883883
+id go to map = 73
+id neighbor = 108
+id neighbor = 125
+id neighbor = 124
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0883883
+id go to map = 107
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+id go to map = 39
+id neighbor = 107
+node id = 107
+id neighbor = 108
+id neighbor = 125
+id neighbor = 123
+id neighbor = 141
+id neighbor = 140
+id neighbor = 125
+id neighbor = 142
+id neighbor = 141
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+id go to map = 124
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+id go to map = 11
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+id go to map = 90
+node2IC_set size = 8
+before communication
+node2IC_set size = 8
+after communication
+info.distances.size() = 2
+w = 16
+w = 11.3137
+node2IC_set size = 8
+after communication
+solution_dof = 0, dofs[solution_dof] = 10, num[solution_dof] = 0, denom = 27.3137
+info.distances.size() = 4
+w = 11.3137
+w = 16
+w = 16
+w = 11.3137
+solution_dof = 0, dofs[solution_dof] = 29, num[solution_dof] = 0, denom = 54.6274
+info.distances.size() = 6
+w = 11.3137
+w = 16
+w = 16
+w = 16
+w = 16
+w = 11.3137
+solution_dof = 0, dofs[solution_dof] = 37, num[solution_dof] = 0, denom = 86.6274
+info.distances.size() = 4
+w = 11.3137
+w = 16
+w = 16
+w = 11.3137
+solution_dof = 0, dofs[solution_dof] = 53, num[solution_dof] = 0, denom = 54.6274
+info.distances.size() = 6
+w = 11.3137
+w = 16
+w = 16
+w = 16
+w = 11.3137
+w = 16
+solution_dof = 0, dofs[solution_dof] = 21, num[solution_dof] = 0, denom = 86.6274
+info.distances.size() = 4
+w = 11.3137
+w = 16
+w = 16
+w = 16
+solution_dof = 0, dofs[solution_dof] = 60, num[solution_dof] = 0, denom = 59.3137
+info.distances.size() = 8
+w = 11.3137
+w = 16
+w = 16
+w = 16
+w = 16
+w = 16
+w = 11.3137
+w = 16
+solution_dof = 0, dofs[solution_dof] = 11, num[solution_dof] = 0, denom = 118.627
+info.distances.size() = 8
+w = 11.3137
+w = 16
+w = 16
+w = 16
+w = 16
+w = 16
+w = 11.3137
+w = 16
+solution_dof = 0, dofs[solution_dof] = 45, num[solution_dof] = 0, denom = 118.627
+id neighbor = 18
+id neighbor = 19
+id neighbor = 17
+id neighbor = 42
+id neighbor = 43
+id neighbor = 60
+id neighbor = 58
+id neighbor = 76
+id neighbor = 75
+id neighbor = 76
+id neighbor = 93
+id neighbor = 91
+id neighbor = 109
+id neighbor = 108
+id neighbor = 93
+id neighbor = 110
+id neighbor = 109
+id neighbor = 75
+id neighbor = 60
+id neighbor = 77
+id neighbor = 76
+id neighbor = 16
+id neighbor = 18
+id neighbor = 58
+id neighbor = 59
+id neighbor = 76
+id neighbor = 76
+id neighbor = 93
+id neighbor = 92
+id neighbor = 19
+id neighbor = 19
+id neighbor = 43
+id neighbor = 42
+id neighbor = 17
+id neighbor = 19
+id neighbor = 91
+id neighbor = 92
+id neighbor = 109
+id neighbor = 107
+node id = 107
+id neighbor = 43
+id neighbor = 43
+id neighbor = 60
+id neighbor = 59
+id neighbor = 18
+id neighbor = 125
+id neighbor = 124
+node id = 124
+id neighbor = 109
+id neighbor = 126
+id neighbor = 19
+id neighbor = 17
+id neighbor = 42
+id neighbor = 43
+id neighbor = 125
+id neighbor = 59
+id neighbor = 76
+id neighbor = 75
+id neighbor = 60
+id neighbor = 58
+id neighbor = 76
+id neighbor = 75
+id neighbor = 60
+id neighbor = 77
+id neighbor = 92
+id neighbor = 109
+id neighbor = 108
+id neighbor = 76
+id neighbor = 16
+id neighbor = 18
+id neighbor = 19
+id neighbor = 19
+id neighbor = 43
+id neighbor = 42
+id neighbor = 17
+id neighbor = 19
+id neighbor = 43
+id neighbor = 43
+id neighbor = 60
+id neighbor = 59
+id neighbor = 18
+id neighbor = 19
+id neighbor = 17
+id neighbor = 42
+id neighbor = 43
+id neighbor = 60
+id neighbor = 58
+id neighbor = 76
+id neighbor = 75
+id neighbor = 60
+id neighbor = 77
+id neighbor = 76
+id neighbor = 16
+id neighbor = 18
+id neighbor = 19
+id neighbor = 19
+id neighbor = 43
+id neighbor = 42
+id neighbor = 17
+id neighbor = 19
+id neighbor = 43
+id neighbor = 43
+id neighbor = 60
+id neighbor = 59
+id neighbor = 18
+id neighbor = 19
+id neighbor = 17
+id neighbor = 42
+id neighbor = 43
+id neighbor = 60
+id neighbor = 58
+id neighbor = 76
+id neighbor = 75
+id neighbor = 60
+id neighbor = 77
+id neighbor = 76
+id neighbor = 16
+id neighbor = 18
+id neighbor = 19
+id neighbor = 19
+id neighbor = 43
+id neighbor = 42
+id neighbor = 17
+id neighbor = 19
+id neighbor = 43
+id neighbor = 43
+id neighbor = 60
+id neighbor = 59
+id neighbor = 18
+id neighbor = 19
+id neighbor = 17
+id neighbor = 42
+id neighbor = 43
+id neighbor = 60
+id neighbor = 58
+id neighbor = 76
+id neighbor = 75
+id neighbor = 60
+id neighbor = 77
+id neighbor = 76
+id neighbor = 16
+id neighbor = 18
+id neighbor = 19
+id neighbor = 19
+id neighbor = 43
+id neighbor = 42
+id neighbor = 17
+id neighbor = 19
+id neighbor = 43
+id neighbor = 43
+id neighbor = 60
+id neighbor = 59
+id neighbor = 18
+id neighbor = 19
+id neighbor = 17
+id go to map = 16
+id neighbor = 42
+id neighbor = 43
+id neighbor = 60
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0883883
+id neighbor = 58
+id neighbor = 76
+id neighbor = 75
+id go to map = 40
+current_solution(dof) = 0
+id neighbor = 60
+id neighbor = 77
+id neighbor = 76
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+id go to map = 59
+id neighbor = 16
+node id = 16
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+id neighbor = 18
+id neighbor = 19
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+id neighbor = 19
+id neighbor = 43
+id neighbor = 42
+dist = 0.0625
+id go to map = 13
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+current_solution(dof) = 0
+dist = 0.0625
+id go to map = 17
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+id neighbor = 17
+node id = 17
+id neighbor = 19
+dist = 0.0883883
+id go to map = 74
+id neighbor = 91
+id neighbor = 92
+id neighbor = 43
+id neighbor = 43
+id neighbor = 60
+id neighbor = 59
+id neighbor = 109
+id neighbor = 107
+node id = 107
+node id = 59
+current_solution(dof) = 0
+id neighbor = 125
+id neighbor = 124
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+node id = 124
+id neighbor = 109
+id neighbor = 126
+id neighbor = 125
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+id go to map = 42
+node2IC_set size = 12
+before communication
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0883883
+id go to map = 108
+id neighbor = 92
+id neighbor = 109
+id neighbor = 108
+node id = 108
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+id go to map = 91
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0625
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625
+id go to map = 57
+node2IC_set size = 14
+before communication
+node2IC_set size = 26
+after communication
+info.distances.size() = 4
+w = 11.3137
+node2IC_set size = 26
+after communication
+info.distances.size() = 0
+info.distances.size() = 0
+w = 16
+w = 16
+w = 11.3137
+info.distances.size() = 2
+w = 16
+w = 16
+solution_dof = 0, dofs[solution_dof] = 22, num[solution_dof] = 0, denom = 54.6274
+info.distances.size() = 6
+w = 11.3137
+w = 16
+w = 16
+solution_dof = 0, dofs[solution_dof] = 107, num[solution_dof] = 0, denom = 32
+info.distances.size() = 4
+w = 16
+w = 16
+w = 16
+w = 11.3137
+w = 16
+w = 16
+w = 16
+solution_dof = 0, dofs[solution_dof] = 108, num[solution_dof] = 0, denom = 64
+solution_dof = 0, dofs[solution_dof] = 13, num[solution_dof] = 0, denom = 86.6274
+info.distances.size() = 4
+w = 11.3137
+w = 16
+w = 16
+w = 11.3137
+solution_dof = 0, dofs[solution_dof] = 38, num[solution_dof] = 0, denom = 54.6274
+info.distances.size() = 4
+w = 11.3137
+w = 16
+w = 16
+w = 11.3137
+solution_dof = 0, dofs[solution_dof] = 54, num[solution_dof] = 0, denom = 54.6274
+info.distances.size() = 8
+w = 11.3137
+w = 16
+w = 16
+w = 16
+w = 16
+w = 16
+w = 11.3137
+w = 16
+solution_dof = 0, dofs[solution_dof] = 46, num[solution_dof] = 0, denom = 118.627
+info.distances.size() = 8
+w = 11.3137
+w = 16
+w = 16
+w = 16
+w = 16
+w = 16
+w = 11.3137
+w = 16
+solution_dof = 0, dofs[solution_dof] = 30, num[solution_dof] = 0, denom = 118.627
+id neighbor = 75
+id neighbor = 76
+id neighbor = 93
+id neighbor = 91
+node id = 91
+id neighbor = 109
+id neighbor = 108
+node id = 108
+id neighbor = 93
+id neighbor = 110
+id neighbor = 109
+id neighbor = 58
+id neighbor = 59
+node id = 59
+id neighbor = 76
+id neighbor = 76
+id neighbor = 93
+id neighbor = 92
+id neighbor = 59
+node id = 59
+id neighbor = 76
+id neighbor = 75
+node2IC_set size = 26
+before communication
+current_solution(dof) = 0
+dist = 0.0883883
+current_solution(dof) = 0
+dist = 0.0625

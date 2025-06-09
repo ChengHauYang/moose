@@ -592,8 +592,8 @@ ElementSubdomainModifierBase::findNewlyActivatedNodes(
 #ifndef NDEBUG
       if (node->processor_id() != _mesh.processor_id() && nodeIsNewlyActivated(node_id))
       {
-        std::cout << "node_id = " << node_id
-                  << " is owned by other processor and is newly activated.\n";
+        _console << "node_id = " << node_id
+                 << " is owned by other processor and is newly activated.\n";
       }
 #endif
 
@@ -617,10 +617,10 @@ ElementSubdomainModifierBase::findNewlyActivatedNodes(
 #ifndef NDEBUG
   if (_newactivated_nodes.size() > 0)
   {
-    std::cout << "New activated nodes: ";
+    _console << "New activated nodes: ";
     for (auto node_id : _newactivated_nodes)
-      std::cout << node_id << " ";
-    std::cout << "\n";
+      _console << node_id << " ";
+    _console << std::endl;
   }
 #endif
 }
@@ -634,7 +634,7 @@ ElementSubdomainModifierBase::findMissingNewlyActivatedNodes()
     if (node->processor_id() == _mesh.processor_id())
     {
 #ifndef NDEBUG
-      std::cout << "[missing]" << "Rank " << _mesh.processor_id() << " node " << id << "\n";
+      _console << "[missing]" << "Rank " << _mesh.processor_id() << " node " << id << std::endl;
 #endif
       _newactivated_nodes.insert(id);
     }
@@ -700,7 +700,7 @@ ElementSubdomainModifierBase::nodeIsNewlyActivated(dof_id_type node_id) const
   std::ofstream fout1("nodes_" + std::to_string(node_id) + ".txt", std::ios::app);
   if (fout1.is_open())
   {
-    fout1 << pt(0) << ", " << pt(1) << "\n";
+    fout1 << pt(0) << ", " << pt(1) << std::endl;
     fout1.close();
   }
   else
@@ -720,7 +720,7 @@ ElementSubdomainModifierBase::nodeIsNewlyActivated(dof_id_type node_id) const
                          std::ios::app);
       if (fout.is_open())
       {
-        fout << pt(0) << ", " << pt(1) << "\n";
+        fout << pt(0) << ", " << pt(1) << std::endl;
         fout.close();
       }
       else
@@ -802,7 +802,7 @@ ElementSubdomainModifierBase::reinitializedElemRange(bool displaced)
   std::vector<Elem *> elems;
   for (auto elem_id : _reinitialized_elems)
   {
-    // std::cout << "elem_id = " << elem_id << "\n";
+    // _console << "elem_id = " << elem_id << std::endl;
     elems.push_back(displaced ? _displaced_mesh->elemPtr(elem_id) : _mesh.elemPtr(elem_id));
   }
 
@@ -877,8 +877,8 @@ ElementSubdomainModifierBase::setOldAndOlderSolutions(SystemBase & sys,
     dof_id_type bnode_id = bnode->id();
     Point bnode_pos = *bnode;
 
-    // std::cout << "bnode id = " << bnode_id << "\n";
-    // std::cout << "bnode pos = " << bnode_pos << "\n";
+    // _console << "bnode id = " << bnode_id << std::endl;
+    // _console << "bnode pos = " << bnode_pos << std::endl;
   }
 
   // Don't do anything if this is a steady simulation
@@ -972,7 +972,7 @@ ElementSubdomainModifierBase::setOldAndOlderSolutions(SystemBase & sys,
 //       {
 //         auto new_value = current_solution(solution_indices[solution_dof]);
 // #ifndef NDEBUG
-//         std::cout << "[After] Node ID " << point_dof_id << " DOF " <<
+//         _console << "[After] Node ID " << point_dof_id << " DOF " <<
 //         solution_indices[solution_dof]
 //                   << " new value = " << new_value << std::endl;
 // #endif
@@ -1105,7 +1105,7 @@ ElementSubdomainModifierBase::setOldAndOlderSolutions(SystemBase & sys,
 //                          std::ios::app);
 //       if (fout.is_open())
 //       {
-//         fout << pt(0) << ", " << pt(1) << "\n";
+//         fout << pt(0) << ", " << pt(1) << std::endl;
 //         fout.close();
 //       }
 //       else
@@ -1137,11 +1137,11 @@ ElementSubdomainModifierBase::firstLayerNeighbours(dof_id_type nid) const
         const auto node_ptr = e->node_ptr(i);
         if (node_ptr->id() == nid)
           continue;
-        std::cout << "id neighbor = " << node_ptr->id() << "\n";
-        auto it = _node2IC_set.find(node_ptr->id());
-        if (it != _node2IC_set.end() && it->second)
+        _console << "id neighbor = " << node_ptr->id() << std::endl;
+        if (std::find(_node2IC_set.begin(), _node2IC_set.end(), node_ptr->id()) !=
+            _node2IC_set.end()) // skip if already set
         {
-          std::cout << "node id = " << node_ptr->id() << "\n";
+          _console << "node id = " << node_ptr->id() << std::endl;
           nbrs.push_back(node_ptr);
         }
       }
@@ -1152,8 +1152,9 @@ ElementSubdomainModifierBase::firstLayerNeighbours(dof_id_type nid) const
         if (node_ptr->id() == nid)
           continue;
 
-        auto it = _node2IC_set.find(node_ptr->id());
-        if (not_newly_activated(node_ptr->id()) || (it != _node2IC_set.end() && it->second))
+        if (not_newly_activated(node_ptr->id()) ||
+            std::find(_node2IC_set.begin(), _node2IC_set.end(), node_ptr->id()) !=
+                _node2IC_set.end())
           nbrs.push_back(node_ptr);
       }
   }
@@ -1181,9 +1182,12 @@ ElementSubdomainModifierBase::applyICForNodeList(SystemBase & sys,
     std::vector<Real> num(dofs.size(), 0.0);
     Real denom = 0.0;
 
+    _console << "info.distances.size() = " << info.distances.size() << std::endl;
+
     for (size_t solution_dof = 0; solution_dof < info.distances.size(); ++solution_dof)
     {
       Real w = 1.0 / info.distances[solution_dof];
+      std::cout << "w = " << w << std::endl;
       denom += w;
       const auto & vals = info.solution_values[solution_dof];
       for (size_t j = 0; j < vals.size(); ++j)
@@ -1191,10 +1195,14 @@ ElementSubdomainModifierBase::applyICForNodeList(SystemBase & sys,
     }
     for (size_t solution_dof = 0; solution_dof < dofs.size(); ++solution_dof)
     {
-      std::cout << "solution_dof = " << solution_dof
-                << ", dofs[solution_dof] = " << dofs[solution_dof]
-                << ", num[solution_dof] = " << num[solution_dof] << ", denom = " << denom << "\n";
-      vec.set(dofs[solution_dof], num[solution_dof] / denom);
+      if (denom > 0.0)
+      {
+        _console << "solution_dof = " << solution_dof
+                 << ", dofs[solution_dof] = " << dofs[solution_dof]
+                 << ", num[solution_dof] = " << num[solution_dof] << ", denom = " << denom
+                 << std::endl;
+        vec.set(dofs[solution_dof], num[solution_dof] / denom);
+      }
     }
   }
   vec.close();
@@ -1203,9 +1211,8 @@ ElementSubdomainModifierBase::applyICForNodeList(SystemBase & sys,
 void
 ElementSubdomainModifierBase::computeFirstLayerNeighborInfo(SystemBase & sys)
 {
-  for (auto nid : _newactivated_nodes)
-    _node2IC_set[nid] = false;
 
+  _console << "computeFirstLayerNeighborInfo() called" << std::endl;
   int n_nodal_on_elem =
       _mesh.elemPtr(_mesh.nodeToElemMap().at(_global_newactivated_nodes[0])[0])->n_nodes();
 
@@ -1234,17 +1241,48 @@ ElementSubdomainModifierBase::computeFirstLayerNeighborInfo(SystemBase & sys)
     const auto neighbor_nodeList = firstLayerNeighbours(new_id);
 
     if (!neighbor_nodeList.empty())
+    {
       nodes_q.push(new_id);
+      _global_newly_activated_node_id_process_now.push_back(new_id);
+    }
   }
+
+  auto local2Global =
+      [&](const auto & local_ids,
+          std::vector<typename std::decay<decltype(local_ids[0])>::type> & global_ids,
+          bool sort_and_remove_duplicates = false) -> void
+  {
+    using IDType = typename std::decay<decltype(local_ids[0])>::type;
+
+    std::vector<std::vector<IDType>> gathered;
+    _mesh.comm().allgather(local_ids, gathered);
+
+    global_ids.clear();
+    for (const auto & vec : gathered)
+      global_ids.insert(global_ids.end(), vec.begin(), vec.end());
+
+    if (sort_and_remove_duplicates)
+    { // remove duplicates cause issue for std::vector<Point>
+      std::sort(global_ids.begin(), global_ids.end());
+      global_ids.erase(std::unique(global_ids.begin(), global_ids.end()), global_ids.end());
+    }
+  };
+
+  local2Global(_global_newly_activated_node_id_process_now,
+               _global_newly_activated_node_id_process_now,
+               true); // sort and remove duplicates
 
   int not_set_nodes_count = 0;
 
   // loop over the queue and prepare the queue for the next layer
-  while (!nodes_q.empty())
+  while (!_global_newly_activated_node_id_process_now.empty())
   {
     size_t layer_size = nodes_q.size();
+    _global_newly_activated_node_id_process_now.clear();
     std::vector<dof_id_type> this_layer_nodes;
     this_layer_nodes.reserve(layer_size);
+
+    std::cout << "layer_size = " << layer_size << std::endl;
 
     // loop over the nodes in the queue
     for (size_t layer_index = 0; layer_index < layer_size; ++layer_index)
@@ -1266,7 +1304,7 @@ ElementSubdomainModifierBase::computeFirstLayerNeighborInfo(SystemBase & sys)
         vals.reserve(dofs.size());
         for (auto dof : dofs)
         {
-          std::cout << "current_solution(dof) = " << current_solution(dof) << "\n";
+          _console << "current_solution(dof) = " << current_solution(dof) << std::endl;
 
           Point point_nbr = *nbr;
           if (std::isnan(current_solution(dof)))
@@ -1275,7 +1313,7 @@ ElementSubdomainModifierBase::computeFirstLayerNeighborInfo(SystemBase & sys)
             if (fout.is_open())
             {
               fout << point_i(0) << ", " << point_i(1) << ", " << point_nbr(0) << ", "
-                   << point_nbr(1) << "\n";
+                   << point_nbr(1) << std::endl;
               fout.close();
             }
             else
@@ -1287,15 +1325,33 @@ ElementSubdomainModifierBase::computeFirstLayerNeighborInfo(SystemBase & sys)
           vals.push_back(current_solution(dof));
         }
         Real dist = (*nbr - point_i).norm();
-        std::cout << "dist = " << dist << "\n";
+        _console << "dist = " << dist << std::endl;
         neighbor_info.solution_values.push_back(std::move(vals));
         neighbor_info.distances.push_back(dist);
       }
 
-      std::cout << "id go to map = " << nid << "\n";
+      _console << "id go to map = " << nid << std::endl;
       _newlyactivated_node_to_second_neighbors[nid] = std::move(neighbor_info) /*map*/;
-      _node2IC_set[nid] = true;
+      _node2IC_set.push_back(nid);
     }
+
+    _console << "node2IC_set size = " << _node2IC_set.size() << std::endl;
+
+    _console << "before communication" << std::endl;
+
+    // for (auto id : _global_newactivated_nodes)
+    // {
+    //   int local_val = _node2IC_set.count(id) ? static_cast<int>(_node2IC_set[id]) : 0;
+    //   _mesh.comm().max(local_val);
+    //   _console << "id = " << id << ", local_val = " << local_val << std::endl;
+    //   _node2IC_set[id] = static_cast<bool>(local_val);
+    // }
+
+    local2Global(_node2IC_set, _node2IC_set);
+
+    _console << "node2IC_set size = " << _node2IC_set.size() << std::endl;
+
+    _console << "after communication" << std::endl;
 
     // (a) Write back the values for this layer first
     applyICForNodeList(sys, this_layer_nodes);
@@ -1316,7 +1372,8 @@ ElementSubdomainModifierBase::computeFirstLayerNeighborInfo(SystemBase & sys)
 
       for (auto new_id : _newactivated_nodes)
       {
-        if (_node2IC_set[new_id]) // skip if already set
+        if (std::find(_node2IC_set.begin(), _node2IC_set.end(), new_id) !=
+            _node2IC_set.end()) // skip if already set
           continue;
 
         const auto neighbor_nodeList = firstLayerNeighbours(new_id);
@@ -1324,6 +1381,7 @@ ElementSubdomainModifierBase::computeFirstLayerNeighborInfo(SystemBase & sys)
         if (neighbor_nodeList.size() >= search_neighbors_criteria)
         {
           nodes_q.push(new_id);
+          _global_newly_activated_node_id_process_now.push_back(new_id);
           nodes_set_this_round++;
         }
 
@@ -1335,20 +1393,24 @@ ElementSubdomainModifierBase::computeFirstLayerNeighborInfo(SystemBase & sys)
       else
         search_neighbors_criteria--; // release the criteria
     }
+
+    local2Global(_global_newly_activated_node_id_process_now,
+                 _global_newly_activated_node_id_process_now,
+                 true); // sort and remove duplicates
   }
 
   if (nodes_q.empty() && not_set_nodes_count > 0)
   {
-    std::cout << "There are some nodes not set.\n";
-    for (auto it : _node2IC_set)
-    {
-      if (!it.second)
-        std::cout << "id = " << it.first << "\n";
-    }
+    _console << "There are some nodes not set.\n";
+    // for (auto it : _node2IC_set)
+    // {
+    //   if (!it.second)
+    //     _console << "id = " << it << std::endl;
+    // }
   }
   else
   {
-    std::cout << "All nodes are set.\n";
+    _console << "All nodes are set.\n";
   }
 }
 
@@ -1451,19 +1513,19 @@ ElementSubdomainModifierBase::computeSetDifference()
   // Report differences if any
   if (!_global_newactivated_nodes_diff.empty())
   {
-    std::cout << "Rank " << _mesh.comm().rank() << " : Detected mismatch in activated nodes.\n"
-              << "  Count in _global_newactivated_nodes      : "
-              << _global_newactivated_nodes.size() << "\n"
-              << "  Count in _global_newactivated_nodes_temp : "
-              << _global_newactivated_nodes_temp.size() << "\n"
-              << "  Difference count                         : "
-              << _global_newactivated_nodes_diff.size() << "\n";
+    _console << "Rank " << _mesh.comm().rank() << " : Detected mismatch in activated nodes.\n"
+             << "  Count in _global_newactivated_nodes      : " << _global_newactivated_nodes.size()
+             << "\n"
+             << "  Count in _global_newactivated_nodes_temp : "
+             << _global_newactivated_nodes_temp.size() << "\n"
+             << "  Difference count                         : "
+             << _global_newactivated_nodes_diff.size() << std::endl;
 
     // Optionally print IDs (can be removed if too verbose)
-    std::cout << "  Nodes only in _global_newactivated_nodes:\n  ";
+    _console << "  Nodes only in _global_newactivated_nodes:\n  ";
     for (const auto & id : _global_newactivated_nodes_diff)
-      std::cout << id << " ";
-    std::cout << "\n";
+      _console << id << " ";
+    _console << std::endl;
   }
 #endif
 }

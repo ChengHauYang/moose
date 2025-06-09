@@ -252,7 +252,9 @@ private:
   std::vector<dof_id_type> _global_newactivated_nodes_temp;
   std::vector<dof_id_type> _global_newactivated_nodes_diff;
   /// Node ID to whether the node has been set IC
-  std::unordered_map<dof_id_type, bool> _node2IC_set;
+  // std::unordered_map<dof_id_type, bool> _node2IC_set;
+  std::vector<dof_id_type> _node2IC_set;
+  std::vector<dof_id_type> _global_newly_activated_node_id_process_now;
 
   /// Let every processor know what are the reinitialized elements (save to _global_reinitialized_elems)
   void synchronizeReinitializedElems();
