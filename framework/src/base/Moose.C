@@ -694,6 +694,13 @@ associateSyntaxInner(Syntax & syntax, ActionFactory & /*action_factory*/)
   // Application Block System
   registerSyntax("CreateApplicationBlockAction", "Application");
 
+  // Adds [SpatioTemporalPath] block
+  registerSyntax("EmptyAction", "SpatioTemporalPaths");
+  registerSyntaxTask("AddSpatioTemporalPathAction", "SpatioTemporalPaths/*", "add_user_object");
+
+  // Adds [SpatioTemporalPath] block
+  registerSyntax("SpatioTemporalHeatAction", "SpatioTemporalHeat");
+
 #ifdef MOOSE_MFEM_ENABLED
   registerSyntaxTask("AddMFEMFESpaceAction", "FESpaces/*", "add_mfem_fespaces");
   registerSyntaxTask("AddMFEMPreconditionerAction", "Preconditioner/*", "add_mfem_preconditioner");
