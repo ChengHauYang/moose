@@ -1,8 +1,31 @@
 [Mesh]
-  type = GeneratedMesh
-  dim = 2
-  nx = 10
-  ny = 10
+#  type = GeneratedMesh
+#  dim = 2
+#  nx = 10
+#  ny = 10
+  [square_boundary]
+    type = PolyLineMeshGenerator
+    points = '0.0 0.0 0.0
+            1.0 0.0 0.0
+            1.0 1.0 0.0
+            0.0 1.0 0.0'
+    loop = true
+  []
+  [gen]
+    type = XYDelaunayGenerator
+    boundary = 'square_boundary'
+    desired_area = 0.05
+    refine_boundary = false
+  []
+  [left]
+    type = SideSetsFromPointsGenerator
+    input = gen
+    new_boundary = 'left bottom top right'
+    points = '0 0.21 0
+              0.21 0 0
+              0.21 1 0
+              1 0.21 0'
+  []
 []
 
 [Variables]

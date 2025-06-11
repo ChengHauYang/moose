@@ -16,6 +16,7 @@ ConvectiveFluxBC::validParams()
 {
   InputParameters params = IntegratedBC::validParams();
   params.set<Real>("rate") = 7500;
+  params.set<Real>("rate_final") = 7500;
   params.set<Real>("initial") = 500;
   params.set<Real>("final") = 500;
   params.set<Real>("duration") = 0.0;
@@ -29,6 +30,7 @@ ConvectiveFluxBC::ConvectiveFluxBC(const InputParameters & parameters)
     _initial(getParam<Real>("initial")),
     _final(getParam<Real>("final")),
     _rate(getParam<Real>("rate")),
+    _rate_final(isParamValid("rate_final") ? getParam<Real>("rate_final") : getParam<Real>("rate")),
     _duration(getParam<Real>("duration"))
 {
 }
@@ -37,17 +39,31 @@ Real
 ConvectiveFluxBC::computeQpResidual()
 {
   Real value;
+  Real rate;
 
   if (_t < _duration)
+  {
     value = _initial + (_final - _initial) * std::sin((0.5 / _duration) * libMesh::pi * _t);
+    rate = _rate;
+  }
   else
+  {
     value = _final;
+    rate = _rate_final;
+  }
 
-  return -(_test[_i][_qp] * _rate * (value - _u[_qp]));
+  return -(_test[_i][_qp] * rate * (value - _u[_qp]));
 }
 
 Real
 ConvectiveFluxBC::computeQpJacobian()
 {
-  return -(_test[_i][_qp] * _rate * (-_phi[_j][_qp]));
+  Real rate;
+
+  if (_t < _duration)
+    rate = _rate;
+  else
+    rate = _rate_final;
+
+  return -(_test[_i][_qp] * rate * (-_phi[_j][_qp]));
 }

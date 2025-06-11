@@ -33,5 +33,6 @@ private:
   Real _initial;
   Real _final;
   Real _rate;
+  Real _rate_final;
   Real _duration;
 };

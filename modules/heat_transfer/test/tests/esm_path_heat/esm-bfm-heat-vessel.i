@@ -13,7 +13,7 @@ weld_blocks_and_change_to = '0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 2
     #file = "vessel_40mm_coarse_v05.exo"
   []
 
-  [left]
+  [walls]
     type = SideSetsFromPointsGenerator
     input = gmg
     new_boundary = 'left bottom top right'
