@@ -200,7 +200,7 @@
   [sub]
     type = FullSolveMultiApp
     input_files = quench2machine.i
-    execute_on = timestep_end
+    execute_on = FINAL
   []
 []
 
