@@ -27,6 +27,47 @@
   []
 []
 
+[UserObjects]
+  [extrapolation_patch_T]
+    type = NodalPatchRecoveryVariable
+    patch_polynomial_order = FIRST
+    use_specific_elements = true
+    var = 'T'
+    execute_on = 'TIMESTEP_BEGIN'
+  []
+  [extrapolation_patch_disp_x]
+    type = NodalPatchRecoveryVariable
+    patch_polynomial_order = FIRST
+    use_specific_elements = true
+    var = 'disp_x'
+    execute_on = 'TIMESTEP_BEGIN'
+  []
+  [extrapolation_patch_disp_y]
+    type = NodalPatchRecoveryVariable
+    patch_polynomial_order = FIRST
+    use_specific_elements = true
+    var = 'disp_y'
+    execute_on = 'TIMESTEP_BEGIN'
+  []
+[]
+
+# [MeshModifiers]
+#   [esm]
+#     type = SpatioTemporalPathElementSubdomainModifier
+#     path = 'path'
+#     radius = 0.03
+#     target_subdomain = '0'
+#     block = '0 1'
+#     execute_on = 'TIMESTEP_BEGIN'
+
+#     # --- new for setting IC --- #
+#     unsolved_blocks = '1'
+#     ic_strategy = "IC_POLYNOMIAL"
+
+#     nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y'
+#   []
+# []
+
 [SpatioTemporalHeat]
   path_file = 'concentric_circles_reverse.csv'
   # for path
@@ -37,7 +78,8 @@
   radius = 0.03
   execute_on_esm = 'TIMESTEP_BEGIN'
   unsolved_blocks = '1'
-  ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
+  ic_strategy = "IC_POLYNOMIAL"
+  nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y'
   # for heat source
   power = 1
   a = 0.035

@@ -42,7 +42,7 @@ SpatioTemporalHeatAction::validParams()
       {},
       "If the region has the unsolved blocks, you should set this parameter to turn on the "
       "extrapolation of the solution to the newly activated elements.");
-  MooseEnum init_strategy("IC_DEFAULT IC_EXTRAPOLATE_FIRST_LAYER IC_POLYNOMIAL "
+  MooseEnum init_strategy("IC_DEFAULT IC_POLYNOMIAL "
                           "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN IC_POLYNOMIAL_THRESHOLD",
                           "IC_DEFAULT");
 
@@ -55,6 +55,17 @@ SpatioTemporalHeatAction::validParams()
       "nodal_patch_recovery_uo",
       {},
       "List of NodalPatchRecovery UserObjects for each component (e.g., u, v)");
+
+  params.addParam<int>(
+      "kd_tree_leaf_max_size", 10, "Maximum number of elements in a leaf node of the k-d tree");
+
+  params.addParam<int>("nearby_element_threshold",
+                       1,
+                       "Threshold for considering elements as 'nearby' in the k-d tree search.");
+
+  params.addParam<double>("radius_search_threshold",
+                          -1.0,
+                          "Threshold for considering elements as 'nearby' in the k-d tree search.");
 
   // for ADMovingEllipsoidalHeatSource
   params.addRequiredParam<MaterialPropertyName>("power", "Input power of the heat source.");
@@ -106,6 +117,9 @@ SpatioTemporalHeatAction::act()
         getParam<std::vector<MooseEnum>>("ic_strategy");
     esm_params.set<std::vector<UserObjectName>>("nodal_patch_recovery_uo") =
         getParam<std::vector<UserObjectName>>("nodal_patch_recovery_uo");
+    esm_params.set<int>("kd_tree_leaf_max_size") = getParam<int>("kd_tree_leaf_max_size");
+    esm_params.set<int>("nearby_element_threshold") = getParam<int>("nearby_element_threshold");
+    esm_params.set<double>("radius_search_threshold") = getParam<double>("radius_search_threshold");
 
     _problem->addUserObject("SpatioTemporalPathElementSubdomainModifier", "esm", esm_params);
   }

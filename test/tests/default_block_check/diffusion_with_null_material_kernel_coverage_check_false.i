@@ -1,7 +1,3 @@
-[Problem]
-  kernel_coverage_check = FALSE
-[]
-
 [GlobalParams]
   block = '0 1 3'
 []
