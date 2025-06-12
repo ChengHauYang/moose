@@ -50,6 +50,17 @@
 #   []
 # []
 
+
+[UserObjects]
+  [extrapolation_patch_T]
+    type = NodalPatchRecoveryVariable
+    patch_polynomial_order = FIRST
+    use_specific_elements = true
+    var = 'cond'
+    execute_on = 'TIMESTEP_BEGIN'
+  []
+[]
+
 [SpatioTemporalHeat]
   path_file = 'concentric_circles_reverse.csv'
   ## for path
@@ -61,7 +72,8 @@
   execute_on_esm = 'TIMESTEP_BEGIN'
   # execute_on_esm = 'TIMESTEP_END'
   unsolved_blocks = '1'
-  ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
+  ic_strategy = "IC_POLYNOMIAL"
+  nodal_patch_recovery_uo = "extrapolation_patch_T"
   ## for heat source
   power = 1
   a = 0.035
