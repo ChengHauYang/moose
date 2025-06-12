@@ -73,6 +73,8 @@
     nearby_element_threshold = 3
 
     nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y extrapolation_patch_vm'
+    #nodal_patch_recovery_uo = 'extrapolation_patch_vm'
+
   []
 []
 

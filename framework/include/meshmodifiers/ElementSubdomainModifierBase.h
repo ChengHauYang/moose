@@ -269,6 +269,9 @@ private:
   /// @brief Radius search threshold for k-d tree search
   double _radius_search_threshold = -1;
 
+  /// Number of nonlinear variables in the system
+  const int _number_of_nl_variables;
+
   /// Perform a global MPI gather of reinitialized element IDs across all processors.
   /// Results are stored in `_global_reinitialized_elems`.
   void synchronizeReinitializedElems();
@@ -295,7 +298,10 @@ private:
   /// @brief Apply initial conditions using polynomial nodal patch recovery
   /// @param sys
   /// @param var_num Variable number (e.g., disp, u, v) for which to apply initial conditions
-  void applyIC_Polynomial(SystemBase & sys, const unsigned int var_num);
+  void applyIC_Polynomial(SystemBase & sys,
+                          const unsigned int var_num_in_npr,
+                          const unsigned int var_num_for_nl_or_aux,
+                          const bool is_elemental);
 
   /// @brief Gather neighbor elements for newly activated nodes
   void gatherNeighborElementsForActivatedNodes();
