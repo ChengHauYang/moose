@@ -297,7 +297,9 @@ private:
 
   /// @brief Apply initial conditions using polynomial nodal patch recovery
   /// @param sys
-  /// @param var_num Variable number (e.g., disp, u, v) for which to apply initial conditions
+  /// @param var_num_in_npr variable number in the NodalPatchRecovery user object
+  /// @param var_num_for_nl_or_aux variable number for the nonlinear or auxiliary system
+  /// @param is_elemental true if the variable is elemental, false if it is nodal
   void applyIC_Polynomial(SystemBase & sys,
                           const unsigned int var_num_in_npr,
                           const unsigned int var_num_for_nl_or_aux,

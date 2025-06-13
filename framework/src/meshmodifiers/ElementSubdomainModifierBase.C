@@ -906,6 +906,8 @@ ElementSubdomainModifierBase::applyIC(bool displaced)
 
       bool isElemental;
 
+      // Note: Both auxiliary and nonlinear variables can be nodal or elemental variables,
+      // depending on the chosen FEType (e.g., LAGRANGE = nodal, MONOMIAL = elemental).
       if (type.family == MONOMIAL)
         isElemental = true;
       else if (type.family == LAGRANGE)
