@@ -17,11 +17,16 @@ InputParameters
 FunctionPathEllipsoidHeatSource::validParams()
 {
   InputParameters params = Material::validParams();
-  params.addRequiredParam<Real>("power", "power");
+  params.addParam<Real>("power", 1, "Input power of the heat source");
+  params.addParam<FunctionName>("function_power", "power");
   params.addParam<Real>("efficiency", 1, "process efficiency");
-  params.addRequiredParam<Real>("rx", "effective transverse ellipsoid radius");
-  params.addRequiredParam<Real>("ry", "effective longitudinal ellipsoid radius");
-  params.addRequiredParam<Real>("rz", "effective depth ellipsoid radius");
+  params.addParam<FunctionName>("function_efficiency", "process efficiency");
+  params.addParam<Real>("rx", "transverse ellipsoid axe");
+  params.addParam<Real>("ry", "depth ellipsoid axe");
+  params.addParam<Real>("rz", "longitudinal ellipsoid axe");
+  params.addParam<FunctionName>("heat_source_rx", "effective transverse ellipsoid radius");
+  params.addParam<FunctionName>("heat_source_ry", "effective longitudinal ellipsoid radius");
+  params.addParam<FunctionName>("heat_source_rz", "effective depth ellipsoid radius");
   params.addParam<Real>(
       "factor", 1, "scaling factor that is multiplied to the heat source to adjust the intensity");
   params.addParam<FunctionName>(
@@ -33,6 +38,20 @@ FunctionPathEllipsoidHeatSource::validParams()
   params.addParam<std::string>("path",
                                "The name of the spatio-temporal path object that describes "
                                "the moving path of the heat source.");
+  params.addParam<FunctionName>("function_weave_amp_x",
+                                "The x component of the weave amplitude as a function of time");
+  params.addParam<FunctionName>("function_weave_amp_y",
+                                "The y component of the weave amplitude as a function of time");
+  params.addParam<FunctionName>("function_weave_amp_z",
+                                "The z component of the weave amplitude as a function of time");
+
+  params.addParam<FunctionName>("function_torch_speed",
+                                "The speed of the torch as a function of time");
+
+  params.addParam<Real>(
+      "wavelength",
+      1,
+      "The wavelength of the weave pattern. If set to 0, no weave pattern is applied.");
 
   params.addClassDescription("Double ellipsoid volumetric source heat with function path.");
 
@@ -41,18 +60,43 @@ FunctionPathEllipsoidHeatSource::validParams()
 
 FunctionPathEllipsoidHeatSource::FunctionPathEllipsoidHeatSource(const InputParameters & parameters)
   : Material(parameters),
+    _function_P(isParamSetByUser("function_power") ? &getFunction("function_power") : nullptr),
     _P(getParam<Real>("power")),
     _eta(getParam<Real>("efficiency")),
-    _rx(getParam<Real>("rx")),
-    _ry(getParam<Real>("ry")),
-    _rz(getParam<Real>("rz")),
+    _function_efficiency(
+        isParamSetByUser("function_efficiency") ? &getFunction("function_efficiency") : nullptr),
+    _function_rx(isParamSetByUser("heat_source_rx") ? &getFunction("heat_source_rx") : nullptr),
+    _function_ry(isParamSetByUser("heat_source_ry") ? &getFunction("heat_source_ry") : nullptr),
+    _function_rz(isParamSetByUser("heat_source_rz") ? &getFunction("heat_source_rz") : nullptr),
+    _rx(isParamSetByUser("rx") ? getParam<Real>("rx") : 0.0),
+    _ry(isParamSetByUser("ry") ? getParam<Real>("ry") : 0.0),
+    _rz(isParamSetByUser("rz") ? getParam<Real>("rz") : 0.0),
     _f(getParam<Real>("factor")),
     _function_x(getFunction("function_x")),
     _function_y(getFunction("function_y")),
     _function_z(getFunction("function_z")),
+    _function_weave_amp_x(
+        isParamSetByUser("function_weave_amp_x") ? &getFunction("function_weave_amp_x") : nullptr),
+    _function_weave_amp_y(
+        isParamSetByUser("function_weave_amp_y") ? &getFunction("function_weave_amp_y") : nullptr),
+    _function_weave_amp_z(
+        isParamSetByUser("function_weave_amp_z") ? &getFunction("function_weave_amp_z") : nullptr),
+    _function_torch_speed(
+        isParamSetByUser("function_torch_speed") ? &getFunction("function_torch_speed") : nullptr),
+    _wavelength(getParam<Real>("wavelength")),
     _volumetric_heat(declareADProperty<Real>("volumetric_heat")),
     _path(isParamSetByUser("path") ? &getUserObjectByName<SpatioTemporalPath>("path") : nullptr)
 {
+
+  if (!_function_rx && _rx == 0.0)
+    mooseError(
+        "Either 'heat_source_rx' function or 'rx' parameter must be set to a non-zero value.");
+  if (!_function_ry && _ry == 0.0)
+    mooseError(
+        "Either 'heat_source_ry' function or 'ry' parameter must be set to a non-zero value.");
+  if (!_function_rz && _rz == 0.0)
+    mooseError(
+        "Either 'heat_source_rz' function or 'rz' parameter must be set to a non-zero value.");
 }
 
 void
@@ -62,7 +106,7 @@ FunctionPathEllipsoidHeatSource::computeQpProperties()
   const Real & y = _q_point[_qp](1);
   const Real & z = _q_point[_qp](2);
 
-  Real x_t, y_t, z_t;
+  Real x_t, y_t, z_t, eta, rx, ry, rz, P;
   if (!_path)
   {
     // center of the heat source
@@ -79,18 +123,55 @@ FunctionPathEllipsoidHeatSource::computeQpProperties()
     z_t = p_t(2);
   }
 
-  _volumetric_heat[_qp] = 6.0 * std::sqrt(3.0) * _P * _eta * _f /
-                          (_rx * _ry * _rz * std::pow(libMesh::pi, 1.5)) *
-                          std::exp(-(3.0 * std::pow(x - x_t, 2.0) / std::pow(_rx, 2.0) +
-                                     3.0 * std::pow(y - y_t, 2.0) / std::pow(_ry, 2.0) +
-                                     3.0 * std::pow(z - z_t, 2.0) / std::pow(_rz, 2.0)));
+  Real freq = 0.0;
+  if (_function_weave_amp_x || _function_weave_amp_y || _function_weave_amp_z)
+    if (!_function_torch_speed)
+      mooseError("The weave amplitude functions are set, but the torch speed function is not set. "
+                 "Please set the 'function_torch_speed' parameter to a valid function name.");
+    else if (_wavelength == 0)
+      mooseError("The wavelength is set to 0, but the weave amplitude functions are set. "
+                 "Please set the 'wavelength' parameter to a non-zero value or remove the weave "
+                 "amplitude functions.");
+    else
+      freq = _function_torch_speed->value(_t) / _wavelength;
 
-  // if (_volumetric_heat[_qp].value() > 0)
-  // {
-  //   std::cout << "x_t = " << x_t << ", y_t = " << y_t << ", z_t = " << z_t << ", t = " << _t
-  //             << std::endl;
-  //   std::cout << "x = " << x << ", y = " << y << ", z = " << z << std::endl;
+  if (_function_weave_amp_x)
+    x_t += _function_weave_amp_x->value(_t) * std::sin(2.0 * libMesh::pi * freq * _t);
 
-  //   std::cout << _volumetric_heat[_qp].value() << std::endl;
-  // }
+  if (_function_weave_amp_y)
+    y_t += _function_weave_amp_y->value(_t) * std::sin(2.0 * libMesh::pi * freq * _t);
+
+  if (_function_weave_amp_z)
+    z_t += _function_weave_amp_z->value(_t) * std::sin(2.0 * libMesh::pi * freq * _t);
+
+  if (_function_efficiency)
+    eta = _function_efficiency->value(_t);
+  else
+    eta = _eta;
+
+  if (_function_rx)
+    rx = _function_rx->value(_t);
+  else
+    rx = _rx;
+
+  if (_function_ry)
+    ry = _function_ry->value(_t);
+  else
+    ry = _ry;
+
+  if (_function_rz)
+    rz = _function_rz->value(_t);
+  else
+    rz = _rz;
+
+  if (_function_P)
+    P = _function_P->value(_t);
+  else
+    P = _P;
+
+  _volumetric_heat[_qp] = 6.0 * std::sqrt(3.0) * P * eta * _f /
+                          (rx * ry * rz * std::pow(libMesh::pi, 1.5)) *
+                          std::exp(-(3.0 * std::pow(x - x_t, 2.0) / std::pow(rx, 2.0) +
+                                     3.0 * std::pow(y - y_t, 2.0) / std::pow(ry, 2.0) +
+                                     3.0 * std::pow(z - z_t, 2.0) / std::pow(rz, 2.0)));
 }

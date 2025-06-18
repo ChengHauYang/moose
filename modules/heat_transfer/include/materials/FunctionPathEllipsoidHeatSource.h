@@ -29,21 +29,38 @@ protected:
   virtual void computeQpProperties() override;
 
   /// power
+  const Function * _function_P;
   const Real _P;
   /// process efficienty
   const Real _eta;
+  /// process efficiency function
+  const Function * _function_efficiency;
+
   /// transverse ellipsoid axe
-  const Real _rx;
+  const Function * _function_rx;
   /// depth ellipsoid axe
-  const Real _ry;
+  const Function * _function_ry;
   /// longitudinal ellipsoid axe
+  const Function * _function_rz;
+
+  const Real _rx;
+  const Real _ry;
   const Real _rz;
+
   /// scaling factor
   const Real _f;
   /// path of the heat source, x, y, z components
   const Function & _function_x;
   const Function & _function_y;
   const Function & _function_z;
+
+  const Function * _function_weave_amp_x;
+  const Function * _function_weave_amp_y;
+  const Function * _function_weave_amp_z;
+
+  const Function * _function_torch_speed;
+
+  const Real _wavelength;
 
   ADMaterialProperty<Real> & _volumetric_heat;
 

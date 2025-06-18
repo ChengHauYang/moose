@@ -88,23 +88,16 @@ ra = 0.006 # e.g., 6 mm
     prop_values = '10431.0 3.0                 '
   []
 
-  # [volumetric_heat] # need to be exactly this name!
-  #   type = ADMovingEllipsoidalHeatSource
-  #   path = 'path'
-  #   power = 0.1
-  #   efficiency = 1
-  #   scale = 1
-  #   a = 0.00035
-  #   b = 0.00001
-  #   outputs = exodus
-  # []
   [volumetric_heat]
     type = FunctionPathEllipsoidHeatSource
-    rx = 0.001
-    ry = 0.001
-    rz = 0.001
-    power = 1
-    efficiency = 1
+    heat_source_rx = "source_radius"
+    heat_source_ry = "source_radius"
+    heat_source_rz = "source_radius"
+    function_power = "heat_source_p"
+    function_efficiency = "heat_source_eff"
+    function_torch_speed = "heat_source_v"
+    function_weave_amp_y = 'heat_source_weave_y'
+    wavelength = 0.01
     factor = 1
     path = 'path'
   []
@@ -155,6 +148,30 @@ ra = 0.006 # e.g., 6 mm
     type = PiecewiseLinear
     x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
     y = '2.4 1.8 3.2 3.2 3.2 3.2 4   4   4   4   4   4   4   4   5   5   5   5   5   5   5   5   5   5'
+  []
+
+  [heat_source_p]
+    type = PiecewiseLinear
+    x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
+    y = '73.1 127.5 271.04 278.4 244.26 257.04 376.83 395.28 393.6 380.01 397.67 392.84 388.01 384.79 580 582.12 577.1 576 578.16 567.15 589.04 557.2 420 436.17'
+  []
+
+  [heat_source_eff]
+    type = PiecewiseLinear
+    x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
+    y = '0.85 0.95 0.75 0.8 0.82 0.85 0.78 0.8 0.75 0.8 0.75 0.78 0.75 0.8 0.79 0.83 0.78 0.85 0.76 0.82 0.74 0.79 0.64 0.74'
+  []
+
+  [heat_source_v]
+    type = PiecewiseLinear
+    x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
+    y = '0.85 1.25 2.24 2.32 2.07 2.16 2.37 2.44 2.46 2.39 2.47 2.44 2.41 2.39 2.9 2.94 2.9 2.88 2.92 2.85 2.96 2.8 2.1 2.17'
+  []
+
+  [heat_source_weave_y]
+    type = PiecewiseLinear
+    x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
+    y = '4.5 4.5 5 5 5 5 5.5 5.5 5.5 5.5 5.5 5.5 5.5 5.5 6.5 6.5 6.5 6.5 6.5 6.5 6.5 6.5 6.5 6.5'
   []
 []
 
