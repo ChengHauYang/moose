@@ -30,6 +30,10 @@ FunctionPathEllipsoidHeatSource::validParams()
       "function_y", "0", "The y component of the center of the heating spot as a function of time");
   params.addParam<FunctionName>(
       "function_z", "0", "The z component of the center of the heating spot as a function of time");
+  params.addParam<std::string>("path",
+                               "The name of the spatio-temporal path object that describes "
+                               "the moving path of the heat source.");
+
   params.addClassDescription("Double ellipsoid volumetric source heat with function path.");
 
   return params;
@@ -46,7 +50,8 @@ FunctionPathEllipsoidHeatSource::FunctionPathEllipsoidHeatSource(const InputPara
     _function_x(getFunction("function_x")),
     _function_y(getFunction("function_y")),
     _function_z(getFunction("function_z")),
-    _volumetric_heat(declareADProperty<Real>("volumetric_heat"))
+    _volumetric_heat(declareADProperty<Real>("volumetric_heat")),
+    _path(isParamSetByUser("path") ? &getUserObjectByName<SpatioTemporalPath>("path") : nullptr)
 {
 }
 
@@ -57,14 +62,35 @@ FunctionPathEllipsoidHeatSource::computeQpProperties()
   const Real & y = _q_point[_qp](1);
   const Real & z = _q_point[_qp](2);
 
-  // center of the heat source
-  Real x_t = _function_x.value(_t);
-  Real y_t = _function_y.value(_t);
-  Real z_t = _function_z.value(_t);
+  Real x_t, y_t, z_t;
+  if (!_path)
+  {
+    // center of the heat source
+    x_t = _function_x.value(_t);
+    y_t = _function_y.value(_t);
+    z_t = _function_z.value(_t);
+  }
+  else
+  {
+    Point p_t = _path->position(_t);
+    // center of the heat source
+    x_t = p_t(0);
+    y_t = p_t(1);
+    z_t = p_t(2);
+  }
 
   _volumetric_heat[_qp] = 6.0 * std::sqrt(3.0) * _P * _eta * _f /
                           (_rx * _ry * _rz * std::pow(libMesh::pi, 1.5)) *
                           std::exp(-(3.0 * std::pow(x - x_t, 2.0) / std::pow(_rx, 2.0) +
                                      3.0 * std::pow(y - y_t, 2.0) / std::pow(_ry, 2.0) +
                                      3.0 * std::pow(z - z_t, 2.0) / std::pow(_rz, 2.0)));
+
+  // if (_volumetric_heat[_qp].value() > 0)
+  // {
+  //   std::cout << "x_t = " << x_t << ", y_t = " << y_t << ", z_t = " << z_t << ", t = " << _t
+  //             << std::endl;
+  //   std::cout << "x = " << x << ", y = " << y << ", z = " << z << std::endl;
+
+  //   std::cout << _volumetric_heat[_qp].value() << std::endl;
+  // }
 }

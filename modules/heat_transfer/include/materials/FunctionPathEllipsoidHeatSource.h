@@ -10,6 +10,8 @@
 #pragma once
 
 #include "Material.h"
+#include "SpatioTemporalPath.h"
+#include "SpatioTemporalPathInterface.h"
 
 class Function;
 
@@ -44,4 +46,7 @@ protected:
   const Function & _function_z;
 
   ADMaterialProperty<Real> & _volumetric_heat;
+
+  /// The path
+  const SpatioTemporalPath * _path;
 };

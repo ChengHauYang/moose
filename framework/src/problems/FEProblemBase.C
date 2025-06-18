@@ -821,6 +821,28 @@ FEProblemBase::setAxisymmetricCoordAxis(const MooseEnum & rz_coord_axis)
   _mesh.setAxisymmetricCoordAxis(rz_coord_axis);
 }
 
+bool
+FEProblemBase::isElemInDefaultBlock(const Elem * elem) const
+{
+  const auto & blocks = getParam<std::vector<SubdomainName>>("block");
+
+  if (blocks.empty())
+    return true;
+
+  const auto active_subdomains_vector =
+      _mesh.getSubdomainIDs(getParam<std::vector<SubdomainName>>("block"));
+
+  const std::set<SubdomainID> active_subdomains(active_subdomains_vector.begin(),
+                                                active_subdomains_vector.end());
+
+  // If the element is in one of the specified blocks, return true
+  if (active_subdomains.count(elem->subdomain_id()))
+    return true;
+
+  // Otherwise, return false
+  return false;
+}
+
 const ConstElemRange &
 FEProblemBase::getEvaluableElementRange()
 {

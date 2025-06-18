@@ -396,22 +396,25 @@ public:
   virtual void solveLinearSystem(const unsigned int linear_sys_num,
                                  const Moose::PetscSupport::PetscOptions * po = nullptr);
 
+  /*
+   * Whether the element is in the default block setting inside `[GlobalParams]/block`
+   */
+  bool isElemInDefaultBlock(const Elem * elem) const;
+
   ///@{
   /**
-   * In general, {evaluable elements} >= {local elements} U {algebraic ghosting elements}. That is,
-   * the number of evaluable elements does NOT necessarily equal to the number of local and
+   * In general, {evaluable elements} >= {local elements} U {algebraic ghosting elements}. That
+   * is, the number of evaluable elements does NOT necessarily equal to the number of local and
    * algebraic ghosting elements. For example, if using a Lagrange basis for all variables,
    * if a non-local, non-algebraically-ghosted element is surrounded by neighbors which are
    * local or algebraically ghosted, then all the nodal (Lagrange) degrees of freedom associated
    * with the non-local, non-algebraically-ghosted element will be evaluable, and hence that
    * element will be considered evaluable.
    *
-   * getNonlinearEvaluableElementRange() returns the evaluable element range based on the nonlinear
-   * system dofmap;
-   * getAuxliaryEvaluableElementRange() returns the evaluable element range based on the auxiliary
-   * system dofmap;
-   * getEvaluableElementRange() returns the element range that is evaluable based on both the
-   * nonlinear dofmap and the auxliary dofmap.
+   * getNonlinearEvaluableElementRange() returns the evaluable element range based on the
+   * nonlinear system dofmap; getAuxliaryEvaluableElementRange() returns the evaluable element
+   * range based on the auxiliary system dofmap; getEvaluableElementRange() returns the element
+   * range that is evaluable based on both the nonlinear dofmap and the auxliary dofmap.
    */
   const libMesh::ConstElemRange & getEvaluableElementRange();
   const libMesh::ConstElemRange & getNonlinearEvaluableElementRange();

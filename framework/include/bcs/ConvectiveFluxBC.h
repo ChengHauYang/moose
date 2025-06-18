@@ -35,4 +35,7 @@ private:
   Real _rate;
   Real _rate_final;
   Real _duration;
+
+  bool _neglect_side_btw_two_default_blocks;
+  bool neighbor_is_default_block() const;
 };

@@ -20,8 +20,12 @@ ConvectiveFluxBC::validParams()
   params.set<Real>("initial") = 500;
   params.set<Real>("final") = 500;
   params.set<Real>("duration") = 0.0;
+  params.addParam<bool>("neglect_side_btw_two_default_blocks",
+                        false,
+                        "If true, the side between two default blocks will be neglected. ");
   params.addClassDescription(
       "Determines boundary values via the initial and final values, flux, and exposure duration");
+
   return params;
 }
 
@@ -31,13 +35,19 @@ ConvectiveFluxBC::ConvectiveFluxBC(const InputParameters & parameters)
     _final(getParam<Real>("final")),
     _rate(getParam<Real>("rate")),
     _rate_final(isParamValid("rate_final") ? getParam<Real>("rate_final") : getParam<Real>("rate")),
-    _duration(getParam<Real>("duration"))
+    _duration(getParam<Real>("duration")),
+    _neglect_side_btw_two_default_blocks(getParam<bool>("neglect_side_btw_two_default_blocks"))
 {
 }
 
 Real
 ConvectiveFluxBC::computeQpResidual()
 {
+
+  if (_neglect_side_btw_two_default_blocks)
+    if (neighbor_is_default_block())
+      return 0.0;
+
   Real value;
   Real rate;
 
@@ -58,6 +68,11 @@ ConvectiveFluxBC::computeQpResidual()
 Real
 ConvectiveFluxBC::computeQpJacobian()
 {
+
+  if (_neglect_side_btw_two_default_blocks)
+    if (neighbor_is_default_block())
+      return 0.0;
+
   Real rate;
 
   if (_t < _duration)
@@ -66,4 +81,19 @@ ConvectiveFluxBC::computeQpJacobian()
     rate = _rate_final;
 
   return -(_test[_i][_qp] * rate * (-_phi[_j][_qp]));
+}
+
+bool
+ConvectiveFluxBC::neighbor_is_default_block() const
+{
+  // std::cout << "n_neighbors ()= " << _current_elem->n_neighbors() << std::endl;
+  // std::cout << "_current_side = " << _current_side << std::endl;
+  if (_current_elem->neighbor_ptr(_current_side))
+    if (_fe_problem.isElemInDefaultBlock(_current_elem->neighbor_ptr(_current_side)))
+      // _current_elem->neighbor_ptr(_current_side)->centroid().print(std::cout);
+      return true;
+    else
+      return false;
+  else
+    return false;
 }
