@@ -53,6 +53,8 @@ FunctionPathEllipsoidHeatSource::validParams()
       1,
       "The wavelength of the weave pattern. If set to 0, no weave pattern is applied.");
 
+  params.addParam<PostprocessorName>("va_postprocess", "The postprocessor on the source");
+
   params.addClassDescription("Double ellipsoid volumetric source heat with function path.");
 
   return params;
@@ -85,7 +87,9 @@ FunctionPathEllipsoidHeatSource::FunctionPathEllipsoidHeatSource(const InputPara
         isParamSetByUser("function_torch_speed") ? &getFunction("function_torch_speed") : nullptr),
     _wavelength(getParam<Real>("wavelength")),
     _volumetric_heat(declareADProperty<Real>("volumetric_heat")),
-    _path(isParamSetByUser("path") ? &getUserObjectByName<SpatioTemporalPath>("path") : nullptr)
+    _path(isParamSetByUser("path") ? &getUserObjectByName<SpatioTemporalPath>("path") : nullptr),
+    _va_integral(isParamSetByUser("va_postprocess") ? &getPostprocessorValue("va_postprocess")
+                                                    : nullptr)
 {
 
   if (!_function_rx && _rx == 0.0)
@@ -106,7 +110,7 @@ FunctionPathEllipsoidHeatSource::computeQpProperties()
   const Real & y = _q_point[_qp](1);
   const Real & z = _q_point[_qp](2);
 
-  Real x_t, y_t, z_t, eta, rx, ry, rz, P;
+  Real x_t, y_t, z_t;
   if (!_path)
   {
     // center of the heat source
@@ -144,34 +148,23 @@ FunctionPathEllipsoidHeatSource::computeQpProperties()
   if (_function_weave_amp_z)
     z_t += _function_weave_amp_z->value(_t) * std::sin(2.0 * libMesh::pi * freq * _t);
 
-  if (_function_efficiency)
-    eta = _function_efficiency->value(_t);
-  else
-    eta = _eta;
+  Real eta = (_function_efficiency) ? _function_efficiency->value(_t) : _eta;
 
-  if (_function_rx)
-    rx = _function_rx->value(_t);
-  else
-    rx = _rx;
+  Real rx = (_function_rx) ? _function_rx->value(_t) : _rx;
+  Real ry = (_function_ry) ? _function_ry->value(_t) : _ry;
+  Real rz = (_function_rz) ? _function_rz->value(_t) : _rz;
 
-  if (_function_ry)
-    ry = _function_ry->value(_t);
-  else
-    ry = _ry;
+  Real P = (_function_P) ? _function_P->value(_t) : _P;
 
-  if (_function_rz)
-    rz = _function_rz->value(_t);
-  else
-    rz = _rz;
-
-  if (_function_P)
-    P = _function_P->value(_t);
-  else
-    P = _P;
-
-  _volumetric_heat[_qp] = 6.0 * std::sqrt(3.0) * P * eta * _f /
-                          (rx * ry * rz * std::pow(libMesh::pi, 1.5)) *
-                          std::exp(-(3.0 * std::pow(x - x_t, 2.0) / std::pow(rx, 2.0) +
-                                     3.0 * std::pow(y - y_t, 2.0) / std::pow(ry, 2.0) +
-                                     3.0 * std::pow(z - z_t, 2.0) / std::pow(rz, 2.0)));
+  _volumetric_heat[_qp] = _va_integral
+                              ? P * eta * _f *
+                                    std::exp(-(std::pow(x - x_t, 2.0) / std::pow(rx, 2.0) +
+                                               std::pow(y - y_t, 2.0) / std::pow(ry, 2.0) +
+                                               std::pow(z - z_t, 2.0) / std::pow(rz, 2.0))) /
+                                    *_va_integral
+                              : 6.0 * std::sqrt(3.0) * P * eta * _f /
+                                    (rx * ry * rz * std::pow(libMesh::pi, 1.5)) *
+                                    std::exp(-(3.0 * std::pow(x - x_t, 2.0) / std::pow(rx, 2.0) +
+                                               3.0 * std::pow(y - y_t, 2.0) / std::pow(ry, 2.0) +
+                                               3.0 * std::pow(z - z_t, 2.0) / std::pow(rz, 2.0)));
 }

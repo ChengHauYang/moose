@@ -98,6 +98,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     function_weave_amp_y = 'heat_source_weave_y'
     wavelength = 0.01
     factor = 1
+    va_postprocess = Va_integral
     path = 'path'
   []
 
