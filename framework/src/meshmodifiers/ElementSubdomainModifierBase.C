@@ -1287,7 +1287,7 @@ ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes(const unsi
         if (patch_elem_set.count(neighbor_elem_id))
           continue;
 
-        _solved_elem_ids_for_npr[_var_number2_npr_idx[_ic_vars_number[ic_var_number]]].push_back(
+        _solved_elem_ids_for_npr[_var_number2_npr_idx[ic_var_number]].push_back(
             neighbor_elem_id);
         patch_elem_set.insert(neighbor_elem_id);
       }
