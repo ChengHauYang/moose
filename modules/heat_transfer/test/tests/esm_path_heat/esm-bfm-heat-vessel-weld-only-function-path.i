@@ -1,8 +1,5 @@
 all_blocks = 'default pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
 weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
-rl = 0.003 # e.g., 3 mm
-rv = 0.004 # e.g., 4 mm
-ra = 0.006 # e.g., 6 mm
 
 [GlobalParams]
   block = 'default '
@@ -25,6 +22,7 @@ ra = 0.006 # e.g., 6 mm
 [Variables]
   [cond]
     order = FIRST
+    initial_condition = 293.15
   []
 []
 
@@ -45,10 +43,9 @@ ra = 0.006 # e.g., 6 mm
 
 [AuxKernels]
   [assign_gaussian_weight]
-    type = ParsedAux
+    type = FunctorAux
     variable = gaussian_weight
-    expression = 'exp(-( pow(x,2) / pow(${rl},2) + pow(y,2) / pow(${rv},2) + pow(z,2) / pow(${ra},2)))'
-    use_xyzt = true
+    functor = 'gaussian_weight_func'
     execute_on = 'INITIAL TIMESTEP_BEGIN'
   []
 []
@@ -75,7 +72,9 @@ ra = 0.006 # e.g., 6 mm
 
     # --- new for setting IC --- #
     unsolved_blocks = ${weld_blocks}
-    ic_strategy = "IC_POLYNOMIAL"
+    ic_strategy = "IC_POLYNOMIAL IC_FUNC"
+    ic_variables = "cond  gaussian_weight"
+    function_for_ic = "gaussian_weight_func"
 
     nodal_patch_recovery_uo = 'extrapolation_patch_T'
   []
@@ -84,8 +83,8 @@ ra = 0.006 # e.g., 6 mm
 [Materials]
   [density]
     type = ADGenericConstantMaterial
-    prop_names = 'density  thermal_conductivity'
-    prop_values = '10431.0 3.0                 '
+    prop_names = 'density '
+    prop_values = '7960.0               ' # kg/m^3
   []
 
   [volumetric_heat]
@@ -101,17 +100,35 @@ ra = 0.006 # e.g., 6 mm
     factor = 1
     path = 'path'
   []
+
+  [specific_heat]
+    type = ADPiecewiseLinearInterpolationMaterial
+    property = 'specific_heat'
+    variable = cond
+    x = '293.15 373.15 473.15 573.15 673.15 773.15 873.15 973.15 1073.15 1173.15 1273.15 1373.15 1473.15 1573.15 1673.15'
+    y = '490 508 532 555 580 603 627 650 650 650 650 650 650 650 650' # w/(kg*k) -> We use watt here because the convective heat transfer coefficient
+  []
+
+  [thermalconductivity]
+    type = ADPiecewiseLinearInterpolationMaterial
+    property = 'thermal_conductivity'
+    variable = cond
+    x = '293.15 373.15 473.15 573.15 673.15 773.15 873.15 973.15 1073.15 1173.15 1273.15 1373.15 1473.15 1573.15 1673.15'
+    y = '12.69 13.93 15.48 17.03 18.58 20.13 21.68 23.23 24.78 26.33 27.88 29.43 30.98 32.53 34.08'
+  []
 []
 
 [Kernels]
   [time]
-    type = ADTimeDerivative
+    type = ADHeatConductionTimeDerivative
     variable = cond
+    density_name = density
+    specific_heat = specific_heat
   []
   [heat]
     type = ADHeatConduction
     variable = cond
-    thermal_conductivity = thermal_conductivity
+    thermal_conductivity = "thermal_conductivity"
   []
   [hsource]
     type = ADMatHeatSource
@@ -121,36 +138,25 @@ ra = 0.006 # e.g., 6 mm
 []
 
 [Functions]
-  [thermal_k_fn]
-    type = PiecewiseLinear
-    x = '20 100 200 300 400 500 600 700 800 900 1000 1100 1200 1300 1400'
-    y = '12.69 13.93 15.48 17.03 18.58 20.13 21.68 23.23 24.78 26.33 27.88 29.43 30.98 32.53 34.08'
-  []
-  [specific_heat_fn]
-    type = PiecewiseLinear
-    x = '20 100 200 300 400 500 600 700 800 900 1000 1100 1200 1300 1400'
-    y = '490 508 532 555 580 603 627 650 650 650 650 650 650 650 650'
-  []
-
   [thermal_expansion_fn]
     type = PiecewiseLinear
-    x = '20 100 200 300 400 500 600 700 800 900 1000 1100 1200 1300 1400'
+    x = '293.15 373.15 473.15 573.15 673.15 773.15 873.15 973.15 1073.15 1173.15 1273.15 1373.15 1473.15 1573.15 1673.15'
     y = '15.44 16.01 16.67 17.29 17.87 18.41 18.91 19.37 19.78 20.16 20.49 20.78 21.03 21.24 21.41'
   []
 
   [youngs_modulus_fn]
     type = PiecewiseLinear
-    x = '20 100 200 300 400 500 600 700 800 900 1000 1100 1200 1300 1400'
+    x = '293.15 373.15 473.15 573.15 673.15 773.15 873.15 973.15 1073.15 1173.15 1273.15 1373.15 1473.15 1573.15 1673.15'
     y = '204.5 196.7 188.1 180.2 172.5 164.6 156.0 146.1 134.6 120.8 104.4 84.8 61.5 34.1 2.0' # GPa
   []
 
   [source_radius]
     type = PiecewiseLinear
     x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
-    y = '2.4 1.8 3.2 3.2 3.2 3.2 4   4   4   4   4   4   4   4   5   5   5   5   5   5   5   5   5   5'
+    y = '0.0024 0.0018 0.0032 0.0032 0.0032 0.0032 0.004 0.004 0.004 0.004 0.004 0.004 0.004 0.004 0.005 0.005 0.005 0.005 0.005 0.005 0.005 0.005 0.005 0.005' # mm -> m
   []
 
-  [heat_source_p]
+  [heat_source_p] # power = J/s (this is from V*A)
     type = PiecewiseLinear
     x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
     y = '73.1 127.5 271.04 278.4 244.26 257.04 376.83 395.28 393.6 380.01 397.67 392.84 388.01 384.79 580 582.12 577.1 576 578.16 567.15 589.04 557.2 420 436.17'
@@ -173,6 +179,25 @@ ra = 0.006 # e.g., 6 mm
     x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
     y = '4.5 4.5 5 5 5 5 5.5 5.5 5.5 5.5 5.5 5.5 5.5 5.5 6.5 6.5 6.5 6.5 6.5 6.5 6.5 6.5 6.5 6.5'
   []
+
+  [x_centroid]
+    type = PiecewiseLinear
+    x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
+    y = '0.103486395 0.103486395 0.106420364 0.100552425 0.106905242 0.100067547 0.107337667 0.099635122 0.107762614 0.099210175 0.108174955 0.098797834 0.108557907 0.098414883 0.108908669 0.09806412 0.10926126 0.097711529 0.109591155 0.097381634 0.109902214 0.097070575 0.110784163 0.096188626'
+  []
+
+  [y_centroid]
+    type = PiecewiseLinear
+    x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
+    y = '0.000266216 0.003315408 0.006161999 0.006161999 0.009976729 0.009976729 0.01337878 0.01337878 0.01672201 0.01672201 0.019966053 0.019966053 0.022978885 0.022978885 0.025738468 0.025738468 0.028512442 0.028512442 0.031107857 0.031107857 0.033555082 0.033555082 0.036103556 0.036103556'
+  []
+
+  [gaussian_weight_func]
+    type = ParsedFunction
+    expression = 'exp(-( pow(x-x0,2)/pow(r,2) + pow(y-y0,2)/pow(r,2) + pow(0,2)/pow(r,2) ))'
+    symbol_names = 'r x0 y0'
+    symbol_values = 'source_radius x_centroid y_centroid'
+  []
 []
 
 [BCs]
@@ -180,7 +205,7 @@ ra = 0.006 # e.g., 6 mm
     type = ConvectiveFluxBC # Convective flux, e.g. q'' = h*(Tw - Tf)
     boundary = 'left bottom right top weld weld_interior' # BC applied on every interfaces
     variable = cond
-    rate = 16742.2 # h = convective heat transfer coefficient (w/m^2-K)[176000 "]
+    rate = 0.0005 # h = convective heat transfer coefficient (w/m^2-K)
     #         #  the above h is ~ infinity for present purposes
     rate_final = 0.0005
     initial = 293.15 # initial ambient temperature (K)
@@ -208,8 +233,10 @@ ra = 0.006 # e.g., 6 mm
 []
 
 [Postprocessors]
-  # [Va_integral]
-  #   type = ElementIntegralVariablePostprocessor
-  #   variable = gaussian_weight
-  # []
+  [Va_integral]
+    type = ElementIntegralVariablePostprocessor
+    variable = gaussian_weight
+    block = 'default'
+    execute_on = 'INITIAL TIMESTEP_BEGIN'
+  []
 []

@@ -43,7 +43,7 @@ SpatioTemporalHeatAction::validParams()
       "If the region has the unsolved blocks, you should set this parameter to turn on the "
       "extrapolation of the solution to the newly activated elements.");
   MooseEnum init_strategy("IC_DEFAULT IC_POLYNOMIAL "
-                          "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN IC_POLYNOMIAL_THRESHOLD",
+                          "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN IC_POLYNOMIAL_THRESHOLD IC_FUNC",
                           "IC_DEFAULT");
 
   params.addParam<std::vector<MooseEnum>>(

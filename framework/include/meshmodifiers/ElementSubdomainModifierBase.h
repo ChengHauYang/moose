@@ -20,7 +20,8 @@ enum class ICStrategy
   IC_DEFAULT = 0,
   IC_POLYNOMIAL = 1,
   IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN = 2,
-  IC_POLYNOMIAL_THRESHOLD = 3
+  IC_POLYNOMIAL_THRESHOLD = 3,
+  IC_FUNC = 4
 };
 
 struct NeighborInfo
@@ -196,7 +197,7 @@ private:
   std::unordered_map<unsigned int, unsigned int> _var_number2_npr_idx;
 
   /// @brief List of neighbor elements that share nodes with reinitialized elements
-  std::vector<dof_id_type> _solved_elem_ids_for_npr;
+  std::vector<std::vector<dof_id_type>> _solved_elem_ids_for_npr;
 
   /**
    * * Check if the node is newly activated.
@@ -272,6 +273,8 @@ private:
   /// Number of nonlinear variables in the system
   const int _number_of_nl_variables;
 
+  const Function * _function_for_ic;
+
   /// Perform a global MPI gather of reinitialized element IDs across all processors.
   /// Results are stored in `_global_reinitialized_elems`.
   void synchronizeReinitializedElems();
@@ -305,6 +308,11 @@ private:
                           const unsigned int var_num_for_nl_or_aux,
                           const bool is_elemental);
 
+  void applyIC_Func(SystemBase & sys,
+                    const unsigned int var_num_in_func,
+                    const unsigned int var_num_for_nl_or_aux,
+                    const bool is_elemental);
+
   /// @brief Gather neighbor elements for newly activated nodes
-  void gatherNeighborElementsForActivatedNodes();
+  void gatherNeighborElementsForActivatedNodes(const unsigned int ic_idx);
 };
