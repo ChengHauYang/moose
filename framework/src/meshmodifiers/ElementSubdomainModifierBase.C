@@ -872,18 +872,16 @@ ElementSubdomainModifierBase::nodeIsNewlyActivated(dof_id_type node_id) const
 void
 ElementSubdomainModifierBase::applyIC(bool displaced)
 {
-  // Set of variable numbers that are not part of the extrapolated initial conditions
-  std::set<unsigned int> ic_target_vars_number_except_ic_vars;
+  // Set of variable names that are not part of the extrapolated initial conditions
+  std::set<std::string> ic_target_vars_names_except_ic_vars;
 
-  auto insertNonICVars = [&](SystemBase & sys)
+  auto insertNonICVars = [&](SystemBase & sys) -> void
   {
     const auto & vars = sys.getVariables(_tid);
     for (const auto & ivar : vars)
-    {
-      if (std::find(_ic_vars_number.begin(), _ic_vars_number.end(), ivar->number()) ==
-          _ic_vars_number.end())
-        ic_target_vars_number_except_ic_vars.insert(ivar->number());
-    }
+      if (std::find(_ic_vars_names.begin(), _ic_vars_names.end(), ivar->name()) ==
+          _ic_vars_names.end())
+        ic_target_vars_names_except_ic_vars.insert(ivar->name());
   };
 
   insertNonICVars(_nl_sys);
@@ -893,7 +891,7 @@ ElementSubdomainModifierBase::applyIC(bool displaced)
   _fe_problem.projectInitialConditionOnCustomRangeForSpecificVars(
       reinitializedElemRange(displaced),
       reinitializedBndNodeRange(displaced),
-      ic_target_vars_number_except_ic_vars);
+      ic_target_vars_names_except_ic_vars);
 
   // Loop over each variable and initialize
   for (auto i : index_range(_ic_vars_number))
@@ -903,7 +901,7 @@ ElementSubdomainModifierBase::applyIC(bool displaced)
       _fe_problem.projectInitialConditionOnCustomRangeForSpecificVars(
           reinitializedElemRange(displaced),
           reinitializedBndNodeRange(displaced),
-          {_ic_vars_number[i]});
+          {_ic_vars_names[i]});
     else if (_ic_strategy[i] == ICStrategy::IC_POLYNOMIAL ||
              _ic_strategy[i] == ICStrategy::IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN ||
              _ic_strategy[i] == ICStrategy::IC_POLYNOMIAL_THRESHOLD)
