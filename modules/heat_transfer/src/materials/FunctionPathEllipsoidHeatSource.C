@@ -156,12 +156,17 @@ FunctionPathEllipsoidHeatSource::computeQpProperties()
 
   Real P = (_function_P) ? _function_P->value(_t) : _P;
 
+  // std::cout << "FunctionPathEllipsoidHeatSource: "
+  //           << "P = " << P << ", eta = " << eta << ", rx = " << rx << ", ry = " << ry
+  //           << ", rz = " << rz << ", x_t = " << x_t << ", y_t = " << y_t << ", z_t = " << z_t
+  //           << std::endl;
+
   _volumetric_heat[_qp] = _va_integral
                               ? P * eta * _f *
                                     std::exp(-(std::pow(x - x_t, 2.0) / std::pow(rx, 2.0) +
                                                std::pow(y - y_t, 2.0) / std::pow(ry, 2.0) +
                                                std::pow(z - z_t, 2.0) / std::pow(rz, 2.0))) /
-                                    *_va_integral
+                                    (*_va_integral)
                               : 6.0 * std::sqrt(3.0) * P * eta * _f /
                                     (rx * ry * rz * std::pow(libMesh::pi, 1.5)) *
                                     std::exp(-(3.0 * std::pow(x - x_t, 2.0) / std::pow(rx, 2.0) +

@@ -46,7 +46,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     type = FunctorAux
     variable = gaussian_weight
     functor = 'gaussian_weight_func'
-    execute_on = 'INITIAL TIMESTEP_BEGIN'
+    execute_on = 'TIMESTEP_BEGIN'
   []
 []
 
@@ -76,6 +76,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     ic_variables = "cond  gaussian_weight"
     function_for_ic = "gaussian_weight_func"
 
+    ic_on_boundary_nodes = true
     nodal_patch_recovery_uo = 'extrapolation_patch_T'
   []
 []
@@ -95,11 +96,14 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     function_power = "heat_source_p"
     function_efficiency = "heat_source_eff"
     function_torch_speed = "heat_source_v"
-    function_weave_amp_y = 'heat_source_weave_y'
-    wavelength = 0.01
+    function_weave_amp_y = "heat_source_weave_y"
+    wavelength = 0.01 # m
     factor = 1
-    va_postprocess = Va_integral
-    path = 'path'
+    #va_postprocess = Va_integral
+    #path = 'path'
+    function_x = "x_centroid"
+    function_y = "y_centroid"
+    function_z = "z_centroid"
   []
 
   [specific_heat]
@@ -107,7 +111,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     property = 'specific_heat'
     variable = cond
     x = '293.15 373.15 473.15 573.15 673.15 773.15 873.15 973.15 1073.15 1173.15 1273.15 1373.15 1473.15 1573.15 1673.15'
-    y = '490 508 532 555 580 603 627 650 650 650 650 650 650 650 650' # w/(kg*k) -> We use watt here because the convective heat transfer coefficient
+    y = '490 508 532 555 580 603 627 650 650 650 650 650 650 650 650' # J/(kg*k) -> We use J here because the convective heat transfer coefficient
   []
 
   [thermalconductivity]
@@ -172,13 +176,15 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
   [heat_source_v]
     type = PiecewiseLinear
     x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
-    y = '0.85 1.25 2.24 2.32 2.07 2.16 2.37 2.44 2.46 2.39 2.47 2.44 2.41 2.39 2.9 2.94 2.9 2.88 2.92 2.85 2.96 2.8 2.1 2.17'
+    y = '0.00085  0.00125  0.00224  0.00232  0.00207  0.00216 0.00237  0.00244  0.00246  0.00239  0.00247  0.00244 0.00241  0.00239  0.00290  0.00294  0.00290  0.00288 0.00292  0.00285  0.00296  0.00280  0.00210  0.00217' # mm/s-> m/s
   []
 
   [heat_source_weave_y]
     type = PiecewiseLinear
     x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
-    y = '4.5 4.5 5 5 5 5 5.5 5.5 5.5 5.5 5.5 5.5 5.5 5.5 6.5 6.5 6.5 6.5 6.5 6.5 6.5 6.5 6.5 6.5'
+    y = '0.0045  0.0045  0.0050  0.0050  0.0050  0.0050 0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055 0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065' # mm -> m
+    #x = '0 500'
+    #y = '0 0'
   []
 
   [x_centroid]
@@ -193,27 +199,41 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     y = '0.000266216 0.003315408 0.006161999 0.006161999 0.009976729 0.009976729 0.01337878 0.01337878 0.01672201 0.01672201 0.019966053 0.019966053 0.022978885 0.022978885 0.025738468 0.025738468 0.028512442 0.028512442 0.031107857 0.031107857 0.033555082 0.033555082 0.036103556 0.036103556'
   []
 
+  [z_centroid]
+    type = PiecewiseLinear
+    x = '0 500'
+    y = '0.0 0.0'
+  []
+
+  [y_shift]
+    type = ParsedFunction
+    expression = 'amp*sin(2*3.14159*t*speed/0.01)'
+    symbol_names = 'amp speed'
+    symbol_values = 'heat_source_weave_y heat_source_v'
+  []
+
   [gaussian_weight_func]
     type = ParsedFunction
-    expression = 'exp(-( pow(x-x0,2)/pow(r,2) + pow(y-y0,2)/pow(r,2) + pow(0,2)/pow(r,2) ))'
-    symbol_names = 'r x0 y0'
-    symbol_values = 'source_radius x_centroid y_centroid'
+    expression = '2*pi*(y+0.0055)* exp(-( pow(x-x0,2)/pow(r,2) + pow(y-y0-y_shift_weave,2)/pow(r,2) + pow(0,2)/pow(r,2) ))'
+    symbol_names = 'r x0 y0 y_shift_weave'
+    symbol_values = 'source_radius x_centroid y_centroid y_shift'
   []
 []
 
 [BCs]
   [convective_surface] # Convective Start
     type = ConvectiveFluxBC # Convective flux, e.g. q'' = h*(Tw - Tf)
-    boundary = 'left bottom right top weld weld_interior' # BC applied on every interfaces
     variable = cond
     rate = 0.0005 # h = convective heat transfer coefficient (w/m^2-K)
     #         #  the above h is ~ infinity for present purposes
     rate_final = 0.0005
     initial = 293.15 # initial ambient temperature (K)
-    final = 293.15 # final ambient (lab or oven) temperature (K)
+    final = 293.15 # final ambient (lab or oven) temperature (K)     # temperature to ramp from initial to final
     duration = 1000 # length of time in seconds that it takes the ambient
+    boundary = 'bottom right top weld weld_interior' # BC applied on every interfaces
+    # boundary = 'bottom right top'
+    #according to Bipul's one, we should not consider left side
     neglect_side_btw_two_default_blocks = true
-    #     temperature to ramp from initial to final
   [] # Convective End
 []
 

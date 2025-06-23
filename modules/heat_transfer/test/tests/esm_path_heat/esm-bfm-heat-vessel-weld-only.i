@@ -88,16 +88,6 @@ ra = 0.006 # e.g., 6 mm
     prop_values = '10431.0 3.0                 '
   []
 
-  # [volumetric_heat] # need to be exactly this name!
-  #   type = ADMovingEllipsoidalHeatSource
-  #   path = 'path'
-  #   power = 0.1
-  #   efficiency = 1
-  #   scale = 1
-  #   a = 0.00035
-  #   b = 0.00001
-  #   outputs = exodus
-  # []
   [volumetric_heat]
     type = FunctionPathEllipsoidHeatSource
     rx = 0.001
@@ -163,7 +153,7 @@ ra = 0.006 # e.g., 6 mm
     type = ConvectiveFluxBC # Convective flux, e.g. q'' = h*(Tw - Tf)
     boundary = 'left bottom right top weld weld_interior' # BC applied on every interfaces
     variable = cond
-    rate = 16742.2 # h = convective heat transfer coefficient (w/m^2-K)[176000 "]
+    rate = 0.0005 # h = convective heat transfer coefficient (w/m^2-K)[176000 "]
     #         #  the above h is ~ infinity for present purposes
     rate_final = 0.0005
     initial = 293.15 # initial ambient temperature (K)

@@ -44,6 +44,9 @@ Real
 ConvectiveFluxBC::computeQpResidual()
 {
 
+  if (_fe_problem.isElemInDefaultBlock(_current_elem))
+    return 0.0;
+
   if (_neglect_side_btw_two_default_blocks)
     if (neighbor_is_default_block())
       return 0.0;
@@ -68,6 +71,8 @@ ConvectiveFluxBC::computeQpResidual()
 Real
 ConvectiveFluxBC::computeQpJacobian()
 {
+  if (_fe_problem.isElemInDefaultBlock(_current_elem))
+    return 0.0;
 
   if (_neglect_side_btw_two_default_blocks)
     if (neighbor_is_default_block())

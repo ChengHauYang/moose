@@ -902,6 +902,8 @@ public:
       ConstBndNodeRange & bnd_node_range,
       const std::set<unsigned int> & selected_var_nums);
 
+  bool isTargetedICVariable(const unsigned int ic_target_var) const;
+
   // Materials /////
   virtual void addMaterial(const std::string & material_name,
                            const std::string & name,

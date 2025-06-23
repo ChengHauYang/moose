@@ -199,6 +199,15 @@ private:
   /// @brief List of neighbor elements that share nodes with reinitialized elements
   std::vector<std::vector<dof_id_type>> _solved_elem_ids_for_npr;
 
+  /// @brief Set of nodes that shared between newly activated elements and original elements (every processor has the same information)
+  std::vector<dof_id_type> _boundary_nodes_btw_newly_activated_original_global;
+
+  /// @brief Set of nodes that shared between newly activated elements and original elements (only locally owned nodes)
+  std::vector<dof_id_type> _boundary_nodes_btw_newly_activated_original_proc_owned;
+
+  /// @brief Map from variable number to the set of reinitialized elements that share nodes with original elements
+  std::vector<std::vector<dof_id_type>> _var_idx_2_boundary_nodes_btw_newly_activated_original;
+
   /**
    * * Check if the node is newly activated.
    * * If all elements (excluding inactive elements) with the node are reinitialized, then the node
@@ -275,6 +284,8 @@ private:
 
   const Function * _function_for_ic;
 
+  const bool _ic_on_boundary_nodes;
+
   /// Perform a global MPI gather of reinitialized element IDs across all processors.
   /// Results are stored in `_global_reinitialized_elems`.
   void synchronizeReinitializedElems();
@@ -300,10 +311,12 @@ private:
 
   /// @brief Apply initial conditions using polynomial nodal patch recovery
   /// @param sys
+  /// @param var_idx variable index in _ic_vars_names and _ic_vars_number
   /// @param var_num_in_npr variable number in the NodalPatchRecovery user object
   /// @param var_num_for_nl_or_aux variable number for the nonlinear or auxiliary system
   /// @param is_elemental true if the variable is elemental, false if it is nodal
   void applyIC_Polynomial(SystemBase & sys,
+                          const unsigned int var_idx,
                           const unsigned int var_num_in_npr,
                           const unsigned int var_num_for_nl_or_aux,
                           const bool is_elemental);

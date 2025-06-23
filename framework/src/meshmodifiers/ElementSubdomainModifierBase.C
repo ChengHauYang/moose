@@ -18,6 +18,8 @@
 #include "libmesh/parallel_ghost_sync.h"
 #include "libmesh/petsc_vector.h"
 
+#include "ComputeInitialConditionThread.h"
+
 InputParameters
 ElementSubdomainModifierBase::validParams()
 {
@@ -115,6 +117,13 @@ ElementSubdomainModifierBase::validParams()
                                 "Function to use for setting initial conditions on newly "
                                 "activated nodes.");
 
+  params.addParam<bool>(
+      "ic_on_boundary_nodes",
+      false,
+      "Whether to apply initial conditions on boundary nodes. If true, the initial conditions will "
+      "be applied to the boundary nodes as well. If false, only internal nodes will be considered "
+      "for initial conditions.");
+
   params.registerBase("MeshModifier");
 
   return params;
@@ -136,7 +145,8 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
     _radius_search_threshold(getParam<double>("radius_search_threshold")),
     _number_of_nl_variables(_nl_sys.nVariables()),
     _function_for_ic(isParamSetByUser("function_for_ic") ? &getFunction("function_for_ic")
-                                                         : nullptr)
+                                                         : nullptr),
+    _ic_on_boundary_nodes(getParam<bool>("ic_on_boundary_nodes"))
 {
   // Check if the variables to set IC exist in the system
   for (auto var_name : _ic_vars_names)
@@ -480,6 +490,107 @@ ElementSubdomainModifierBase::modify(
         _npr_vec[npr_idx]->synchronizeAebe();
         _npr_vec[npr_idx]->cleanQueryIDsAndAdditionalElements();
       }
+  }
+
+  auto isElementalVar = [&](const std::string & var_name) -> bool
+  {
+    const auto & var = _nl_sys.hasVariable(var_name) ? _nl_sys.getVariable(_tid, var_name)
+                                                     : _aux_sys.getVariable(_tid, var_name);
+    const FEType type = var.feType();
+
+    if (type.family == MONOMIAL)
+      return true;
+    else if (type.family == LAGRANGE)
+      return false;
+    else
+      mooseError("Unsupported FEType for extrapolated initial condition: family = " +
+                 Utility::enum_to_string(type.family));
+    return false;
+  };
+
+  _boundary_nodes_btw_newly_activated_original_global.clear();
+  _boundary_nodes_btw_newly_activated_original_proc_owned.clear();
+  _var_idx_2_boundary_nodes_btw_newly_activated_original.clear();
+  _var_idx_2_boundary_nodes_btw_newly_activated_original.resize(_ic_vars_names.size());
+  for (auto i : index_range(_ic_vars_number))
+  {
+    const auto var_name = _ic_vars_names[i];
+
+    if (isElementalVar(var_name))
+      continue; // Elemental variables are not initialized on boundary nodes
+
+    if (_ic_strategy[i] == ICStrategy::IC_DEFAULT)
+      continue; // Default strategy does not require boundary nodes
+
+    bool has_ic = _fe_problem.isTargetedICVariable(_ic_vars_number[i]);
+    // std::cout << "Variable " << var_name << " has IC: " << std::boolalpha << has_ic << std::endl;
+
+    if (has_ic || _ic_on_boundary_nodes)
+    {
+
+      if (!_boundary_nodes_btw_newly_activated_original_proc_owned.empty()) // cache
+      {
+        _var_idx_2_boundary_nodes_btw_newly_activated_original[i] =
+            _boundary_nodes_btw_newly_activated_original_proc_owned;
+        continue;
+      }
+
+      for (const auto & eid : _global_reinitialized_elems)
+      {
+        const Elem * e = _mesh.elemPtr(eid);
+        for (unsigned int i = 0; i < e->n_nodes(); ++i)
+        {
+          const dof_id_type node_id = e->node_id(i);
+
+          if (std::find(_complete_global_activated_nodes.begin(),
+                        _complete_global_activated_nodes.end(),
+                        node_id) == _complete_global_activated_nodes.end()) // node is not in the
+                                                                            // complete
+                                                                            // activated
+                                                                            // nodes
+            _boundary_nodes_btw_newly_activated_original_global.push_back(node_id);
+        }
+      }
+
+      for (const auto node_id : _boundary_nodes_btw_newly_activated_original_global)
+      {
+        const Node * node = _mesh.nodePtr(node_id);
+
+        if (node && node->processor_id() ==
+                        _mesh.processor_id()) // the node belong to the mesh and the node and the
+                                              // mesh is at the same processor
+          _boundary_nodes_btw_newly_activated_original_proc_owned.push_back(node_id);
+      }
+
+      _var_idx_2_boundary_nodes_btw_newly_activated_original[i] =
+          _boundary_nodes_btw_newly_activated_original_proc_owned;
+
+      std::cout << "Variable " << var_name
+                << " has boundary nodes between newly activated elements: "
+                << _boundary_nodes_btw_newly_activated_original_proc_owned.size() << " nodes."
+                << std::endl;
+    }
+
+    // for (const auto & node_id : _boundary_nodes_btw_newly_activated_original_proc_owned)
+    // {
+    //   const Node * node = _mesh.nodePtr(node_id);
+
+    //   NumericVector<Number> & current_solution = *_sys.system().current_local_solution;
+    //   NumericVector<Number> & old_solution = _sys.solutionOld();
+
+    //   DofMap & dof_map = _sys.dofMap();
+    //   std::vector<dof_id_type> dofs_boundary_nodes;
+
+    //   if (_nl_sys.hasVariable(_ic_vars_names[i]))
+    //     dof_map.dof_indices(node, dofs_boundary_nodes, _ic_vars_number[i]);
+    //   else
+    //     dof_map.dof_indices(
+    //         node, dofs_boundary_nodes, _ic_vars_number[i] - _number_of_nl_variables);
+
+    //   for (auto dof : dofs_boundary_nodes)
+    //     current_solution.set(dof,
+    //                          old_solution(dof)); // copy from old solution to override IC
+    // }
   }
 
   // Reinit equation systems
@@ -979,11 +1090,13 @@ ElementSubdomainModifierBase::applyIC(bool displaced)
 
       if (_nl_sys.hasVariable(_ic_vars_names[i]))
         applyIC_Polynomial(_fe_problem.getNonlinearSystemBase(_sys.number()),
+                           i,
                            _ic_vars_number[i],
                            _ic_vars_number[i],
                            isElemental);
       else
         applyIC_Polynomial(_fe_problem.getAuxiliarySystem(),
+                           i,
                            _ic_vars_number[i],
                            _ic_vars_number[i] - _number_of_nl_variables /*subtract back*/,
                            isElemental);
@@ -1287,8 +1400,7 @@ ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes(const unsi
         if (patch_elem_set.count(neighbor_elem_id))
           continue;
 
-        _solved_elem_ids_for_npr[_var_number2_npr_idx[ic_var_number]].push_back(
-            neighbor_elem_id);
+        _solved_elem_ids_for_npr[_var_number2_npr_idx[ic_var_number]].push_back(neighbor_elem_id);
         patch_elem_set.insert(neighbor_elem_id);
       }
     }
@@ -1345,6 +1457,7 @@ ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes(const unsi
 
 void
 ElementSubdomainModifierBase::applyIC_Polynomial(SystemBase & sys,
+                                                 const unsigned int var_idx,
                                                  const unsigned int var_num_in_npr,
                                                  const unsigned int var_num_for_nl_or_aux,
                                                  const bool is_elemental)
@@ -1375,7 +1488,18 @@ ElementSubdomainModifierBase::applyIC_Polynomial(SystemBase & sys,
         vec.set(dofs_on_reinitialized_elem[0], recovered_val);
     }
   else
-    for (const auto & new_id : _newactivated_nodes)
+  {
+
+    std::unordered_set<dof_id_type> merged_nodes = _newactivated_nodes;
+
+    std::cout << "_var_idx_2_boundary_nodes_btw_newly_activated_original[var_idx] size: "
+              << _var_idx_2_boundary_nodes_btw_newly_activated_original[var_idx].size()
+              << std::endl;
+    if (!_var_idx_2_boundary_nodes_btw_newly_activated_original[var_idx].empty())
+      merged_nodes.insert(_var_idx_2_boundary_nodes_btw_newly_activated_original[var_idx].begin(),
+                          _var_idx_2_boundary_nodes_btw_newly_activated_original[var_idx].end());
+
+    for (const auto & new_id : merged_nodes)
     {
       const Node * node = _mesh.nodePtr(new_id);
       const Point & x = *node;
@@ -1392,6 +1516,7 @@ ElementSubdomainModifierBase::applyIC_Polynomial(SystemBase & sys,
       if (!dofs_on_newly_activated_node.empty())
         vec.set(dofs_on_newly_activated_node[0], recovered_val);
     }
+  }
 
   vec.close();
 }
