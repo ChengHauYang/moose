@@ -25,7 +25,7 @@ public:
 protected:
   virtual Real computeQpResidual() override;
   virtual Real computeQpJacobian() override;
-  // virtual bool shouldApply() const override;
+  virtual bool shouldApply() const override;
 
 private:
   /**

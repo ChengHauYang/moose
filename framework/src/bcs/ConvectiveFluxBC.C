@@ -43,14 +43,6 @@ ConvectiveFluxBC::ConvectiveFluxBC(const InputParameters & parameters)
 Real
 ConvectiveFluxBC::computeQpResidual()
 {
-
-  if (_fe_problem.isElemInDefaultBlock(_current_elem))
-    return 0.0;
-
-  if (_neglect_side_btw_two_default_blocks)
-    if (neighbor_is_default_block())
-      return 0.0;
-
   Real value;
   Real rate;
 
@@ -71,13 +63,6 @@ ConvectiveFluxBC::computeQpResidual()
 Real
 ConvectiveFluxBC::computeQpJacobian()
 {
-  if (_fe_problem.isElemInDefaultBlock(_current_elem))
-    return 0.0;
-
-  if (_neglect_side_btw_two_default_blocks)
-    if (neighbor_is_default_block())
-      return 0.0;
-
   Real rate;
 
   if (_t < _duration)
@@ -91,14 +76,28 @@ ConvectiveFluxBC::computeQpJacobian()
 bool
 ConvectiveFluxBC::neighbor_is_default_block() const
 {
-  // std::cout << "n_neighbors ()= " << _current_elem->n_neighbors() << std::endl;
-  // std::cout << "_current_side = " << _current_side << std::endl;
   if (_current_elem->neighbor_ptr(_current_side))
     if (_fe_problem.isElemInDefaultBlock(_current_elem->neighbor_ptr(_current_side)))
-      // _current_elem->neighbor_ptr(_current_side)->centroid().print(std::cout);
       return true;
     else
       return false;
   else
     return false;
+}
+
+bool
+ConvectiveFluxBC::shouldApply() const
+{
+  const auto block_id = _current_elem->subdomain_id();
+  if (!variable().hasBlocks(block_id))
+    return false;
+
+  if (_fe_problem.isElemInDefaultBlock(_current_elem))
+    return false;
+
+  if (_neglect_side_btw_two_default_blocks)
+    if (neighbor_is_default_block())
+      return false;
+
+  return true;
 }

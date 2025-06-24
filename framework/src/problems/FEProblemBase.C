@@ -3740,9 +3740,9 @@ void
 FEProblemBase::projectInitialConditionOnCustomRangeForSpecificVars(
     ConstElemRange & elem_range,
     ConstBndNodeRange & bnd_nodes,
-    const std::set<unsigned int> & ic_target_vars)
+    const std::set<std::string> & target_var_names)
 {
-  ComputeInitialConditionThread cic(*this);
+  ComputeInitialConditionThread cic(*this, target_var_names);
   Threads::parallel_reduce(elem_range, cic);
 
   // Need to close the solution vector here so that boundary ICs take precendence
@@ -3750,7 +3750,7 @@ FEProblemBase::projectInitialConditionOnCustomRangeForSpecificVars(
     nl->solution().close();
   _aux->solution().close();
 
-  ComputeBoundaryInitialConditionThread cbic(*this);
+  ComputeBoundaryInitialConditionThread cbic(*this, target_var_names);
   Threads::parallel_reduce(bnd_nodes, cbic);
 
   for (auto & nl : _nl)
@@ -3767,7 +3767,7 @@ FEProblemBase::projectInitialConditionOnCustomRangeForSpecificVars(
     {
       MooseVariableScalar & var = ic->variable();
 
-      if (!ic_target_vars.empty() && !ic_target_vars.count(var.number()))
+      if (!target_var_names.empty() && !target_var_names.count(var.name()))
         continue;
 
       var.reinit();
@@ -3793,25 +3793,6 @@ FEProblemBase::projectInitialConditionOnCustomRangeForSpecificVars(
 
   _aux->solution().close();
   _aux->solution().localize(*_aux->sys().current_local_solution, _aux->dofMap().get_send_list());
-}
-
-bool
-FEProblemBase::isTargetedICVariable(const unsigned int ic_target_var) const
-{
-  if (processor_id() == (n_processors() - 1) && _scalar_ics.hasActiveObjects())
-  {
-    const auto & ics = _scalar_ics.getActiveObjects();
-    for (const auto & ic : ics)
-    {
-      const MooseVariableScalar & var = ic->variable();
-
-      std::cout << "var.number() = " << var.number() << ", ic_target_var = " << ic_target_var
-                << std::endl;
-      if (ic_target_var == var.number())
-        return true;
-    }
-  }
-  return false;
 }
 
 std::shared_ptr<MaterialBase>

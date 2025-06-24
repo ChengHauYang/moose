@@ -231,7 +231,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     final = 293.15 # final ambient (lab or oven) temperature (K)     # temperature to ramp from initial to final
     duration = 1000 # length of time in seconds that it takes the ambient
     boundary = 'bottom right top weld weld_interior' # BC applied on every interfaces
-    # boundary = 'bottom right top'
+    #boundary = 'bottom right top'
     #according to Bipul's one, we should not consider left side
     neglect_side_btw_two_default_blocks = true
   [] # Convective End
@@ -245,7 +245,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
   nl_max_its = 100
   nl_rel_tol = 1e-6
   nl_abs_tol = 1e-10
-  dt = 1
+  dt = 0.5
   end_time = 24
 []
 

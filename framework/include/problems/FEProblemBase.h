@@ -900,9 +900,7 @@ public:
   void projectInitialConditionOnCustomRangeForSpecificVars(
       libMesh::ConstElemRange & elem_range,
       ConstBndNodeRange & bnd_node_range,
-      const std::set<unsigned int> & selected_var_nums);
-
-  bool isTargetedICVariable(const unsigned int ic_target_var) const;
+      const std::set<std::string> & selected_var_names);
 
   // Materials /////
   virtual void addMaterial(const std::string & material_name,
@@ -2750,9 +2748,6 @@ protected:
   std::vector<unsigned char> _has_active_material_properties;
 
   std::vector<SolverParams> _solver_params;
-
-  /// Default blocks for block restriction (kernel and material coverage check only for the default blocks)
-  const std::vector<SubdomainName> _blocks;
 
   /// Determines whether and which subdomains are to be checked to ensure that they have an active kernel
   CoverageCheckMode _kernel_coverage_check;
