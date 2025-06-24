@@ -26,6 +26,7 @@
 #include "MultiMooseEnum.h"
 #include "MultiApp.h"
 #include "GlobalParamsAction.h"
+#include "CreateProblemAction.h"
 #include "SyntaxTree.h"
 #include "InputFileFormatter.h"
 #include "YAMLFormatter.h"
@@ -898,6 +899,14 @@ Builder::extractParams(const std::string & prefix, InputParameters & p)
   if (act_iter != _action_wh.actionBlocksWithActionEnd(global_params_task))
     global_params_block = dynamic_cast<GlobalParamsAction *>(*act_iter);
 
+  static const std::string problem_params_task = "create_problem_complete";
+  static const std::string problem_params_block_name = "Problem";
+  ActionIterator problem_iter = _action_wh.actionBlocksWithActionBegin(problem_params_task);
+  CreateProblemAction * problem_block = nullptr;
+  // We are grabbing only the first
+  if (problem_iter != _action_wh.actionBlocksWithActionEnd(problem_params_task))
+    problem_block = dynamic_cast<CreateProblemAction *>(*problem_iter);
+
   // Set a pointer to the current InputParameters object being parsed so that it can be referred
   // to
   // in the extraction routines
@@ -944,6 +953,20 @@ Builder::extractParams(const std::string & prefix, InputParameters & p)
               full_name); // Keep track of all variables extracted from the input file
           found = true;
           in_global = true;
+        }
+      }
+      else if (problem_block)
+      {
+        // Check the Problem section
+        full_name = problem_params_block_name + "/" + "block";
+        node = root()->find(full_name);
+        if (node)
+        {
+          p.setHitNode(param_name, *node, {});
+          p.set_attributes(param_name, false);
+          _extracted_vars.insert(
+              full_name); // Keep track of all variables extracted from the input file
+          found = true;
         }
       }
       if (found)

@@ -1,11 +1,12 @@
 all_blocks = 'default pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
 weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
 
-[GlobalParams]
-  block = 'default '
-[]
+# [GlobalParams]
+#   block = 'default '
+# []
 
 [Problem]
+  block = 'default '
   boundary_restricted_node_integrity_check = false
   boundary_restricted_elem_integrity_check = false
 []
@@ -13,18 +14,26 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
 [Mesh]
   [gmg]
     type = FileMeshGenerator
-    file = "partition_symmetric_shape.msh"
+    file = "geometry_xy_swapped.msh"
   []
 
-  coord_type = RZ
+  [shift_mesh]
+    type = TransformGenerator
+    transform = TRANSLATE
+    vector_value = '0.055 0.0 0.0' # translation in x, y, z directions
+    input = gmg
+  []
 
+  coord_type = 'RZ'
+
+  rz_coord_axis = y
   use_displaced_mesh = false
 []
 
 [Variables]
   [cond]
     order = FIRST
-    initial_condition = 293.15
+    # initial_condition = 293.15
   []
 []
 
@@ -62,6 +71,14 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
   []
 []
 
+[ICs]
+  [temperature_IC]
+    type = FunctionIC
+    variable = cond
+    function = melting_temperature
+  []
+[]
+
 [MeshModifiers]
   [cut_esm]
     type = TimedSubdomainModifier
@@ -74,12 +91,11 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
 
     # --- new for setting IC --- #
     unsolved_blocks = ${weld_blocks}
-    ic_strategy = "IC_POLYNOMIAL IC_FUNC"
+    ic_strategy = "IC_DEFAULT IC_FUNC"
     ic_variables = "cond  gaussian_weight"
     function_for_ic = "gaussian_weight_func"
 
-    ic_on_boundary_nodes = true
-    nodal_patch_recovery_uo = 'extrapolation_patch_T'
+    # nodal_patch_recovery_uo = 'extrapolation_patch_T'
   []
 []
 
@@ -101,10 +117,10 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     function_weave_amp_y = "heat_source_weave_y"
     wavelength = 0.01 # m
     factor = 1
-    #va_postprocess = Va_integral
+    # va_postprocess = Va_integral
     #path = 'path'
-    function_x = "x_centroid"
-    function_y = "y_centroid"
+    function_x = "radial_centroid"
+    function_y = "axis_centroid"
     function_z = "z_centroid"
   []
 
@@ -185,29 +201,35 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     type = PiecewiseLinear
     x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
     y = '0.0045  0.0045  0.0050  0.0050  0.0050  0.0050 0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055 0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065' # mm -> m
-    #x = '0 500'
-    #y = '0 0'
+    # x = '0 500'
+    # y = '0 0'
   []
 
-  [x_centroid]
+  [axis_centroid]
     type = PiecewiseLinear
     x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
     y = '0.103486395 0.103486395 0.106420364 0.100552425 0.106905242 0.100067547 0.107337667 0.099635122 0.107762614 0.099210175 0.108174955 0.098797834 0.108557907 0.098414883 0.108908669 0.09806412 0.10926126 0.097711529 0.109591155 0.097381634 0.109902214 0.097070575 0.110784163 0.096188626'
   []
 
-  [y_centroid]
+  [radial_centroid_ori]
     type = PiecewiseLinear
     x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
     y = '0.000266216 0.003315408 0.006161999 0.006161999 0.009976729 0.009976729 0.01337878 0.01337878 0.01672201 0.01672201 0.019966053 0.019966053 0.022978885 0.022978885 0.025738468 0.025738468 0.028512442 0.028512442 0.031107857 0.031107857 0.033555082 0.033555082 0.036103556 0.036103556'
   []
 
-  [z_centroid]
-    type = PiecewiseLinear
-    x = '0 500'
-    y = '0.0 0.0'
+  [radial_centroid]
+    type = ParsedFunction
+    expression = 'radial_original + 0.055'
+    symbol_names = 'radial_original'
+    symbol_values = 'radial_centroid_ori'
   []
 
-  [y_shift]
+  [z_centroid]
+    type = ConstantFunction
+    value = 0.0
+  []
+
+  [radial_shift]
     type = ParsedFunction
     expression = 'amp*sin(2*3.14159*t*speed/0.01)'
     symbol_names = 'amp speed'
@@ -216,9 +238,15 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
 
   [gaussian_weight_func]
     type = ParsedFunction
-    expression = '2*pi*(y+0.0055)* exp(-( pow(x-x0,2)/pow(r,2) + pow(y-y0-y_shift_weave,2)/pow(r,2) + pow(0,2)/pow(r,2) ))'
-    symbol_names = 'r x0 y0 y_shift_weave'
-    symbol_values = 'source_radius x_centroid y_centroid y_shift'
+    expression = 'exp(-( pow(x-radial_0-radial_shift_weave,2)/pow(r,2) + pow(y-axis_0,2)/pow(r,2)))' # for 2*pi, the RZ coord will take care of this
+    symbol_names = 'r axis_0 radial_0 radial_shift_weave'
+    symbol_values = 'source_radius axis_centroid radial_centroid radial_shift'
+  []
+
+  [melting_temperature]
+    type = PiecewiseLinear
+    x = '0 1  500'
+    y = '293.15 923.15 923.15'
   []
 []
 

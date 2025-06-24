@@ -284,8 +284,6 @@ private:
 
   const Function * _function_for_ic;
 
-  const bool _ic_on_boundary_nodes;
-
   /// Perform a global MPI gather of reinitialized element IDs across all processors.
   /// Results are stored in `_global_reinitialized_elems`.
   void synchronizeReinitializedElems();

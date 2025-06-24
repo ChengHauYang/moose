@@ -115,13 +115,6 @@ ElementSubdomainModifierBase::validParams()
                                 "Function to use for setting initial conditions on newly "
                                 "activated nodes.");
 
-  params.addParam<bool>(
-      "ic_on_boundary_nodes",
-      false,
-      "Whether to apply initial conditions on boundary nodes. If true, the initial conditions will "
-      "be applied to the boundary nodes as well. If false, only internal nodes will be considered "
-      "for initial conditions.");
-
   params.registerBase("MeshModifier");
 
   return params;
@@ -143,8 +136,7 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
     _radius_search_threshold(getParam<double>("radius_search_threshold")),
     _number_of_nl_variables(_nl_sys.nVariables()),
     _function_for_ic(isParamSetByUser("function_for_ic") ? &getFunction("function_for_ic")
-                                                         : nullptr),
-    _ic_on_boundary_nodes(getParam<bool>("ic_on_boundary_nodes"))
+                                                         : nullptr)
 {
   // Check if the variables to set IC exist in the system
   for (auto var_name : _ic_vars_names)

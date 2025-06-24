@@ -1,8 +1,9 @@
-all_blocks = 'default pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
+all_blocks = 'default pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24 new_block'
 weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
 
 [GlobalParams]
-  block = 'default '
+  block = 'default new_block'
+  displacements = 'disp_x disp_y'
 []
 
 [Problem]
@@ -13,18 +14,28 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
 [Mesh]
   [gmg]
     type = FileMeshGenerator
-    file = "partition_symmetric_shape.msh"
+    file = "geometry_xy_swapped.msh"
   []
 
-  coord_type = RZ
+  [shift_mesh]
+    type = TransformGenerator
+    transform = TRANSLATE
+    vector_value = '0.055 0.0 0.0' # translation in x, y, z directions
+    input = gmg
+  []
 
+  coord_type = 'RZ'
+
+  add_subdomain_names = 'new_block'
+
+  rz_coord_axis = y
   use_displaced_mesh = false
 []
 
 [Variables]
   [cond]
     order = FIRST
-    initial_condition = 293.15
+    # initial_condition = 293.15
   []
 []
 
@@ -60,6 +71,28 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     var = 'cond'
     execute_on = 'INITIAL TIMESTEP_BEGIN'
   []
+  [extrapolation_patch_disp_x]
+    type = NodalPatchRecoveryVariable
+    patch_polynomial_order = FIRST
+    use_specific_elements = true
+    var = 'disp_x'
+    execute_on = 'INITIAL TIMESTEP_BEGIN'
+  []
+  [extrapolation_patch_disp_y]
+    type = NodalPatchRecoveryVariable
+    patch_polynomial_order = FIRST
+    use_specific_elements = true
+    var = 'disp_y'
+    execute_on = 'INITIAL TIMESTEP_BEGIN'
+  []
+[]
+
+[ICs]
+  [temperature_IC]
+    type = FunctionIC
+    variable = cond
+    function = melting_temperature
+  []
 []
 
 [MeshModifiers]
@@ -67,19 +100,32 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     type = TimedSubdomainModifier
     times = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24'
     blocks_from = 'pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24' # this is block "1" but block ID = "2"
-    blocks_to = 'default default default default default default default default default default default default default default default default default default default default default default default default'
+    blocks_to = 'new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block new_block'
     execute_on = 'INITIAL TIMESTEP_BEGIN'
 
     block = ${all_blocks}
 
     # --- new for setting IC --- #
     unsolved_blocks = ${weld_blocks}
-    ic_strategy = "IC_POLYNOMIAL IC_FUNC"
+    ic_strategy = "IC_DEFAULT IC_FUNC"
     ic_variables = "cond  gaussian_weight"
     function_for_ic = "gaussian_weight_func"
 
-    ic_on_boundary_nodes = true
-    nodal_patch_recovery_uo = 'extrapolation_patch_T'
+    # nodal_patch_recovery_uo = 'extrapolation_patch_T'
+  []
+[]
+
+[Physics]
+  [SolidMechanics]
+    [QuasiStatic]
+      [all]
+        add_variables = true
+        strain = FINITE
+        eigenstrain_names = eigenstrain
+        generate_output = 'vonmises_stress'
+        use_automatic_differentiation = true
+      []
+    []
   []
 []
 
@@ -101,10 +147,10 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     function_weave_amp_y = "heat_source_weave_y"
     wavelength = 0.01 # m
     factor = 1
-    #va_postprocess = Va_integral
+    # va_postprocess = Va_integral
     #path = 'path'
-    function_x = "x_centroid"
-    function_y = "y_centroid"
+    function_x = "radial_centroid"
+    function_y = "axis_centroid"
     function_z = "z_centroid"
   []
 
@@ -122,6 +168,49 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     variable = cond
     x = '293.15 373.15 473.15 573.15 673.15 773.15 873.15 973.15 1073.15 1173.15 1273.15 1373.15 1473.15 1573.15 1673.15'
     y = '12.69 13.93 15.48 17.03 18.58 20.13 21.68 23.23 24.78 26.33 27.88 29.43 30.98 32.53 34.08'
+  []
+
+  [parent_youngs_modulus]
+    type = ADPiecewiseLinearInterpolationMaterial
+    x = '293.15 373.15 473.15 573.15 673.15 773.15 873.15 973.15 1073.15 1173.15 1273.15 1373.15 1473.15 1573.15 1673.15'
+    y = '204500000000.0 196700000000.0 188100000000.0 180200000000.0 172500000000.0 164600000000.0 156000000000.0 146100000000.0 134600000000.0 120800000000.0 104400000000.0 84800000000.0 61500000000.0 34100000000.0 2000000000.0' # Pa
+    property = parent_youngs_modulus
+    variable = cond
+  []
+
+  [weld_youngs_modulus]
+    type = ADPiecewiseLinearInterpolationMaterial
+    x = '293.15 373.15 473.15 573.15 673.15 773.15 873.15 973.15 1073.15 1173.15 1273.15 1373.15 1473.15 1573.15 1673.15'
+    y = '157800000000.0 151500000000.0 144400000000.0 137800000000.0 131400000000.0 124800000000.0 117700000000.0 109800000000.0 100600000000.0 89900000000.0 77400000000.0 62600000000.0 45300000000.0 25000000000.0 1600000000.0'
+    property = weld_youngs_modulus
+    variable = cond
+  []
+
+  [elasticity_tensor_parent]
+    type = ADComputeVariableIsotropicElasticityTensor
+    youngs_modulus = parent_youngs_modulus
+    poissons_ratio = 0.294
+    block = 'default'
+  []
+
+  [elasticity_tensor_weld]
+    type = ADComputeVariableIsotropicElasticityTensor
+    youngs_modulus = weld_youngs_modulus
+    poissons_ratio = 0.294
+    block = 'new_block'
+  []
+
+  [CTE]
+    type = ADComputeInstantaneousThermalExpansionFunctionEigenstrain
+    eigenstrain_name = eigenstrain
+    stress_free_temperature = 293.15 # TODO: double check
+    thermal_expansion_function = thermal_expansion_fn
+    temperature = cond
+    outputs = exodus
+  []
+
+  [stress]
+    type = ADComputeLinearElasticStress
   []
 []
 
@@ -149,12 +238,6 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     type = PiecewiseLinear
     x = '293.15 373.15 473.15 573.15 673.15 773.15 873.15 973.15 1073.15 1173.15 1273.15 1373.15 1473.15 1573.15 1673.15'
     y = '15.44 16.01 16.67 17.29 17.87 18.41 18.91 19.37 19.78 20.16 20.49 20.78 21.03 21.24 21.41'
-  []
-
-  [youngs_modulus_fn]
-    type = PiecewiseLinear
-    x = '293.15 373.15 473.15 573.15 673.15 773.15 873.15 973.15 1073.15 1173.15 1273.15 1373.15 1473.15 1573.15 1673.15'
-    y = '204.5 196.7 188.1 180.2 172.5 164.6 156.0 146.1 134.6 120.8 104.4 84.8 61.5 34.1 2.0' # GPa
   []
 
   [source_radius]
@@ -185,29 +268,35 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     type = PiecewiseLinear
     x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
     y = '0.0045  0.0045  0.0050  0.0050  0.0050  0.0050 0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055 0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065' # mm -> m
-    #x = '0 500'
-    #y = '0 0'
+    # x = '0 500'
+    # y = '0 0'
   []
 
-  [x_centroid]
+  [axis_centroid]
     type = PiecewiseLinear
     x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
     y = '0.103486395 0.103486395 0.106420364 0.100552425 0.106905242 0.100067547 0.107337667 0.099635122 0.107762614 0.099210175 0.108174955 0.098797834 0.108557907 0.098414883 0.108908669 0.09806412 0.10926126 0.097711529 0.109591155 0.097381634 0.109902214 0.097070575 0.110784163 0.096188626'
   []
 
-  [y_centroid]
+  [radial_centroid_ori]
     type = PiecewiseLinear
     x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
     y = '0.000266216 0.003315408 0.006161999 0.006161999 0.009976729 0.009976729 0.01337878 0.01337878 0.01672201 0.01672201 0.019966053 0.019966053 0.022978885 0.022978885 0.025738468 0.025738468 0.028512442 0.028512442 0.031107857 0.031107857 0.033555082 0.033555082 0.036103556 0.036103556'
   []
 
-  [z_centroid]
-    type = PiecewiseLinear
-    x = '0 500'
-    y = '0.0 0.0'
+  [radial_centroid]
+    type = ParsedFunction
+    expression = 'radial_original + 0.055'
+    symbol_names = 'radial_original'
+    symbol_values = 'radial_centroid_ori'
   []
 
-  [y_shift]
+  [z_centroid]
+    type = ConstantFunction
+    value = 0.0
+  []
+
+  [radial_shift]
     type = ParsedFunction
     expression = 'amp*sin(2*3.14159*t*speed/0.01)'
     symbol_names = 'amp speed'
@@ -216,9 +305,15 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
 
   [gaussian_weight_func]
     type = ParsedFunction
-    expression = '2*pi*(y+0.0055)* exp(-( pow(x-x0,2)/pow(r,2) + pow(y-y0-y_shift_weave,2)/pow(r,2) + pow(0,2)/pow(r,2) ))'
-    symbol_names = 'r x0 y0 y_shift_weave'
-    symbol_values = 'source_radius x_centroid y_centroid y_shift'
+    expression = 'exp(-( pow(x-radial_0-radial_shift_weave,2)/pow(r,2) + pow(y-axis_0,2)/pow(r,2)))' # for 2*pi, the RZ coord will take care of this
+    symbol_names = 'r axis_0 radial_0 radial_shift_weave'
+    symbol_values = 'source_radius axis_centroid radial_centroid radial_shift'
+  []
+
+  [melting_temperature]
+    type = PiecewiseLinear
+    x = '0 1  500'
+    y = '293.15 923.15 923.15'
   []
 []
 
@@ -237,6 +332,13 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     #according to Bipul's one, we should not consider left side
     neglect_side_btw_two_default_blocks = true
   [] # Convective End
+
+  [anchor_axis]
+    type = DirichletBC
+    variable = disp_y
+    boundary = 'left'
+    value = 0.0
+  []
 []
 
 [Executioner]
@@ -259,7 +361,6 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
   [Va_integral]
     type = ElementIntegralVariablePostprocessor
     variable = gaussian_weight
-    block = 'default'
     execute_on = 'INITIAL TIMESTEP_BEGIN'
   []
 []
