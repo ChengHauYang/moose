@@ -899,7 +899,7 @@ Builder::extractParams(const std::string & prefix, InputParameters & p)
   if (act_iter != _action_wh.actionBlocksWithActionEnd(global_params_task))
     global_params_block = dynamic_cast<GlobalParamsAction *>(*act_iter);
 
-  static const std::string problem_params_task = "create_problem_complete";
+  static const std::string problem_params_task = "create_problem";
   static const std::string problem_params_block_name = "Problem";
   ActionIterator problem_iter = _action_wh.actionBlocksWithActionBegin(problem_params_task);
   CreateProblemAction * problem_block = nullptr;
@@ -955,10 +955,11 @@ Builder::extractParams(const std::string & prefix, InputParameters & p)
           in_global = true;
         }
       }
-      else if (problem_block)
+      else if (problem_block && param_name == "block")
       {
+        std::cout << "block in problem block" << std::endl;
         // Check the Problem section
-        full_name = problem_params_block_name + "/" + "block";
+        full_name = problem_params_block_name + "/" + param_name;
         node = root()->find(full_name);
         if (node)
         {
