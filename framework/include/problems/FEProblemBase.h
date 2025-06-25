@@ -2413,6 +2413,11 @@ public:
    */
   const std::vector<SolverSystemName> & getSolverSystemNames() const { return _solver_sys_names; }
 
+  /**
+   * @returns the default blocks (for block restriction)
+   */
+  const std::vector<SubdomainName> & getDefaultBlocks() const { return *_default_blocks; }
+
 protected:
   /// Create extra tagged vectors and matrices
   void createTagVectors();
@@ -2986,6 +2991,9 @@ private:
   friend void Moose::PetscSupport::setSinglePetscOption(const std::string & name,
                                                         const std::string & value,
                                                         FEProblemBase * const problem);
+
+  ///< The default blocks (for block restriction)
+  const std::vector<SubdomainName> * _default_blocks;
 };
 
 using FVProblemBase = FEProblemBase;

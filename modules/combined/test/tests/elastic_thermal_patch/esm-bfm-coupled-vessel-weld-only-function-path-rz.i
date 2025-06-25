@@ -1,9 +1,9 @@
 all_blocks = 'default pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24 new_block'
 weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
 
-[GlobalParams]
-  displacements = 'disp_x disp_y'
-[]
+# [GlobalParams]
+# displacements = 'disp_x disp_y'
+# []
 
 [Problem]
   block = 'default new_block'
@@ -68,26 +68,26 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     type = NodalPatchRecoveryVariable
     patch_polynomial_order = FIRST
     use_specific_elements = true
-    block = 'default new_block'
+
     var = 'cond'
     execute_on = 'INITIAL TIMESTEP_BEGIN'
   []
-  [extrapolation_patch_disp_x]
-    type = NodalPatchRecoveryVariable
-    patch_polynomial_order = FIRST
-    use_specific_elements = true
-    block = 'default new_block'
-    var = 'disp_x'
-    execute_on = 'INITIAL TIMESTEP_BEGIN'
-  []
-  [extrapolation_patch_disp_y]
-    type = NodalPatchRecoveryVariable
-    patch_polynomial_order = FIRST
-    use_specific_elements = true
-    block = 'default new_block'
-    var = 'disp_y'
-    execute_on = 'INITIAL TIMESTEP_BEGIN'
-  []
+  # [extrapolation_patch_disp_x]
+  #   type = NodalPatchRecoveryVariable
+  #   patch_polynomial_order = FIRST
+  #   use_specific_elements = true
+  #   block = 'default new_block'
+  #   var = 'disp_x'
+  #   execute_on = 'INITIAL TIMESTEP_BEGIN'
+  # []
+  # [extrapolation_patch_disp_y]
+  #   type = NodalPatchRecoveryVariable
+  #   patch_polynomial_order = FIRST
+  #   use_specific_elements = true
+  #   block = 'default new_block'
+  #   var = 'disp_y'
+  #   execute_on = 'INITIAL TIMESTEP_BEGIN'
+  # []
 []
 
 [ICs]
@@ -118,27 +118,26 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
   []
 []
 
-[Physics]
-  [SolidMechanics]
-    [QuasiStatic]
-      [all]
-        add_variables = true
-        strain = FINITE
-        eigenstrain_names = eigenstrain
-        generate_output = 'vonmises_stress'
-        use_automatic_differentiation = true
-        block = 'default new_block'
-      []
-    []
-  []
-[]
+# [Physics]
+#   [SolidMechanics]
+#     [QuasiStatic]
+#       [all]
+#         add_variables = true
+#         strain = FINITE
+#         eigenstrain_names = eigenstrain
+#         generate_output = 'vonmises_stress'
+#         use_automatic_differentiation = true
+#
+#       []
+#     []
+#   []
+# []
 
 [Materials]
   [density]
     type = ADGenericConstantMaterial
     prop_names = 'density '
     prop_values = '7960.0               ' # kg/m^3
-    block = 'default new_block'
   []
 
   [volumetric_heat]
@@ -157,7 +156,6 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     function_x = "radial_centroid"
     function_y = "axis_centroid"
     function_z = "z_centroid"
-    block = 'default new_block'
   []
 
   [specific_heat]
@@ -166,7 +164,6 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     variable = cond
     x = '293.15 373.15 473.15 573.15 673.15 773.15 873.15 973.15 1073.15 1173.15 1273.15 1373.15 1473.15 1573.15 1673.15'
     y = '490 508 532 555 580 603 627 650 650 650 650 650 650 650 650' # J/(kg*k) -> We use J here because the convective heat transfer coefficient
-    block = 'default new_block'
   []
 
   [thermalconductivity]
@@ -175,7 +172,6 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     variable = cond
     x = '293.15 373.15 473.15 573.15 673.15 773.15 873.15 973.15 1073.15 1173.15 1273.15 1373.15 1473.15 1573.15 1673.15'
     y = '12.69 13.93 15.48 17.03 18.58 20.13 21.68 23.23 24.78 26.33 27.88 29.43 30.98 32.53 34.08'
-    block = 'default new_block'
   []
 
   [parent_youngs_modulus]
@@ -184,7 +180,6 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     y = '204500000000.0 196700000000.0 188100000000.0 180200000000.0 172500000000.0 164600000000.0 156000000000.0 146100000000.0 134600000000.0 120800000000.0 104400000000.0 84800000000.0 61500000000.0 34100000000.0 2000000000.0' # Pa
     property = parent_youngs_modulus
     variable = cond
-    block = 'default new_block'
   []
 
   [weld_youngs_modulus]
@@ -193,37 +188,36 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     y = '157800000000.0 151500000000.0 144400000000.0 137800000000.0 131400000000.0 124800000000.0 117700000000.0 109800000000.0 100600000000.0 89900000000.0 77400000000.0 62600000000.0 45300000000.0 25000000000.0 1600000000.0'
     property = weld_youngs_modulus
     variable = cond
-    block = 'default new_block'
   []
 
-  [elasticity_tensor_parent]
-    type = ADComputeVariableIsotropicElasticityTensor
-    youngs_modulus = parent_youngs_modulus
-    poissons_ratio = 0.294
-    block = 'default'
-  []
+  # [elasticity_tensor_parent]
+  #   type = ADComputeVariableIsotropicElasticityTensor
+  #   youngs_modulus = parent_youngs_modulus
+  #   poissons_ratio = 0.294
+  #   block = 'default'
+  # []
 
-  [elasticity_tensor_weld]
-    type = ADComputeVariableIsotropicElasticityTensor
-    youngs_modulus = weld_youngs_modulus
-    poissons_ratio = 0.294
-    block = 'new_block'
-  []
+  # [elasticity_tensor_weld]
+  #   type = ADComputeVariableIsotropicElasticityTensor
+  #   youngs_modulus = weld_youngs_modulus
+  #   poissons_ratio = 0.294
+  #   block = 'new_block'
+  # []
 
-  [CTE]
-    type = ADComputeInstantaneousThermalExpansionFunctionEigenstrain
-    eigenstrain_name = eigenstrain
-    stress_free_temperature = 293.15 # TODO: double check
-    thermal_expansion_function = thermal_expansion_fn
-    temperature = cond
-    outputs = exodus
-    block = 'default new_block'
-  []
+  # [CTE]
+  #   type = ADComputeInstantaneousThermalExpansionFunctionEigenstrain
+  #   eigenstrain_name = eigenstrain
+  #   stress_free_temperature = 293.15 # TODO: double check
+  #   thermal_expansion_function = thermal_expansion_fn
+  #   temperature = cond
+  #   outputs = exodus
+  #   block = 'default new_block'
+  # []
 
-  [stress]
-    type = ADComputeLinearElasticStress
-    block = 'default new_block'
-  []
+  # [stress]
+  #   type = ADComputeLinearElasticStress
+  #   block = 'default new_block'
+  # []
 []
 
 [Kernels]
@@ -232,19 +226,16 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     variable = cond
     density_name = density
     specific_heat = specific_heat
-    block = 'default new_block'
   []
   [heat]
     type = ADHeatConduction
     variable = cond
     thermal_conductivity = "thermal_conductivity"
-    block = 'default new_block'
   []
   [hsource]
     type = ADMatHeatSource
     material_property = 'volumetric_heat'
     variable = cond
-    block = 'default new_block'
   []
 []
 
@@ -348,24 +339,24 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     neglect_side_btw_two_default_blocks = true
   [] # Convective End
 
-  [anchor_axis]
-    type = DirichletBC
-    variable = disp_y
-    boundary = 'left'
-    value = 0.0
-  []
-  [disp_zero_x]
-    type = DirichletBC
-    variable = disp_x
-    boundary = 'fix_pt'
-    value = 0.0
-  []
-  [disp_zero_y]
-    type = DirichletBC
-    variable = disp_y
-    boundary = 'fix_pt'
-    value = 0.0
-  []
+  # [anchor_axis]
+  #   type = DirichletBC
+  #   variable = disp_y
+  #   boundary = 'left'
+  #   value = 0.0
+  # []
+  # [disp_zero_x]
+  #   type = DirichletBC
+  #   variable = disp_x
+  #   boundary = 'fix_pt'
+  #   value = 0.0
+  # []
+  # [disp_zero_y]
+  #   type = DirichletBC
+  #   variable = disp_y
+  #   boundary = 'fix_pt'
+  #   value = 0.0
+  # []
 []
 
 [Executioner]
@@ -376,7 +367,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
   nl_max_its = 100
   nl_rel_tol = 1e-6
   nl_abs_tol = 1e-10
-  dt = 0.01
+  dt = 0.1
   end_time = 24
 []
 

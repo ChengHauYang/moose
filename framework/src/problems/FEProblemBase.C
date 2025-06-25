@@ -516,7 +516,9 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _num_grid_steps(0),
     _print_execution_on(),
     _identify_variable_groups_in_nl(getParam<bool>("identify_variable_groups_in_nl")),
-    _regard_general_exceptions_as_errors(getParam<bool>("regard_general_exceptions_as_errors"))
+    _regard_general_exceptions_as_errors(getParam<bool>("regard_general_exceptions_as_errors")),
+    _default_blocks(isParamSetByUser("block") ? &getParam<std::vector<SubdomainName>>("block")
+                                              : nullptr)
 {
 
   auto checkConflict =

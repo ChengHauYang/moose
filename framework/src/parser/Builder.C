@@ -900,7 +900,8 @@ Builder::extractParams(const std::string & prefix, InputParameters & p)
     global_params_block = dynamic_cast<GlobalParamsAction *>(*act_iter);
 
   static const std::string problem_params_task = "create_problem";
-  static const std::string problem_params_block_name = "Problem";
+  static const std::string problem_params_block_name =
+      _syntax.getSyntaxByAction("CreateProblemAction").front();
   ActionIterator problem_iter = _action_wh.actionBlocksWithActionBegin(problem_params_task);
   CreateProblemAction * problem_block = nullptr;
   // We are grabbing only the first
@@ -940,6 +941,21 @@ Builder::extractParams(const std::string & prefix, InputParameters & p)
             full_name); // Keep track of all variables extracted from the input file
         found = true;
       }
+      // else if (problem_block && param_name == "block")
+      // {
+      //   std::cout << "block in problem block" << std::endl;
+      //   // Check the Problem section
+      //   full_name = problem_params_block_name + "/" + param_name;
+      //   node = root()->find(full_name);
+      //   if (node)
+      //   {
+      //     p.setHitNode(param_name, *node, {});
+      //     p.set_attributes(param_name, false);
+      //     _extracted_vars.insert(
+      //         full_name); // Keep track of all variables extracted from the input file
+      //     found = true;
+      //   }
+      // }
       // Wait! Check the GlobalParams section
       else if (global_params_block)
       {
@@ -953,21 +969,6 @@ Builder::extractParams(const std::string & prefix, InputParameters & p)
               full_name); // Keep track of all variables extracted from the input file
           found = true;
           in_global = true;
-        }
-      }
-      else if (problem_block && param_name == "block")
-      {
-        std::cout << "block in problem block" << std::endl;
-        // Check the Problem section
-        full_name = problem_params_block_name + "/" + param_name;
-        node = root()->find(full_name);
-        if (node)
-        {
-          p.setHitNode(param_name, *node, {});
-          p.set_attributes(param_name, false);
-          _extracted_vars.insert(
-              full_name); // Keep track of all variables extracted from the input file
-          found = true;
         }
       }
       if (found)
