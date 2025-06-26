@@ -291,6 +291,10 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
       {
         _var_number2_npr_idx[_ic_vars_number[i]] = npr_count;
         npr_count++;
+
+        std::cout << "Variable " << _ic_vars_names[i]
+                  << " will use polynomial extrapolation for initial conditions with NPR index "
+                  << npr_count - 1 << "." << std::endl;
       }
     }
 
@@ -1375,6 +1379,9 @@ ElementSubdomainModifierBase::applyIC_Polynomial(SystemBase & sys,
       const Real recovered_val = _npr_vec[_var_number2_npr_idx[var_num_in_npr]]->nodalPatchRecovery(
           x, _solved_elem_ids_for_npr[_var_number2_npr_idx[var_num_in_npr]] /*has already sorted*/);
 
+      // std::cout << "recovered_val: " << recovered_val << std::endl;
+      // std::cout << "dofs_on_newly_activated_node[0]: " << dofs_on_newly_activated_node[0]
+      //           << std::endl;
       // Assign recovered value to the DOF
       if (!dofs_on_newly_activated_node.empty())
         vec.set(dofs_on_newly_activated_node[0], recovered_val);

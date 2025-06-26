@@ -56,8 +56,8 @@
 
     # --- new for setting IC --- #
     unsolved_blocks = '2'
-    ic_strategy = "IC_POLYNOMIAL IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN IC_DEFAULT"
-    ic_variables = "diff diff2 diff3"
+    ic_strategy = "IC_DEFAULT IC_POLYNOMIAL IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN "
+    ic_variables = "diff3 diff diff2 "
     nearby_element_threshold = 3
     nodal_patch_recovery_uo = 'extrapolation_patch extrapolation_patch2'
   []

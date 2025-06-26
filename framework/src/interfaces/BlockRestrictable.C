@@ -118,8 +118,8 @@ BlockRestrictable::initializeBlockRestrictable(const MooseObject * moose_object)
 
   // when 'block' is set at the [Problem] -> 'block and variable' input should come first
   // before this
-  if (_blocks.empty() && _blk_feproblem->isParamSetByUser("block"))
-    _blocks = _blk_feproblem->getDefaultBlocks();
+  // if (_blocks.empty() && _blk_feproblem->isParamSetByUser("block"))
+  //   _blocks = _blk_feproblem->getDefaultBlocks();
 
   // Store the IDs in a set, handling ANY_BLOCK_ID if supplied
   if (_blk_ids.empty())

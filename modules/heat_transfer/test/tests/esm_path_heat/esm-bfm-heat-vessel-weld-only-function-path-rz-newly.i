@@ -1,14 +1,13 @@
-all_blocks = 'default pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
+all_blocks = 'default pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24 new'
 weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
 
-[GlobalParams]
-  block = 'default '
-[]
+# [GlobalParams]
+# []
 
 [Problem]
-  # block = 'default '
   boundary_restricted_node_integrity_check = false
   boundary_restricted_elem_integrity_check = false
+  block = 'default new'
 []
 
 [Mesh]
@@ -24,6 +23,8 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     input = gmg
   []
 
+  add_subdomain_ids = '26'
+  add_subdomain_names = 'new'
   coord_type = 'RZ'
 
   rz_coord_axis = y
@@ -34,6 +35,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
   [cond]
     order = FIRST
     # initial_condition = 293.15
+    block = 'default new'
   []
 []
 
@@ -68,6 +70,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     use_specific_elements = true
     var = 'cond'
     execute_on = 'INITIAL TIMESTEP_BEGIN'
+    block = 'default new'
   []
 []
 
@@ -84,15 +87,15 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     type = TimedSubdomainModifier
     times = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24'
     blocks_from = 'pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24' # this is block "1" but block ID = "2"
-    blocks_to = 'default default default default default default default default default default default default default default default default default default default default default default default default'
+    blocks_to = 'new new new new new new new new new new new new new new new new new new new new new new new new'
     execute_on = 'INITIAL TIMESTEP_BEGIN'
 
     block = ${all_blocks}
 
     # --- new for setting IC --- #
     unsolved_blocks = ${weld_blocks}
-    ic_strategy = "IC_DEFAULT IC_FUNC"
-    ic_variables = "cond  gaussian_weight"
+    ic_strategy = " IC_FUNC IC_DEFAULT"
+    ic_variables = "  gaussian_weight cond"
     function_for_ic = "gaussian_weight_func"
 
     # nodal_patch_recovery_uo = 'extrapolation_patch_T'
@@ -104,6 +107,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     type = ADGenericConstantMaterial
     prop_names = 'density '
     prop_values = '7960.0               ' # kg/m^3
+    block = 'default new'
   []
 
   [volumetric_heat]
@@ -122,6 +126,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     function_x = "radial_centroid"
     function_y = "axis_centroid"
     function_z = "z_centroid"
+    block = 'default new'
   []
 
   [specific_heat]
@@ -130,6 +135,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     variable = cond
     x = '293.15 373.15 473.15 573.15 673.15 773.15 873.15 973.15 1073.15 1173.15 1273.15 1373.15 1473.15 1573.15 1673.15'
     y = '490 508 532 555 580 603 627 650 650 650 650 650 650 650 650' # J/(kg*k) -> We use J here because the convective heat transfer coefficient
+    block = 'default new'
   []
 
   [thermalconductivity]
@@ -138,6 +144,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     variable = cond
     x = '293.15 373.15 473.15 573.15 673.15 773.15 873.15 973.15 1073.15 1173.15 1273.15 1373.15 1473.15 1573.15 1673.15'
     y = '12.69 13.93 15.48 17.03 18.58 20.13 21.68 23.23 24.78 26.33 27.88 29.43 30.98 32.53 34.08'
+    block = 'default new'
   []
 []
 
@@ -147,16 +154,19 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     variable = cond
     density_name = density
     specific_heat = specific_heat
+    block = 'default new'
   []
   [heat]
     type = ADHeatConduction
     variable = cond
     thermal_conductivity = "thermal_conductivity"
+    block = 'default new'
   []
   [hsource]
     type = ADMatHeatSource
     material_property = 'volumetric_heat'
     variable = cond
+    block = 'default new'
   []
 []
 
@@ -275,6 +285,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
   nl_max_its = 10
   nl_rel_tol = 1e-6
   nl_abs_tol = 1e-10
+
   # dt = 0.5
   dt = 1
   # dtmin = 1.0
