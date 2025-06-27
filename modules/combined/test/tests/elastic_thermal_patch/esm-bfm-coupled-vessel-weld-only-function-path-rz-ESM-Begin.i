@@ -68,27 +68,27 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
 [UserObjects]
   [extrapolation_patch_disp_x]
     type = NodalPatchRecoveryVariable
-    patch_polynomial_order = FIRST
+    patch_polynomial_order = CONSTANT
     use_specific_elements = true
     block = 'default new'
     var = 'disp_x'
-    execute_on = 'INITIAL TIMESTEP_BEGIN'
+    execute_on = 'INITIAL TIMESTEP_END'
   []
   [extrapolation_patch_disp_y]
     type = NodalPatchRecoveryVariable
-    patch_polynomial_order = FIRST
+    patch_polynomial_order = CONSTANT
     use_specific_elements = true
     block = 'default new'
     var = 'disp_y'
-    execute_on = 'INITIAL TIMESTEP_BEGIN'
+    execute_on = 'INITIAL TIMESTEP_END'
   []
   [extrapolation_patch_disp_vm]
     type = NodalPatchRecoveryVariable
-    patch_polynomial_order = FIRST
+    patch_polynomial_order = CONSTANT
     use_specific_elements = true
     block = 'default new'
     var = 'vonmises_stress'
-    execute_on = 'INITIAL TIMESTEP_BEGIN'
+    execute_on = 'INITIAL TIMESTEP_END'
   []
 []
 
@@ -106,7 +106,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     times = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24'
     blocks_from = 'pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24' # this is block "1" but block ID = "2"
     blocks_to = 'new new new new new new new new new new new new new new new new new new new new new new new new'
-    execute_on = 'INITIAL TIMESTEP_BEGIN'
+    execute_on = 'INITIAL TIMESTEP_END'
 
     block = ${all_blocks}
 
@@ -378,7 +378,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
   nl_max_its = 100
   nl_rel_tol = 1e-6
   nl_abs_tol = 1e-10
-  dt = 0.01
+  dt = 0.1
   end_time = 26
 []
 

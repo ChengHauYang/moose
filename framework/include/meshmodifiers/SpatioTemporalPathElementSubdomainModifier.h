@@ -23,6 +23,8 @@ protected:
 
   /// Radius
   const Real _r;
+  /// Function for radius
+  const Function * _function_radius;
 
   /// Within the element test
   bool _within_elem;

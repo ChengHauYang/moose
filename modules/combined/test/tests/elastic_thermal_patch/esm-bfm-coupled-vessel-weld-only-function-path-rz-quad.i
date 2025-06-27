@@ -14,7 +14,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
 [Mesh]
   [gmg]
     type = FileMeshGenerator
-    file = "geometry_xy_swapped.msh"
+    file = "geometry_xy_swapped_quad.msh"
   []
 
   [shift_mesh]
@@ -129,6 +129,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
         eigenstrain_names = eigenstrain
         generate_output = 'vonmises_stress stress_xx stress_yy stress_zz stress_xy stress_yz stress_zx'
         use_automatic_differentiation = true
+        volumetric_locking_correction = true
         block = 'default new'
       []
     []
@@ -283,10 +284,10 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
 
   [heat_source_weave_y]
     type = PiecewiseLinear
-    x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
-    y = '0.0045  0.0045  0.0050  0.0050  0.0050  0.0050 0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055 0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065' # mm -> m
-    # x = '0 500'
-    # y = '0 0'
+    # x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
+    # y = '0.0045  0.0045  0.0050  0.0050  0.0050  0.0050 0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055 0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065' # mm -> m
+    x = '0 500'
+    y = '0 0'
   []
 
   [axis_centroid]

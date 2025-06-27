@@ -102,10 +102,16 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
 
 [MeshModifiers]
   [cut_esm]
-    type = TimedSubdomainModifier
-    times = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24'
-    blocks_from = 'pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24' # this is block "1" but block ID = "2"
-    blocks_to = 'new new new new new new new new new new new new new new new new new new new new new new new new'
+    # type = TimedSubdomainModifier
+    # times = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24'
+    # blocks_from = 'pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24' # this is block "1" but block ID = "2"
+    # blocks_to = 'new new new new new new new new new new new new new new new new new new new new new new new new'
+    # execute_on = 'INITIAL TIMESTEP_BEGIN'
+
+    type = SpatioTemporalPathElementSubdomainModifier
+    path = 'path'
+    function_radius = "source_radius"
+    target_subdomain = 'new'
     execute_on = 'INITIAL TIMESTEP_BEGIN'
 
     block = ${all_blocks}
@@ -283,10 +289,10 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
 
   [heat_source_weave_y]
     type = PiecewiseLinear
-    x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
-    y = '0.0045  0.0045  0.0050  0.0050  0.0050  0.0050 0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055 0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065' # mm -> m
-    # x = '0 500'
-    # y = '0 0'
+    # x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
+    # y = '0.0045  0.0045  0.0050  0.0050  0.0050  0.0050 0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055 0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065' # mm -> m
+    x = '0 500'
+    y = '0 0'
   []
 
   [axis_centroid]

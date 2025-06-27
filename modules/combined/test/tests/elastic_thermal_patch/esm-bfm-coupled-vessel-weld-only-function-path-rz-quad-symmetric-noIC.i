@@ -1,5 +1,7 @@
 all_blocks = 'default pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24 new'
-weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
+# weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
+#npr_order= CONSTANT
+npr_order = FIRST
 
 [GlobalParams]
   displacements = 'disp_x disp_y'
@@ -14,7 +16,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
 [Mesh]
   [gmg]
     type = FileMeshGenerator
-    file = "geometry_xy_swapped.msh"
+    file = "geometry_xy_swapped_quad_symmetric.msh"
   []
 
   [shift_mesh]
@@ -44,7 +46,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
 [SpatioTemporalPaths]
   [path]
     type = CSVPiecewiseLinearSpatioTemporalPath
-    file = 'weld_only_Xiong.csv'
+    file = 'weld_only_Xiong_symmetric.csv'
     verbose = true
   []
 []
@@ -66,9 +68,19 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
 []
 
 [UserObjects]
+
+  [extrapolation_patch_T]
+    type = NodalPatchRecoveryVariable
+    patch_polynomial_order = ${npr_order}
+    use_specific_elements = true
+    block = 'default new'
+    var = 'cond'
+    execute_on = 'INITIAL TIMESTEP_BEGIN'
+  []
+
   [extrapolation_patch_disp_x]
     type = NodalPatchRecoveryVariable
-    patch_polynomial_order = FIRST
+    patch_polynomial_order = ${npr_order}
     use_specific_elements = true
     block = 'default new'
     var = 'disp_x'
@@ -76,7 +88,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
   []
   [extrapolation_patch_disp_y]
     type = NodalPatchRecoveryVariable
-    patch_polynomial_order = FIRST
+    patch_polynomial_order = ${npr_order}
     use_specific_elements = true
     block = 'default new'
     var = 'disp_y'
@@ -84,7 +96,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
   []
   [extrapolation_patch_disp_vm]
     type = NodalPatchRecoveryVariable
-    patch_polynomial_order = FIRST
+    patch_polynomial_order = ${npr_order}
     use_specific_elements = true
     block = 'default new'
     var = 'vonmises_stress'
@@ -111,12 +123,11 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     block = ${all_blocks}
 
     # --- new for setting IC --- #
-    unsolved_blocks = ${weld_blocks}
-    ic_strategy = "IC_DEFAULT IC_FUNC IC_POLYNOMIAL IC_POLYNOMIAL"
-    ic_variables = "cond  gaussian_weight disp_x disp_y"
-    function_for_ic = "gaussian_weight_func"
-
-    nodal_patch_recovery_uo = 'extrapolation_patch_disp_x extrapolation_patch_disp_y'
+    # unsolved_blocks = ${weld_blocks}
+    # ic_strategy = "IC_DEFAULT IC_FUNC IC_POLYNOMIAL IC_POLYNOMIAL"
+    # ic_variables = "cond  gaussian_weight disp_x disp_y"
+    # function_for_ic = "gaussian_weight_func"
+    # nodal_patch_recovery_uo = 'extrapolation_patch_disp_x extrapolation_patch_disp_y'
   []
 []
 
@@ -129,6 +140,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
         eigenstrain_names = eigenstrain
         generate_output = 'vonmises_stress stress_xx stress_yy stress_zz stress_xy stress_yz stress_zx'
         use_automatic_differentiation = true
+        volumetric_locking_correction = true
         block = 'default new'
       []
     []
@@ -283,16 +295,16 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
 
   [heat_source_weave_y]
     type = PiecewiseLinear
-    x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
-    y = '0.0045  0.0045  0.0050  0.0050  0.0050  0.0050 0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055 0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065' # mm -> m
-    # x = '0 500'
-    # y = '0 0'
+    # x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
+    # y = '0.0045  0.0045  0.0050  0.0050  0.0050  0.0050 0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055  0.0055 0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065  0.0065' # mm -> m
+    x = '0 500'
+    y = '0 0'
   []
 
   [axis_centroid]
     type = PiecewiseLinear
     x = '1  2  3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19   20   21   22   23  24'
-    y = '0.103486395 0.103486395 0.106420364 0.100552425 0.106905242 0.100067547 0.107337667 0.099635122 0.107762614 0.099210175 0.108174955 0.098797834 0.108557907 0.098414883 0.108908669 0.09806412 0.10926126 0.097711529 0.109591155 0.097381634 0.109902214 0.097070575 0.110784163 0.096188626'
+    y = '0.1 0.1 0.102933969 0.09706603 0.103418847 0.096581152 0.103851272 0.1 0.104276219 0.09572378 0.10468856 0.095311439 0.105071512 0.094928488 0.105422274 0.094577725 0.105774865 0.094225134 0.10610476 0.093895239 0.106415819 0.09358418 0.107297768 0.092702231'
   []
 
   [radial_centroid_ori]
@@ -378,7 +390,7 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
   nl_max_its = 100
   nl_rel_tol = 1e-6
   nl_abs_tol = 1e-10
-  dt = 0.01
+  dt = 0.2
   end_time = 26
 []
 
