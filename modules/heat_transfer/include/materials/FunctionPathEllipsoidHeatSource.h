@@ -68,4 +68,6 @@ protected:
   const SpatioTemporalPath * _path;
 
   const Real * const _va_integral;
+
+  const Real _t_final;
 };

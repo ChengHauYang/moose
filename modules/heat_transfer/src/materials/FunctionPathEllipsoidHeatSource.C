@@ -55,6 +55,8 @@ FunctionPathEllipsoidHeatSource::validParams()
 
   params.addParam<PostprocessorName>("va_postprocess", "The postprocessor on the source");
 
+  params.set<Real>("t_final") = 0.0;
+
   params.addClassDescription("Double ellipsoid volumetric source heat with function path.");
 
   return params;
@@ -89,7 +91,8 @@ FunctionPathEllipsoidHeatSource::FunctionPathEllipsoidHeatSource(const InputPara
     _volumetric_heat(declareADProperty<Real>("volumetric_heat")),
     _path(isParamSetByUser("path") ? &getUserObjectByName<SpatioTemporalPath>("path") : nullptr),
     _va_integral(isParamSetByUser("va_postprocess") ? &getPostprocessorValue("va_postprocess")
-                                                    : nullptr)
+                                                    : nullptr),
+    _t_final(getParam<Real>("t_final"))
 {
 
   if (!_function_rx && _rx == 0.0)
@@ -106,6 +109,13 @@ FunctionPathEllipsoidHeatSource::FunctionPathEllipsoidHeatSource(const InputPara
 void
 FunctionPathEllipsoidHeatSource::computeQpProperties()
 {
+  if (_t_final != 0.0 && _t > _t_final)
+  {
+    // If t_final is set and the current time exceeds it, set the heat source to zero
+    _volumetric_heat[_qp] = 0.0;
+    return;
+  }
+
   const Real & x = _q_point[_qp](0);
   const Real & y = _q_point[_qp](1);
   const Real & z = _q_point[_qp](2);

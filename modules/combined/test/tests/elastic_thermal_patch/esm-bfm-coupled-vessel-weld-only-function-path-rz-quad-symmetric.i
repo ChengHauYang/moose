@@ -179,6 +179,7 @@ npr_order = FIRST
     function_y = "axis_centroid"
     function_z = "z_centroid"
     block = 'default new'
+    t_final = 24
   []
 
   [specific_heat]
@@ -369,22 +370,16 @@ npr_order = FIRST
     neglect_side_btw_two_default_blocks = true
   [] # Convective End
 
-  [anchor_axis]
-    type = DirichletBC
-    variable = disp_y
-    boundary = 'left'
-    value = 0.0
-  []
   [disp_zero_x]
     type = DirichletBC
     variable = disp_x
-    boundary = 'fix_pt'
+    boundary = 'fix_pt_left fix_pt_right'
     value = 0.0
   []
   [disp_zero_y]
     type = DirichletBC
     variable = disp_y
-    boundary = 'fix_pt'
+    boundary = 'fix_pt_left fix_pt_right'
     value = 0.0
   []
 []
@@ -398,11 +393,16 @@ npr_order = FIRST
   nl_rel_tol = 1e-6
   nl_abs_tol = 1e-10
   dt = 0.2
-  end_time = 26
+  end_time = 35
 []
 
 [Outputs]
   exodus = true
+  [checkpoint]
+    type = Checkpoint
+    num_files = 1
+    time_step_interval = 25
+  []
 []
 
 [Postprocessors]
