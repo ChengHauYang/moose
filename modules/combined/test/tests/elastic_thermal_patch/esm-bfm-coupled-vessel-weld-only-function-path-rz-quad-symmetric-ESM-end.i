@@ -231,14 +231,24 @@ npr_order = FIRST
     block = 'new'
   []
 
-  [CTE]
+  [CTE_base]
     type = ADComputeInstantaneousThermalExpansionFunctionEigenstrain
     eigenstrain_name = eigenstrain
     stress_free_temperature = 293.15 # TODO: double check
     thermal_expansion_function = thermal_expansion_fn
     temperature = cond
     outputs = exodus
-    block = 'default new'
+    block = 'default'
+  []
+
+  [CTE_new]
+    type = ADComputeInstantaneousThermalExpansionFunctionEigenstrain
+    eigenstrain_name = eigenstrain
+    stress_free_temperature = 923.15 # melting temperature
+    thermal_expansion_function = thermal_expansion_fn
+    temperature = cond
+    outputs = exodus
+    block = 'new'
   []
 
   [stress]

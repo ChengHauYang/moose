@@ -1,5 +1,4 @@
-all_blocks = 'default pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24 new'
-weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
+# weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
 #npr_order= CONSTANT
 npr_order = FIRST
 
@@ -11,23 +10,11 @@ npr_order = FIRST
   block = 'default new'
   boundary_restricted_node_integrity_check = false
   boundary_restricted_elem_integrity_check = false
-  # restart_file_base = esm-bfm-coupled-vessel-weld-only-function-path-rz-quad-symmetric_checkpoint_cp/LATEST
+  restart_file_base = esm-bfm-coupled-vessel-weld-only-function-path-rz-quad-symmetric_checkpoint_cp/LATEST
 []
 
 [Mesh]
-  [gmg]
-    type = FileMeshGenerator
-    file = "geometry_xy_swapped_quad_symmetric.msh"
-  []
-
-  [shift_mesh]
-    type = TransformGenerator
-    transform = TRANSLATE
-    vector_value = '0.055 0.0 0.0' # translation in x, y, z directions
-    input = gmg
-  []
-
-  # file = esm-bfm-coupled-vessel-weld-only-function-path-rz-quad-symmetric_checkpoint_cp/LATEST
+  file = esm-bfm-coupled-vessel-weld-only-function-path-rz-quad-symmetric_checkpoint_cp/LATEST
   uniform_refine = 0
 
   coord_type = 'RZ'
@@ -110,37 +97,13 @@ npr_order = FIRST
   []
 []
 
-[ICs]
-  [temperature_IC]
-    type = FunctionIC
-    variable = cond
-    function = melting_temperature
-  []
-[]
-
-[MeshModifiers]
-  [cut_esm]
-    type = TimedSubdomainModifier
-    times = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24'
-    blocks_from = 'pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24' # this is block "1" but block ID = "2"
-    blocks_to = 'new new new new new new new new new new new new new new new new new new new new new new new new'
-    execute_on = 'INITIAL TIMESTEP_BEGIN'
-
-    block = ${all_blocks}
-
-    # --- new for setting IC --- #
-    unsolved_blocks = ${weld_blocks}
-    # ic_strategy = "IC_DEFAULT IC_FUNC IC_POLYNOMIAL IC_POLYNOMIAL"
-    # ic_variables = "cond  gaussian_weight disp_x disp_y"
-    # function_for_ic = "gaussian_weight_func"
-    # nodal_patch_recovery_uo = 'extrapolation_patch_disp_x extrapolation_patch_disp_y'
-
-    ic_strategy = "IC_POLYNOMIAL  IC_FUNC IC_POLYNOMIAL IC_POLYNOMIAL"
-    ic_variables = "cond gaussian_weight disp_x disp_y"
-    function_for_ic = "gaussian_weight_func"
-    nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y'
-  []
-[]
+# [ICs]
+#   [temperature_IC]
+#     type = FunctionIC
+#     variable = cond
+#     function = melting_temperature
+#   []
+# []
 
 [Physics]
   [SolidMechanics]
@@ -236,24 +199,14 @@ npr_order = FIRST
     block = 'new'
   []
 
-  [CTE_base]
+  [CTE]
     type = ADComputeInstantaneousThermalExpansionFunctionEigenstrain
     eigenstrain_name = eigenstrain
     stress_free_temperature = 293.15 # TODO: double check
     thermal_expansion_function = thermal_expansion_fn
     temperature = cond
     outputs = exodus
-    block = 'default'
-  []
-
-  [CTE_new]
-    type = ADComputeInstantaneousThermalExpansionFunctionEigenstrain
-    eigenstrain_name = eigenstrain
-    stress_free_temperature = 923.15 # melting temperature
-    thermal_expansion_function = thermal_expansion_fn
-    temperature = cond
-    outputs = exodus
-    block = 'new'
+    block = 'default new'
   []
 
   [stress]
@@ -407,7 +360,7 @@ npr_order = FIRST
   nl_rel_tol = 1e-6
   nl_abs_tol = 1e-10
   dt = 0.2
-  end_time = 35
+  end_time = 100
 []
 
 [Outputs]

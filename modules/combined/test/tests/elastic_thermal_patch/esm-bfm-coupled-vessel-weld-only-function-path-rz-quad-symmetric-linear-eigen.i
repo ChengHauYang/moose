@@ -256,6 +256,70 @@ npr_order = FIRST
     block = 'new'
   []
 
+  [radial_return_stress_load_base]
+    type = ADComputeMultipleInelasticStress
+    inelastic_models = 'isoplasticity_base neg_creep'
+    # inelastic_models = 'voce_plasticity creep'
+    max_iterations = 1000 #default = 50
+    relative_tolerance = 1e-08 #default = 1e-05
+    absolute_tolerance = 1e-11 # dfault = 1e-05
+    perform_finite_strain_rotations = false
+    block = 'default'
+  []
+
+  [radial_return_stress_load_new]
+    type = ADComputeMultipleInelasticStress
+    inelastic_models = 'isoplasticity_new neg_creep'
+    # inelastic_models = 'voce_plasticity creep'
+    max_iterations = 1000 #default = 50
+    relative_tolerance = 1e-08 #default = 1e-05
+    absolute_tolerance = 1e-11 # dfault = 1e-05
+    perform_finite_strain_rotations = false
+    block = 'new'
+  []
+
+  [isoplasticity_base]
+    type = ADIsotropicPlasticityStressUpdate
+    yield_stress = 290e6 # room temperature
+    hardening_function = isohard
+    block = 'default'
+    max_inelastic_increment = 0.0001
+    relative_tolerance = 1e-08
+    absolute_tolerance = 1e-11
+  []
+
+  [isoplasticity_new]
+    type = ADIsotropicPlasticityStressUpdate
+    yield_stress = 335e6 # room temperature
+    hardening_function = isohard
+    block = 'new'
+    max_inelastic_increment = 0.0001
+    relative_tolerance = 1e-08
+    absolute_tolerance = 1e-11
+  []
+
+  [neg_creep]
+    type = ADPowerLawCreepStressUpdate
+    temperature = T
+    # Creep coefficient A unit conversion derivation:
+    # Original unit: A [MPa^{-n}], needs to be converted to SI unit: A [Pa^{-n}]
+    # Since 1 MPa = 10^6 Pa, the conversion is:
+    # A [Pa^{-n}] = A [MPa^{-n}] × (10^6)^{-n}
+    #             = 1.82 × 10^{-4} × (10^6)^{-6.4656}
+    #             = 1.82 × 10^{-4} × 10^{-6 × 6.4656}
+    #             = 1.82 × 10^{-4} × 10^{-38.7936}
+    #             = 1.82 × 10^{-42.7936}
+    #             ≈ 1.82e-43  # Final value used in the MOOSE model
+
+    coefficient = 1.82e-43 # Pa^-n·s^-1
+    n_exponent = 6.4656
+    activation_energy = 314000 # J/mol
+    gas_constant = 8.3143 # J/mol·K
+    block = 'default new'
+    relative_tolerance = 1e-08
+    absolute_tolerance = 1e-11
+  []
+
   [stress]
     type = ADComputeLinearElasticStress
     block = 'default new'
