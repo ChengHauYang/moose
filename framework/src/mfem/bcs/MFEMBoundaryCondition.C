@@ -1,3 +1,12 @@
+//* This file is part of the MOOSE framework
+//* https://mooseframework.inl.gov
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifdef MFEM_ENABLED
 
 #include "MFEMBoundaryCondition.h"
@@ -33,7 +42,11 @@ MFEMBoundaryCondition::MFEMBoundaryCondition(const InputParameters & parameters)
   {
     _bdr_attributes[i] = std::stoi(_boundary_names[i]);
   }
-  mfem::ParMesh & mesh(getMFEMProblem().mesh().getMFEMParMesh());
+  mfem::ParMesh & mesh(*getMFEMProblem()
+                            .getProblemData()
+                            .gridfunctions.GetRef(_test_var_name)
+                            .ParFESpace()
+                            ->GetParMesh());
   mfem::common::AttrToMarker(mesh.bdr_attributes.Max(), _bdr_attributes, _bdr_markers);
 }
 

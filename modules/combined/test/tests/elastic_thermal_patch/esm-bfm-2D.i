@@ -47,7 +47,9 @@
     execute_on = 'TIMESTEP_END'
 
     # --- new for setting IC --- #
-    unsolved_blocks = '1'
+
+    old_subdomain_reinitialized = false
+    reinitialize_subdomain_ids = '0'
     ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
   []
 []

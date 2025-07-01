@@ -1,3 +1,12 @@
+//* This file is part of the MOOSE framework
+//* https://mooseframework.inl.gov
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifdef MFEM_ENABLED
 
 #pragma once
@@ -30,13 +39,14 @@ public:
 
   bool isSubdomainRestricted() { return _subdomain_names.size(); }
 
-  mfem::Array<int> & getSubdomains() { return _subdomain_attributes; }
+  mfem::Array<int> & getSubdomains() { return _subdomain_markers; }
 
 protected:
   // Name of (the test variable associated with) the weak form that the kernel is applied to.
   const VariableName & _test_var_name;
   std::vector<SubdomainName> _subdomain_names;
   mfem::Array<int> _subdomain_attributes;
+  mfem::Array<int> _subdomain_markers;
 };
 
 #endif

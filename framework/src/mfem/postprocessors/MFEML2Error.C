@@ -1,3 +1,12 @@
+//* This file is part of the MOOSE framework
+//* https://mooseframework.inl.gov
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifdef MFEM_ENABLED
 
 #include "MFEML2Error.h"
@@ -10,8 +19,8 @@ MFEML2Error::validParams()
 {
   InputParameters params = MFEMPostprocessor::validParams();
   params.addClassDescription(
-      "Computes L2 error $\\left\\Vert u_{ex} - u_{h}\\right\\Vert_{\rm L2}$ for "
-      "gridfucntions using H1 or L2 elements.");
+      "Computes L2 error $\\left\\Vert u_{ex} - u_{h}\\right\\Vert_{\\rm L2}$ for "
+      "gridfunctions using H1 or L2 elements.");
   params.addParam<MFEMScalarCoefficientName>("function",
                                              "The analytic solution to compare against.");
   params.addParam<VariableName>("variable",

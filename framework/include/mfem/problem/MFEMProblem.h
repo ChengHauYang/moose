@@ -1,3 +1,12 @@
+//* This file is part of the MOOSE framework
+//* https://mooseframework.inl.gov
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifdef MFEM_ENABLED
 
 #pragma once
@@ -9,6 +18,7 @@
 #include "MFEMProblemData.h"
 #include "MFEMMesh.h"
 #include "MFEMFunctorMaterial.h"
+#include "MFEMSubMesh.h"
 #include "MFEMVariable.h"
 #include "MFEMBoundaryCondition.h"
 #include "MFEMKernel.h"
@@ -81,6 +91,16 @@ public:
    */
   void initProblemOperator();
 
+  void addSubMesh(const std::string & user_object_name,
+                  const std::string & name,
+                  InputParameters & parameters);
+
+  /**
+   * Add transfers between MultiApps and/or MFEM SubMeshes.
+   */
+  void addTransfer(const std::string & transfer_name,
+                   const std::string & name,
+                   InputParameters & parameters) override;
   /**
    * Override of ExternalProblem::addVariable. Sets a
    * MFEM grid function (and time derivative, for transient problems) to be used in the MFEM solve.

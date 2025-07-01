@@ -74,7 +74,9 @@ ra = 0.006 # e.g., 6 mm
     block = ${all_blocks}
 
     # --- new for setting IC --- #
-    unsolved_blocks = ${weld_blocks}
+
+    old_subdomain_reinitialized = false
+    reinitialize_subdomain_ids = 'default'
     ic_strategy = "IC_POLYNOMIAL"
 
     nodal_patch_recovery_uo = 'extrapolation_patch_T'

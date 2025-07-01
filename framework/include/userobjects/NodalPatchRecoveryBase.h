@@ -12,32 +12,6 @@
 // MOOSE includes
 #include "ElementUserObject.h"
 
-// Hash and equality function for using std::vector<dof_id_type> as unordered_map key
-inline void
-hash_combine(std::size_t & seed, std::size_t value)
-{
-  seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-}
-
-struct DofIDVectorHash
-{
-  std::size_t operator()(const std::vector<dof_id_type> & vec) const
-  {
-    std::size_t seed = vec.size(); // Include size to differentiate [1,2] and [1,2,0]
-    for (const auto & id : vec)
-      hash_combine(seed, std::hash<dof_id_type>()(id));
-    return seed;
-  }
-};
-
-struct DofIDVectorEqual
-{
-  bool operator()(const std::vector<dof_id_type> & a, const std::vector<dof_id_type> & b) const
-  {
-    return a == b;
-  }
-};
-
 class NodalPatchRecoveryBase : public ElementUserObject
 {
 public:
@@ -138,9 +112,10 @@ private:
   bool _use_specific_elements;
 
   /// @brief Cache for least-squares coefficients used in nodal patch recovery.
-  mutable std::
-      unordered_map<std::vector<dof_id_type>, RealEigenVector, DofIDVectorHash, DofIDVectorEqual>
-          _cached_coef;
+  /// Typically, there is a one-to-one mapping from element to coefficients,
+  /// so only a single set of coefficients is cached rather than a full map.
+  mutable std::vector<dof_id_type> _cached_elem_ids;
+  mutable RealEigenVector _cached_coef;
 
   /// Print coefficients of the polynomial to console
   const bool _verbose;

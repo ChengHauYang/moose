@@ -84,7 +84,9 @@
     execute_on = 'TIMESTEP_END'
 
     # --- new for setting IC --- #
-    unsolved_blocks = '1'
+
+    old_subdomain_reinitialized = '0 2'
+    reinitialize_subdomain_ids = '1'
     ic_strategy = "IC_POLYNOMIAL"
 
     nodal_patch_recovery_uo = 'extrapolation_patch_disp_x extrapolation_patch_T'
@@ -202,7 +204,6 @@
     #boundary =  'bottom'
     value = 0.0
   []
-
 []
 
 [Executioner]

@@ -90,7 +90,9 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     block = ${all_blocks}
 
     # --- new for setting IC --- #
-    unsolved_blocks = ${weld_blocks}
+
+    old_subdomain_reinitialized = false
+    reinitialize_subdomain_ids = 'default'
     ic_strategy = "IC_DEFAULT IC_FUNC"
     ic_variables = "cond  gaussian_weight"
     function_for_ic = "gaussian_weight_func"

@@ -1,3 +1,12 @@
+//* This file is part of the MOOSE framework
+//* https://mooseframework.inl.gov
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifdef MFEM_ENABLED
 
 #include "MFEMProblem.h"
@@ -56,9 +65,6 @@ MFEMProblem::addMFEMPreconditioner(const std::string & user_object_name,
                                    InputParameters & parameters)
 {
   FEProblemBase::addUserObject(user_object_name, name, parameters);
-  auto object_ptr = getUserObject<MFEMSolverBase>(name).getSharedPtr();
-
-  getProblemData().jacobian_preconditioner = std::dynamic_pointer_cast<MFEMSolverBase>(object_ptr);
 }
 
 void
@@ -96,7 +102,6 @@ MFEMProblem::addBoundaryCondition(const std::string & bc_name,
   {
     auto object_ptr = getUserObject<MFEMIntegratedBC>(name).getSharedPtr();
     auto bc = std::dynamic_pointer_cast<MFEMIntegratedBC>(object_ptr);
-    bc->getBoundaries();
     if (getProblemData().eqn_system)
     {
       getProblemData().eqn_system->AddIntegratedBC(std::move(bc));
@@ -111,7 +116,6 @@ MFEMProblem::addBoundaryCondition(const std::string & bc_name,
   {
     auto object_ptr = getUserObject<MFEMEssentialBC>(name).getSharedPtr();
     auto mfem_bc = std::dynamic_pointer_cast<MFEMEssentialBC>(object_ptr);
-    mfem_bc->getBoundaries();
     if (getProblemData().eqn_system)
     {
       getProblemData().eqn_system->AddEssentialBC(std::move(mfem_bc));
@@ -475,6 +479,29 @@ const MFEMMesh &
 MFEMProblem::mesh() const
 {
   return const_cast<MFEMProblem *>(this)->mesh();
+}
+
+void
+MFEMProblem::addSubMesh(const std::string & var_type,
+                        const std::string & var_name,
+                        InputParameters & parameters)
+{
+  // Add MFEM SubMesh.
+  FEProblemBase::addUserObject(var_type, var_name, parameters);
+  // Register submesh.
+  MFEMSubMesh & mfem_submesh = getUserObject<MFEMSubMesh>(var_name);
+  getProblemData().submeshes.Register(var_name, mfem_submesh.getSubMesh());
+}
+
+void
+MFEMProblem::addTransfer(const std::string & transfer_name,
+                         const std::string & name,
+                         InputParameters & parameters)
+{
+  if (parameters.get<std::string>("_moose_base") == "MFEMSubMeshTransfer")
+    FEProblemBase::addUserObject(transfer_name, name, parameters);
+  else
+    FEProblemBase::addTransfer(transfer_name, name, parameters);
 }
 
 #endif

@@ -118,7 +118,9 @@
   block = '1 2'
   # within_elem_test = true
   # execute_on_esm = 'TIMESTEP_END'
-  unsolved_blocks = '1'
+
+  old_subdomain_reinitialized = false
+  reinitialize_subdomain_ids = '0 2'
   ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
   ## for heat source
   power = 1

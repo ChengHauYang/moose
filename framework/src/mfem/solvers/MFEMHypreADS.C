@@ -1,3 +1,12 @@
+//* This file is part of the MOOSE framework
+//* https://mooseframework.inl.gov
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifdef MFEM_ENABLED
 
 #include "MFEMHypreADS.h"
@@ -19,16 +28,17 @@ MFEMHypreADS::validParams()
 MFEMHypreADS::MFEMHypreADS(const InputParameters & parameters)
   : MFEMSolverBase(parameters), _mfem_fespace(getUserObject<MFEMFESpace>("fespace"))
 {
+  mfem::Hypre::Init();
   constructSolver(parameters);
 }
 
 void
 MFEMHypreADS::constructSolver(const InputParameters &)
 {
-  auto solver = std::make_shared<mfem::HypreADS>(_mfem_fespace.getFESpace().get());
+  auto solver = std::make_unique<mfem::HypreADS>(_mfem_fespace.getFESpace().get());
   solver->SetPrintLevel(getParam<int>("print_level"));
 
-  _solver = solver;
+  _solver = std::move(solver);
 }
 
 void

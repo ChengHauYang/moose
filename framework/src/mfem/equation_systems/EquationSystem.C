@@ -1,3 +1,12 @@
+//* This file is part of the MOOSE framework
+//* https://mooseframework.inl.gov
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifdef MFEM_ENABLED
 
 #include "EquationSystem.h"
@@ -6,7 +15,16 @@
 namespace Moose::MFEM
 {
 
-EquationSystem::~EquationSystem() { _h_blocks.DeleteAll(); }
+EquationSystem::~EquationSystem() { DeleteAllBlocks(); }
+
+void
+EquationSystem::DeleteAllBlocks()
+{
+  for (const auto i : make_range(_h_blocks.NumRows()))
+    for (const auto j : make_range(_h_blocks.NumCols()))
+      delete _h_blocks(i, j);
+  _h_blocks.DeleteAll();
+}
 
 bool
 EquationSystem::VectorContainsName(const std::vector<std::string> & the_vector,
@@ -119,7 +137,7 @@ EquationSystem::ApplyEssentialBCs()
     global_ess_markers = 0;
     for (auto & bc : bcs)
     {
-      bc->ApplyBC(trial_gf, *pmesh);
+      bc->ApplyBC(trial_gf);
 
       mfem::Array<int> ess_bdrs(bc->getBoundaries());
       for (auto it = 0; it != pmesh->bdr_attributes.Max(); ++it)
@@ -161,16 +179,17 @@ EquationSystem::FormSystem(mfem::OperatorHandle & op,
   auto blf = _blfs.Get(test_var_name);
   auto lf = _lfs.Get(test_var_name);
   mfem::BlockVector aux_x, aux_rhs;
-  mfem::OperatorPtr * aux_a = new mfem::OperatorPtr;
+  mfem::OperatorPtr aux_a;
 
-  blf->FormLinearSystem(_ess_tdof_lists.at(0), *(_xs.at(0)), *lf, *aux_a, aux_x, aux_rhs);
+  blf->FormLinearSystem(_ess_tdof_lists.at(0), *(_xs.at(0)), *lf, aux_a, aux_x, aux_rhs);
 
   trueX.GetBlock(0) = aux_x;
   trueRHS.GetBlock(0) = aux_rhs;
   trueX.SyncFromBlocks();
   trueRHS.SyncFromBlocks();
 
-  op.Reset(aux_a->Ptr());
+  op.Reset(aux_a.Ptr());
+  aux_a.SetOperatorOwner(false);
 }
 
 void
@@ -180,7 +199,7 @@ EquationSystem::FormLegacySystem(mfem::OperatorHandle & op,
 {
 
   // Allocate block operator
-  _h_blocks.DeleteAll();
+  DeleteAllBlocks();
   _h_blocks.SetSize(_test_var_names.size(), _test_var_names.size());
   // Form diagonal blocks.
   for (const auto i : index_range(_test_var_names))
@@ -190,7 +209,6 @@ EquationSystem::FormLegacySystem(mfem::OperatorHandle & op,
     auto lf = _lfs.Get(test_var_name);
     mfem::Vector aux_x, aux_rhs;
     mfem::HypreParMatrix * aux_a = new mfem::HypreParMatrix;
-    // Ownership of aux_a goes to the blf
     blf->FormLinearSystem(_ess_tdof_lists.at(i), *(_xs.at(i)), *lf, *aux_a, aux_x, aux_rhs);
     _h_blocks(i, i) = aux_a;
     trueX.GetBlock(i) = aux_x;
@@ -212,7 +230,6 @@ EquationSystem::FormLegacySystem(mfem::OperatorHandle & op,
       {
         auto mblf = _mblfs.Get(test_var_name)->Get(trial_var_name);
         mfem::HypreParMatrix * aux_a = new mfem::HypreParMatrix;
-        // Ownership of aux_a goes to the blf
         mblf->FormRectangularLinearSystem(_ess_tdof_lists.at(j),
                                           _ess_tdof_lists.at(i),
                                           *(_xs.at(j)),
@@ -474,8 +491,8 @@ TimeDependentEquationSystem::BuildBilinearForms()
     auto b_integs = blf->GetBBFI();
     auto markers = blf->GetBBFI_Marker();
 
-    mfem::SumIntegrator * sum = new mfem::SumIntegrator;
-    ScaleIntegrator * scaled_sum = new ScaleIntegrator(sum, _dt_coef.constant, false);
+    mfem::SumIntegrator * sum = new mfem::SumIntegrator(false);
+    ScaleIntegrator * scaled_sum = new ScaleIntegrator(sum, _dt_coef.constant, true);
 
     for (int i = 0; i < integs->Size(); ++i)
     {
@@ -503,7 +520,7 @@ TimeDependentEquationSystem::FormLegacySystem(mfem::OperatorHandle & op,
 {
 
   // Allocate block operator
-  _h_blocks.DeleteAll();
+  DeleteAllBlocks();
   _h_blocks.SetSize(_test_var_names.size(), _test_var_names.size());
   // Form diagonal blocks.
   for (const auto i : index_range(_test_var_names))
@@ -524,7 +541,6 @@ TimeDependentEquationSystem::FormLegacySystem(mfem::OperatorHandle & op,
 
     // Form linear system for operator acting on vector of du/dt
     mfem::HypreParMatrix * aux_a = new mfem::HypreParMatrix;
-    // Ownership of aux_a goes to the blf
     td_blf->FormLinearSystem(_ess_tdof_lists.at(i), bc_x, *lf, *aux_a, aux_x, aux_rhs);
     _h_blocks(i, i) = aux_a;
     truedXdt.GetBlock(i) = aux_x;
@@ -562,9 +578,8 @@ TimeDependentEquationSystem::FormSystem(mfem::OperatorHandle & op,
   bc_x /= _dt_coef.constant;
 
   // Form linear system for operator acting on vector of du/dt
-  mfem::OperatorPtr * aux_a = new mfem::OperatorPtr;
-  // Ownership of aux_a goes to the blf
-  td_blf->FormLinearSystem(_ess_tdof_lists.at(0), bc_x, *lf, *aux_a, aux_x, aux_rhs);
+  mfem::OperatorPtr aux_a;
+  td_blf->FormLinearSystem(_ess_tdof_lists.at(0), bc_x, *lf, aux_a, aux_x, aux_rhs);
 
   truedXdt.GetBlock(0) = aux_x;
   trueRHS.GetBlock(0) = aux_rhs;
@@ -572,7 +587,8 @@ TimeDependentEquationSystem::FormSystem(mfem::OperatorHandle & op,
   trueRHS.SyncFromBlocks();
 
   // Create monolithic matrix
-  op.Reset(aux_a->Ptr());
+  op.Reset(aux_a.Ptr());
+  aux_a.SetOperatorOwner(false);
 }
 
 void

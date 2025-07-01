@@ -68,7 +68,9 @@
     execute_on = 'TIMESTEP_END'
 
     # --- new for setting IC --- #
-    unsolved_blocks = '1'
+
+    old_subdomain_reinitialized = false
+    reinitialize_subdomain_ids = '0'
     ic_strategy = "IC_POLYNOMIAL_THRESHOLD"
     nearby_element_threshold = 3
 
@@ -85,7 +87,9 @@
 #   target_subdomain = 0
 #   radius = 0.03
 #   execute_on_esm = 'TIMESTEP_END'
-#   unsolved_blocks = '1'
+#
+# old_subdomain_reinitialized = false
+# reinitialize_subdomain_ids = '1'
 #   ic_strategy = "IC_POLYNOMIAL_THRESHOLD"
 #   nearby_element_threshold = 3
 #   nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y'
@@ -117,7 +121,9 @@
 #     execute_on = 'TIMESTEP_BEGIN'
 
 #     # --- new for setting IC --- #
-#     unsolved_blocks = '1'
+#
+# old_subdomain_reinitialized = false
+# reinitialize_subdomain_ids = '1'
 #     ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
 #   []
 # []

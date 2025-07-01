@@ -297,12 +297,6 @@ public:
   virtual ArrayMooseVariable & getArrayVariable(const THREAD_ID tid,
                                                 const std::string & var_name) = 0;
 
-  /// Returns the variable name of a component of an array variable
-  static std::string arrayVariableComponent(const std::string & var_name, unsigned int i)
-  {
-    return var_name + "_" + std::to_string(i);
-  }
-
   /// Returns a Boolean indicating whether any system contains a variable with the name provided
   virtual bool hasScalarVariable(const std::string & var_name) const = 0;
 
@@ -515,8 +509,6 @@ public:
   updateGeomSearch(GeometricSearchData::GeometricSearchType type = GeometricSearchData::ALL) = 0;
 
   virtual GeometricSearchData & geomSearchData() = 0;
-
-  virtual void meshChanged();
 
   /**
    * Adds the given material property to a storage map based on block ids

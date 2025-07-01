@@ -1,6 +1,19 @@
+//* This file is part of the MOOSE framework
+//* https://mooseframework.inl.gov
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifdef MFEM_ENABLED
 
 #include "MFEMKernel.h"
+#include "MFEMProblem.h"
+#include "libmesh/ignore_warnings.h"
+#include "mfem/miniapps/common/mesh_extras.hpp"
+#include "libmesh/restore_warnings.h"
 
 InputParameters
 MFEMKernel::validParams()
@@ -27,6 +40,8 @@ MFEMKernel::MFEMKernel(const InputParameters & parameters)
   {
     _subdomain_attributes[i] = std::stoi(_subdomain_names[i]);
   }
+  mfem::ParMesh & mesh(getMFEMProblem().mesh().getMFEMParMesh());
+  mfem::common::AttrToMarker(mesh.attributes.Max(), _subdomain_attributes, _subdomain_markers);
 }
 
 #endif

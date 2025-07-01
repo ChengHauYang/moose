@@ -1,3 +1,12 @@
+//* This file is part of the MOOSE framework
+//* https://mooseframework.inl.gov
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifdef MFEM_ENABLED
 
 #include "MFEMHyprePCG.h"
@@ -21,54 +30,35 @@ MFEMHyprePCG::validParams()
   return params;
 }
 
-MFEMHyprePCG::MFEMHyprePCG(const InputParameters & parameters)
-  : MFEMSolverBase(parameters),
-    _preconditioner(isParamSetByUser("preconditioner")
-                        ? getMFEMProblem().getProblemData().jacobian_preconditioner
-                        : nullptr)
+MFEMHyprePCG::MFEMHyprePCG(const InputParameters & parameters) : MFEMSolverBase(parameters)
 {
+  mfem::Hypre::Init();
   constructSolver(parameters);
 }
 
 void
 MFEMHyprePCG::constructSolver(const InputParameters &)
 {
-
   auto solver =
-      std::make_shared<mfem::HyprePCG>(getMFEMProblem().mesh().getMFEMParMesh().GetComm());
+      std::make_unique<mfem::HyprePCG>(getMFEMProblem().mesh().getMFEMParMesh().GetComm());
   solver->SetTol(getParam<mfem::real_t>("l_tol"));
   solver->SetAbsTol(getParam<mfem::real_t>("l_abs_tol"));
   solver->SetMaxIter(getParam<int>("l_max_its"));
   solver->SetPrintLevel(getParam<int>("print_level"));
-
-  if (_preconditioner)
-  {
-    auto hypre_preconditioner =
-        std::dynamic_pointer_cast<mfem::HypreSolver>(_preconditioner->getSolver());
-    if (!hypre_preconditioner)
-      mooseError("Hypre GMRES preconditioner must be a Hypre Solver");
-
-    solver->SetPreconditioner(*hypre_preconditioner);
-  }
-
-  _solver = solver;
+  setPreconditioner(*solver);
+  _solver = std::move(solver);
 }
 
 void
 MFEMHyprePCG::updateSolver(mfem::ParBilinearForm & a, mfem::Array<int> & tdofs)
 {
-
   if (_lor && _preconditioner)
     mooseError("LOR solver cannot take a preconditioner");
 
   if (_preconditioner)
   {
     _preconditioner->updateSolver(a, tdofs);
-    auto hypre_preconditioner =
-        std::dynamic_pointer_cast<mfem::HypreSolver>(_preconditioner->getSolver());
-    auto solver = std::dynamic_pointer_cast<mfem::HyprePCG>(_solver);
-    solver->SetPreconditioner(*hypre_preconditioner);
-    _solver = solver;
+    setPreconditioner(static_cast<mfem::HyprePCG &>(*_solver));
   }
   else if (_lor)
   {

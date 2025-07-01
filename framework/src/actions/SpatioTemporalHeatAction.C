@@ -37,11 +37,6 @@ SpatioTemporalHeatAction::validParams()
                         "Switch between using the within element test or the centroid test.");
 
   // for ESM to set the initial condition
-  params.addParam<std::vector<SubdomainName>>(
-      "unsolved_blocks",
-      {},
-      "If the region has the unsolved blocks, you should set this parameter to turn on the "
-      "extrapolation of the solution to the newly activated elements.");
   MooseEnum init_strategy("IC_DEFAULT IC_POLYNOMIAL "
                           "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN IC_POLYNOMIAL_THRESHOLD IC_FUNC",
                           "IC_DEFAULT");
@@ -111,8 +106,6 @@ SpatioTemporalHeatAction::act()
     esm_params.set<std::vector<SubdomainName>>("block") =
         getParam<std::vector<SubdomainName>>("block");
     esm_params.set<ExecFlagEnum>("execute_on") = getParam<ExecFlagEnum>("execute_on_esm");
-    esm_params.set<std::vector<SubdomainName>>("unsolved_blocks") =
-        getParam<std::vector<SubdomainName>>("unsolved_blocks");
     esm_params.set<std::vector<MooseEnum>>("ic_strategy") =
         getParam<std::vector<MooseEnum>>("ic_strategy");
     esm_params.set<std::vector<UserObjectName>>("nodal_patch_recovery_uo") =

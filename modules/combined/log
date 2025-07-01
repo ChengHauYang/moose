@@ -79,7 +79,9 @@ index 379b3541f1..0000000000
 -    execute_on = 'TIMESTEP_BEGIN'
 -
 -    # --- new for setting IC --- #
--    unsolved_blocks = '1'
+-
+    old_subdomain_reinitialized = false
+    reinitialize_subdomain_ids = '1'
 -    ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
 -  []
 -[]
@@ -271,7 +273,9 @@ index e3d4101e61..0000000000
 -    execute_on = 'TIMESTEP_END'
 -
 -    # --- new for setting IC --- #
--    unsolved_blocks = '1'
+-
+    old_subdomain_reinitialized = false
+    reinitialize_subdomain_ids = '1'
 -    ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
 -  []
 -[]

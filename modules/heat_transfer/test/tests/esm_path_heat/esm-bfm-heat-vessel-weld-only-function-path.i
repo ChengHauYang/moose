@@ -1,5 +1,5 @@
 all_blocks = 'default pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
-weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
+# weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
 
 [GlobalParams]
   block = 'default '
@@ -73,12 +73,13 @@ weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 p
     block = ${all_blocks}
 
     # --- new for setting IC --- #
-    unsolved_blocks = ${weld_blocks}
+
+    old_subdomain_reinitialized = false
+    reinitialize_subdomains = 'default'
     ic_strategy = "IC_POLYNOMIAL IC_FUNC"
     ic_variables = "cond  gaussian_weight"
     function_for_ic = "gaussian_weight_func"
 
-    ic_on_boundary_nodes = true
     nodal_patch_recovery_uo = 'extrapolation_patch_T'
   []
 []

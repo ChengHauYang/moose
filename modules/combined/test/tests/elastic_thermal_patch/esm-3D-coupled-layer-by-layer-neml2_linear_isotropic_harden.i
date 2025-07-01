@@ -136,7 +136,9 @@ neml2_input = linear_isotropic_hardening
     block = '1 2'
 
     # --- new for setting IC --- #
-    unsolved_blocks = '1'
+
+    old_subdomain_reinitialized = false
+    reinitialize_subdomain_ids = '0 2'
     ic_strategy = "IC_POLYNOMIAL"
 
     nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y extrapolation_patch_disp_z'
@@ -153,7 +155,9 @@ neml2_input = linear_isotropic_hardening
 #     execute_on = 'TIMESTEP_BEGIN'
 
 #     # --- new for setting IC --- #
-#     unsolved_blocks = '1'
+#
+# old_subdomain_reinitialized = false
+# reinitialize_subdomain_ids = '1'
 #     ic_strategy = "IC_POLYNOMIAL"
 
 #     nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y extrapolation_patch_disp_z'

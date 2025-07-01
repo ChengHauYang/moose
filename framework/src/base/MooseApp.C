@@ -786,8 +786,10 @@ MooseApp::registerCapabilities()
 #ifdef NEML2_ENABLED
     haveCapability("neml2", doc);
 #else
-    missingCapability(
-        "neml2", doc, "Install neml2 using the scripts/update_and_rebuild_neml2.sh script.");
+    missingCapability("neml2",
+                      doc,
+                      "Install neml2 using the scripts/update_and_rebuild_neml2.sh script, then "
+                      "configure moose with ./configure --with-neml2 --with-libtorch");
 #endif
   }
 
@@ -817,7 +819,7 @@ MooseApp::registerCapabilities()
 
   {
     const auto doc = "NVIDIA GPU parallel computing platform";
-#ifdef CUDA_SUPPORTED
+#ifdef PETSC_HAVE_CUDA
     haveCapability("cuda", doc);
 #else
     missingCapability("cuda", doc, "Add the CUDA bin directory to your path and rebuild PETSc.");
@@ -1112,8 +1114,8 @@ MooseApp::~MooseApp()
     HeapProfilerStop();
 #endif
   _action_warehouse.clear();
-  _executioner.reset();
   _the_warehouse.reset();
+  _executioner.reset();
 
   // Don't wait for implicit destruction of input parameter storage
   _input_parameter_warehouse.reset();

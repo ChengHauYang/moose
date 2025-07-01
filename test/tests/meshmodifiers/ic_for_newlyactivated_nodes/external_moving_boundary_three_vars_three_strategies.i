@@ -2,6 +2,13 @@
   block = '1'
 []
 
+[Problem]
+  kernel_coverage_check = 'only_list'
+  kernel_coverage_block_list = '1'
+  material_coverage_check = 'only_list'
+  material_coverage_block_list = '1'
+[]
+
 [Mesh]
   [gen]
     type = GeneratedMeshGenerator
@@ -62,7 +69,10 @@
     execute_on = 'INITIAL TIMESTEP_END'
 
     # --- new for setting IC --- #
-    unsolved_blocks = '2'
+
+    old_subdomain_reinitialized = false
+    reinitialize_subdomain_ids = '1'
+
     ic_strategy = "IC_POLYNOMIAL IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN IC_POLYNOMIAL_THRESHOLD"
     nearby_element_threshold = 3
     nodal_patch_recovery_uo = 'extrapolation_patch extrapolation_patch2 extrapolation_patch3'

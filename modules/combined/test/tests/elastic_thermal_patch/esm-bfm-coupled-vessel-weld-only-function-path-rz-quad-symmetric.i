@@ -129,7 +129,9 @@ npr_order = FIRST
     block = ${all_blocks}
 
     # --- new for setting IC --- #
-    unsolved_blocks = ${weld_blocks}
+
+    old_subdomain_reinitialized = false
+    reinitialize_subdomain_ids = 'default new'
     # ic_strategy = "IC_DEFAULT IC_FUNC IC_POLYNOMIAL IC_POLYNOMIAL"
     # ic_variables = "cond  gaussian_weight disp_x disp_y"
     # function_for_ic = "gaussian_weight_func"

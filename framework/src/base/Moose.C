@@ -27,8 +27,9 @@
 const ExecFlagType EXEC_NONE = registerDefaultExecFlag("NONE");
 const ExecFlagType EXEC_INITIAL = registerDefaultExecFlag("INITIAL");
 const ExecFlagType EXEC_LINEAR = registerDefaultExecFlag("LINEAR");
-const ExecFlagType EXEC_NONLINEAR_CONVERGENCE = registerDefaultExecFlag("NONLINEAR_CONVERGENCE");
+const ExecFlagType EXEC_LINEAR_CONVERGENCE = registerDefaultExecFlag("LINEAR_CONVERGENCE");
 const ExecFlagType EXEC_NONLINEAR = registerDefaultExecFlag("NONLINEAR");
+const ExecFlagType EXEC_NONLINEAR_CONVERGENCE = registerDefaultExecFlag("NONLINEAR_CONVERGENCE");
 const ExecFlagType EXEC_POSTCHECK = registerDefaultExecFlag("POSTCHECK");
 const ExecFlagType EXEC_TIMESTEP_END = registerDefaultExecFlag("TIMESTEP_END");
 const ExecFlagType EXEC_TIMESTEP_BEGIN = registerDefaultExecFlag("TIMESTEP_BEGIN");
@@ -417,9 +418,17 @@ addActionTypes(Syntax & syntax)
   addTaskDependency("add_elemental_field_variable", "add_mfem_problem_operator");
   addTaskDependency("add_kernel", "add_mfem_problem_operator");
 
+  // add SubMeshes
+  registerMooseObjectTask("add_mfem_submeshes", MFEMSubMesh, false);
+  addTaskDependency("add_mfem_submeshes", "create_problem_complete");
+
+  // add SubMesh transfers
+  appendMooseObjectTask("add_transfer", MFEMSubMeshTransfer);
+
   // add FESpaces
   registerMooseObjectTask("add_mfem_fespaces", MFEMFESpace, false);
   appendMooseObjectTask("add_mfem_fespaces", MFEMFECollection);
+  addTaskDependency("add_mfem_fespaces", "add_mfem_submeshes");
   addTaskDependency("add_variable", "add_mfem_fespaces");
   addTaskDependency("add_aux_variable", "add_mfem_fespaces");
   addTaskDependency("add_elemental_field_variable", "add_mfem_fespaces");
@@ -705,6 +714,7 @@ associateSyntaxInner(Syntax & syntax, ActionFactory & /*action_factory*/)
   registerSyntax("SpatioTemporalHeatAction", "SpatioTemporalHeat");
 
 #ifdef MOOSE_MFEM_ENABLED
+  registerSyntaxTask("AddMFEMSubMeshAction", "SubMeshes/*", "add_mfem_submeshes");
   registerSyntaxTask("AddMFEMFESpaceAction", "FESpaces/*", "add_mfem_fespaces");
   registerSyntaxTask("AddMFEMPreconditionerAction", "Preconditioner/*", "add_mfem_preconditioner");
   registerSyntaxTask("AddMFEMSolverAction", "Solver", "add_mfem_solver");

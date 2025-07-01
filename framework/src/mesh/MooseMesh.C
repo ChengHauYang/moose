@@ -764,7 +764,7 @@ MooseMesh::buildLowerDMesh()
 
       if (build_side)
       {
-        std::unique_ptr<Elem> side_elem(elem->build_side_ptr(side, false));
+        std::unique_ptr<Elem> side_elem(elem->build_side_ptr(side));
 
         // The side will be added with the same processor id as the parent.
         side_elem->processor_id() = elem->processor_id();
@@ -1732,6 +1732,12 @@ MooseMesh::getSubdomainID(const SubdomainName & subdomain_name) const
 
 std::vector<SubdomainID>
 MooseMesh::getSubdomainIDs(const std::vector<SubdomainName> & subdomain_name) const
+{
+  return MooseMeshUtils::getSubdomainIDs(getMesh(), subdomain_name);
+}
+
+std::set<SubdomainID>
+MooseMesh::getSubdomainIDs(const std::set<SubdomainName> & subdomain_name) const
 {
   return MooseMeshUtils::getSubdomainIDs(getMesh(), subdomain_name);
 }
@@ -4321,8 +4327,6 @@ MooseMesh::getPRefinementMapHelper(
     const Elem & elem,
     const std::map<std::pair<ElemType, unsigned int>, std::vector<QpMap>> & map) const
 {
-  mooseAssert(elem.active() && elem.p_refinement_flag() == Elem::JUST_REFINED,
-              "These are the conditions that should be met for requesting a refinement map");
   // We are actually seeking the map stored with the p_level - 1 key, e.g. the refinement map that
   // maps from the previous p_level to this element's p_level
   return libmesh_map_find(map,

@@ -208,6 +208,7 @@ public:
   nonlocalCouplingEntries(const THREAD_ID tid, const unsigned int nl_sys_num);
 
   virtual bool hasVariable(const std::string & var_name) const override;
+  // NOTE: hasAuxiliaryVariable defined in parent class
   bool hasSolverVariable(const std::string & var_name) const;
   using SubProblem::getVariable;
   virtual const MooseVariableFieldBase &
@@ -1735,8 +1736,20 @@ public:
 
   /**
    * Update data after a mesh change.
+   * Iff intermediate_change is true, only perform updates as
+   * necessary to prepare for another mesh change
+   * immediately-subsequent. An example of data that is not updated during an intermediate change is
+   * libMesh System matrix data. An example of data that \emph is updated during an intermediate
+   * change is libMesh System vectors. These vectors are projected or restricted based off of
+   * adaptive mesh refinement or the changing of element subdomain IDs. The flags \p contract_mesh
+   * and \p clean_refinement_flags should generally only be set to true when the mesh has changed
+   * due to mesh refinement. \p contract_mesh deletes children of coarsened elements and renumbers
+   * nodes and elements. \p clean_refinement_flags resets refinement flags such that any subsequent
+   * calls to \p System::restrict_vectors or \p System::prolong_vectors before another AMR step do
+   * not mistakenly attempt to re-do the restriction/prolongation which occurred in this method
    */
-  virtual void meshChanged() override;
+  virtual void
+  meshChanged(bool intermediate_change, bool contract_mesh, bool clean_refinement_flags);
 
   /**
    * Register an object that derives from MeshChangedInterface
@@ -1879,7 +1892,7 @@ public:
   /*
    * @return The MaterialData for the type \p type for thread \p tid
    */
-  MaterialData & getMaterialData(Moose::MaterialDataType type, const THREAD_ID tid = 0);
+  MaterialData & getMaterialData(Moose::MaterialDataType type, const THREAD_ID tid = 0) const;
 
   /**
    * @returns Whether the original matrix nonzero pattern is restored before each Jacobian assembly
@@ -2250,15 +2263,26 @@ public:
 
   bool haveDisplaced() const override final { return _displaced_problem.get(); }
 
+  /// Whether we have linear convergence objects
+  bool hasLinearConvergenceObjects() const;
   /**
-   * Sets the nonlinear convergence object name if there is one
+   * Sets the nonlinear convergence object name(s) if there is one
    */
   void setNonlinearConvergenceNames(const std::vector<ConvergenceName> & convergence_names);
+  /**
+   * Sets the linear convergence object name(s) if there is one
+   */
+  void setLinearConvergenceNames(const std::vector<ConvergenceName> & convergence_names);
 
   /**
-   * Gets the nonlinear convergence object name(s).
+   * Gets the nonlinear system convergence object name(s).
    */
-  std::vector<ConvergenceName> getNonlinearConvergenceNames() const;
+  const std::vector<ConvergenceName> & getNonlinearConvergenceNames() const;
+
+  /**
+   * Gets the linear convergence object name(s).
+   */
+  const std::vector<ConvergenceName> & getLinearConvergenceNames() const;
 
   /**
    * Setter for whether we're computing the scaling jacobian
@@ -2323,23 +2347,21 @@ public:
    */
   unsigned int systemNumForVariable(const VariableName & variable_name) const;
 
-  /**
-   * Whether it will skip further residual evaluations and fail the next nonlinear convergence check
-   */
-  bool getFailNextNonlinearConvergenceCheck() const
-  {
-    return _fail_next_nonlinear_convergence_check;
-  }
+  /// Whether it will skip further residual evaluations and fail the next nonlinear convergence check(s)
+  bool getFailNextNonlinearConvergenceCheck() const { return getFailNextSystemConvergenceCheck(); }
+  /// Whether it will fail the next system convergence check(s), triggering failed step behavior
+  bool getFailNextSystemConvergenceCheck() const { return _fail_next_system_convergence_check; }
 
-  /**
-   * Skip further residual evaluations and fail the next nonlinear convergence check
-   */
-  void setFailNextNonlinearConvergenceCheck() { _fail_next_nonlinear_convergence_check = true; }
+  /// Skip further residual evaluations and fail the next nonlinear convergence check(s)
+  void setFailNextNonlinearConvergenceCheck() { setFailNextSystemConvergenceCheck(); }
+  /// Tell the problem that the system(s) cannot be considered converged next time convergence is checked
+  void setFailNextSystemConvergenceCheck() { _fail_next_system_convergence_check = true; }
 
-  /**
-   * Do not skip further residual evaluations and fail the next nonlinear convergence check
-   */
-  void resetFailNextNonlinearConvergenceCheck() { _fail_next_nonlinear_convergence_check = false; }
+  /// Tell the problem that the nonlinear convergence check(s) may proceed as normal
+  void resetFailNextNonlinearConvergenceCheck() { resetFailNextSystemConvergenceCheck(); }
+  /// Tell the problem that the system convergence check(s) may proceed as normal
+  void resetFailNextSystemConvergenceCheck() { _fail_next_system_convergence_check = false; }
+
   /*
    * Set the status of loop order of execution printing
    * @param print_exec set of execution flags to print on
@@ -2419,6 +2441,11 @@ public:
   const std::vector<SubdomainName> & getDefaultBlocks() const { return *_default_blocks; }
 
 protected:
+  /**
+   * Deprecated. Users should switch to overriding the meshChanged which takes arguments
+   */
+  virtual void meshChanged() {}
+
   /// Create extra tagged vectors and matrices
   void createTagVectors();
 
@@ -2463,7 +2490,9 @@ protected:
   bool _initialized;
 
   /// Nonlinear system(s) convergence name(s)
-  std::vector<ConvergenceName> _nonlinear_convergence_names;
+  std::optional<std::vector<ConvergenceName>> _nonlinear_convergence_names;
+  /// Linear system(s) convergence name(s) (if any)
+  std::optional<std::vector<ConvergenceName>> _linear_convergence_names;
 
   std::set<TagID> _fe_vector_tags;
 
@@ -2485,8 +2514,6 @@ protected:
   Real & _dt;
   Real & _dt_old;
 
-  /// Flag that the nonlinear convergence name has been set
-  bool _set_nonlinear_convergence_names;
   /// Flag that the problem needs to add the default nonlinear convergence
   bool _need_to_add_default_nonlinear_convergence;
 
@@ -2636,15 +2663,6 @@ protected:
 
   /// Objects to be notified when the mesh changes
   std::vector<MeshChangedInterface *> _notify_when_mesh_changes;
-
-  /**
-   * Helper method to update some or all data after a mesh change.
-   *
-   * Iff intermediate_change is true, only perform updates as
-   * necessary to prepare for another mesh change
-   * immediately-subsequent.
-   */
-  void meshChangedHelper(bool intermediate_change = false);
 
   /// Helper to check for duplicate variable names across systems or within a single system
   bool duplicateVariableCheck(const std::string & var_name,
@@ -2921,7 +2939,7 @@ private:
   const bool _force_restart;
   const bool _allow_ics_during_restart;
   const bool _skip_nl_system_check;
-  bool _fail_next_nonlinear_convergence_check;
+  bool _fail_next_system_convergence_check;
   const bool _allow_invalid_solution;
   const bool _show_invalid_solution_console;
   const bool & _immediately_print_invalid_solution;

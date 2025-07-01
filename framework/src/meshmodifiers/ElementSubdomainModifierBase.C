@@ -69,6 +69,12 @@ ElementSubdomainModifierBase::validParams()
       "By default, any element which changes subdomain is reinitialized. If a list of subdomains "
       "(IDs or names) is provided, then only elements whose new subdomain is in the list will be "
       "reinitialized. If an empty list is set, then no elements will be reinitialized.");
+
+  params.addParam<std::vector<SubdomainID>>(
+      "reinitialize_subdomain_ids",
+      {},
+      "List of subdomain IDs to reinitialize. If empty, all subdomains will be reinitialized.");
+
   params.addParam<bool>(
       "old_subdomain_reinitialized",
       true,
@@ -88,12 +94,6 @@ ElementSubdomainModifierBase::validParams()
       "ic_strategy",
       {ic_strategy},
       "The strategy to set the initial condition on the newly activated nodes. ");
-
-  params.addParam<std::vector<SubdomainName>>(
-      "unsolved_blocks",
-      {},
-      "If the region has the unsolved blocks, you should set this parameter to turn on the "
-      "extrapolation of the solution to the newly activated elements.");
 
   params.addParam<std::vector<UserObjectName>>(
       "nodal_patch_recovery_uo",
@@ -127,7 +127,6 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
     _nl_sys(_fe_problem.getNonlinearSystemBase(systemNumber())),
     _aux_sys(_fe_problem.getAuxiliarySystem()),
     _old_subdomain_reinitialized(getParam<bool>("old_subdomain_reinitialized")),
-    _unsolved_blocks(getParam<std::vector<SubdomainName>>("unsolved_blocks")),
     _npr_names(getParam<std::vector<UserObjectName>>("nodal_patch_recovery_uo")),
     _npr_vec(_npr_names.size()),
     _ic_vars_names(getParam<std::vector<VariableName>>("ic_variables")),
@@ -262,22 +261,6 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
         (_nl_sys.hasVariable(var_name)) ? var_num : var_num + _number_of_nl_variables;
   }
 
-  if (!_unsolved_blocks.empty())
-  {
-    const auto vec_ids = _mesh.getSubdomainIDs(_unsolved_blocks);
-    _unsolved_block_ids.insert(vec_ids.begin(), vec_ids.end());
-  }
-
-  bool isAllDefaultOrNoICStrategy =
-      _ic_strategy.empty() ||
-      std::all_of(_ic_strategy.begin(),
-                  _ic_strategy.end(),
-                  [](const ICStrategy & e) { return e == ICStrategy::IC_DEFAULT; });
-
-  if (!isAllDefaultOrNoICStrategy && _unsolved_blocks.empty())
-    mooseError("The unsolved_blocks must be set to use the extrapolation strategy.");
-  if (isAllDefaultOrNoICStrategy && !_unsolved_blocks.empty())
-    mooseError("The unsolved_blocks should not be set to use the default strategy.");
   if (!_npr_vec.empty())
   {
     // Count how many variables use NPR strategy
@@ -291,10 +274,6 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
       {
         _var_number2_npr_idx[_ic_vars_number[i]] = npr_count;
         npr_count++;
-
-        std::cout << "Variable " << _ic_vars_names[i]
-                  << " will use polynomial extrapolation for initial conditions with NPR index "
-                  << npr_count - 1 << "." << std::endl;
       }
     }
 
@@ -348,6 +327,12 @@ ElementSubdomainModifierBase::ElementSubdomainModifierBase(const InputParameters
 void
 ElementSubdomainModifierBase::initialSetup()
 {
+  // Error if both parameters are set
+  if (isParamSetByUser("reinitialize_subdomain_ids") && isParamSetByUser("reinitialize_subdomains"))
+    mooseError("reinitialize_subdomain_ids",
+               "The parameters 'reinitialize_subdomain_ids' and 'reinitialize_subdomains' are "
+               "mutually exclusive. Please use only one of them.");
+
   // When 'apply_initial_conditions' is fully deprecated, change this to 'const' vector
   std::vector<SubdomainName> subdomain_names_to_reinitialize =
       getParam<std::vector<SubdomainName>>("reinitialize_subdomains");
@@ -358,9 +343,13 @@ ElementSubdomainModifierBase::initialSetup()
   else if (isParamSetByUser("apply_initial_conditions"))
     subdomain_names_to_reinitialize = {};
 
-  if (std::find(subdomain_names_to_reinitialize.begin(),
-                subdomain_names_to_reinitialize.end(),
-                "ANY_BLOCK_ID") != subdomain_names_to_reinitialize.end())
+  // Determine which parameter to use
+  if (subdomain_names_to_reinitialize.empty() && isParamSetByUser("reinitialize_subdomain_ids"))
+    _subdomain_ids_to_reinitialize =
+        getParam<std::vector<SubdomainID>>("reinitialize_subdomain_ids");
+  else if (std::find(subdomain_names_to_reinitialize.begin(),
+                     subdomain_names_to_reinitialize.end(),
+                     "ANY_BLOCK_ID") != subdomain_names_to_reinitialize.end())
     _subdomain_ids_to_reinitialize.push_back(Moose::ANY_BLOCK_ID);
   else
     _subdomain_ids_to_reinitialize = _mesh.getSubdomainIDs(subdomain_names_to_reinitialize);
@@ -457,32 +446,25 @@ ElementSubdomainModifierBase::modify(
   if (_displaced_mesh)
     applyMovingBoundaryChanges(*_displaced_mesh);
 
-  if (!_unsolved_blocks.empty())
-  {
-    identifyGloballyActivatedNodes(moved_elems);
-    identifyLocallyOwnedActivatedNodes(moved_elems);
-    computeSetDifference();
-    findMissingNewlyActivatedNodes();
+  if (!_npr_vec.empty())
+    for (auto i : index_range(_ic_vars_number))
+    {
+      const auto var_number = _ic_vars_number[i];
+      if (_var_number2_npr_idx.find(var_number) == _var_number2_npr_idx.end())
+        continue;
 
-    if (!_npr_vec.empty())
-      for (auto i : index_range(_ic_vars_number))
-      {
-        const auto var_number = _ic_vars_number[i];
-        if (_var_number2_npr_idx.find(var_number) == _var_number2_npr_idx.end())
-          continue;
+      const int npr_idx = _var_number2_npr_idx[var_number];
 
-        const int npr_idx = _var_number2_npr_idx[var_number];
-
-        gatherNeighborElementsForActivatedNodes(i);
-        _npr_vec[npr_idx]->cacheAdditionalElements(_solved_elem_ids_for_npr[npr_idx]);
-        _npr_vec[npr_idx]->identifyAdditionalElementsFromOtherProcs();
-        _npr_vec[npr_idx]->synchronizeAebe();
-        _npr_vec[npr_idx]->cleanQueryIDsAndAdditionalElements();
-      }
-  }
+      gatherNeighborElementsForActivatedNodes(i);
+      _npr_vec[npr_idx]->cacheAdditionalElements(_solved_elem_ids_for_npr[npr_idx]);
+      _npr_vec[npr_idx]->identifyAdditionalElementsFromOtherProcs();
+      _npr_vec[npr_idx]->synchronizeAebe();
+      _npr_vec[npr_idx]->cleanQueryIDsAndAdditionalElements();
+    }
 
   // Reinit equation systems
-  _fe_problem.meshChanged();
+  _fe_problem.meshChanged(
+      /*intermediate_change=*/false, /*contract_mesh=*/false, /*clean_refinement_flags=*/false);
 
   // important
   _sys.cleanSerializedSolution();
@@ -757,6 +739,8 @@ ElementSubdomainModifierBase::findReinitializedElemsAndNodes(
   _reinitialized_elems.clear();
   _reinitialized_nodes.clear();
 
+  std::unordered_set<dof_id_type> local_reinitialized_nodes;
+
   for (const auto & [elem_id, subdomain] : moved_elems)
   {
     mooseAssert(_mesh.elemPtr(elem_id)->active(), "Moved elements should be active");
@@ -782,86 +766,36 @@ ElementSubdomainModifierBase::findReinitializedElemsAndNodes(
     for (unsigned int i = 0; i < elem->n_nodes(); ++i)
     {
       if (nodeIsNewlyReinitialized(elem->node_id(i)))
-      {
-        _reinitialized_nodes.insert(elem->node_id(i));
-      }
-    }
-  }
-}
-
-void
-ElementSubdomainModifierBase::identifyGloballyActivatedNodes(
-    const std::unordered_map<dof_id_type, std::pair<SubdomainID, SubdomainID>> & moved_elems)
-{
-  // Clear cached element reinitialization data
-  _first_pass_local_activated_nodes.clear();
-
-  for (const auto & [elem_id, subdomain] : moved_elems)
-  {
-    const Elem * elem = _mesh.elemPtr(elem_id);
-
-    for (unsigned int i = 0; i < elem->n_nodes(); ++i)
-    {
-      const dof_id_type node_id = elem->node_id(i);
-
-      // Skip if not newly activated
-      if (!nodeIsNewlyActivated(node_id))
-        continue;
-
-      // Insert if not already in set
-      _first_pass_local_activated_nodes.insert(node_id);
+        local_reinitialized_nodes.insert(elem->node_id(i));
     }
   }
 
-  gatherCompleteActivatedNodesGlobally();
+  // Convert to vector and allgather across processors
+  std::vector<dof_id_type> local(local_reinitialized_nodes.begin(),
+                                 local_reinitialized_nodes.end());
+
+  std::vector<std::vector<dof_id_type>> gathered;
+  _mesh.comm().allgather(local, gathered);
+
+  // Collect globally unique activated nodes
+  std::unordered_set<dof_id_type> unique_nodes;
+  for (const auto & vec : gathered)
+    unique_nodes.insert(vec.begin(), vec.end());
+
+  // Store globally reinitialized node list
+  _complete_reinitialized_nodes.assign(unique_nodes.begin(), unique_nodes.end());
+  identifyProcessorOwnedReinitializedNodes();
 }
 
 void
-ElementSubdomainModifierBase::identifyLocallyOwnedActivatedNodes(
-    const std::unordered_map<dof_id_type, std::pair<SubdomainID, SubdomainID>> & moved_elems)
+ElementSubdomainModifierBase::identifyProcessorOwnedReinitializedNodes()
 {
-  // Clear cached element reinitialization data
-  _newactivated_nodes.clear();
-
-  for (const auto & [elem_id, subdomain] : moved_elems)
-  {
-    const Elem * elem = _mesh.elemPtr(elem_id);
-
-    for (unsigned int i = 0; i < elem->n_nodes(); ++i)
-    {
-      const dof_id_type node_id = elem->node_id(i);
-      const Node * node = _mesh.nodePtr(node_id);
-
-      // Skip if node is not owned by this processor (the main difference with
-      // identifyGloballyActivatedNodes)
-      if (node->processor_id() != _mesh.processor_id())
-        continue;
-      // this previously cause a bug given that the node is not owned by this processor, but also
-      // not belong to any moved_elems
-
-      // Skip if not newly activated
-      if (!nodeIsNewlyActivated(node_id))
-        continue;
-
-      // Insert if not already in set
-      _newactivated_nodes.insert(node_id);
-    }
-  }
-
-  gatherLocalActivatedNodesGlobally();
-}
-
-void
-ElementSubdomainModifierBase::findMissingNewlyActivatedNodes()
-{
-  for (auto id : _local_own_gather_global_and_complete_activated_nodes_diff)
+  for (auto id : _complete_reinitialized_nodes)
   {
     auto node = _mesh.nodePtr(id);
     if (node->processor_id() == _mesh.processor_id())
-      _newactivated_nodes.insert(id);
+      _reinitialized_nodes.insert(id);
   }
-
-  gatherLocalActivatedNodesGlobally();
 }
 
 bool
@@ -882,39 +816,12 @@ ElementSubdomainModifierBase::subdomainIsReinitialized(SubdomainID id) const
 bool
 ElementSubdomainModifierBase::nodeIsNewlyReinitialized(dof_id_type node_id) const
 {
-  // If any of the node neighbors are already reinitialized, then the node is NOT newly
+  // If any of the node neighbor elements has reinitialized, then the node is NOT newly
   // reinitialized.
   for (auto neighbor_elem_id : _mesh.nodeToElemMap().at(node_id))
     if (subdomainIsReinitialized(_mesh.elemPtr(neighbor_elem_id)->subdomain_id()))
       return false;
   return true;
-}
-
-bool
-ElementSubdomainModifierBase::nodeIsNewlyActivated(dof_id_type node_id) const
-{
-  int total_neighbor_elems;
-
-  total_neighbor_elems = 0;
-  for (auto neighbor_elem_id : _mesh.nodeToElemMap().at(node_id))
-    if (!_unsolved_block_ids.count(_mesh.elemPtr(neighbor_elem_id)->subdomain_id())
-        /*exclude the element that belong to unsolved blocks*/)
-      total_neighbor_elems++;
-
-  int reinitialized_neighbor_elems = 0;
-  for (auto neighbor_elem_id : _mesh.nodeToElemMap().at(node_id))
-    if (std::find(_global_reinitialized_elems.begin(),
-                  _global_reinitialized_elems.end(),
-                  neighbor_elem_id) != _global_reinitialized_elems.end())
-      reinitialized_neighbor_elems++;
-
-  // For quad 9 elements, it also works because the total_neighbor_elems is 1, and the
-  // reinitialized_neighbor_elems is also 1.
-  if (reinitialized_neighbor_elems == total_neighbor_elems)
-    return true;
-
-  // If all elements with the node are reinitialized, then the node is newly reinitialized.
-  return false;
 }
 
 void
@@ -1237,7 +1144,9 @@ ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes(const unsi
         continue;
 
       // Skip if element is unsolved (inactive in computational domain)
-      if (_unsolved_block_ids.count(elem->subdomain_id()))
+      if (std::find(_subdomain_ids_to_reinitialize.begin(),
+                    _subdomain_ids_to_reinitialize.end(),
+                    elem->subdomain_id()) == _subdomain_ids_to_reinitialize.end())
         continue;
 
       BoundingBox bbox = elem->loose_bounding_box();
@@ -1300,7 +1209,9 @@ ElementSubdomainModifierBase::gatherNeighborElementsForActivatedNodes(const unsi
         continue;
 
       // (c) Skip if element is unsolved (inactive in computational domain)
-      if (_unsolved_block_ids.count(elem->subdomain_id()))
+      if (std::find(_subdomain_ids_to_reinitialize.begin(),
+                    _subdomain_ids_to_reinitialize.end(),
+                    elem->subdomain_id()) == _subdomain_ids_to_reinitialize.end())
         continue;
 
       if (_ic_strategy[ic_idx] == ICStrategy::IC_POLYNOMIAL)
@@ -1345,7 +1256,7 @@ ElementSubdomainModifierBase::applyIC_Polynomial(SystemBase & sys,
   DofMap & dof_map = sys.dofMap();
 
   if (is_elemental)
-    for (const auto & elem_id : _global_reinitialized_elems)
+    for (const auto & elem_id : _reinitialized_elems)
     {
       const Elem * elem = _mesh.elemPtr(elem_id);
       if (!elem)
@@ -1366,7 +1277,7 @@ ElementSubdomainModifierBase::applyIC_Polynomial(SystemBase & sys,
         vec.set(dofs_on_reinitialized_elem[0], recovered_val);
     }
   else
-    for (const auto & new_id : _newactivated_nodes)
+    for (const auto & new_id : _reinitialized_nodes)
     {
       const Node * node = _mesh.nodePtr(new_id);
       const Point & x = *node;
@@ -1379,16 +1290,12 @@ ElementSubdomainModifierBase::applyIC_Polynomial(SystemBase & sys,
       const Real recovered_val = _npr_vec[_var_number2_npr_idx[var_num_in_npr]]->nodalPatchRecovery(
           x, _solved_elem_ids_for_npr[_var_number2_npr_idx[var_num_in_npr]] /*has already sorted*/);
 
-      // std::cout << "recovered_val: " << recovered_val << std::endl;
-      // std::cout << "dofs_on_newly_activated_node[0]: " << dofs_on_newly_activated_node[0]
-      //           << std::endl;
       // Assign recovered value to the DOF
       if (!dofs_on_newly_activated_node.empty())
         vec.set(dofs_on_newly_activated_node[0], recovered_val);
     }
 
   vec.close();
-
   vec.localize(*sys.system().current_local_solution, sys.dofMap().get_send_list());
 }
 
@@ -1422,7 +1329,7 @@ ElementSubdomainModifierBase::applyIC_Func(SystemBase & sys,
         vec.set(dofs_on_reinitialized_elem[0], recovered_val);
     }
   else
-    for (const auto & new_id : _newactivated_nodes)
+    for (const auto & new_id : _reinitialized_nodes)
     {
       const Node * node = _mesh.nodePtr(new_id);
       const Point & x = *node;
@@ -1453,62 +1360,4 @@ ElementSubdomainModifierBase::synchronizeReinitializedElems()
   _global_reinitialized_elems.clear();
   for (const auto & vec : gathered)
     _global_reinitialized_elems.insert(_global_reinitialized_elems.end(), vec.begin(), vec.end());
-}
-
-void
-ElementSubdomainModifierBase::gatherCompleteActivatedNodesGlobally()
-{
-  std::vector<dof_id_type> local(_first_pass_local_activated_nodes.begin(),
-                                 _first_pass_local_activated_nodes.end());
-
-  std::vector<std::vector<dof_id_type>> gathered;
-
-  _mesh.comm().allgather(local, gathered);
-
-  std::unordered_set<dof_id_type> unique_nodes;
-
-  for (const auto & vec : gathered)
-    unique_nodes.insert(vec.begin(), vec.end());
-
-  _complete_global_activated_nodes.assign(unique_nodes.begin(), unique_nodes.end());
-}
-
-void
-ElementSubdomainModifierBase::gatherLocalActivatedNodesGlobally()
-{
-  std::vector<dof_id_type> local(_newactivated_nodes.begin(), _newactivated_nodes.end());
-  std::vector<std::vector<dof_id_type>> gathered;
-
-  _mesh.comm().allgather(local, gathered);
-
-  _local_own_gather_global_activated_nodes.clear();
-  for (const auto & vec : gathered)
-    _local_own_gather_global_activated_nodes.insert(
-        _local_own_gather_global_activated_nodes.end(), vec.begin(), vec.end());
-}
-
-void
-ElementSubdomainModifierBase::computeSetDifference()
-{
-  _local_own_gather_global_and_complete_activated_nodes_diff.clear();
-  if (_local_own_gather_global_activated_nodes == _complete_global_activated_nodes)
-    return;
-
-  std::vector<dof_id_type> nodes_sorted = _local_own_gather_global_activated_nodes;
-  std::vector<dof_id_type> temp_sorted = _complete_global_activated_nodes;
-
-  std::sort(nodes_sorted.begin(), nodes_sorted.end());
-  std::sort(temp_sorted.begin(), temp_sorted.end());
-
-  std::vector<dof_id_type> difference;
-  difference.reserve(nodes_sorted.size());
-
-  std::set_difference(temp_sorted.begin(),
-                      temp_sorted.end(),
-                      nodes_sorted.begin(),
-                      nodes_sorted.end(),
-                      std::back_inserter(difference));
-
-  // Store result
-  _local_own_gather_global_and_complete_activated_nodes_diff = std::move(difference);
 }

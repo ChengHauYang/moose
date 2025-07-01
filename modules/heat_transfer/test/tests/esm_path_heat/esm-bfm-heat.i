@@ -45,11 +45,12 @@
 #     execute_on = 'TIMESTEP_END'
 
 #     # --- new for setting IC --- #
-#     unsolved_blocks = '1'
+#
+# old_subdomain_reinitialized = false
+# reinitialize_subdomain_ids = '1'
 #     ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
 #   []
 # []
-
 
 [UserObjects]
   [extrapolation_patch_T]
@@ -71,7 +72,9 @@
   radius = 0.03
   execute_on_esm = 'TIMESTEP_BEGIN'
   # execute_on_esm = 'TIMESTEP_END'
-  unsolved_blocks = '1'
+
+  old_subdomain_reinitialized = false
+  reinitialize_subdomain_ids = '0'
   ic_strategy = "IC_POLYNOMIAL"
   nodal_patch_recovery_uo = "extrapolation_patch_T"
   ## for heat source

@@ -51,7 +51,9 @@ weld_blocks_and_change_to = '0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 2
 #     execute_on = 'TIMESTEP_END'
 
 #     # --- new for setting IC --- #
-#     unsolved_blocks = '1'
+#
+# old_subdomain_reinitialized = false
+# reinitialize_subdomain_ids = '1'
 #     ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
 #   []
 # []
@@ -66,7 +68,9 @@ weld_blocks_and_change_to = '0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 2
 #   radius = 0.03
 #   execute_on_esm = 'TIMESTEP_BEGIN'
 #   # execute_on_esm = 'TIMESTEP_END'
-#   unsolved_blocks = '1'
+#
+# old_subdomain_reinitialized = false
+# reinitialize_subdomain_ids = '1'
 #   ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
 #   ## for heat source
 #   power = 1
@@ -121,7 +125,9 @@ weld_blocks_and_change_to = '0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 2
     block = ${weld_blocks_and_change_to}
 
     # --- new for setting IC --- #
-    # unsolved_blocks = ${weld_blocks}
+    #
+    # old_subdomain_reinitialized = false
+    # reinitialize_subdomain_ids = '33 34 35 36'
     # ic_strategy = "IC_POLYNOMIAL"
 
     # nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y extrapolation_patch_disp_z'

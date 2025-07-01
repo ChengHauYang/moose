@@ -1,3 +1,12 @@
+//* This file is part of the MOOSE framework
+//* https://mooseframework.inl.gov
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifdef MFEM_ENABLED
 
 #include "MFEMConduitDataCollection.h"
@@ -19,7 +28,7 @@ MFEMConduitDataCollection::validParams()
 
 MFEMConduitDataCollection::MFEMConduitDataCollection(const InputParameters & parameters)
   : MFEMDataCollection(parameters),
-    _conduit_dc((_file_base).c_str(), _problem_data.pmesh.get()),
+    _conduit_dc((_file_base).c_str(), &_pmesh),
     _protocol(getParam<MooseEnum>("protocol"))
 {
   _conduit_dc.SetProtocol(_protocol);
