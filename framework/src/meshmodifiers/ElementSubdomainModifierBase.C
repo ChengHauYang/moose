@@ -332,27 +332,34 @@ ElementSubdomainModifierBase::initialSetup()
     mooseError("reinitialize_subdomain_ids",
                "The parameters 'reinitialize_subdomain_ids' and 'reinitialize_subdomains' are "
                "mutually exclusive. Please use only one of them.");
+  if (isParamSetByUser("apply_initial_conditions") &&
+      isParamSetByUser("reinitialize_subdomain_ids"))
+    mooseError("Cannot set both 'apply_initial_conditions' and 'reinitialize_subdomain_ids'. "
+               "Please use only one.");
 
-  // When 'apply_initial_conditions' is fully deprecated, change this to 'const' vector
-  std::vector<SubdomainName> subdomain_names_to_reinitialize =
-      getParam<std::vector<SubdomainName>>("reinitialize_subdomains");
-
-  // When 'apply_initial_conditions' is fully deprecated, remove this block
-  if (isParamSetByUser("apply_initial_conditions") && getParam<bool>("apply_initial_conditions"))
-    subdomain_names_to_reinitialize = {"ANY_BLOCK_ID"};
-  else if (isParamSetByUser("apply_initial_conditions"))
-    subdomain_names_to_reinitialize = {};
-
-  // Determine which parameter to use
-  if (subdomain_names_to_reinitialize.empty() && isParamSetByUser("reinitialize_subdomain_ids"))
+  if (isParamSetByUser("reinitialize_subdomain_ids"))
     _subdomain_ids_to_reinitialize =
         getParam<std::vector<SubdomainID>>("reinitialize_subdomain_ids");
-  else if (std::find(subdomain_names_to_reinitialize.begin(),
-                     subdomain_names_to_reinitialize.end(),
-                     "ANY_BLOCK_ID") != subdomain_names_to_reinitialize.end())
-    _subdomain_ids_to_reinitialize.push_back(Moose::ANY_BLOCK_ID);
   else
-    _subdomain_ids_to_reinitialize = _mesh.getSubdomainIDs(subdomain_names_to_reinitialize);
+  {
+    // When 'apply_initial_conditions' is fully deprecated, change this to 'const' vector
+    std::vector<SubdomainName> subdomain_names_to_reinitialize =
+        getParam<std::vector<SubdomainName>>("reinitialize_subdomains");
+
+    // When 'apply_initial_conditions' is fully deprecated, remove this block
+    if (isParamSetByUser("apply_initial_conditions"))
+      if (getParam<bool>("apply_initial_conditions"))
+        subdomain_names_to_reinitialize = {"ANY_BLOCK_ID"};
+      else
+        subdomain_names_to_reinitialize = {};
+
+    if (std::find(subdomain_names_to_reinitialize.begin(),
+                  subdomain_names_to_reinitialize.end(),
+                  "ANY_BLOCK_ID") != subdomain_names_to_reinitialize.end())
+      _subdomain_ids_to_reinitialize.push_back(Moose::ANY_BLOCK_ID);
+    else
+      _subdomain_ids_to_reinitialize = _mesh.getSubdomainIDs(subdomain_names_to_reinitialize);
+  }
 
   std::set<SubdomainID> set_subdomain_ids_to_reinitialize(_subdomain_ids_to_reinitialize.begin(),
                                                           _subdomain_ids_to_reinitialize.end());
