@@ -64,7 +64,7 @@ left_domain = '${fparse domain_length*9/10}'
 [UserObjects]
   [extrapolation_patch]
     type = NodalPatchRecoveryVariable
-    patch_polynomial_order = ${order}
+    patch_polynomial_order = SECOND #${order}
     use_specific_elements = true
     var = 'diff'
     execute_on = 'TIMESTEP_END'

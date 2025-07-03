@@ -1,5 +1,5 @@
 all_blocks = 'default pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24 new'
-weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
+# weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
 #npr_order= CONSTANT
 npr_order = FIRST
 
@@ -131,7 +131,7 @@ npr_order = FIRST
     # --- new for setting IC --- #
 
     old_subdomain_reinitialized = false
-    reinitialize_subdomain_ids = 'default new'
+    reinitialize_subdomains = 'default new'
     # ic_strategy = "IC_DEFAULT IC_FUNC IC_POLYNOMIAL IC_POLYNOMIAL"
     # ic_variables = "cond  gaussian_weight disp_x disp_y"
     # function_for_ic = "gaussian_weight_func"
@@ -302,7 +302,7 @@ npr_order = FIRST
 
   [neg_creep]
     type = ADPowerLawCreepStressUpdate
-    temperature = T
+    temperature = cond
     # Creep coefficient A unit conversion derivation:
     # Original unit: A [MPa^{-n}], needs to be converted to SI unit: A [Pa^{-n}]
     # Since 1 MPa = 10^6 Pa, the conversion is:
@@ -322,10 +322,11 @@ npr_order = FIRST
     absolute_tolerance = 1e-11
   []
 
-  [stress]
-    type = ADComputeLinearElasticStress
-    block = 'default new'
-  []
+  # we have ADComputeMultipleInelasticStress now, so we do not need this
+  # [stress]
+  #   type = ADComputeLinearElasticStress
+  #   block = 'default new'
+  # []
 []
 
 [Kernels]
@@ -432,6 +433,13 @@ npr_order = FIRST
     x = '0 1  500'
     y = '293.15 923.15 923.15'
   []
+
+  [isohard]
+    type = PiecewiseLinear
+    x = '0 0.002 0.01 10000' # strain
+    y = '2.35e8 2.4e8  4.8e8  4.8e8'  # Pa # stress (Pa)
+  []
+
 []
 
 [BCs]
