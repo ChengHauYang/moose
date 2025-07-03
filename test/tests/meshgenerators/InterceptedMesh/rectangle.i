@@ -1,19 +1,15 @@
+nx = 32
 
 [Mesh]
-  [square_boundary]
-    type = PolyLineMeshGenerator
-    points = '0.0 0.0 0.0
-              4.0 0.0 0.0
-              4.0 4.0 0.0
-              0.0 4.0 0.0'
-    loop = true
-  []
 
   [gen]
-    type = XYDelaunayGenerator
-    boundary = 'square_boundary'
-    desired_area = 0.003
-    refine_boundary = false
+    type = CartesianMeshGenerator
+    dim = 2
+    dx = '4'
+    dy = '4'
+    ix = '${nx}'
+    iy = '${nx}'
+    subdomain_id = '1'
   []
 
   [subdomain]

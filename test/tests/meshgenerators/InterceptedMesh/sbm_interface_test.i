@@ -1,19 +1,13 @@
-
 [Mesh]
-  [square_boundary]
-    type = PolyLineMeshGenerator
-    points = '0.0 0.0 0.0
-              4.0 0.0 0.0
-              4.0 4.0 0.0
-              0.0 4.0 0.0'
-    loop = true
-  []
 
   [gen]
-    type = XYDelaunayGenerator
-    boundary = 'square_boundary'
-    desired_area = 0.003
-    refine_boundary = false
+    type = CartesianMeshGenerator
+    dim = 2
+    dx = '3'
+    dy = '1'
+    ix = '90'
+    iy = '30'
+    subdomain_id = '1'
   []
 
   [subdomain]
@@ -25,13 +19,13 @@
     subdomain_id_false_intercected = 4
     subdomain_id_neighbor_intercepted = 5
     mark_neighbor_of_intercepted = false
-    threshold = 0.5
-    lambda = 1
+    threshold = 1
+    lambda = 0.5
     #outer_boundary = false
     outer_boundary = true
-    water_tight_geo_path = 'star.msh'
-    x_shift = 2.0
-    y_shift = 2.0
+    water_tight_geo_path = 'half_mesh.msh'
+    x_shift = -1.0
+    y_shift = 0.0
     qrule_order = 2
   []
 []
