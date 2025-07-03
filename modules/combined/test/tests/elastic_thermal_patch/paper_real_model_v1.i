@@ -1,7 +1,7 @@
 all_blocks = 'default pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24 new'
 # weld_blocks = ' pass-1 pass-2 pass-3 pass-4 pass-5 pass-6 pass-7 pass-8 pass-9 pass-10 pass-11 pass-12 pass-13 pass-14 pass-15 pass-16 pass-17 pass-18 pass-19 pass-20 pass-21 pass-22 pass-23 pass-24'
 #npr_order= CONSTANT
-npr_order = FIRST
+npr_order = SECOND
 
 [GlobalParams]
   displacements = 'disp_x disp_y'
@@ -475,12 +475,16 @@ npr_order = FIRST
 [Executioner]
   type = Transient
   solve_type = NEWTON
-  petsc_options_iname = '-pc_type'
-  petsc_options_value = 'lu'
-  nl_max_its = 100
+  petsc_options_iname = '-ksp_type -pc_type'
+  petsc_options_value = 'bcgs lu'
+  # petsc_options_iname = '-ksp_type -pc_type -pc_hypre_type'
+  # petsc_options_value = 'gmres hypre boomeramg'
+  # petsc_options_iname = '-ksp_type -pc_type -sub_pc_type'
+  # petsc_options_value = 'gmres asm lu'
+  nl_max_its = 10
   nl_rel_tol = 1e-6
   nl_abs_tol = 1e-10
-  dt = 0.2
+  dt = 0.05
   end_time = 35
 []
 
