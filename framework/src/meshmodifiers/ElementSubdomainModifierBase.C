@@ -1216,19 +1216,19 @@ ElementSubdomainModifierBase::computeFirstLayerNeighborInfo(SystemBase & sys)
   int n_nodal_on_elem =
       _mesh.elemPtr(_mesh.nodeToElemMap().at(_global_newactivated_nodes[0])[0])->n_nodes();
 
-  NumericVector<Number> & ghosted = sys.solution();
-  ghosted.close();
-  auto get_serial = [&]() -> NumericVector<Number> &
-  {
-    // sys.cleanSerializedSolution();
-    // NumericVector<Number> & s = sys.serializedSolution();
-    // ghosted.localize(s); // ghosted  (distributed)   ---MPI gather--->   s
-    //                      // (NumericVector, SERIAL, full length)
-    NumericVector<Number> & s = ghosted;
-    return s;
-  };
+  // NumericVector<Number> & ghosted = sys.solution();
+  // ghosted.close();
+  // auto get_serial = [&]() -> NumericVector<Number> &
+  // {
+  //   // sys.cleanSerializedSolution();
+  //   // NumericVector<Number> & s = sys.serializedSolution();
+  //   // ghosted.localize(s); // ghosted  (distributed)   ---MPI gather--->   s
+  //   //                      // (NumericVector, SERIAL, full length)
+  //   NumericVector<Number> & s = ghosted;
+  //   return s;
+  // };
 
-  NumericVector<Number> & current_solution = get_serial();
+  NumericVector<Number> & current_solution = sys.solution();
 
   DofMap & dof_map = sys.dofMap();
 
@@ -1357,9 +1357,9 @@ ElementSubdomainModifierBase::computeFirstLayerNeighborInfo(SystemBase & sys)
     applyICForNodeList(sys, this_layer_nodes);
 
     // (b) refresh serial so the next layer can read the values just written
-    ghosted = sys.solution();
-    ghosted.close();
-    current_solution = get_serial(); // global solution
+    current_solution.close();
+    sys.system().update();
+    // current_solution = sys.solution(); // global solution
 
     // (c) unlock the next layer
     std::unordered_set<dof_id_type> nodes_in_queue;
