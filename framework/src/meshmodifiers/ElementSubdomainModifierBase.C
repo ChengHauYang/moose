@@ -1247,6 +1247,13 @@ ElementSubdomainModifierBase::projectNprIC(const VariableName & var_name, bool d
     function_parameters.set<Real>("coef_yy") = get(3);
     function_parameters.set<Real>("coef_yx") = get(4);
     function_parameters.set<Real>("coef_xx") = get(5);
+    std::cout << "Assumed 2D order: c, y, x, y^2, yx, x^2" << std::endl;
+    std::cout << "  c    = " << get(0) << std::endl;
+    std::cout << "  y    = " << get(1) << std::endl;
+    std::cout << "  x    = " << get(2) << std::endl;
+    std::cout << "  y^2  = " << get(3) << std::endl;
+    std::cout << "  yx   = " << get(4) << std::endl;
+    std::cout << "  x^2  = " << get(5) << std::endl;
   }
   else if (dim == 3)
   {
@@ -1259,6 +1266,17 @@ ElementSubdomainModifierBase::projectNprIC(const VariableName & var_name, bool d
     function_parameters.set<Real>("coef_yy") = get(7);
     function_parameters.set<Real>("coef_yx") = get(8);
     function_parameters.set<Real>("coef_xx") = get(9);
+    std::cout << "Assumed 3D order: c, z, y, x, z^2, zy, zx, y^2, yx, x^2" << std::endl;
+    std::cout << "  c    = " << get(0) << std::endl;
+    std::cout << "  z    = " << get(1) << std::endl;
+    std::cout << "  y    = " << get(2) << std::endl;
+    std::cout << "  x    = " << get(3) << std::endl;
+    std::cout << "  z^2  = " << get(4) << std::endl;
+    std::cout << "  zy   = " << get(5) << std::endl;
+    std::cout << "  zx   = " << get(6) << std::endl;
+    std::cout << "  y^2  = " << get(7) << std::endl;
+    std::cout << "  yx   = " << get(8) << std::endl;
+    std::cout << "  x^2  = " << get(9) << std::endl;
   }
 
   // Define projection function
@@ -1272,6 +1290,17 @@ ElementSubdomainModifierBase::projectNprIC(const VariableName & var_name, bool d
     const Real x = p(0);
     const Real y = (dim > 1) ? p(1) : 0;
     const Real z = (dim > 2) ? p(2) : 0;
+
+    // std::cout << "  c    = " << parameters.get<Real>("coef_c") << std::endl;
+    // std::cout << "  z    = " << parameters.get<Real>("coef_z") << std::endl;
+    // std::cout << "  y    = " << parameters.get<Real>("coef_y") << std::endl;
+    // std::cout << "  x    = " << parameters.get<Real>("coef_x") << std::endl;
+    // std::cout << "  z^2  = " << parameters.get<Real>("coef_zz") << std::endl;
+    // std::cout << "  zy   = " << parameters.get<Real>("coef_zy") << std::endl;
+    // std::cout << "  zx   = " << parameters.get<Real>("coef_zx") << std::endl;
+    // std::cout << "  y^2  = " << parameters.get<Real>("coef_yy") << std::endl;
+    // std::cout << "  yx   = " << parameters.get<Real>("coef_yx") << std::endl;
+    // std::cout << "  x^2  = " << parameters.get<Real>("coef_xx") << std::endl;
 
     Real val = parameters.get<Real>("coef_c");
 
