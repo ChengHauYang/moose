@@ -1219,6 +1219,12 @@ ElementSubdomainModifierBase::projectNprIC(const VariableName & var_name, bool d
   const auto & coef = _npr_vec[_var_name_to_npr_idx[var_name]]->getCoefficients(
       _solved_elem_ids_for_npr[_var_name_to_npr_idx[var_name]]);
 
+  // for (auto & elem_id : _solved_elem_ids_for_npr[_var_name_to_npr_idx[var_name]])
+  // {
+  //   std::cout << elem_id << " ";
+  // }
+  // std::cout << std::endl;
+
   const unsigned dim = _mesh.dimension();
 
   libMesh::Parameters function_parameters;
