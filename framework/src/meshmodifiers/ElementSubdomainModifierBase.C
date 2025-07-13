@@ -1253,13 +1253,13 @@ ElementSubdomainModifierBase::projectNprIC(const VariableName & var_name, bool d
     function_parameters.set<Real>("coef_yy") = get(3);
     function_parameters.set<Real>("coef_yx") = get(4);
     function_parameters.set<Real>("coef_xx") = get(5);
-    std::cout << "Assumed 2D order: c, y, x, y^2, yx, x^2" << std::endl;
-    std::cout << "  c    = " << get(0) << std::endl;
-    std::cout << "  y    = " << get(1) << std::endl;
-    std::cout << "  x    = " << get(2) << std::endl;
-    std::cout << "  y^2  = " << get(3) << std::endl;
-    std::cout << "  yx   = " << get(4) << std::endl;
-    std::cout << "  x^2  = " << get(5) << std::endl;
+    // std::cout << "Assumed 2D order: c, y, x, y^2, yx, x^2" << std::endl;
+    // std::cout << "  c    = " << get(0) << std::endl;
+    // std::cout << "  y    = " << get(1) << std::endl;
+    // std::cout << "  x    = " << get(2) << std::endl;
+    // std::cout << "  y^2  = " << get(3) << std::endl;
+    // std::cout << "  yx   = " << get(4) << std::endl;
+    // std::cout << "  x^2  = " << get(5) << std::endl;
   }
   else if (dim == 3)
   {
@@ -1272,17 +1272,17 @@ ElementSubdomainModifierBase::projectNprIC(const VariableName & var_name, bool d
     function_parameters.set<Real>("coef_yy") = get(7);
     function_parameters.set<Real>("coef_yx") = get(8);
     function_parameters.set<Real>("coef_xx") = get(9);
-    std::cout << "Assumed 3D order: c, z, y, x, z^2, zy, zx, y^2, yx, x^2" << std::endl;
-    std::cout << "  c    = " << get(0) << std::endl;
-    std::cout << "  z    = " << get(1) << std::endl;
-    std::cout << "  y    = " << get(2) << std::endl;
-    std::cout << "  x    = " << get(3) << std::endl;
-    std::cout << "  z^2  = " << get(4) << std::endl;
-    std::cout << "  zy   = " << get(5) << std::endl;
-    std::cout << "  zx   = " << get(6) << std::endl;
-    std::cout << "  y^2  = " << get(7) << std::endl;
-    std::cout << "  yx   = " << get(8) << std::endl;
-    std::cout << "  x^2  = " << get(9) << std::endl;
+    // std::cout << "Assumed 3D order: c, z, y, x, z^2, zy, zx, y^2, yx, x^2" << std::endl;
+    // std::cout << "  c    = " << get(0) << std::endl;
+    // std::cout << "  z    = " << get(1) << std::endl;
+    // std::cout << "  y    = " << get(2) << std::endl;
+    // std::cout << "  x    = " << get(3) << std::endl;
+    // std::cout << "  z^2  = " << get(4) << std::endl;
+    // std::cout << "  zy   = " << get(5) << std::endl;
+    // std::cout << "  zx   = " << get(6) << std::endl;
+    // std::cout << "  y^2  = " << get(7) << std::endl;
+    // std::cout << "  yx   = " << get(8) << std::endl;
+    // std::cout << "  x^2  = " << get(9) << std::endl;
   }
 
   // Define projection function

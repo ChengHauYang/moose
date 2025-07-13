@@ -86,7 +86,7 @@ NodalPatchRecoveryBase::getCoefficients(const std::vector<dof_id_type> & elem_id
     // Assemble the least squares problem over the patch
     RealEigenMatrix A = RealEigenMatrix::Zero(_q, _q);
     RealEigenVector b = RealEigenVector::Zero(_q);
-    for (auto elem_id : elem_ids)
+    for (auto elem_id : key)
     {
 
       if (!hasBlocks(_mesh.elemPtr(elem_id)->subdomain_id()))
