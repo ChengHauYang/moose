@@ -3773,30 +3773,18 @@ FEProblemBase::projectFunctionOnCustomRange(ConstElemRange & elem_range,
     DofMap & dof_map = sys.dofMap();
     std::vector<dof_id_type> dof_indices;
 
-    bool not_apply_on_solved_dofs = (var.feType().family == LAGRANGE);
-
-    if (not_apply_on_solved_dofs)
-      for (const auto & node : node_range)
-      {
-        dof_map.dof_indices(node, dof_indices, var_num);
-        for (auto dof : dof_indices)
-          sys.solution().set(dof, temp_vec(dof));
-      }
-    else
+    for (const auto & elem : elem_range)
     {
-      for (const auto & elem : elem_range)
-      {
-        dof_map.dof_indices(elem, dof_indices, var_num);
-        for (auto dof : dof_indices)
-          sys.solution().set(dof, temp_vec(dof));
-      }
-      dof_indices.clear();
-      for (const auto & node : bnd_nodes)
-      {
-        dof_map.dof_indices(node, dof_indices, var_num);
-        for (auto dof : dof_indices)
-          sys.solution().set(dof, temp_vec(dof));
-      }
+      dof_map.dof_indices(elem, dof_indices, var_num);
+      for (auto dof : dof_indices)
+        sys.solution().set(dof, temp_vec(dof));
+    }
+    dof_indices.clear();
+    for (const auto & node : bnd_nodes)
+    {
+      dof_map.dof_indices(node, dof_indices, var_num);
+      for (auto dof : dof_indices)
+        sys.solution().set(dof, temp_vec(dof));
     }
 
     sys.solution().close();

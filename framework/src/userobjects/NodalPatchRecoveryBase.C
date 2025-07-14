@@ -129,15 +129,19 @@ NodalPatchRecoveryBase::evaluateBasisFunctions(const Point & q_point) const
 {
   RealEigenVector p(_q);
   Real polynomial;
+
   for (unsigned int r = 0; r < _multi_index.size(); r++)
   {
     polynomial = 1.0;
     mooseAssert(_multi_index[r].size() == _mesh.dimension(), "Wrong multi-index size.");
+    // Evaluate the polynomial at q_point
     for (unsigned int c = 0; c < _multi_index[r].size(); c++)
-      for (unsigned int p = 0; p < _multi_index[r][c]; p++)
+      for (unsigned int p_exp = 0; p_exp < _multi_index[r][c]; p_exp++)
         polynomial *= q_point(c);
+
     p(r) = polynomial;
   }
+
   return p;
 }
 

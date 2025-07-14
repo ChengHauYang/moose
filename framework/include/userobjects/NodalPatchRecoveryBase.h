@@ -70,6 +70,9 @@ public:
   /// Returns the variable name
   virtual const VariableName & variableName() const { return _var_name; }
 
+  /// Returns the multi-index table
+  const std::vector<std::vector<unsigned int>> & multiIndex() const { return _multi_index; }
+
 protected:
   /// Compute the quantity to recover using nodal patch recovery
   virtual Real computeValue() = 0;

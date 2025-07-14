@@ -34,27 +34,12 @@
 []
 
 [UserObjects]
-  [extrapolation_patch]
-    type = NodalPatchRecoveryVariable
-    patch_polynomial_order = FIRST
-    use_specific_elements = true
-    var = 'diff'
-    execute_on = 'INITIAL TIMESTEP_END'
-  []
   [extrapolation_patch2]
     type = NodalPatchRecoveryVariable
     patch_polynomial_order = SECOND
     use_specific_elements = true
-    var = 'diff2' 
+    var = 'diff2'
     verbose = true
-    execute_on = 'INITIAL TIMESTEP_END'
-  []
-  [extrapolation_patch3]
-    type = NodalPatchRecoveryVariable
-    patch_polynomial_order = FIRST
-    use_specific_elements = true
-    var = 'diff3'
-    verbose= true
     execute_on = 'INITIAL TIMESTEP_END'
   []
 []
@@ -74,10 +59,10 @@
     old_subdomain_reinitialized = false
     reinitialize_subdomains = '1'
 
-    ic_strategy = "POLYNOMIAL  POLYNOMIAL"
-    ic_variables = " diff2 diff3"
+    ic_strategy = "POLYNOMIAL"
+    ic_variables = " diff2"
 
-    nodal_patch_recovery_uo = "extrapolation_patch2 extrapolation_patch3"
+    nodal_patch_recovery_uo = "extrapolation_patch2"
   []
 []
 
@@ -114,31 +99,15 @@
 []
 
 [Variables]
-  [diff]
-    order = FIRST
-  []
   [diff2]
-    order = FIRST
-  []
-  [diff3]
     order = FIRST
   []
 []
 
 [Kernels]
-  [diffusion]
-    type = MatDiffusion
-    variable = 'diff'
-    diffusivity = 'k'
-  []
   [diffusion2]
     type = MatDiffusion
     variable = 'diff2'
-    diffusivity = 'k'
-  []
-  [diffusion3]
-    type = MatDiffusion
-    variable = 'diff3'
     diffusivity = 'k'
   []
 []
@@ -152,20 +121,6 @@
 []
 
 [BCs]
-  [left]
-    type = DirichletBC
-    variable = 'diff'
-    boundary = left
-    value = 10
-  []
-
-  [bottom]
-    type = DirichletBC
-    variable = 'diff'
-    boundary = bottom
-    value = 0
-  []
-
   [left2]
     type = DirichletBC
     variable = 'diff2'
@@ -179,26 +134,12 @@
     boundary = bottom
     value = 0
   []
-
-  [left3]
-    type = DirichletBC
-    variable = 'diff3'
-    boundary = left
-    value = 10
-  []
-
-  [bottom3]
-    type = DirichletBC
-    variable = 'diff3'
-    boundary = bottom
-    value = 0
-  []
 []
 
 [Executioner]
   type = Transient
   dt = 0.3
-  num_steps = 3
+  num_steps = 1
 []
 
 [Outputs]

@@ -185,6 +185,17 @@ private:
   /// Reinitialized boundary nodes in ConstNodeRange format (displaced mesh)
   std::unique_ptr<ConstNodeRange> _reinitialized_displaced_node_range_from_bnd_nodes;
 
+  /// Non-reinitialized nodes on reinitialized elements
+  std::unordered_set<dof_id_type> _non_reinit_nodes_on_reinit_elems;
+
+  /// A map from variable name to a pair of:
+  /// (1) a vector of DOF IDs associated with non-reinitialized nodes on reinitialized elements, and
+  /// (2) the corresponding solution values at those DOFs.
+  /// This map is used to preserve solution data for variables that should not be reinitialized
+  /// even though they reside on reinitialized elements.
+  std::map<VariableName, std::pair<std::vector<dof_id_type>, std::vector<Number>>>
+      _var_to_dofs_values_from_nonreinit_nodes;
+
   /// The strategy used to apply IC on newly activated nodes
   std::vector<ICStrategy> _ic_strategy;
 
@@ -244,4 +255,10 @@ private:
 
   /// @brief Project initial conditions using NodalPatchRecoveryBase user objects
   void projectNprIC(const VariableName & var_name, bool displaced);
+
+  /// @brief Store values from non-reinitialized nodes on reinitialized elements
+  void storeValuesFromNonReinitNodes(const std::set<VariableName> & vars_names);
+
+  /// @brief Restore values to non-reinitialized nodes on reinitialized elements
+  void restoreValuesToNonReinitNodes(const std::set<VariableName> & vars_names);
 };

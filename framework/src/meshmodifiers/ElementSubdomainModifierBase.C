@@ -678,8 +678,9 @@ ElementSubdomainModifierBase::findReinitializedElemsAndNodes(
   // Clear cached element reinitialization data
   _reinitialized_elems.clear();
   _reinitialized_nodes.clear();
+  _non_reinit_nodes_on_reinit_elems.clear();
 
-  std::unordered_set<dof_id_type> local_reinitialized_nodes;
+  std::unordered_set<dof_id_type> local_reinitialized_nodes, non_reinit_nodes_on_reinit_elems;
 
   for (const auto & [elem_id, subdomain] : moved_elems)
   {
@@ -707,20 +708,32 @@ ElementSubdomainModifierBase::findReinitializedElemsAndNodes(
     {
       if (nodeIsNewlyReinitialized(elem->node_id(i)))
         local_reinitialized_nodes.insert(elem->node_id(i));
+      else
+        non_reinit_nodes_on_reinit_elems.insert(elem->node_id(i));
     }
   }
 
   // Convert to vector and allgather across processors
   std::vector<dof_id_type> local(local_reinitialized_nodes.begin(),
                                  local_reinitialized_nodes.end());
+  std::vector<dof_id_type> non_reinit_nodes(non_reinit_nodes_on_reinit_elems.begin(),
+                                            non_reinit_nodes_on_reinit_elems.end());
 
   std::vector<std::vector<dof_id_type>> gathered;
   _mesh.comm().allgather(local, gathered);
+
+  std::vector<std::vector<dof_id_type>> non_reinit_nodes_gathered;
+  _mesh.comm().allgather(non_reinit_nodes, non_reinit_nodes_gathered);
 
   // Collect globally unique activated nodes
   std::unordered_set<dof_id_type> unique_nodes;
   for (const auto & vec : gathered)
     unique_nodes.insert(vec.begin(), vec.end());
+
+  // Collect globally unique non-reinitialized nodes
+  std::unordered_set<dof_id_type> unique_non_reinit_nodes;
+  for (const auto & vec : non_reinit_nodes_gathered)
+    unique_non_reinit_nodes.insert(vec.begin(), vec.end());
 
   // Filters the globally reinitialized nodes and stores only those owned by this processor.
   for (auto id : unique_nodes)
@@ -728,6 +741,14 @@ ElementSubdomainModifierBase::findReinitializedElemsAndNodes(
     const auto node = _mesh.nodePtr(id);
     if (node->processor_id() == _mesh.processor_id())
       _reinitialized_nodes.insert(id);
+  }
+
+  // Filters the globally non-reinitialized nodes and stores only those owned by this processor.
+  for (auto id : unique_non_reinit_nodes)
+  {
+    const auto node = _mesh.nodePtr(id);
+    if (node->processor_id() == _mesh.processor_id())
+      _non_reinit_nodes_on_reinit_elems.insert(id);
   }
 }
 
@@ -762,18 +783,24 @@ ElementSubdomainModifierBase::applyIC(bool displaced)
 {
   // Set of variable names that are not part of the extrapolated initial conditions
   std::set<VariableName> ic_target_vars_names_except_ic_vars;
-
-  auto insertNonICVars = [&](SystemBase & sys) -> void
+  std::set<VariableName> all_vars_names;
+  auto collectVarsAndMarkNonICVars = [&](SystemBase & sys) -> void
   {
     const auto & vars = sys.getVariables(_tid);
     for (const auto & ivar : vars)
+    {
+      all_vars_names.insert(ivar->name());
       if (std::find(_ic_vars_names.begin(), _ic_vars_names.end(), ivar->name()) ==
           _ic_vars_names.end())
         ic_target_vars_names_except_ic_vars.insert(ivar->name());
+    }
   };
 
-  insertNonICVars(_nl_sys);
-  insertNonICVars(_aux_sys);
+  collectVarsAndMarkNonICVars(_nl_sys);
+  collectVarsAndMarkNonICVars(_aux_sys);
+
+  // store the values of the non-reinitialized nodes on the reinitialized elements
+  storeValuesFromNonReinitNodes(all_vars_names);
 
   // note: from IC -> current
   _fe_problem.projectInitialConditionOnCustomRange(reinitializedElemRange(displaced),
@@ -802,6 +829,10 @@ ElementSubdomainModifierBase::applyIC(bool displaced)
 
   mooseAssert(_fe_problem.numSolverSystems() < 2,
               "This code was written for a single nonlinear system");
+
+  // Set back the non-reinitialized nodes to its original values
+  restoreValuesToNonReinitNodes(all_vars_names);
+
   // Set old and older solutions on the reinitialized dofs to the reinitialized values
   // note: from current -> old -> older
   setOldAndOlderSolutions(_fe_problem.getNonlinearSystemBase(_sys.number()),
@@ -813,6 +844,66 @@ ElementSubdomainModifierBase::applyIC(bool displaced)
 
   // Note: Need method to handle solve failures at timesteps where subdomain changes. The old
   // solutions are now set to the reinitialized values. Does this impact restoring solutions
+}
+
+void
+ElementSubdomainModifierBase::storeValuesFromNonReinitNodes(
+    const std::set<VariableName> & vars_names)
+{
+  _var_to_dofs_values_from_nonreinit_nodes.clear();
+
+  for (const auto & var_name : vars_names)
+  {
+    const auto & var = _fe_problem.getStandardVariable(0, var_name);
+    const auto var_num = var.number();
+
+    SystemBase & sys = _aux_sys.hasVariable(var_name)
+                           ? static_cast<SystemBase &>(_fe_problem.getAuxiliarySystem())
+                           : static_cast<SystemBase &>(_fe_problem.getNonlinearSystemBase(
+                                 _fe_problem.systemNumForVariable(var_name)));
+
+    const auto & current_solution = *sys.system().current_local_solution;
+    DofMap & dof_map = sys.dofMap();
+
+    std::set<dof_id_type> dof_ids;
+    for (const auto & node_id : _non_reinit_nodes_on_reinit_elems)
+    {
+      const auto & node = _mesh.nodePtr(node_id);
+      std::vector<dof_id_type> dof_indices;
+      dof_map.dof_indices(node, dof_indices, var_num);
+      dof_ids.insert(dof_indices.begin(), dof_indices.end());
+    }
+
+    std::vector<Number> values;
+    for (auto dof : dof_ids)
+      values.push_back(current_solution(dof));
+
+    _var_to_dofs_values_from_nonreinit_nodes[var_name] = {
+        std::vector<dof_id_type>(dof_ids.begin(), dof_ids.end()), values};
+  }
+}
+
+void
+ElementSubdomainModifierBase::restoreValuesToNonReinitNodes(
+    const std::set<VariableName> & vars_names)
+{
+  for (const auto & var_name : vars_names)
+  {
+    const auto & var = _fe_problem.getStandardVariable(0, var_name);
+    SystemBase & sys = _aux_sys.hasVariable(var_name)
+                           ? static_cast<SystemBase &>(_fe_problem.getAuxiliarySystem())
+                           : static_cast<SystemBase &>(_fe_problem.getNonlinearSystemBase(
+                                 _fe_problem.systemNumForVariable(var_name)));
+
+    const auto & dof_ids = _var_to_dofs_values_from_nonreinit_nodes[var_name].first;
+    const auto & values = _var_to_dofs_values_from_nonreinit_nodes[var_name].second;
+
+    for (const int i : index_range(dof_ids))
+      sys.solution().set(dof_ids[i], values[i]);
+
+    sys.solution().close();
+    sys.solution().localize(*sys.system().current_local_solution, sys.dofMap().get_send_list());
+  }
 }
 
 void
@@ -1219,71 +1310,20 @@ ElementSubdomainModifierBase::projectNprIC(const VariableName & var_name, bool d
   const auto & coef = _npr_vec[_var_name_to_npr_idx[var_name]]->getCoefficients(
       _solved_elem_ids_for_npr[_var_name_to_npr_idx[var_name]]);
 
-  // for (auto & elem_id : _solved_elem_ids_for_npr[_var_name_to_npr_idx[var_name]])
-  // {
-  //   std::cout << elem_id << " ";
-  // }
-  // std::cout << std::endl;
-
   const unsigned dim = _mesh.dimension();
 
   libMesh::Parameters function_parameters;
 
-  // Coefficient order depends on the problem dimension:
-  // - 1D (x):       [c], [c, x], [c, x, x^2]
-  // - 2D (x, y):    [c], [c, y, x], [c, y, x, y^2, xy, x^2]
-  // - 3D (x, y, z): [c], [c, z, y, x], [c, z, y, x, z^2, zy, zx, y^2, yx, x^2]
-  // Terms not included are assumed zero.
+  const auto & multi_index = _npr_vec[_var_name_to_npr_idx[var_name]]->multiIndex();
 
-  // Set coefficients to parameters with default = 0
-  auto get = [&](int i) -> Real { return (i < coef.size()) ? coef(i) : 0.0; };
+  function_parameters.set<std::vector<std::vector<unsigned int>>>("multi_index") = multi_index;
 
+  std::vector<Real> coef_vec(coef.size());
+  for (auto i = 0; i < coef.size(); ++i)
+    coef_vec[i] = coef(i);
+
+  function_parameters.set<std::vector<Real>>("multi_index_coefficients") = coef_vec;
   function_parameters.set<int>("dimension_for_projection") = dim;
-  function_parameters.set<Real>("coef_c") = get(0);
-
-  if (dim == 1)
-  {
-    function_parameters.set<Real>("coef_x") = get(1);
-    function_parameters.set<Real>("coef_xx") = get(2);
-  }
-  else if (dim == 2)
-  {
-    function_parameters.set<Real>("coef_y") = get(1);
-    function_parameters.set<Real>("coef_x") = get(2);
-    function_parameters.set<Real>("coef_yy") = get(3);
-    function_parameters.set<Real>("coef_yx") = get(4);
-    function_parameters.set<Real>("coef_xx") = get(5);
-    // std::cout << "Assumed 2D order: c, y, x, y^2, yx, x^2" << std::endl;
-    // std::cout << "  c    = " << get(0) << std::endl;
-    // std::cout << "  y    = " << get(1) << std::endl;
-    // std::cout << "  x    = " << get(2) << std::endl;
-    // std::cout << "  y^2  = " << get(3) << std::endl;
-    // std::cout << "  yx   = " << get(4) << std::endl;
-    // std::cout << "  x^2  = " << get(5) << std::endl;
-  }
-  else if (dim == 3)
-  {
-    function_parameters.set<Real>("coef_z") = get(1);
-    function_parameters.set<Real>("coef_y") = get(2);
-    function_parameters.set<Real>("coef_x") = get(3);
-    function_parameters.set<Real>("coef_zz") = get(4);
-    function_parameters.set<Real>("coef_zy") = get(5);
-    function_parameters.set<Real>("coef_zx") = get(6);
-    function_parameters.set<Real>("coef_yy") = get(7);
-    function_parameters.set<Real>("coef_yx") = get(8);
-    function_parameters.set<Real>("coef_xx") = get(9);
-    // std::cout << "Assumed 3D order: c, z, y, x, z^2, zy, zx, y^2, yx, x^2" << std::endl;
-    // std::cout << "  c    = " << get(0) << std::endl;
-    // std::cout << "  z    = " << get(1) << std::endl;
-    // std::cout << "  y    = " << get(2) << std::endl;
-    // std::cout << "  x    = " << get(3) << std::endl;
-    // std::cout << "  z^2  = " << get(4) << std::endl;
-    // std::cout << "  zy   = " << get(5) << std::endl;
-    // std::cout << "  zx   = " << get(6) << std::endl;
-    // std::cout << "  y^2  = " << get(7) << std::endl;
-    // std::cout << "  yx   = " << get(8) << std::endl;
-    // std::cout << "  x^2  = " << get(9) << std::endl;
-  }
 
   // Define projection function
   auto poly_func = [](const Point & p,
@@ -1291,37 +1331,25 @@ ElementSubdomainModifierBase::projectNprIC(const VariableName & var_name, bool d
                       const std::string &,
                       const std::string &) -> libMesh::Number
   {
-    const int dim = parameters.get<int>("dimension_for_projection");
+    const auto & multi_index =
+        parameters.get<std::vector<std::vector<unsigned int>>>("multi_index");
+    const auto & coeffs = parameters.get<std::vector<Real>>("multi_index_coefficients");
 
-    const Real x = p(0);
-    const Real y = (dim > 1) ? p(1) : 0;
-    const Real z = (dim > 2) ? p(2) : 0;
+    Real val = 0.0;
 
-    // std::cout << "  c    = " << parameters.get<Real>("coef_c") << std::endl;
-    // std::cout << "  z    = " << parameters.get<Real>("coef_z") << std::endl;
-    // std::cout << "  y    = " << parameters.get<Real>("coef_y") << std::endl;
-    // std::cout << "  x    = " << parameters.get<Real>("coef_x") << std::endl;
-    // std::cout << "  z^2  = " << parameters.get<Real>("coef_zz") << std::endl;
-    // std::cout << "  zy   = " << parameters.get<Real>("coef_zy") << std::endl;
-    // std::cout << "  zx   = " << parameters.get<Real>("coef_zx") << std::endl;
-    // std::cout << "  y^2  = " << parameters.get<Real>("coef_yy") << std::endl;
-    // std::cout << "  yx   = " << parameters.get<Real>("coef_yx") << std::endl;
-    // std::cout << "  x^2  = " << parameters.get<Real>("coef_xx") << std::endl;
+    for (unsigned int r = 0; r < multi_index.size(); r++)
+    {
+      Real monomial = 1.0;
+      for (unsigned int c = 0; c < multi_index[r].size(); c++)
+      {
+        unsigned int power = multi_index[r][c];
+        if (power == 0)
+          continue;
 
-    Real val = parameters.get<Real>("coef_c");
-
-    if (dim == 1)
-      val += parameters.get<Real>("coef_x") * x + parameters.get<Real>("coef_xx") * x * x;
-    else if (dim == 2)
-      val += parameters.get<Real>("coef_y") * y + parameters.get<Real>("coef_x") * x +
-             parameters.get<Real>("coef_yy") * y * y + parameters.get<Real>("coef_yx") * x * y +
-             parameters.get<Real>("coef_xx") * x * x;
-    else if (dim == 3)
-      val += parameters.get<Real>("coef_z") * z + parameters.get<Real>("coef_y") * y +
-             parameters.get<Real>("coef_x") * x + parameters.get<Real>("coef_zz") * z * z +
-             parameters.get<Real>("coef_zy") * z * y + parameters.get<Real>("coef_zx") * z * x +
-             parameters.get<Real>("coef_yy") * y * y + parameters.get<Real>("coef_yx") * y * x +
-             parameters.get<Real>("coef_xx") * x * x;
+        monomial *= std::pow(p(c), power);
+      }
+      val += coeffs[r] * monomial;
+    }
 
     return val;
   };
@@ -1333,29 +1361,43 @@ ElementSubdomainModifierBase::projectNprIC(const VariableName & var_name, bool d
                            const std::string &) -> libMesh::Gradient
   {
     const int dim = parameters.get<int>("dimension_for_projection");
-    const Real x = p(0);
-    const Real y = (dim > 1) ? p(1) : 0;
-    const Real z = (dim > 2) ? p(2) : 0;
 
-    libMesh::Gradient grad;
+    const auto & multi_index =
+        parameters.get<std::vector<std::vector<unsigned int>>>("multi_index");
+    const auto & coeffs = parameters.get<std::vector<Real>>("multi_index_coefficients");
 
-    if (dim == 1)
-      grad(0) = parameters.get<Real>("coef_x") + 2 * parameters.get<Real>("coef_xx") * x;
-    else if (dim == 2)
+    libMesh::Gradient grad; // Zero-initialized
+
+    for (unsigned int r = 0; r < multi_index.size(); ++r)
     {
-      grad(0) = parameters.get<Real>("coef_x") + parameters.get<Real>("coef_yx") * y +
-                2 * parameters.get<Real>("coef_xx") * x;
-      grad(1) = parameters.get<Real>("coef_y") + parameters.get<Real>("coef_yx") * x +
-                2 * parameters.get<Real>("coef_yy") * y;
-    }
-    else if (dim == 3)
-    {
-      grad(0) = parameters.get<Real>("coef_x") + parameters.get<Real>("coef_zx") * z +
-                parameters.get<Real>("coef_yx") * y + 2 * parameters.get<Real>("coef_xx") * x;
-      grad(1) = parameters.get<Real>("coef_y") + parameters.get<Real>("coef_zy") * z +
-                parameters.get<Real>("coef_yx") * x + 2 * parameters.get<Real>("coef_yy") * y;
-      grad(2) = parameters.get<Real>("coef_z") + parameters.get<Real>("coef_zy") * y +
-                parameters.get<Real>("coef_zx") * x + 2 * parameters.get<Real>("coef_zz") * z;
+      const auto & powers = multi_index[r];
+      const Real coef = coeffs[r];
+
+      for (int d = 0; d < dim; ++d) // Loop over dimension
+      {
+        const unsigned int power_d = powers[d];
+        if (power_d == 0)
+          continue;
+
+        // Compute partial derivative in direction d
+        Real partial = coef * power_d;
+
+        for (int i = 0; i < powers.size(); ++i)
+        {
+          if (i == d)
+          {
+            if (powers[i] > 1)
+              partial *= std::pow(p(i), powers[i] - 1); // reduce power by 1
+          }
+          else
+          {
+            if (powers[i] > 0)
+              partial *= std::pow(p(i), powers[i]); // full power
+          }
+        }
+
+        grad(d) += partial;
+      }
     }
 
     return grad;
