@@ -404,18 +404,20 @@ public:
 
   ///@{
   /**
-   * In general, {evaluable elements} >= {local elements} U {algebraic ghosting elements}. That
-   * is, the number of evaluable elements does NOT necessarily equal to the number of local and
+   * In general, {evaluable elements} >= {local elements} U {algebraic ghosting elements}. That is,
+   * the number of evaluable elements does NOT necessarily equal to the number of local and
    * algebraic ghosting elements. For example, if using a Lagrange basis for all variables,
    * if a non-local, non-algebraically-ghosted element is surrounded by neighbors which are
    * local or algebraically ghosted, then all the nodal (Lagrange) degrees of freedom associated
    * with the non-local, non-algebraically-ghosted element will be evaluable, and hence that
    * element will be considered evaluable.
    *
-   * getNonlinearEvaluableElementRange() returns the evaluable element range based on the
-   * nonlinear system dofmap; getAuxliaryEvaluableElementRange() returns the evaluable element
-   * range based on the auxiliary system dofmap; getEvaluableElementRange() returns the element
-   * range that is evaluable based on both the nonlinear dofmap and the auxliary dofmap.
+   * getNonlinearEvaluableElementRange() returns the evaluable element range based on the nonlinear
+   * system dofmap;
+   * getAuxliaryEvaluableElementRange() returns the evaluable element range based on the auxiliary
+   * system dofmap;
+   * getEvaluableElementRange() returns the element range that is evaluable based on both the
+   * nonlinear dofmap and the auxliary dofmap.
    */
   const libMesh::ConstElemRange & getEvaluableElementRange();
   const libMesh::ConstElemRange & getNonlinearEvaluableElementRange();
@@ -890,20 +892,39 @@ public:
    * Project initial conditions for custom \p elem_range and \p bnd_node_range
    * This is needed when elements/boundary nodes are added to a specific subdomain
    * at an intermediate step
+   * @param elem_range Element range to project on
+   * @param bnd_node_range Boundary node range to project on
+   * @param target_vars Set of variable names to project ICs
    */
-  void projectInitialConditionOnCustomRange(libMesh::ConstElemRange & elem_range,
-                                            ConstBndNodeRange & bnd_node_range);
-
-  /**
-   * Project initial conditions onto a specified set of elements and boundary nodes
-   * for a user-defined subset of variables.
-   */
-  void projectInitialConditionOnCustomRangeForSpecificVars(
+  void projectInitialConditionOnCustomRange(
       libMesh::ConstElemRange & elem_range,
       ConstBndNodeRange & bnd_node_range,
-      const std::set<std::string> & selected_var_names);
+      const std::optional<std::set<VariableName>> & target_vars = std::nullopt);
 
-  // Materials /////
+  /**
+   * Project an initial condition given by a polynomial onto selected elements and nodes
+   * for a variable.
+   *
+   * \param elem_range       Element range to project on (non-nodal)
+   * \param node_range       Node range for nodal variables
+   * \param poly_func        Polynomial function to project (function pointer)
+   * \param poly_func_grad   Gradient of the polynomial function (function pointer)
+   * \param function_parameters Parameters to pass to the polynomial function
+   * \param target_var variable name to project
+   */
+  void projectFunctionOnCustomRange(ConstElemRange & elem_range,
+                                    Number (*poly_func)(const Point &,
+                                                        const libMesh::Parameters &,
+                                                        const std::string &,
+                                                        const std::string &),
+                                    Gradient (*poly_func_grad)(const Point &,
+                                                               const libMesh::Parameters &,
+                                                               const std::string &,
+                                                               const std::string &),
+                                    const libMesh::Parameters & function_parameters,
+                                    const VariableName & target_var);
+
+  // Materials
   virtual void addMaterial(const std::string & material_name,
                            const std::string & name,
                            InputParameters & parameters);

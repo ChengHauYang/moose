@@ -37,30 +37,40 @@ SpatioTemporalHeatAction::validParams()
                         "Switch between using the within element test or the centroid test.");
 
   // for ESM to set the initial condition
-  MooseEnum init_strategy("IC_DEFAULT IC_POLYNOMIAL "
-                          "IC_POLYNOMIAL_WHOLE_SOLVED_DOMAIN IC_POLYNOMIAL_THRESHOLD IC_FUNC",
-                          "IC_DEFAULT");
+  MooseEnum reinit_strategy("IC POLYNOMIAL_NEIGHBOR POLYNOMIAL_WHOLE POLYNOMIAL_NEARBY", "IC");
+
+  params.addParam<bool>(
+      "old_subdomain_reinitialized",
+      true,
+      "This parameter must be set with a non-empty list in 'reinitialize_subdomains'. When set to "
+      "the default true, the element's old subdomain is not considered when determining if an "
+      "element should be reinitialized. If set to false, only elements whose old subdomain was not "
+      "in 'reinitialize_subdomains' are reinitialized. ");
+
+  params.addParam<std::vector<VariableName>>(
+      "reinitialize_variables", {}, "Which variables to reinitialize when subdomain changes.");
 
   params.addParam<std::vector<MooseEnum>>(
-      "ic_strategy",
-      {init_strategy},
-      "The strategy to set the initial condition on the newly activated nodes. ");
-
+      "reinitialization_strategy",
+      {reinit_strategy},
+      "The strategy used to reinitialize the solution when elements change subdomain. If multiple "
+      "strategies are provided, each strategy will be applied to the corresponding variable. If "
+      "only one strategy is provided, it will be applied to all variables.");
   params.addParam<std::vector<UserObjectName>>(
-      "nodal_patch_recovery_uo",
+      "polynomial_fitters",
       {},
-      "List of NodalPatchRecovery UserObjects for each component (e.g., u, v)");
-
+      "List of NodalPatchRecovery UserObjects used to fit the polynomial for reinitialization. "
+      "Only needed if 'reinitialization_strategy' is set to POLYNOMIAL_x.");
   params.addParam<int>(
-      "kd_tree_leaf_max_size", 10, "Maximum number of elements in a leaf node of the k-d tree");
-
-  params.addParam<int>("nearby_element_threshold",
-                       1,
-                       "Threshold for considering elements as 'nearby' in the k-d tree search.");
-
-  params.addParam<double>("radius_search_threshold",
-                          -1.0,
-                          "Threshold for considering elements as 'nearby' in the k-d tree search.");
+      "nearby_kd_tree_leaf_max_size",
+      10,
+      "Maximum number of elements in a leaf node of the K-D tree used to search for nearby "
+      "elements. Only needed if 'reinitialization_strategy' is set to POLYNOMIAL_NEARBY.");
+  params.addParam<double>(
+      "nearby_distance_threshold",
+      -1.0,
+      "Threshold for considering elements as 'nearby' in the K-D tree search. Only elements within "
+      "this distance will be considered for polynomial fitting.");
 
   // for ADMovingEllipsoidalHeatSource
   params.addRequiredParam<MaterialPropertyName>("power", "Input power of the heat source.");
@@ -106,13 +116,17 @@ SpatioTemporalHeatAction::act()
     esm_params.set<std::vector<SubdomainName>>("block") =
         getParam<std::vector<SubdomainName>>("block");
     esm_params.set<ExecFlagEnum>("execute_on") = getParam<ExecFlagEnum>("execute_on_esm");
-    esm_params.set<std::vector<MooseEnum>>("ic_strategy") =
-        getParam<std::vector<MooseEnum>>("ic_strategy");
-    esm_params.set<std::vector<UserObjectName>>("nodal_patch_recovery_uo") =
-        getParam<std::vector<UserObjectName>>("nodal_patch_recovery_uo");
-    esm_params.set<int>("kd_tree_leaf_max_size") = getParam<int>("kd_tree_leaf_max_size");
-    esm_params.set<int>("nearby_element_threshold") = getParam<int>("nearby_element_threshold");
-    esm_params.set<double>("radius_search_threshold") = getParam<double>("radius_search_threshold");
+    esm_params.set<bool>("old_subdomain_reinitialized") =
+        getParam<bool>("old_subdomain_reinitialized");
+    esm_params.set<std::vector<VariableName>>("reinitialize_variables") =
+        getParam<std::vector<VariableName>>("reinitialize_variables");
+    esm_params.set<std::vector<MooseEnum>>("reinitialization_strategy") =
+        getParam<std::vector<MooseEnum>>("reinitialization_strategy");
+    esm_params.set<std::vector<UserObjectName>>("polynomial_fitters") =
+        getParam<std::vector<UserObjectName>>("polynomial_fitters");
+    esm_params.set<int>("nearby_kd_tree_leaf_max_size") =
+        getParam<int>("nearby_kd_tree_leaf_max_size");
+    esm_params.set<int>("nearby_distance_threshold") = getParam<int>("nearby_distance_threshold");
 
     _problem->addUserObject("SpatioTemporalPathElementSubdomainModifier", "esm", esm_params);
   }
