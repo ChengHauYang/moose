@@ -4,7 +4,7 @@
 
 ## Overview
 
-<!-- -->
+!! Intentional comment to provide extra spacing
 
 The inter-wrapper is the flow area around subchannel subassemblies.
 This kernel solves for the flow variables in that area, for the case of sub-assembies that have subchannels/pins in a triangular lattice.
@@ -15,7 +15,7 @@ Duct surface temperature is calculated at the end of the solve, if there is a Pi
 
 ## Example Input File Syntax
 
-!listing /test/tests/problems/interwrapper/tri_interwrapper_monolithic.i block=SubChannel language=cpp
+!listing /test/tests/problems/interwrapper/tri_interwrapper_monolithic.i block=SubChannel language=moose
 
 !syntax parameters /Problem/TriInterWrapper1PhaseProblem
 

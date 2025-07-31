@@ -7,7 +7,7 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 
 #include "MooseStringUtils.h"
 #include "CoefficientManager.h"
@@ -147,7 +147,7 @@ CoefficientManager::getVectorCoefficientPtr(const std::string & name)
         name, mfem::Vector(vec_values.data(), vec_values.size()));
     return this->_vector_coeffs.getCoefficientPtr(name);
   }
-  mooseError("Vector oefficient with name '" + name + "' has not been declared.");
+  mooseError("Vector coefficient with name '" + name + "' has not been declared.");
 }
 
 std::shared_ptr<mfem::MatrixCoefficient>

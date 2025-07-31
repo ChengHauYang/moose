@@ -8,7 +8,7 @@
                 OutputData/CurlCurl/Run0/Cycle000001/proc000000.vtu'
     ignored_items = "root['VTKFile']['@version']"
     requirement = 'The system shall have the ability to solve a definite Maxwell problem with Nedelec elements of the first kind using MFEM.'
-    capabilities = 'mfem & !cuda' # diffs on cuda
+    capabilities = 'mfem'
     max_parallel = 1
     recover = false
     max_threads = 1
@@ -21,6 +21,8 @@
                 OutputData/CurlCurlLOR/Run0/Cycle000001/proc000000.vtu'
     ignored_items = "root['VTKFile']['@version']"
     cli_args = 'FESpaces/HCurlFESpace/fec_order=THIRD '
+               'FESpaces/HCurlFESpace/closed_basis=GaussLobatto '
+               'FESpaces/HCurlFESpace/open_basis=IntegratedGLL '
                'Solver/type=MFEMGMRESSolver Solver/l_tol=1e-14 '
                'Preconditioner/ams/low_order_refined=true '
                'Outputs/ParaViewDataCollection/file_base=OutputData/CurlCurlLOR'
@@ -43,6 +45,7 @@
     capabilities = 'mfem'
     max_parallel = 1
     recover = false
+    expect_out = 'Parallel Type:.*distributed.*Mesh Dimension.*3.*Spatial Dimension.*3.*Elems.*2476.*Num Subdomains.*1.*Solver.*MFEMHypreGMRES'
   []
   [MFEMDiffusionPartial]
     type = XMLDiff
@@ -92,6 +95,8 @@
                 OutputData/GradDivLOR/Run0/Cycle000001/proc000000.vtu'
     ignored_items = "root['VTKFile']['@version']"
     cli_args = 'Mesh/file=../mesh/beam-hex.mesh FESpaces/HDivFESpace/fec_order=THIRD '
+               'FESpaces/HDivFESpace/closed_basis=GaussLobatto '
+               'FESpaces/HDivFESpace/open_basis=IntegratedGLL '
                'Preconditioner/ADS/low_order_refined=true '
                'Outputs/ParaViewDataCollection/file_base=OutputData/GradDivLOR'
     requirement = 'The system shall have the ability to solve a LOR grad-div problem with Raviart-Thomas elements using MFEM.'
@@ -181,7 +186,7 @@
                 OutputData/Gravity/Run0/Cycle000001/proc000000.vtu'
     ignored_items = "root['VTKFile']['@version']"
     requirement = 'The system shall have the ability to solve a linear elasticity problem for a beam deformed under gravitational loads using MFEM.'
-    capabilities = 'mfem & !cuda' # HypreBoomerAMG::SetElasticityOptions doesn't support GPU
+    capabilities = 'mfem'
     max_parallel = 1
     recover = false
     max_threads = 1
@@ -192,6 +197,15 @@
     input = irrotational.i
     csvdiff = 'OutputData/Irrotational.csv'
     requirement = 'The system shall have the ability to solve for an irrotational vortex in two dimensions using MFEM.'
+    abs_zero = 1e-6
+    capabilities = 'mfem'
+    recover = false
+  []
+  [MFEMDarcy]
+    type = CSVDiff
+    input = darcy.i
+    csvdiff = 'OutputData/Darcy.csv'
+    requirement = 'The system shall have the ability to solve a mixed Darcy problem in two dimensions using MFEM.'
     abs_zero = 1e-6
     capabilities = 'mfem'
     recover = false

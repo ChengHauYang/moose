@@ -47,6 +47,7 @@
 #include "MooseEigenSystem.h"
 #include "MooseParsedFunction.h"
 #include "MeshChangedInterface.h"
+#include "MeshDisplacedInterface.h"
 #include "ComputeJacobianBlocksThread.h"
 #include "ScalarInitialCondition.h"
 #include "FVInitialConditionTempl.h"
@@ -417,6 +418,8 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _dt(declareRestartableData<Real>("dt")),
     _dt_old(declareRestartableData<Real>("dt_old")),
     _need_to_add_default_nonlinear_convergence(false),
+    _need_to_add_default_multiapp_fixed_point_convergence(false),
+    _need_to_add_default_steady_state_convergence(false),
     _linear_sys_names(getParam<std::vector<LinearSystemName>>("linear_sys_names")),
     _num_linear_sys(_linear_sys_names.size()),
     _linear_systems(_num_linear_sys, nullptr),
@@ -525,6 +528,7 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _print_execution_on(),
     _identify_variable_groups_in_nl(getParam<bool>("identify_variable_groups_in_nl")),
     _regard_general_exceptions_as_errors(getParam<bool>("regard_general_exceptions_as_errors")),
+    _requires_nonlocal_coupling(false),
     _default_blocks(isParamSetByUser("block") ? &getParam<std::vector<SubdomainName>>("block")
                                               : nullptr)
 {
@@ -558,8 +562,8 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _solver_params.push_back(makeLinearSolverParams());
   }
 
-  _nonlocal_cm.resize(_nl_sys_names.size());
-  _cm.resize(_nl_sys_names.size());
+  _nonlocal_cm.resize(numSolverSystems());
+  _cm.resize(numSolverSystems());
 
   _time = 0.0;
   _time_old = 0.0;
@@ -655,29 +659,29 @@ FEProblemBase::createTagVectors()
 {
   // add vectors and their tags to system
   auto & vectors = getParam<std::vector<std::vector<TagName>>>("extra_tag_vectors");
-  for (const auto nl_sys_num : index_range(vectors))
-    for (auto & vector : vectors[nl_sys_num])
+  for (const auto sys_num : index_range(vectors))
+    for (auto & vector : vectors[sys_num])
     {
       auto tag = addVectorTag(vector);
-      _nl[nl_sys_num]->addVector(tag, false, libMesh::GHOSTED);
+      _solver_systems[sys_num]->addVector(tag, false, libMesh::GHOSTED);
     }
 
   auto & not_zeroed_vectors = getParam<std::vector<std::vector<TagName>>>("not_zeroed_tag_vectors");
-  for (const auto nl_sys_num : index_range(not_zeroed_vectors))
-    for (auto & vector : not_zeroed_vectors[nl_sys_num])
+  for (const auto sys_num : index_range(not_zeroed_vectors))
+    for (auto & vector : not_zeroed_vectors[sys_num])
     {
       auto tag = addVectorTag(vector);
-      _nl[nl_sys_num]->addVector(tag, false, GHOSTED);
+      _solver_systems[sys_num]->addVector(tag, false, GHOSTED);
       addNotZeroedVectorTag(tag);
     }
 
   // add matrices and their tags
   auto & matrices = getParam<std::vector<std::vector<TagName>>>("extra_tag_matrices");
-  for (const auto nl_sys_num : index_range(matrices))
-    for (auto & matrix : matrices[nl_sys_num])
+  for (const auto sys_num : index_range(matrices))
+    for (auto & matrix : matrices[sys_num])
     {
       auto tag = addMatrixTag(matrix);
-      _nl[nl_sys_num]->addMatrix(tag);
+      _solver_systems[sys_num]->addMatrix(tag);
     }
 }
 
@@ -2560,6 +2564,28 @@ FEProblemBase::addDefaultNonlinearConvergence(const InputParameters & params_to_
     addConvergence(class_name, conv_name, params);
 }
 
+void
+FEProblemBase::addDefaultMultiAppFixedPointConvergence(const InputParameters & params_to_apply)
+{
+  const std::string class_name = "DefaultMultiAppFixedPointConvergence";
+  InputParameters params = _factory.getValidParams(class_name);
+  params.applyParameters(params_to_apply);
+  params.applyParameters(parameters());
+  params.set<bool>("added_as_default") = true;
+  addConvergence(class_name, getMultiAppFixedPointConvergenceName(), params);
+}
+
+void
+FEProblemBase::addDefaultSteadyStateConvergence(const InputParameters & params_to_apply)
+{
+  const std::string class_name = "DefaultSteadyStateConvergence";
+  InputParameters params = _factory.getValidParams(class_name);
+  params.applyParameters(params_to_apply);
+  params.applyParameters(parameters());
+  params.set<bool>("added_as_default") = true;
+  addConvergence(class_name, getSteadyStateConvergenceName(), params);
+}
+
 bool
 FEProblemBase::hasFunction(const std::string & name, const THREAD_ID tid)
 {
@@ -3668,10 +3694,10 @@ FEProblemBase::projectSolution()
       DenseVector<Number> vals(var.order());
       ic->compute(vals);
 
-      const unsigned int n_scalar_dofs = var.dofIndices().size();
-      for (unsigned int i = 0; i < n_scalar_dofs; i++)
+      const unsigned int n_SCALAR_dofs = var.dofIndices().size();
+      for (unsigned int i = 0; i < n_SCALAR_dofs; i++)
       {
-        const auto global_index = var.dofIndices()[i];
+        const dof_id_type global_index = var.dofIndices()[i];
         var.sys().solution().set(global_index, vals(i));
         var.setValue(i, vals(i));
       }
@@ -4407,10 +4433,10 @@ FEProblemBase::addUserObject(const std::string & user_object_name,
     {
       if (euo || nuo || duo)
         _reinit_displaced_elem = true;
-      else if (suo)
+      else if (suo || duo)
         // shouldn't we add isuo
         _reinit_displaced_face = true;
-      else if (iuob)
+      else if (iuob || duo)
         _reinit_displaced_neighbor = true;
     }
 
@@ -4420,8 +4446,8 @@ FEProblemBase::addUserObject(const std::string & user_object_name,
   }
 
   // Add as a Functor if it is one. We usually need to add the user object from thread 0 as the
-  // registered functor for all threads because when user objects are thread joined, generally
-  // only the primary thread copy ends up with all the data
+  // registered functor for all threads because when user objects are thread joined, generally only
+  // the primary thread copy ends up with all the data
   for (const auto tid : make_range(libMesh::n_threads()))
   {
     const decltype(uos)::size_type uo_index = uos.front()->needThreadedCopy() ? tid : 0;
@@ -4563,8 +4589,8 @@ FEProblemBase::computeIndicators()
   {
     TIME_SECTION("computeIndicators", 1, "Computing Indicators");
 
-    // Internal side indicators may lead to creating a much larger sparsity pattern than dictated
-    // by the actual finite element scheme (e.g. CFEM)
+    // Internal side indicators may lead to creating a much larger sparsity pattern than dictated by
+    // the actual finite element scheme (e.g. CFEM)
     const auto old_do_derivatives = ADReal::do_derivatives;
     ADReal::do_derivatives = false;
 
@@ -4716,8 +4742,8 @@ FEProblemBase::execute(const ExecFlagType & exec_type)
   // With the auxiliary system solution computed, sync the displaced problem auxiliary solution
   // before computation of post-aux user objects. The undisplaced auxiliary system current local
   // solution is updated (via System::update) within the AuxiliarySystem class's variable
-  // computation methods (e.g. computeElementalVarsHelper, computeNodalVarsHelper), so it is safe
-  // to use it here
+  // computation methods (e.g. computeElementalVarsHelper, computeNodalVarsHelper), so it is safe to
+  // use it here
   if (_displaced_problem)
     _displaced_problem->syncAuxSolution(*getAuxiliarySystem().currentSolution());
 
@@ -6528,10 +6554,10 @@ FEProblemBase::checkExceptionAndStopSolve(bool print_message)
       {
         _console << "\n" << _exception_message << "\n";
         if (isTransient())
-          _console << "To recover, the solution will fail and then be re-attempted with a "
-                      "reduced time "
-                      "step.\n"
-                   << std::endl;
+          _console
+              << "To recover, the solution will fail and then be re-attempted with a reduced time "
+                 "step.\n"
+              << std::endl;
       }
 
       // Stop the solve -- this entails setting
@@ -7005,8 +7031,8 @@ FEProblemBase::computeResidualAndJacobian(const NumericVector<Number> & soln,
           auto & matrix = _current_nl_sys->getMatrix(tag);
           matrix.zero();
           if (haveADObjects() && !assembly(0, _current_nl_sys->number()).hasStaticCondensation())
-            // PETSc algorithms require diagonal allocations regardless of whether there is
-            // non-zero diagonal dependence. With global AD indexing we only add non-zero
+            // PETSc algorithms require diagonal allocations regardless of whether there is non-zero
+            // diagonal dependence. With global AD indexing we only add non-zero
             // dependence, so PETSc will scream at us unless we artificially add the diagonals.
             for (auto index : make_range(matrix.row_start(), matrix.row_stop()))
               matrix.add(index, index, 0);
@@ -7220,12 +7246,11 @@ FEProblemBase::handleException(const std::string & calling_method)
     // - Both processes throw because of a new nonzero during MOOSE's computeJacobianTags
     // - We potentially handle the exceptions nicely here
     // - When the matrix is closed in libMesh's libmesh_petsc_snes_solver, there is a new nonzero
-    //   throw which we do not catch here in MOOSE and the simulation terminates. This only
-    //   appears in parallel (and not all the time; a test I was examining threw with distributed
-    //   mesh, but not with replicated). In serial there are no new throws from
-    //   libmesh_petsc_snes_solver.
-    // So for uniformity of behavior across serial/parallel, we will choose to abort here and
-    // always produce a non-zero exit code
+    //   throw which we do not catch here in MOOSE and the simulation terminates. This only appears
+    //   in parallel (and not all the time; a test I was examining threw with distributed mesh, but
+    //   not with replicated). In serial there are no new throws from libmesh_petsc_snes_solver.
+    // So for uniformity of behavior across serial/parallel, we will choose to abort here and always
+    // produce a non-zero exit code
     mooseError(create_exception_message("libMesh::PetscSolverException", e));
   }
   catch (const std::exception & e)
@@ -7570,17 +7595,23 @@ FEProblemBase::computeLinearSystemSys(LinearImplicitSystem & sys,
   selectMatrixTagsFromSystem(*_current_linear_sys, getMatrixTags(), _linear_matrix_tags);
 
   computeLinearSystemTags(*(_current_linear_sys->currentSolution()),
-                          system_matrix,
-                          rhs,
                           _linear_vector_tags,
                           _linear_matrix_tags,
                           compute_gradients);
+
+  _current_linear_sys->disassociateMatrixFromTag(system_matrix,
+                                                 _current_linear_sys->systemMatrixTag());
+  _current_linear_sys->disassociateVectorFromTag(rhs,
+                                                 _current_linear_sys->rightHandSideVectorTag());
+  // We reset the tags to the default containers for further operations
+  _current_linear_sys->associateVectorToTag(_current_linear_sys->getRightHandSideVector(),
+                                            _current_linear_sys->rightHandSideVectorTag());
+  _current_linear_sys->associateMatrixToTag(_current_linear_sys->getSystemMatrix(),
+                                            _current_linear_sys->systemMatrixTag());
 }
 
 void
 FEProblemBase::computeLinearSystemTags(const NumericVector<Number> & soln,
-                                       SparseMatrix<Number> & system_matrix,
-                                       NumericVector<Number> & rhs,
                                        const std::set<TagID> & vector_tags,
                                        const std::set<TagID> & matrix_tags,
                                        const bool compute_gradients)
@@ -7589,10 +7620,7 @@ FEProblemBase::computeLinearSystemTags(const NumericVector<Number> & soln,
 
   _current_linear_sys->setSolution(soln);
 
-  _current_linear_sys->associateVectorToTag(rhs, _current_linear_sys->rightHandSideVectorTag());
-  _current_linear_sys->associateMatrixToTag(system_matrix, _current_linear_sys->systemMatrixTag());
-
-  for (const auto tag : matrix_tags)
+  for (auto tag : matrix_tags)
   {
     auto & matrix = _current_linear_sys->getMatrix(tag);
     matrix.zero();
@@ -7640,21 +7668,14 @@ FEProblemBase::computeLinearSystemTags(const NumericVector<Number> & soln,
 
   _app.getOutputWarehouse().jacobianSetup();
 
-  _safe_access_tagged_vectors = false;
-  _safe_access_tagged_matrices = false;
-
   _current_linear_sys->computeLinearSystemTags(vector_tags, matrix_tags, compute_gradients);
-
-  _safe_access_tagged_vectors = true;
-  _safe_access_tagged_matrices = true;
-
-  _current_linear_sys->disassociateMatrixFromTag(system_matrix,
-                                                 _current_linear_sys->systemMatrixTag());
-  _current_linear_sys->disassociateVectorFromTag(rhs,
-                                                 _current_linear_sys->rightHandSideVectorTag());
 
   // Reset execution flag as after this point we are no longer on LINEAR
   _current_execute_on_flag = EXEC_NONE;
+
+  // These are the relevant parts of resetState()
+  _safe_access_tagged_vectors = true;
+  _safe_access_tagged_matrices = true;
 }
 
 void
@@ -8003,10 +8024,7 @@ FEProblemBase::initialAdaptMesh()
 
       if (_adaptivity.initialAdaptMesh())
       {
-        meshChanged(
-            /*intermediate_change=*/false,
-            /*contract_mesh=*/true,
-            /*clean_refinement_flags=*/true);
+        meshChanged();
 
         // reproject the initial condition
         projectSolution();
@@ -8125,17 +8143,13 @@ FEProblemBase::updateMeshXFEM()
       // having coincident elements. While conceptually speaking we do not need to contract the
       // mesh, we need its call to renumber_nodes_and_elements in order to preserve these tests
       meshChanged(
-          /*intermediate_change=*/false,
-          /*contract_mesh=*/true,
-          /*clean_refinement_flags=*/false);
+          /*intermediate_change=*/false, /*contract_mesh=*/true, /*clean_refinement_flags=*/false);
 
     updated = _xfem->update(_time, _nl, *_aux);
     if (updated)
     {
       meshChanged(
-          /*intermediate_change=*/false,
-          /*contract_mesh=*/true,
-          /*clean_refinement_flags=*/false);
+          /*intermediate_change=*/false, /*contract_mesh=*/true, /*clean_refinement_flags=*/false);
       _xfem->initSolution(_nl, *_aux);
       restoreSolutions();
     }
@@ -8249,9 +8263,9 @@ FEProblemBase::meshChanged(const bool intermediate_change,
 
       // Concurrent erasure from the shared hash map is not safe while we are reading from it in
       // ProjectMaterialProperties, so we handle erasure here. Moreover, erasure based on key is
-      // not thread safe in and of itself because it is a read-write operation. Note that we do
-      // not do the erasure for p-refinement because the coarse level element is the same as our
-      // active refined level element
+      // not thread safe in and of itself because it is a read-write operation. Note that we do not
+      // do the erasure for p-refinement because the coarse level element is the same as our active
+      // refined level element
       if (!doingPRefinement())
         for (const auto & elem : range)
         {
@@ -8267,8 +8281,8 @@ FEProblemBase::meshChanged(const bool intermediate_change,
           /* refine = */ false, *this, _material_props, _bnd_material_props, _assembly);
       const auto & range = *_mesh.coarsenedElementRange();
       Threads::parallel_reduce(range, pmp);
-      // Note that we do not do the erasure for p-refinement because the coarse level element is
-      // the same as our active refined level element
+      // Note that we do not do the erasure for p-refinement because the coarse level element is the
+      // same as our active refined level element
       if (!doingPRefinement())
         for (const auto & elem : range)
         {
@@ -8288,8 +8302,8 @@ FEProblemBase::meshChanged(const bool intermediate_change,
 
   _has_jacobian = false; // we have to recompute jacobian when mesh changed
 
-  // Now for backwards compatibility with user code that overrode the old no-arg meshChanged we
-  // must call it here
+  // Now for backwards compatibility with user code that overrode the old no-arg meshChanged we must
+  // call it here
   meshChanged();
 }
 
@@ -8297,6 +8311,19 @@ void
 FEProblemBase::notifyWhenMeshChanges(MeshChangedInterface * mci)
 {
   _notify_when_mesh_changes.push_back(mci);
+}
+
+void
+FEProblemBase::notifyWhenMeshDisplaces(MeshDisplacedInterface * mdi)
+{
+  _notify_when_mesh_displaces.push_back(mdi);
+}
+
+void
+FEProblemBase::meshDisplaced()
+{
+  for (const auto & mdi : _notify_when_mesh_displaces)
+    mdi->meshDisplaced();
 }
 
 void
@@ -8986,6 +9013,22 @@ FEProblemBase::systemBaseLinear(const unsigned int sys_num)
 }
 
 const SystemBase &
+FEProblemBase::systemBaseSolver(const unsigned int sys_num) const
+{
+  mooseAssert(sys_num < _solver_systems.size(),
+              "System number greater than the number of solver systems");
+  return *_solver_systems[sys_num];
+}
+
+SystemBase &
+FEProblemBase::systemBaseSolver(const unsigned int sys_num)
+{
+  mooseAssert(sys_num < _solver_systems.size(),
+              "System number greater than the number of solver systems");
+  return *_solver_systems[sys_num];
+}
+
+const SystemBase &
 FEProblemBase::systemBaseAuxiliary() const
 {
   return *_aux;
@@ -9090,8 +9133,8 @@ FEProblemBase::getFVMatsAndDependencies(
         for (auto * var : var_deps)
         {
           if (!var->isFV())
-            mooseError("Ghostable materials should only have finite volume variables coupled "
-                       "into them.");
+            mooseError(
+                "Ghostable materials should only have finite volume variables coupled into them.");
           else if (face_mat->hasStatefulProperties())
             mooseError("Finite volume materials do not currently support stateful properties.");
           variables.insert(var);
@@ -9112,8 +9155,8 @@ FEProblemBase::getFVMatsAndDependencies(
         for (auto * var : var_deps)
         {
           if (!var->isFV())
-            mooseError("Ghostable materials should only have finite volume variables coupled "
-                       "into them.");
+            mooseError(
+                "Ghostable materials should only have finite volume variables coupled into them.");
           else if (neighbor_mat->hasStatefulProperties())
             mooseError("Finite volume materials do not currently support stateful properties.");
           auto pr = variables.insert(var);
@@ -9141,6 +9184,18 @@ FEProblemBase::setNonlinearConvergenceNames(const std::vector<ConvergenceName> &
     paramError("nonlinear_convergence",
                "There must be one convergence object per nonlinear system");
   _nonlinear_convergence_names = convergence_names;
+}
+
+void
+FEProblemBase::setMultiAppFixedPointConvergenceName(const ConvergenceName & convergence_name)
+{
+  _multiapp_fixed_point_convergence_name = convergence_name;
+}
+
+void
+FEProblemBase::setSteadyStateConvergenceName(const ConvergenceName & convergence_name)
+{
+  _steady_state_convergence_name = convergence_name;
 }
 
 const std::vector<ConvergenceName> &
@@ -9173,6 +9228,24 @@ FEProblemBase::getLinearConvergenceNames() const
   if (_linear_convergence_names)
     return *_linear_convergence_names;
   mooseError("The linear convergence name(s) have not been set.");
+}
+
+const ConvergenceName &
+FEProblemBase::getMultiAppFixedPointConvergenceName() const
+{
+  if (_multiapp_fixed_point_convergence_name)
+    return _multiapp_fixed_point_convergence_name.value();
+  else
+    mooseError("The fixed point convergence name has not been set.");
+}
+
+const ConvergenceName &
+FEProblemBase::getSteadyStateConvergenceName() const
+{
+  if (_steady_state_convergence_name)
+    return _steady_state_convergence_name.value();
+  else
+    mooseError("The steady convergence name has not been set.");
 }
 
 void
@@ -9338,8 +9411,7 @@ FEProblemBase::computeSystems(const ExecFlagType & type)
   // When performing an adjoint solve in the optimization module, the current solver system is the
   // adjoint. However, the adjoint solve requires having accurate time derivative calculations for
   // the forward system. The cleanest way to handle such uses is just to compute the time
-  // derivatives for all solver systems instead of trying to guess which ones we need and don't
-  // need
+  // derivatives for all solver systems instead of trying to guess which ones we need and don't need
   for (auto & solver_sys : _solver_systems)
     solver_sys->compute(type);
 
@@ -9424,4 +9496,16 @@ FEProblemBase::makeLinearSolverParams()
   solver_params._type = Moose::SolveType::ST_LINEAR;
   solver_params._line_search = Moose::LineSearchType::LS_NONE;
   return solver_params;
+}
+
+const libMesh::CouplingMatrix &
+FEProblemBase::nonlocalCouplingMatrix(const unsigned i) const
+{
+  return _nonlocal_cm[i];
+}
+
+bool
+FEProblemBase::checkNonlocalCouplingRequirement() const
+{
+  return _requires_nonlocal_coupling;
 }

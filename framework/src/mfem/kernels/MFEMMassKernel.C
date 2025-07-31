@@ -7,7 +7,7 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 
 #include "MFEMMassKernel.h"
 #include "MFEMProblem.h"
@@ -22,15 +22,13 @@ MFEMMassKernel::validParams()
                              "$(k u, v)_\\Omega$ "
                              "arising from the weak form of the mass operator "
                              "$ku$.");
-  params.addParam<MFEMScalarCoefficientName>("coefficient",
-                                             "Name of property for the mass coefficient k.");
+  params.addParam<MFEMScalarCoefficientName>(
+      "coefficient", "1.", "Name of property for the mass coefficient k.");
   return params;
 }
 
 MFEMMassKernel::MFEMMassKernel(const InputParameters & parameters)
-  : MFEMKernel(parameters),
-    _coef_name(getParam<MFEMScalarCoefficientName>("coefficient")),
-    _coef(getScalarCoefficient(_coef_name))
+  : MFEMKernel(parameters), _coef(getScalarCoefficient("coefficient"))
 {
 }
 

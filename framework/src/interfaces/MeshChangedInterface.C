@@ -14,7 +14,6 @@
 InputParameters
 MeshChangedInterface::validParams()
 {
-
   InputParameters params = emptyInputParameters();
   return params;
 }

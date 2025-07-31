@@ -7,7 +7,7 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 
 #pragma once
 
@@ -15,22 +15,19 @@
 #include <mfem.hpp>
 #include "libmesh/restore_warnings.h"
 #include "MFEMGeneralUserObject.h"
+#include "MFEMBlockRestrictable.h"
 #include "CoefficientManager.h"
 
-class MFEMFunctorMaterial : public MFEMGeneralUserObject
+class MFEMFunctorMaterial : public MFEMGeneralUserObject, public MFEMBlockRestrictable
 {
 public:
   static InputParameters validParams();
-  static std::vector<std::string> subdomainsToStrings(const std::vector<SubdomainName> & blocks);
   static libMesh::Point pointFromMFEMVector(const mfem::Vector & vec);
 
   MFEMFunctorMaterial(const InputParameters & parameters);
   virtual ~MFEMFunctorMaterial();
 
-  const std::vector<SubdomainName> & getBlocks() const { return _block_ids; }
-
 protected:
-  const std::vector<SubdomainName> & _block_ids;
   Moose::MFEM::CoefficientManager & _properties;
 };
 

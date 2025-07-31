@@ -1175,7 +1175,7 @@ DerivativeStringClass(SolverSystemName);
 /// Command line argument, specialized to handle quotes in vector arguments
 DerivativeStringClass(CLIArgString);
 
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 /**
  * Coefficients used in input for MFEM residual objects
  */
@@ -1195,6 +1195,15 @@ extern const TagName SOLUTION_TAG;
 extern const TagName OLD_SOLUTION_TAG;
 extern const TagName OLDER_SOLUTION_TAG;
 extern const TagName PREVIOUS_NL_SOLUTION_TAG;
+
+enum class FEBackend
+{
+  LibMesh
+#ifdef MOOSE_MFEM_ENABLED
+  ,
+  MFEM
+#endif
+};
 }
 
 /// macros for adding Tensor index enums locally

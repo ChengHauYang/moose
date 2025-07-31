@@ -88,7 +88,11 @@ public:
   virtual const MooseMesh & mesh() const = 0;
   virtual const MooseMesh & mesh(bool use_displaced) const = 0;
 
-  virtual bool checkNonlocalCouplingRequirement() { return _requires_nonlocal_coupling; }
+  /**
+   * @returns whether there will be nonlocal coupling at any point in the simulation, e.g. whether
+   * there are any active \emph or inactive nonlocal kernels or boundary conditions
+   */
+  virtual bool checkNonlocalCouplingRequirement() const = 0;
 
   /**
    * @return whether the given solver system \p sys_num is converged
@@ -354,6 +358,11 @@ public:
    */
   virtual const SystemBase & systemBaseLinear(const unsigned int sys_num) const = 0;
   virtual SystemBase & systemBaseLinear(const unsigned int sys_num) = 0;
+  /**
+   * Return the solver system object as a base class reference given the system number
+   */
+  virtual const SystemBase & systemBaseSolver(const unsigned int sys_num) const = 0;
+  virtual SystemBase & systemBaseSolver(const unsigned int sys_num) = 0;
   /**
    * Return the auxiliary system object as a base class reference
    */
@@ -667,10 +676,7 @@ public:
   /**
    * @return the nonlocal coupling matrix for the i'th nonlinear system
    */
-  const libMesh::CouplingMatrix & nonlocalCouplingMatrix(const unsigned i) const
-  {
-    return _nonlocal_cm[i];
-  }
+  virtual const libMesh::CouplingMatrix & nonlocalCouplingMatrix(const unsigned i) const = 0;
 
   /**
    * Returns true if the problem is in the process of computing the Jacobian
@@ -981,7 +987,9 @@ public:
   void reinitFVFace(const THREAD_ID tid, const FaceInfo & fi);
 
   /**
-   * Whether the simulation has nonlocal coupling which should be accounted for in the Jacobian
+   * Whether the simulation has active nonlocal coupling which should be accounted for in the
+   * Jacobian. For this to return true, there must be at least one active nonlocal kernel or
+   * boundary condition
    */
   virtual bool hasNonlocalCoupling() const = 0;
 
@@ -1038,8 +1046,6 @@ protected:
   /// The Factory for building objects
   Factory & _factory;
 
-  std::vector<libMesh::CouplingMatrix> _nonlocal_cm; /// nonlocal coupling matrix;
-
   DiracKernelInfo _dirac_kernel_info;
 
   /// Map of material properties (block_id -> list of properties)
@@ -1079,9 +1085,6 @@ protected:
   std::vector<std::set<TagID>> _active_sc_var_coupleable_matrix_tags;
 
   std::vector<std::set<TagID>> _active_sc_var_coupleable_vector_tags;
-
-  /// nonlocal coupling requirement flag
-  bool _requires_nonlocal_coupling;
 
   /// Whether or not to use default libMesh coupling
   bool _default_ghosting;
@@ -1403,9 +1406,9 @@ SubProblem::addFunctor(const std::string & name,
       {
         auto & [requested_functor_is_ad, requestor_is_ad] = request_info_it->second;
         if (!requested_functor_is_ad && requestor_is_ad && added_functor_is_ad)
-          mooseError("We are requesting a non-AD functor from an AD object, but the true functor "
-                     "is AD. This means we could be dropping important derivatives. We will not "
-                     "allow this");
+          mooseError("We are requesting a non-AD functor '" + name +
+                     "' from an AD object, but the true functor is AD. This means we could be "
+                     "dropping important derivatives. We will not allow this");
         // We're going to eventually check whether we've fulfilled all functor requests and our
         // check will be that the multimap is empty. This request is fulfilled, so erase it from the
         // map now

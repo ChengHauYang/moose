@@ -7,9 +7,14 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 
 #include "MFEMProblem.h"
+#include "MFEMInitialCondition.h"
+#include "MFEMVariable.h"
+#include "MFEMSubMesh.h"
+#include "MFEMFunctorMaterial.h"
+#include "libmesh/string_to_enum.h"
 
 #include <vector>
 #include <algorithm>
@@ -25,7 +30,11 @@ MFEMProblem::validParams()
   return params;
 }
 
-MFEMProblem::MFEMProblem(const InputParameters & params) : ExternalProblem(params) {}
+MFEMProblem::MFEMProblem(const InputParameters & params) : ExternalProblem(params)
+{
+  // Initialise Hypre for all MFEM problems.
+  mfem::Hypre::Init();
+}
 
 void
 MFEMProblem::initialSetup()
@@ -502,6 +511,28 @@ MFEMProblem::addTransfer(const std::string & transfer_name,
     FEProblemBase::addUserObject(transfer_name, name, parameters);
   else
     FEProblemBase::addTransfer(transfer_name, name, parameters);
+}
+
+std::shared_ptr<mfem::ParGridFunction>
+MFEMProblem::getGridFunction(const std::string & name)
+{
+  return getUserObject<MFEMVariable>(name).getGridFunction();
+}
+
+void
+MFEMProblem::addInitialCondition(const std::string & ic_name,
+                                 const std::string & name,
+                                 InputParameters & parameters)
+{
+  FEProblemBase::addUserObject(ic_name, name, parameters);
+  getUserObject<MFEMInitialCondition>(name); // error check
+}
+
+std::string
+MFEMProblem::solverTypeString(const unsigned int libmesh_dbg_var(solver_sys_num))
+{
+  mooseAssert(solver_sys_num == 0, "No support for multi-system with MFEM right now");
+  return MooseUtils::prettyCppType(getProblemData().jacobian_solver.get());
 }
 
 #endif

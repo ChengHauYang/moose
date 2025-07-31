@@ -7,10 +7,11 @@
 #* Licensed under LGPL 2.1, please see LICENSE for details
 #* https://www.gnu.org/licenses/lgpl-2.1.html
 
-import re, os, sys, shutil, json, importlib.util
+import re, os, sys, shutil, json, importlib.util, inspect
 import mooseutils
 from TestHarness import OutputInterface, util
 from TestHarness.StatusSystem import StatusSystem
+from TestHarness.validation import ValidationCase, ValidationCaseClasses
 from FactorySystem.MooseObject import MooseObject
 from FactorySystem.InputParameters import InputParameters
 from pathlib import Path
@@ -82,7 +83,6 @@ class Tester(MooseObject, OutputInterface):
         params.addParam('libpng',        ['ALL'], "A test that runs only if libpng is available ('ALL', 'TRUE', 'FALSE')")
         params.addParam('libtorch',      ['ALL'], "A test that runs only if libtorch is available ('ALL', 'TRUE', 'FALSE')")
         params.addParam('libtorch_version', ['ALL'], "A list of libtorch versions for which this test will run on, supports normal comparison operators ('<', '>', etc...)")
-        params.addParam('mfem', ['ALL'], "A test that runs only if mfem is available ('ALL', 'TRUE', 'FALSE')")
         params.addParam('installation_type',['ALL'], "A test that runs under certain executable installation configurations ('ALL', 'IN_TREE', 'RELOCATED')")
 
         params.addParam('capabilities',      "", "A test that only runs if all listed capabilities are supported by the executable")
@@ -139,19 +139,24 @@ class Tester(MooseObject, OutputInterface):
 
             # Load the script; throw an exception here if it fails
             # so that the Parser can report a reasonable error
-            spec = importlib.util.spec_from_file_location('validation', path)
+            spec = importlib.util.spec_from_file_location('validation_load', path)
             module = importlib.util.module_from_spec(spec)
             try:
                 spec.loader.exec_module(module)
             except Exception as e:
                 raise ImportError(f'In validation_test={path}:\n{e}')
 
+            # Find the classes that are derived from the base validation
+            # classes in the module (the user's python script)
+            module_classes = inspect.getmembers(module, inspect.isclass)
+            base_classes = [c[1] for c in module_classes if c[1] in ValidationCaseClasses]
+            other_classes = [c[1] for c in module_classes if c[1] not in base_classes]
+            subclasses = [c for c in other_classes if issubclass(c, ValidationCase)]
+
             # Store each of the classes in the script that derives from
             # ValidationCase, and add their parameters to this Tester's
             # parameters
             validation_classes = []
-            subclasses = module.ValidationCase._subclasses.copy()
-            module.ValidationCase._subclasses = []
             validation_params = InputParameters()
             for subclass in subclasses:
                 validation_params = subclass.validParams()
@@ -232,6 +237,7 @@ class Tester(MooseObject, OutputInterface):
         # Paths to additional JSON metadata that can be collected
         self.json_metadata: dict[str, Tester.JSONMetadata] = {}
 
+        # The validation classes the user specified
         self._validation_classes = self.parameters()['_validation_classes']
 
     def getStatus(self):
@@ -283,12 +289,10 @@ class Tester(MooseObject, OutputInterface):
 
     def getResults(self, options) -> dict:
         """Get the results dict for this Tester"""
-        output_files = [os.path.join(self.getTestDir(), file) for file in self.getOutputFiles(options)]
         json_metadata = {k: os.path.join(self.getTestDir(), v.path) if v else None for k, v in self.json_metadata.items()}
         return {'name': self.__class__.__name__,
                 'command': self.getCommand(options),
                 'input_file': self.getInputFile(),
-                'output_files': output_files,
                 'json_metadata': json_metadata}
 
     def getStatusMessage(self):
@@ -708,7 +712,7 @@ class Tester(MooseObject, OutputInterface):
                         'unique_ids', 'vtk', 'tecplot', 'petsc_debug', 'curl', 'superlu', 'mumps',
                         'strumpack', 'unique_id', 'slepc',
                         'boost', 'fparser_jit', 'parmetis', 'chaco', 'party', 'ptscotch',
-                        'threading', 'libpng', 'libtorch', 'mfem']
+                        'threading', 'libpng', 'libtorch']
 
         for check in local_checks:
             test_platforms = set()

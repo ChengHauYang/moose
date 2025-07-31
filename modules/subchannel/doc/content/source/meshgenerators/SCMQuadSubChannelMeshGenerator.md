@@ -4,7 +4,7 @@
 
 ## Overview
 
-<!-- -->
+!! Intentional comment to provide extra spacing
 
 This mesh generator creates the mesh were the `SCM` solution variables associated with the subchannels live.
 The user needs to provide the number of subchannels [!param](/Mesh/SCMQuadSubChannelMeshGenerator/nx) in the -x direction and [!param](/Mesh/SCMQuadSubChannelMeshGenerator/ny) in the -y direction.
@@ -15,7 +15,7 @@ by defining their axial location [!param](/Mesh/SCMQuadSubChannelMeshGenerator/s
 
 ## Example Input File Syntax
 
-!listing /test/tests/problems/psbt_transient/psbt.i block=QuadSubChannelMesh language=cpp
+!listing /test/tests/problems/psbt/psbt_explicit.i block=QuadSubChannelMesh language=moose
 
 !syntax parameters /Mesh/SCMQuadSubChannelMeshGenerator
 

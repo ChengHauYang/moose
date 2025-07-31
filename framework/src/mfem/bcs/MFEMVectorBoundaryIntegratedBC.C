@@ -7,7 +7,7 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 
 #include "MFEMVectorBoundaryIntegratedBC.h"
 
@@ -19,14 +19,13 @@ MFEMVectorBoundaryIntegratedBC::validParams()
   InputParameters params = MFEMIntegratedBC::validParams();
   params.addClassDescription("Adds the boundary integrator to an MFEM problem for the linear form "
                              "$(\\vec f, \\vec v)_{\\partial\\Omega}$");
-  params.addRequiredParam<MFEMVectorCoefficientName>(
-      "vector_coefficient", "Vector coefficient used in the boundary integrator");
+  params.addParam<MFEMVectorCoefficientName>(
+      "vector_coefficient", "1. 1. 1.", "Vector coefficient used in the boundary integrator");
   return params;
 }
 
 MFEMVectorBoundaryIntegratedBC::MFEMVectorBoundaryIntegratedBC(const InputParameters & parameters)
-  : MFEMIntegratedBC(parameters),
-    _vec_coef(getVectorCoefficient(getParam<MFEMVectorCoefficientName>("vector_coefficient")))
+  : MFEMIntegratedBC(parameters), _vec_coef(getVectorCoefficient("vector_coefficient"))
 {
 }
 

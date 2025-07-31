@@ -120,8 +120,10 @@ extern const ExecFlagType EXEC_NONLINEAR;
 extern const ExecFlagType EXEC_POSTCHECK;
 extern const ExecFlagType EXEC_TIMESTEP_END;
 extern const ExecFlagType EXEC_TIMESTEP_BEGIN;
+extern const ExecFlagType EXEC_MULTIAPP_FIXED_POINT_ITERATION_END;
 extern const ExecFlagType EXEC_MULTIAPP_FIXED_POINT_BEGIN;
 extern const ExecFlagType EXEC_MULTIAPP_FIXED_POINT_END;
+extern const ExecFlagType EXEC_MULTIAPP_FIXED_POINT_CONVERGENCE;
 extern const ExecFlagType EXEC_FINAL;
 extern const ExecFlagType EXEC_FORCED;
 extern const ExecFlagType EXEC_FAILED;
@@ -245,7 +247,6 @@ using libMesh::out;
 
 void registerAll(Factory & f, ActionFactory & af, Syntax & s);
 
-void registerObjects(Factory & factory);
 void registerObjects(Factory & factory, const std::set<std::string> & obj_labels);
 void addActionTypes(Syntax & syntax);
 void registerActions(Syntax & syntax, ActionFactory & action_factory);

@@ -7,14 +7,14 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 
 #pragma once
 #include "MFEMKernel.h"
 
-/*
+/**
  * \f[
- * (\beta u, u')
+ * (k u, v)
  * \f]
  */
 class MFEMMassKernel : public MFEMKernel
@@ -27,7 +27,6 @@ public:
   virtual mfem::BilinearFormIntegrator * createBFIntegrator() override;
 
 protected:
-  const MFEMScalarCoefficientName & _coef_name;
   mfem::Coefficient & _coef;
 };
 

@@ -33,10 +33,14 @@ const ExecFlagType EXEC_NONLINEAR_CONVERGENCE = registerDefaultExecFlag("NONLINE
 const ExecFlagType EXEC_POSTCHECK = registerDefaultExecFlag("POSTCHECK");
 const ExecFlagType EXEC_TIMESTEP_END = registerDefaultExecFlag("TIMESTEP_END");
 const ExecFlagType EXEC_TIMESTEP_BEGIN = registerDefaultExecFlag("TIMESTEP_BEGIN");
+const ExecFlagType EXEC_MULTIAPP_FIXED_POINT_ITERATION_END =
+    registerExecFlag("MULTIAPP_FIXED_POINT_ITERATION_END");
 const ExecFlagType EXEC_MULTIAPP_FIXED_POINT_END =
     registerDefaultExecFlag("MULTIAPP_FIXED_POINT_END");
 const ExecFlagType EXEC_MULTIAPP_FIXED_POINT_BEGIN =
     registerDefaultExecFlag("MULTIAPP_FIXED_POINT_BEGIN");
+const ExecFlagType EXEC_MULTIAPP_FIXED_POINT_CONVERGENCE =
+    registerDefaultExecFlag("MULTIAPP_FIXED_POINT_CONVERGENCE");
 const ExecFlagType EXEC_FINAL = registerDefaultExecFlag("FINAL");
 const ExecFlagType EXEC_FORCED = registerExecFlag("FORCED");
 const ExecFlagType EXEC_FAILED = registerExecFlag("FAILED");
@@ -65,13 +69,6 @@ registerAll(Factory & f, ActionFactory & af, Syntax & s)
   registerActions(s, af, {"MooseApp"});
   registerAppDataFilePath("moose");
   registerRepository("moose", "github.com/idaholab/moose");
-}
-
-void
-registerObjects(Factory & factory)
-{
-  mooseDeprecated("use registerAll instead of registerObjects");
-  registerObjects(factory, {"MooseApp"});
 }
 
 void
@@ -284,7 +281,9 @@ addActionTypes(Syntax & syntax)
   registerTask("create_problem_custom", false);
   registerTask("create_problem_complete", false);
 
-  registerTask("add_default_convergence", true);
+  registerTask("add_default_nonlinear_convergence", true);
+  registerTask("add_default_multiapp_fixed_point_convergence", true);
+  registerTask("add_default_steady_state_convergence", true);
 
   registerTask("chain_control_setup", true);
 
@@ -353,7 +352,9 @@ addActionTypes(Syntax & syntax)
                            "(check_integrity_early_physics)"  // checks that systems and variables are consistent
                            "(setup_quadrature)"
                            "(add_convergence)"
-                           "(add_default_convergence)"
+                           "(add_default_nonlinear_convergence,"
+                           " add_default_multiapp_fixed_point_convergence,"
+                           " add_default_steady_state_convergence)"
                            "(add_periodic_bc)"
                            "(add_user_object, add_corrector, add_mesh_modifier)"
                            "(add_distribution)"

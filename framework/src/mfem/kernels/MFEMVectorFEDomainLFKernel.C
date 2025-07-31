@@ -7,7 +7,7 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 
 #include "MFEMVectorFEDomainLFKernel.h"
 #include "MFEMProblem.h"
@@ -21,16 +21,14 @@ MFEMVectorFEDomainLFKernel::validParams()
   params.addClassDescription("Adds the domain integrator to an MFEM problem for the linear form "
                              "$(\\vec f, \\vec v)_\\Omega$ "
                              "arising from the weak form of the forcing term $\\vec f$.");
-  params.addParam<MFEMVectorCoefficientName>("vector_coefficient",
-                                             "The name of the vector coefficient f");
+  params.addParam<MFEMVectorCoefficientName>(
+      "vector_coefficient", "1. 1. 1.", "The name of the vector coefficient f");
 
   return params;
 }
 
 MFEMVectorFEDomainLFKernel::MFEMVectorFEDomainLFKernel(const InputParameters & parameters)
-  : MFEMKernel(parameters),
-    _vec_coef_name(getParam<MFEMVectorCoefficientName>("vector_coefficient")),
-    _vec_coef(getVectorCoefficient(_vec_coef_name))
+  : MFEMKernel(parameters), _vec_coef(getVectorCoefficient("vector_coefficient"))
 {
 }
 

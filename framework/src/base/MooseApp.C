@@ -72,7 +72,7 @@
 #include <sys/utsname.h> // utsname
 #endif
 
-#ifdef LIBTORCH_ENABLED
+#ifdef MOOSE_LIBTORCH_ENABLED
 #include <torch/version.h>
 #endif
 
@@ -400,6 +400,10 @@ MooseApp::validParams()
   params.addPrivateParam<const MooseMesh *>("_master_displaced_mesh");
   params.addPrivateParam<std::unique_ptr<Backup> *>("_initial_backup", nullptr);
   params.addPrivateParam<std::shared_ptr<Parser>>("_parser");
+#ifdef MOOSE_MFEM_ENABLED
+  params.addPrivateParam<std::shared_ptr<mfem::Device>>("_mfem_device");
+  params.addPrivateParam<std::vector<std::string>>("_mfem_devices");
+#endif
 
   params.addParam<bool>(
       "use_legacy_material_output",
@@ -428,16 +432,22 @@ MooseApp::validParams()
   return params;
 }
 
-MooseApp::MooseApp(InputParameters parameters)
+MooseApp::MooseApp(const InputParameters & parameters)
   : ConsoleStreamInterface(*this),
     PerfGraphInterface(*this, "MooseApp"),
     ParallelObject(*parameters.get<std::shared_ptr<Parallel::Communicator>>(
         "_comm")), // Can't call getParam() before pars is set
-    MooseBase(parameters.get<std::string>("_type"),
-              parameters.get<std::string>("_app_name"),
+    // The use of AppFactory::getAppParams() is atrocious. However, a long time ago
+    // we decided to copy construct parameters in each derived application...
+    // which means that the "parameters" we get if someone derives from MooseApp are
+    // actually a copy of the ones built by the factory. Because we have unique
+    // application names, this allows us to reference (using _pars and MooseBase)
+    // the actual const parameters that the AppFactory made for this application
+    MooseBase(AppFactory::instance().getAppParams(parameters).get<std::string>("_type"),
+              AppFactory::instance().getAppParams(parameters).get<std::string>("_app_name"),
               *this,
-              _pars),
-    _pars(parameters),
+              AppFactory::instance().getAppParams(parameters)),
+    _pars(AppFactory::instance().getAppParams(parameters)),
     _comm(getParam<std::shared_ptr<Parallel::Communicator>>("_comm")),
     _file_base_set_by_user(false),
     _output_position_set(false),
@@ -448,13 +458,13 @@ MooseApp::MooseApp(InputParameters parameters)
     _action_factory(*this),
     _action_warehouse(*this, _syntax, _action_factory),
     _output_warehouse(*this),
-    _parser(parameters.get<std::shared_ptr<Parser>>("_parser")),
+    _parser(_pars.get<std::shared_ptr<Parser>>("_parser")),
     _builder(*this, _action_warehouse, _parser),
     _restartable_data(libMesh::n_threads()),
     _perf_graph(createRecoverablePerfGraph()),
     _solution_invalidity(createRecoverableSolutionInvalidity()),
     _rank_map(*_comm, _perf_graph),
-    _use_executor(parameters.get<bool>("use_executor")),
+    _use_executor(_pars.get<bool>("use_executor")),
     _null_executor(NULL),
     _use_nonlinear(true),
     _use_eigen_value(false),
@@ -469,8 +479,8 @@ MooseApp::MooseApp(InputParameters parameters)
     _recover(false),
     _restart(false),
     _split_mesh(false),
-    _use_split(parameters.get<bool>("use_split")),
-    _force_restart(parameters.get<bool>("force_restart")),
+    _use_split(_pars.get<bool>("use_split")),
+    _force_restart(_pars.get<bool>("force_restart")),
 #ifdef DEBUG
     _trap_fpe(true),
 #else
@@ -478,15 +488,15 @@ MooseApp::MooseApp(InputParameters parameters)
 #endif
     _test_checkpoint_half_transient(false),
     _check_input(getParam<bool>("check_input")),
-    _multiapp_level(
-        isParamValid("_multiapp_level") ? parameters.get<unsigned int>("_multiapp_level") : 0),
-    _multiapp_number(
-        isParamValid("_multiapp_number") ? parameters.get<unsigned int>("_multiapp_number") : 0),
-    _use_master_mesh(parameters.get<bool>("_use_master_mesh")),
-    _master_mesh(isParamValid("_master_mesh") ? parameters.get<const MooseMesh *>("_master_mesh")
+    _multiapp_level(isParamValid("_multiapp_level") ? _pars.get<unsigned int>("_multiapp_level")
+                                                    : 0),
+    _multiapp_number(isParamValid("_multiapp_number") ? _pars.get<unsigned int>("_multiapp_number")
+                                                      : 0),
+    _use_master_mesh(_pars.get<bool>("_use_master_mesh")),
+    _master_mesh(isParamValid("_master_mesh") ? _pars.get<const MooseMesh *>("_master_mesh")
                                               : nullptr),
     _master_displaced_mesh(isParamValid("_master_displaced_mesh")
-                               ? parameters.get<const MooseMesh *>("_master_displaced_mesh")
+                               ? _pars.get<const MooseMesh *>("_master_displaced_mesh")
                                : nullptr),
     _mesh_generator_system(*this),
     _chain_control_system(*this),
@@ -495,13 +505,55 @@ MooseApp::MooseApp(InputParameters parameters)
     _output_buffer_cache(nullptr),
     _automatic_automatic_scaling(getParam<bool>("automatic_automatic_scaling")),
     _initial_backup(getParam<std::unique_ptr<Backup> *>("_initial_backup"))
-#ifdef LIBTORCH_ENABLED
+#ifdef MOOSE_LIBTORCH_ENABLED
     ,
     _libtorch_device(determineLibtorchDeviceType(getParam<MooseEnum>("libtorch_device")))
 #endif
+#ifdef MOOSE_MFEM_ENABLED
+    ,
+    _mfem_device(isParamValid("_mfem_device")
+                     ? getParam<std::shared_ptr<mfem::Device>>("_mfem_device")
+                     : nullptr),
+    _mfem_devices(
+        isParamValid("_mfem_devices")
+            ? std::set<std::string>(getParam<std::vector<std::string>>("_mfem_devices").begin(),
+                                    getParam<std::vector<std::string>>("_mfem_devices").end())
+            : std::set<std::string>{})
+#endif
 {
+  if (&parameters != &_pars)
+  {
+    const auto show_trace = Moose::show_trace;
+    Moose::show_trace = false;
+    const std::string bad_params = "(InputParameters parameters)";
+    const std::string good_params = "(const InputParameters & parameters)";
+    const std::string source_constructor = type() + "::" + type();
+    mooseDoOnce(mooseDeprecated(type(),
+                                " copy-constructs its input parameters.\n\n",
+                                "This is deprecated and will not be allowed in the future.\n\n",
+                                "In ",
+                                type(),
+                                ".C, change:\n  ",
+                                source_constructor,
+                                bad_params,
+                                " -> ",
+                                source_constructor,
+                                good_params,
+                                "\n\n",
+                                "In ",
+                                type(),
+                                ".h, change:\n  ",
+                                type(),
+                                bad_params,
+                                "; -> ",
+                                type(),
+                                good_params,
+                                ";"));
+    Moose::show_trace = show_trace;
+  }
+
   // Set the TIMPI sync type via --timpi-sync
-  const auto & timpi_sync = parameters.get<std::string>("timpi_sync");
+  const auto & timpi_sync = _pars.get<std::string>("timpi_sync");
   const_cast<Parallel::Communicator &>(comm()).sync_type(timpi_sync);
 
 #ifdef HAVE_GPERFTOOLS
@@ -689,11 +741,22 @@ MooseApp::MooseApp(InputParameters parameters)
     std::this_thread::sleep_for(std::chrono::seconds(getParam<unsigned int>("stop_for_debugger")));
   }
 
-  if (_master_mesh && _multiapp_level == 0)
+  if (_master_mesh && isUltimateMaster())
     mooseError("Mesh can be passed in only for sub-apps");
 
   if (_master_displaced_mesh && !_master_mesh)
     mooseError("_master_mesh should have been set when _master_displaced_mesh is set");
+
+#ifdef MOOSE_MFEM_ENABLED
+  if (_mfem_device)
+  {
+    mooseAssert(!isUltimateMaster(),
+                "The MFEM device should only be auto-set for sub-applications");
+    mooseAssert(!_mfem_devices.empty(),
+                "If we are a sub-application and we have an MFEM device object, then we must know "
+                "its configuration string");
+  }
+#endif
 
   // Data specifically associated with the mesh (meta-data) that will read from the restart
   // file early during the simulation setup so that they are available to Actions and other objects
@@ -701,7 +764,7 @@ MooseApp::MooseApp(InputParameters parameters)
   // until all objects have been created and all Actions have been executed (i.e. initialSetup).
   registerRestartableDataMapName(MooseApp::MESH_META_DATA, MooseApp::MESH_META_DATA_SUFFIX);
 
-  if (parameters.have_parameter<bool>("use_legacy_dirichlet_bc"))
+  if (_pars.have_parameter<bool>("use_legacy_dirichlet_bc"))
     mooseDeprecated("The parameter 'use_legacy_dirichlet_bc' is no longer valid.\n\n",
                     "All Dirichlet boundary conditions are preset by default.\n\n",
                     "Remove said parameter in ",
@@ -756,7 +819,7 @@ MooseApp::registerCapabilities()
 
   {
     const auto doc = "LibTorch machine learning and parallel tensor algebra library";
-#ifdef LIBTORCH_ENABLED
+#ifdef MOOSE_LIBTORCH_ENABLED
     addCapability("libtorch", TORCH_VERSION, doc);
 #else
     missingCapability("libtorch",
@@ -770,7 +833,7 @@ MooseApp::registerCapabilities()
 
   {
     const auto doc = "MFEM finite element library";
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
     haveCapability("mfem", doc);
 #else
     missingCapability("mfem",
@@ -1127,6 +1190,9 @@ MooseApp::~MooseApp()
   // dlclose an option
   _restartable_data.clear();
 
+  // Remove this app's parameters from the AppFactory
+  AppFactory::instance().clearAppParams(parameters(), {});
+
 #ifdef LIBMESH_HAVE_DLOPEN
   // Close any open dynamic libraries
   for (const auto & lib_pair : _lib_handles)
@@ -1172,10 +1238,6 @@ MooseApp::setupOptions()
   _distributed_mesh_on_command_line = getParam<bool>("distributed_mesh");
 
   _test_checkpoint_half_transient = getParam<bool>("test_checkpoint_half_transient");
-
-  // The no_timing flag takes precedence over the timing flag.
-  if (getParam<bool>("no_timing"))
-    _pars.set<bool>("timing") = false;
 
   if (getParam<bool>("trap_fpe"))
   {
@@ -3111,7 +3173,10 @@ MooseApp::attachRelationshipManagers(MeshBase & mesh, MooseMesh & moose_mesh)
     if (rm->isType(Moose::RelationshipManagerType::GEOMETRIC))
     {
       if (rm->attachGeometricEarly())
+      {
         mesh.add_ghosting_functor(createRMFromTemplateAndInit(*rm, moose_mesh, mesh));
+        _attached_relationship_managers[Moose::RelationshipManagerType::GEOMETRIC].insert(rm.get());
+      }
       else
       {
         // If we have a geometric ghosting functor that can't be attached early, then we have to
@@ -3430,7 +3495,7 @@ MooseApp::constructingMeshGenerators() const
          _mesh_generator_system.appendingMeshGenerators();
 }
 
-#ifdef LIBTORCH_ENABLED
+#ifdef MOOSE_LIBTORCH_ENABLED
 torch::DeviceType
 MooseApp::determineLibtorchDeviceType(const MooseEnum & device_enum) const
 {
@@ -3500,3 +3565,24 @@ MooseApp::addCapability(const std::string & capability, const char * value, cons
 {
   Moose::Capabilities::getCapabilityRegistry().add(capability, std::string(value), doc);
 }
+
+#ifdef MOOSE_MFEM_ENABLED
+void
+MooseApp::setMFEMDevice(const std::string & device_string, Moose::PassKey<MFEMExecutioner>)
+{
+  const auto string_vec = MooseUtils::split(device_string, ",");
+  auto string_set = std::set<std::string>(string_vec.begin(), string_vec.end());
+  if (!_mfem_device)
+  {
+    _mfem_device = std::make_shared<mfem::Device>(device_string);
+    _mfem_devices = std::move(string_set);
+    _mfem_device->Print(Moose::out);
+  }
+  else if (string_set != _mfem_devices)
+    mooseError("Attempted to configure with MFEM devices '",
+               MooseUtils::join(string_set, " "),
+               "', but we have already configured the MFEM device object with the devices '",
+               MooseUtils::join(_mfem_devices, " "),
+               "'");
+}
+#endif

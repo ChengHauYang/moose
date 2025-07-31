@@ -7,7 +7,7 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 
 #include "MFEMLinearElasticityKernel.h"
 #include "MFEMProblem.h"
@@ -29,19 +29,15 @@ MFEMLinearElasticityKernel::validParams()
       "where $E$ is Young's modulus and $\\nu$ is Poisson's ratio.");
 
   params.addParam<MFEMScalarCoefficientName>(
-      "lambda", "Name of MFEM Lame constant lambda to multiply the div(u)*I term by");
+      "lambda", "1.", "Name of MFEM Lame constant lambda to multiply the div(u)*I term by");
   params.addParam<MFEMScalarCoefficientName>(
-      "mu", "Name of MFEM Lame constant mu to multiply the gradients term by");
+      "mu", "1.", "Name of MFEM Lame constant mu to multiply the gradients term by");
 
   return params;
 }
 
 MFEMLinearElasticityKernel::MFEMLinearElasticityKernel(const InputParameters & parameters)
-  : MFEMKernel(parameters),
-    _lambda_name(getParam<MFEMScalarCoefficientName>("lambda")),
-    _mu_name(getParam<MFEMScalarCoefficientName>("mu")),
-    _lambda(getScalarCoefficient(_lambda_name)),
-    _mu(getScalarCoefficient(_mu_name))
+  : MFEMKernel(parameters), _lambda(getScalarCoefficient("lambda")), _mu(getScalarCoefficient("mu"))
 {
 }
 

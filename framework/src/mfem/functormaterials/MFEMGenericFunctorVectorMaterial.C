@@ -7,7 +7,7 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 
 #include "MFEMGenericFunctorVectorMaterial.h"
 #include "MFEMProblem.h"
@@ -84,7 +84,7 @@ MFEMGenericFunctorVectorMaterial::MFEMGenericFunctorVectorMaterial(
 
   for (const auto i : index_range(_prop_names))
     _properties.declareVectorProperty(
-        _prop_names[i], subdomainsToStrings(_block_ids), _prop_values[i]);
+        _prop_names[i], subdomainsToStrings(_subdomain_names), _prop_values[i]);
 }
 
 MFEMGenericFunctorVectorMaterial::~MFEMGenericFunctorVectorMaterial() {}

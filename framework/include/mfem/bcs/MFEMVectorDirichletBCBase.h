@@ -7,7 +7,7 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 
 #pragma once
 
@@ -22,7 +22,6 @@ public:
 
 protected:
   MFEMVectorDirichletBCBase(const InputParameters & parameters);
-  const MFEMVectorCoefficientName & _vec_coef_name;
   mfem::VectorCoefficient & _vec_coef;
 };
 

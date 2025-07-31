@@ -9,13 +9,9 @@
 
 #pragma once
 
-#include "MooseEnum.h"
-
 // Forward declarations
 class FEProblemBase;
 class InputParameters;
-template <typename T>
-InputParameters validParams();
 
 /**
  * Interface for notifications that the mesh has changed.

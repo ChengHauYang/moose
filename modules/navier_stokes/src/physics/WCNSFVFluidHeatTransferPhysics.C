@@ -304,7 +304,9 @@ WCNSFVFluidHeatTransferPhysics::addEnergyInletBC()
 void
 WCNSFVFluidHeatTransferPhysics::addEnergyWallBC()
 {
-  const auto & wall_boundaries = _flow_equations_physics->getWallBoundaries();
+  const auto & wall_boundaries = isParamSetByUser("energy_wall_boundaries")
+                                     ? getParam<std::vector<BoundaryName>>("energy_wall_boundaries")
+                                     : _flow_equations_physics->getWallBoundaries();
   if (wall_boundaries.size() != _energy_wall_types.size())
     paramError("energy_wall_types",
                "Energy wall types (size " + std::to_string(_energy_wall_types.size()) +
@@ -320,7 +322,7 @@ WCNSFVFluidHeatTransferPhysics::addEnergyWallBC()
   {
     if (_energy_wall_types[bc_ind] == "fixed-temperature")
     {
-      const std::string bc_type = "FVFunctorDirichletBC";
+      const std::string bc_type = "FVADFunctorDirichletBC";
       InputParameters params = getFactory().getValidParams(bc_type);
       params.set<NonlinearVariableName>("variable") = _fluid_temperature_name;
       params.set<MooseFunctorName>("functor") = _energy_wall_functors[bc_ind];

@@ -75,7 +75,6 @@ centre_y = 0.1
   [laplacian]
     type = MFEMDiffusionKernel
     variable = velocity_potential
-    coefficient = 1.0
   []
 []
 
@@ -111,7 +110,6 @@ centre_y = 0.1
     type = MFEML2Error
     variable = velocity_potential
     function = theta
-    execution_order_group = 1
   []
   [velocity_error]
     type = MFEMVectorL2Error

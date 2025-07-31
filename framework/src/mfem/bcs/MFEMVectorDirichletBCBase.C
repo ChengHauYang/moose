@@ -7,7 +7,7 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 
 #include "MFEMVectorDirichletBCBase.h"
 
@@ -15,16 +15,15 @@ InputParameters
 MFEMVectorDirichletBCBase::validParams()
 {
   InputParameters params = MFEMEssentialBC::validParams();
-  params.addRequiredParam<MFEMVectorCoefficientName>(
+  params.addParam<MFEMVectorCoefficientName>(
       "vector_coefficient",
+      "0. 0. 0.",
       "Vector coefficient specifying the values the variable takes on the boundary");
   return params;
 }
 
 MFEMVectorDirichletBCBase::MFEMVectorDirichletBCBase(const InputParameters & parameters)
-  : MFEMEssentialBC(parameters),
-    _vec_coef_name(getParam<MFEMVectorCoefficientName>("vector_coefficient")),
-    _vec_coef(getVectorCoefficient(_vec_coef_name))
+  : MFEMEssentialBC(parameters), _vec_coef(getVectorCoefficient("vector_coefficient"))
 {
 }
 

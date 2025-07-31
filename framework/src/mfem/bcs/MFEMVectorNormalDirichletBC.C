@@ -7,7 +7,7 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 
 #include "MFEMVectorNormalDirichletBC.h"
 
@@ -30,7 +30,7 @@ MFEMVectorNormalDirichletBC::MFEMVectorNormalDirichletBC(const InputParameters &
 void
 MFEMVectorNormalDirichletBC::ApplyBC(mfem::GridFunction & gridfunc)
 {
-  gridfunc.ProjectBdrCoefficientNormal(_vec_coef, getBoundaries());
+  gridfunc.ProjectBdrCoefficientNormal(_vec_coef, getBoundaryMarkers());
 }
 
 #endif

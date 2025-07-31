@@ -7,7 +7,7 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 
 #include "MFEMHypreFGMRES.h"
 #include "MFEMProblem.h"
@@ -31,7 +31,6 @@ MFEMHypreFGMRES::validParams()
 
 MFEMHypreFGMRES::MFEMHypreFGMRES(const InputParameters & parameters) : MFEMSolverBase(parameters)
 {
-  mfem::Hypre::Init();
   constructSolver(parameters);
 }
 
@@ -61,6 +60,10 @@ MFEMHypreFGMRES::updateSolver(mfem::ParBilinearForm & a, mfem::Array<int> & tdof
   }
   else if (_lor)
   {
+    if (!checkSpectralEquivalence(a))
+      mooseError("Low-Order-Refined solver requires the FESpace closed_basis to be GaussLobatto "
+                 "and the open-basis to be IntegratedGLL for ND and RT elements.");
+
     mfem::ParLORDiscretization lor_disc(a, tdofs);
     auto lor_solver = new mfem::LORSolver<mfem::HypreFGMRES>(
         lor_disc, getMFEMProblem().mesh().getMFEMParMesh().GetComm());

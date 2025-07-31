@@ -1,4 +1,4 @@
-#ifdef MFEM_ENABLED
+#ifdef MOOSE_MFEM_ENABLED
 
 #include "MFEMObjectUnitTest.h"
 #include "MFEMGenericFunctorMaterial.h"
@@ -64,12 +64,8 @@ check_vector(mfem::VectorCoefficient & coef,
   mfem::Vector vec;
   coef.Eval(vec, fe_transform, point);
   int errors = 0;
-  if (vec[0] != expected[0])
-    errors++;
-  if (vec[1] != expected[1])
-    errors++;
-  if (vec[2] != expected[2])
-    errors++;
+  for (const auto i : make_range(vec.Size()))
+    errors += vec[i] != expected[i];
   if (errors > 1)
   {
     return testing::AssertionFailure() << "Vector [" << vec[0] << ", " << vec[1] << ", " << vec[2]
@@ -130,12 +126,12 @@ TEST_F(MFEMFunctorScalarMaterialTest, MFEMGenericFunctorMaterial_PW)
   coef_params1.set<std::vector<std::string>>("prop_names") = {"coef1", "coef2", "coef3"};
   coef_params1.set<std::vector<MFEMScalarCoefficientName>>("prop_values") = {
       "func1", "func2", "1."};
-  coef_params1.set<std::vector<SubdomainName>>("block") = {"1", "2"};
+  coef_params1.set<std::vector<SubdomainName>>("block") = {"1"};
   _mfem_problem->addFunctorMaterial("MFEMGenericFunctorMaterial", "material1", coef_params1);
   InputParameters coef_params2 = _factory.getValidParams("MFEMGenericFunctorMaterial");
   coef_params2.set<std::vector<std::string>>("prop_names") = {"coef1", "coef3"};
   coef_params2.set<std::vector<MFEMScalarCoefficientName>>("prop_values") = {"func2", "4."};
-  coef_params2.set<std::vector<SubdomainName>>("block") = {"3"};
+  coef_params2.set<std::vector<SubdomainName>>("block") = {"2"};
   _mfem_problem->addFunctorMaterial("MFEMGenericFunctorMaterial", "material2", coef_params2);
 
   mfem::Coefficient & coef1 = _mfem_problem->getCoefficients().getScalarCoefficient("coef1");
@@ -146,11 +142,8 @@ TEST_F(MFEMFunctorScalarMaterialTest, MFEMGenericFunctorMaterial_PW)
   EXPECT_EQ(coef1.Eval(fe_transform, point2), 1.5);
   fe_transform.Attribute = 2;
   EXPECT_EQ(coef1.Eval(fe_transform, point1), 0.0);
-  EXPECT_EQ(coef1.Eval(fe_transform, point2), 1.5);
-  fe_transform.Attribute = 3;
-  EXPECT_EQ(coef1.Eval(fe_transform, point1), 0.0);
   EXPECT_EQ(coef1.Eval(fe_transform, point2), 0.5);
-  fe_transform.Attribute = 4;
+  fe_transform.Attribute = 3;
   EXPECT_EQ(coef1.Eval(fe_transform, point1), 0.0);
   EXPECT_EQ(coef1.Eval(fe_transform, point2), 0.0);
 
@@ -162,11 +155,8 @@ TEST_F(MFEMFunctorScalarMaterialTest, MFEMGenericFunctorMaterial_PW)
   EXPECT_EQ(coef2.Eval(fe_transform, point2), 0.5);
   fe_transform.Attribute = 2;
   EXPECT_EQ(coef2.Eval(fe_transform, point1), 0.0);
-  EXPECT_EQ(coef2.Eval(fe_transform, point2), 0.5);
-  fe_transform.Attribute = 3;
-  EXPECT_EQ(coef2.Eval(fe_transform, point1), 0.0);
   EXPECT_EQ(coef2.Eval(fe_transform, point2), 0.0);
-  fe_transform.Attribute = 4;
+  fe_transform.Attribute = 3;
   EXPECT_EQ(coef2.Eval(fe_transform, point1), 0.0);
   EXPECT_EQ(coef2.Eval(fe_transform, point2), 0.0);
 
@@ -177,12 +167,9 @@ TEST_F(MFEMFunctorScalarMaterialTest, MFEMGenericFunctorMaterial_PW)
   EXPECT_EQ(coef3.Eval(fe_transform, point1), 1.0);
   EXPECT_EQ(coef3.Eval(fe_transform, point2), 1.0);
   fe_transform.Attribute = 2;
-  EXPECT_EQ(coef3.Eval(fe_transform, point1), 1.0);
-  EXPECT_EQ(coef3.Eval(fe_transform, point2), 1.0);
-  fe_transform.Attribute = 3;
   EXPECT_EQ(coef3.Eval(fe_transform, point1), 4.0);
   EXPECT_EQ(coef3.Eval(fe_transform, point2), 4.0);
-  fe_transform.Attribute = 4;
+  fe_transform.Attribute = 3;
   EXPECT_EQ(coef3.Eval(fe_transform, point1), 0.0);
   EXPECT_EQ(coef3.Eval(fe_transform, point2), 0.0);
 }
@@ -273,13 +260,13 @@ TEST_F(MFEMFunctorVectorMaterialTest, MFEMGenericFunctorVectorMaterial_PW)
       "coef1", "coef2", "constant1", "constant2"};
   coef_params1.set<std::vector<MFEMVectorCoefficientName>>("prop_values") = {
       "func1", "func2", "{0.", "1.", "2.}", "{0.5", "1.", "1.5}"};
-  coef_params1.set<std::vector<SubdomainName>>("block") = {"1", "2"};
+  coef_params1.set<std::vector<SubdomainName>>("block") = {"1"};
   _mfem_problem->addFunctorMaterial("MFEMGenericFunctorVectorMaterial", "material1", coef_params1);
   InputParameters coef_params2 = _factory.getValidParams("MFEMGenericFunctorVectorMaterial");
   coef_params2.set<std::vector<std::string>>("prop_names") = {"coef1", "constant1"};
   coef_params2.set<std::vector<MFEMVectorCoefficientName>>("prop_values") = {
       "func2", "{1.5", "2.5", "3.5}"};
-  coef_params2.set<std::vector<SubdomainName>>("block") = {"3"};
+  coef_params2.set<std::vector<SubdomainName>>("block") = {"2"};
   _mfem_problem->addFunctorMaterial("MFEMGenericFunctorVectorMaterial", "material2", coef_params2);
   mfem::Vector a({0., 1., 2.}), b({1.5, 2.5, 3.5}), c({0., 0., 0.}), d({0.5, 1., 1.5}),
       zero({0., 0., 0.});
@@ -291,12 +278,9 @@ TEST_F(MFEMFunctorVectorMaterialTest, MFEMGenericFunctorVectorMaterial_PW)
   EXPECT_TRUE(check_vector(coef1, fe_transform, point1, a));
   EXPECT_TRUE(check_vector(coef1, fe_transform, point2, b));
   fe_transform.Attribute = 2;
-  EXPECT_TRUE(check_vector(coef1, fe_transform, point1, a));
-  EXPECT_TRUE(check_vector(coef1, fe_transform, point2, b));
-  fe_transform.Attribute = 3;
   EXPECT_TRUE(check_vector(coef1, fe_transform, point1, c));
   EXPECT_TRUE(check_vector(coef1, fe_transform, point2, d));
-  fe_transform.Attribute = 4;
+  fe_transform.Attribute = 3;
   EXPECT_TRUE(check_vector(coef1, fe_transform, point1, zero));
   EXPECT_TRUE(check_vector(coef1, fe_transform, point2, zero));
 
@@ -307,12 +291,9 @@ TEST_F(MFEMFunctorVectorMaterialTest, MFEMGenericFunctorVectorMaterial_PW)
   EXPECT_TRUE(check_vector(coef2, fe_transform, point1, c));
   EXPECT_TRUE(check_vector(coef2, fe_transform, point2, d));
   fe_transform.Attribute = 2;
-  EXPECT_TRUE(check_vector(coef2, fe_transform, point1, c));
-  EXPECT_TRUE(check_vector(coef2, fe_transform, point2, d));
-  fe_transform.Attribute = 3;
   EXPECT_TRUE(check_vector(coef2, fe_transform, point1, zero));
   EXPECT_TRUE(check_vector(coef2, fe_transform, point2, zero));
-  fe_transform.Attribute = 4;
+  fe_transform.Attribute = 3;
   EXPECT_TRUE(check_vector(coef2, fe_transform, point1, zero));
   EXPECT_TRUE(check_vector(coef2, fe_transform, point2, zero));
 
@@ -324,12 +305,9 @@ TEST_F(MFEMFunctorVectorMaterialTest, MFEMGenericFunctorVectorMaterial_PW)
   EXPECT_TRUE(check_vector(constant1, fe_transform, point1, a));
   EXPECT_TRUE(check_vector(constant1, fe_transform, point2, a));
   fe_transform.Attribute = 2;
-  EXPECT_TRUE(check_vector(constant1, fe_transform, point1, a));
-  EXPECT_TRUE(check_vector(constant1, fe_transform, point2, a));
-  fe_transform.Attribute = 3;
   EXPECT_TRUE(check_vector(constant1, fe_transform, point1, b));
   EXPECT_TRUE(check_vector(constant1, fe_transform, point2, b));
-  fe_transform.Attribute = 4;
+  fe_transform.Attribute = 3;
   EXPECT_TRUE(check_vector(constant1, fe_transform, point1, zero));
   EXPECT_TRUE(check_vector(constant1, fe_transform, point2, zero));
 
@@ -341,12 +319,9 @@ TEST_F(MFEMFunctorVectorMaterialTest, MFEMGenericFunctorVectorMaterial_PW)
   EXPECT_TRUE(check_vector(constant2, fe_transform, point1, d));
   EXPECT_TRUE(check_vector(constant2, fe_transform, point2, d));
   fe_transform.Attribute = 2;
-  EXPECT_TRUE(check_vector(constant2, fe_transform, point1, d));
-  EXPECT_TRUE(check_vector(constant2, fe_transform, point2, d));
-  fe_transform.Attribute = 3;
   EXPECT_TRUE(check_vector(constant2, fe_transform, point1, zero));
   EXPECT_TRUE(check_vector(constant2, fe_transform, point2, zero));
-  fe_transform.Attribute = 4;
+  fe_transform.Attribute = 3;
   EXPECT_TRUE(check_vector(constant2, fe_transform, point1, zero));
   EXPECT_TRUE(check_vector(constant2, fe_transform, point2, zero));
 }
