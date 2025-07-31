@@ -437,9 +437,8 @@ npr_order = SECOND
   [isohard]
     type = PiecewiseLinear
     x = '0 0.002 0.01 10000' # strain
-    y = '2.35e8 2.4e8  4.8e8  4.8e8'  # Pa # stress (Pa)
+    y = '2.35e8 2.4e8  4.8e8  4.8e8' # Pa # stress (Pa)
   []
-
 []
 
 [BCs]

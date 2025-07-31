@@ -1,6 +1,3 @@
-n = 90
-nx = ${fparse n*3}
-
 [Mesh]
 
   [gen]
@@ -8,10 +5,8 @@ nx = ${fparse n*3}
     dim = 2
     dx = '3'
     dy = '1'
-    #ix = '90'
-    #iy = '30'
-    ix = '${nx}'
-    iy = '${n}'
+    ix = '90'
+    iy = '30'
     subdomain_id = '1'
   []
 
@@ -25,7 +20,7 @@ nx = ${fparse n*3}
     subdomain_id_neighbor_intercepted = 5
     mark_neighbor_of_intercepted = false
     threshold = 1
-    lambda = 0.5
+    lambda = 1 
     outer_boundary = false
     #outer_boundary = true
     water_tight_geo_path = 'half_mesh.msh'

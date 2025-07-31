@@ -1,6 +1,3 @@
-n = 90
-nx = ${fparse n*3}
-
 [Mesh]
 
   [gen]
@@ -8,10 +5,8 @@ nx = ${fparse n*3}
     dim = 2
     dx = '3'
     dy = '1'
-    #ix = '90'
-    #iy = '30'
-    ix = '${nx}'
-    iy = '${n}'
+    ix = '30'
+    iy = '10'
     subdomain_id = '1'
   []
 
