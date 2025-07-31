@@ -96,11 +96,11 @@ neml2_input = viscoplasticity_isoharden
   radius = 0.03
   execute_on_esm = 'TIMESTEP_BEGIN'
 
-  old_subdomain_reinitialized = false
-  reinitialize_subdomains = '0'
-  reinitialization_strategy = "POLYNOMIAL_NEIGHBOR"
-  reinitialize_variables = "T disp_x disp_y"
-  polynomial_fitters = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y'
+  # old_subdomain_reinitialized = false
+  # reinitialize_subdomains = '0'
+  # reinitialization_strategy = "POLYNOMIAL_NEIGHBOR"
+  # reinitialize_variables = "T disp_x disp_y"
+  # polynomial_fitters = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y'
   # for heat source
   power = 100
   a = 0.02

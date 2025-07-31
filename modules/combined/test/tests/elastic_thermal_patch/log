@@ -1,0 +1,4239 @@
+
+[36m
+*** Info ***
+/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/combined/test/tests/elastic_thermal_patch/esm-bfm-act-before-sol-2D-neml2-npr-IC.i:119.7:
+The following information occurred in the Action 'all' of type QuasiStaticSolidMechanicsPhysics.
+
+SolidMechanics Action: selecting 'total small strain' formulation. Use `incremental = true` to select 'incremental small strain' instead.[39m
+
+[33m
+*** Warning, This code is deprecated and will be removed in future versions:
+/Users/chenghau.yang/Documents/Package/moose-chenghau/modules/combined/test/tests/elastic_thermal_patch/esm-bfm-act-before-sol-2D-neml2-npr-IC.i:306: (Outputs/interval):
+'interval' has been deprecated and will be removed on 02/01/2025. Please use 'time_step_interval' instead.
+[39m
+
+[36mNEML2 MATERIAL MODEL SUMMARY BEGIN ********************************************[39m
+NEML2 input file location: /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/combined/test/tests/elastic_thermal_patch/models/viscoplasticity_isoharden.i
+NEML2 action path:         NEML2/all
+[36mMaterial model structure ------------------------------------------------------[39m
+Name:       model
+Input:      forces/E [SR2]
+            forces/t [Scalar]
+            old_forces/E [SR2]
+            old_forces/t [Scalar]
+            old_state/S [SR2]
+            old_state/internal/ep [Scalar]
+            state/S [SR2]
+            state/internal/ep [Scalar]
+Output:     state/S [SR2]
+            state/internal/ep [Scalar]
+Parameters: elasticity_E [Scalar][Double][cpu]
+            elasticity_nu [Scalar][Double][cpu]
+            flow_rate_eta [Scalar][Double][cpu]
+            flow_rate_n [Scalar][Double][cpu]
+            isoharden_K [Scalar][Double][cpu]
+            yield_sy [Scalar][Double][cpu]
+Buffers:    Eerate_c0 [Scalar][Double][cpu]
+            Eerate_c_0 [Scalar][Double][cpu]
+            Eerate_c_1 [Scalar][Double][cpu]
+[36mTransfer between MOOSE and NEML2 ----------------------------------------------[39m
+                   neml2_strain --> forces/E
+             (old) neml2_strain --> old_forces/E
+                           time --> forces/t
+                     (old) time --> old_forces/t
+             (old) neml2_stress --> old_state/S
+(old) equivalent_plastic_strain --> old_state/internal/ep
+                   neml2_stress <-- state/S
+      equivalent_plastic_strain <-- state/internal/ep
+                 neml2_jacobian <-- d(state/S)/d(forces/E)
+[36mNEML2 MATERIAL MODEL SUMMARY END **********************************************[39m
+
+[36m*** Automatic Eigenstrain Names ***
+all: thermal_expansion
+[39mFramework Information:
+MOOSE Version:           git commit fa57992d74 on 2025-07-31
+LibMesh Version:         
+PETSc Version:           3.23.0
+SLEPc Version:           3.23.0
+Libtorch Version:        2.2.0
+Current Time:            Thu Jul 31 11:03:21 2025
+Executable Timestamp:    Thu Jul 31 10:24:38 2025
+
+Input File(s):
+  /Users/chenghau.yang/Documents/Package/moose-chenghau/modules/combined/test/tests/elastic_thermal_patch/esm-bfm-act-before-sol-2D-neml2-npr-IC.i
+
+Checkpoint:
+  Wall Time Interval:      Every 3600 s
+  User Checkpoint:         Disabled
+  # Checkpoints Kept:      2
+  Execute On:              TIMESTEP_END 
+
+Parallelism:
+  Num Processors:          1
+  Num Threads:             1
+
+Mesh: 
+  Parallel Type:           replicated
+  Mesh Dimension:          2
+  Spatial Dimension:       2
+  Nodes:                   3401
+  Elems:                   3201
+  Num Subdomains:          2
+
+Nonlinear System:
+  Num DOFs:                7899
+  Num Local DOFs:          7899
+  Variables:               { "T" "disp_x" "disp_y" } 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Auxiliary System:
+  Num DOFs:                5634
+  Num Local DOFs:          5634
+  Variables:               "vonmises_cauchy_stress" "ep" 
+  Finite Element Types:    "MONOMIAL" "MONOMIAL" 
+  Approximation Orders:    "CONSTANT" "CONSTANT" 
+
+Execution Information:
+  Executioner:             Transient
+  TimeStepper:             ConstantDT
+  TimeIntegrator(s):       ImplicitEuler
+  Solver Mode:             NEWTON 
+  PETSc Preconditioner:    lu 
+  MOOSE Preconditioner:    SMP (auto) 
+Spatio-temporal path: path
+      position: (x,y,z)=(    0.88,      0.5,        0)
+      velocity: (x,y,z)=(       0,        0,        0)
+     direction: (x,y,z)=(       0,        0,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(    0.88,      0.5,        0)
+      velocity: (x,y,z)=(       0,        0,        0)
+     direction: (x,y,z)=(       0,        0,        0)
+
+Time Step 0, time = 0
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(    0.88,      0.5,        0)
+      velocity: (x,y,z)=(-0.000749843, 0.0238604,        0)
+     direction: (x,y,z)=(-0.0314108, 0.999507,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(    0.88,      0.5,        0)
+      velocity: (x,y,z)=(-0.000749843, 0.0238604,        0)
+     direction: (x,y,z)=(-0.0314108, 0.999507,        0)
+
+Time Step 1, time = 1, dt = 1
+
+Performing automatic scaling calculation
+
+Currently Executing
+    Computing Automatic Scaling
+      Computing Jacobian
+        Computing User Objects
+          Finished Solving NEML2 material model                                          [[33m  0.07 s[39m] [[33m  373 MB[39m]
+        Finished Computing User Objects                                                  [[33m  0.08 s[39m] [[33m  373 MB[39m]
+      Finished Computing Jacobian                                                        [[33m  0.14 s[39m] [[33m  373 MB[39m]
+    Finished Computing Automatic Scaling                                                 [[33m  0.14 s[39m] [[33m  373 MB[39m]
+ 0 Nonlinear |R| = [32m2.461060e-01[39m
+      0 Linear |R| = [32m2.461060e-01[39m
+      1 Linear |R| = [32m8.520698e-16[39m
+ 1 Nonlinear |R| = [32m1.875820e-08[39m
+[32m Solve Converged![39m
+  Finished Solving                                                                       [[33m  0.51 s[39m] [[33m  428 MB[39m]
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   1.000000e+00 |   1.000000e+00 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=( 0.87925,  0.52386,        0)
+      velocity: (x,y,z)=(-0.00224657, 0.0237662,        0)
+     direction: (x,y,z)=(-0.0941083, 0.995562,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=( 0.87925,  0.52386,        0)
+      velocity: (x,y,z)=(-0.00224657, 0.0237662,        0)
+     direction: (x,y,z)=(-0.0941083, 0.995562,        0)
+
+Time Step 2, time = 2, dt = 1
+ 0 Nonlinear |R| = [32m3.153163e-01[39m
+      0 Linear |R| = [32m3.153163e-01[39m
+      1 Linear |R| = [32m2.694919e-15[39m
+ 1 Nonlinear |R| = [32m7.648842e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   1.000000e+00 |   1.000000e+00 |
+|   2.000000e+00 |   2.000000e+00 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.877004, 0.547627,        0)
+      velocity: (x,y,z)=(-0.00373443, 0.0235783,        0)
+     direction: (x,y,z)=(-0.156434, 0.987688,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.877004, 0.547627,        0)
+      velocity: (x,y,z)=(-0.00373443, 0.0235783,        0)
+     direction: (x,y,z)=(-0.156434, 0.987688,        0)
+
+Time Step 3, time = 3, dt = 1
+ 0 Nonlinear |R| = [32m2.732939e-01[39m
+      0 Linear |R| = [32m2.732939e-01[39m
+      1 Linear |R| = [32m8.136423e-16[39m
+ 1 Nonlinear |R| = [32m6.157061e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   1.000000e+00 |   1.000000e+00 |
+|   2.000000e+00 |   2.000000e+00 |
+|   3.000000e+00 |   3.000000e+00 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.873269, 0.571205,        0)
+      velocity: (x,y,z)=(-0.00520755, 0.0232973,        0)
+     direction: (x,y,z)=(-0.218143, 0.975917,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.873269, 0.571205,        0)
+      velocity: (x,y,z)=(-0.00520755, 0.0232973,        0)
+     direction: (x,y,z)=(-0.218143, 0.975917,        0)
+
+Time Step 4, time = 4, dt = 1
+ 0 Nonlinear |R| = [32m2.549738e-01[39m
+      0 Linear |R| = [32m2.549738e-01[39m
+      1 Linear |R| = [32m1.678891e-16[39m
+ 1 Nonlinear |R| = [32m6.107888e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   1.000000e+00 |   1.000000e+00 |
+|   2.000000e+00 |   2.000000e+00 |
+|   3.000000e+00 |   3.000000e+00 |
+|   4.000000e+00 |   4.000000e+00 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.868062, 0.594502,        0)
+      velocity: (x,y,z)=(-0.00666013, 0.0229243,        0)
+     direction: (x,y,z)=(-0.278991, 0.960294,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.868062, 0.594502,        0)
+      velocity: (x,y,z)=(-0.00666013, 0.0229243,        0)
+     direction: (x,y,z)=(-0.278991, 0.960294,        0)
+
+Time Step 5, time = 5, dt = 1
+ 0 Nonlinear |R| = [32m2.463024e-01[39m
+      0 Linear |R| = [32m2.463024e-01[39m
+      1 Linear |R| = [32m1.408746e-15[39m
+ 1 Nonlinear |R| = [32m6.289325e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   1.000000e+00 |   1.000000e+00 |
+|   2.000000e+00 |   2.000000e+00 |
+|   3.000000e+00 |   3.000000e+00 |
+|   4.000000e+00 |   4.000000e+00 |
+|   5.000000e+00 |   5.000000e+00 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.861401, 0.617426,        0)
+      velocity: (x,y,z)=(-0.00808641, 0.0224609,        0)
+     direction: (x,y,z)=(-0.338738, 0.940881,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.861401, 0.617426,        0)
+      velocity: (x,y,z)=(-0.00808641, 0.0224609,        0)
+     direction: (x,y,z)=(-0.338738, 0.940881,        0)
+
+Time Step 6, time = 6, dt = 1
+ 0 Nonlinear |R| = [32m2.539777e-01[39m
+      0 Linear |R| = [32m2.539777e-01[39m
+      1 Linear |R| = [32m1.289882e-15[39m
+ 1 Nonlinear |R| = [32m6.083675e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   1.000000e+00 |   1.000000e+00 |
+|   2.000000e+00 |   2.000000e+00 |
+|   3.000000e+00 |   3.000000e+00 |
+|   4.000000e+00 |   4.000000e+00 |
+|   5.000000e+00 |   5.000000e+00 |
+|   6.000000e+00 |   6.000000e+00 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.853315, 0.639887,        0)
+      velocity: (x,y,z)=(-0.00948078, 0.0219088,        0)
+     direction: (x,y,z)=(-0.397148, 0.917755,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.853315, 0.639887,        0)
+      velocity: (x,y,z)=(-0.00948078, 0.0219088,        0)
+     direction: (x,y,z)=(-0.397148, 0.917755,        0)
+
+Time Step 7, time = 7, dt = 1
+ 0 Nonlinear |R| = [32m2.618889e-01[39m
+      0 Linear |R| = [32m2.618889e-01[39m
+      1 Linear |R| = [32m1.459376e-15[39m
+ 1 Nonlinear |R| = [32m5.896233e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   1.000000e+00 |   1.000000e+00 |
+|   2.000000e+00 |   2.000000e+00 |
+|   3.000000e+00 |   3.000000e+00 |
+|   4.000000e+00 |   4.000000e+00 |
+|   5.000000e+00 |   5.000000e+00 |
+|   6.000000e+00 |   6.000000e+00 |
+|   7.000000e+00 |   7.000000e+00 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.843834, 0.661796,        0)
+      velocity: (x,y,z)=(-0.0108377, 0.0212703,        0)
+     direction: (x,y,z)=(-0.45399, 0.891007,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.843834, 0.661796,        0)
+      velocity: (x,y,z)=(-0.0108377, 0.0212703,        0)
+     direction: (x,y,z)=(-0.45399, 0.891007,        0)
+
+Time Step 8, time = 8, dt = 1
+ 0 Nonlinear |R| = [32m2.655768e-01[39m
+      0 Linear |R| = [32m2.655768e-01[39m
+      1 Linear |R| = [32m1.354565e-16[39m
+ 1 Nonlinear |R| = [32m5.967485e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   1.000000e+00 |   1.000000e+00 |
+|   2.000000e+00 |   2.000000e+00 |
+|   3.000000e+00 |   3.000000e+00 |
+|   4.000000e+00 |   4.000000e+00 |
+|   5.000000e+00 |   5.000000e+00 |
+|   6.000000e+00 |   6.000000e+00 |
+|   7.000000e+00 |   7.000000e+00 |
+|   8.000000e+00 |   8.000000e+00 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.832997, 0.683066,        0)
+      velocity: (x,y,z)=(-0.0121519, 0.0205478,        0)
+     direction: (x,y,z)=(-0.509041, 0.860742,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.832997, 0.683066,        0)
+      velocity: (x,y,z)=(-0.0121519, 0.0205478,        0)
+     direction: (x,y,z)=(-0.509041, 0.860742,        0)
+
+Time Step 9, time = 9, dt = 1
+ 0 Nonlinear |R| = [32m2.721536e-01[39m
+      0 Linear |R| = [32m2.721536e-01[39m
+      1 Linear |R| = [32m1.631546e-15[39m
+ 1 Nonlinear |R| = [32m6.771408e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   1.000000e+00 |   1.000000e+00 |
+|   2.000000e+00 |   2.000000e+00 |
+|   3.000000e+00 |   3.000000e+00 |
+|   4.000000e+00 |   4.000000e+00 |
+|   5.000000e+00 |   5.000000e+00 |
+|   6.000000e+00 |   6.000000e+00 |
+|   7.000000e+00 |   7.000000e+00 |
+|   8.000000e+00 |   8.000000e+00 |
+|   9.000000e+00 |   9.000000e+00 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.820845, 0.703614,        0)
+      velocity: (x,y,z)=(-0.0134182, 0.0197442,        0)
+     direction: (x,y,z)=(-0.562083, 0.827081,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.820845, 0.703614,        0)
+      velocity: (x,y,z)=(-0.0134182, 0.0197442,        0)
+     direction: (x,y,z)=(-0.562083, 0.827081,        0)
+
+Time Step 10, time = 10, dt = 1
+ 0 Nonlinear |R| = [32m2.544396e-01[39m
+      0 Linear |R| = [32m2.544396e-01[39m
+      1 Linear |R| = [32m1.648110e-15[39m
+ 1 Nonlinear |R| = [32m6.155085e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   1.000000e+00 |   1.000000e+00 |
+|   2.000000e+00 |   2.000000e+00 |
+|   3.000000e+00 |   3.000000e+00 |
+|   4.000000e+00 |   4.000000e+00 |
+|   5.000000e+00 |   5.000000e+00 |
+|   6.000000e+00 |   6.000000e+00 |
+|   7.000000e+00 |   7.000000e+00 |
+|   8.000000e+00 |   8.000000e+00 |
+|   9.000000e+00 |   9.000000e+00 |
+|   1.000000e+01 |   1.000000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.807426, 0.723358,        0)
+      velocity: (x,y,z)=(-0.0146314, 0.0188627,        0)
+     direction: (x,y,z)=(-0.612907, 0.790155,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.807426, 0.723358,        0)
+      velocity: (x,y,z)=(-0.0146314, 0.0188627,        0)
+     direction: (x,y,z)=(-0.612907, 0.790155,        0)
+
+Time Step 11, time = 11, dt = 1
+ 0 Nonlinear |R| = [32m2.732808e-01[39m
+      0 Linear |R| = [32m2.732808e-01[39m
+      1 Linear |R| = [32m5.085057e-16[39m
+ 1 Nonlinear |R| = [32m6.361240e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   1.000000e+00 |   1.000000e+00 |
+|   2.000000e+00 |   2.000000e+00 |
+|   3.000000e+00 |   3.000000e+00 |
+|   4.000000e+00 |   4.000000e+00 |
+|   5.000000e+00 |   5.000000e+00 |
+|   6.000000e+00 |   6.000000e+00 |
+|   7.000000e+00 |   7.000000e+00 |
+|   8.000000e+00 |   8.000000e+00 |
+|   9.000000e+00 |   9.000000e+00 |
+|   1.000000e+01 |   1.000000e+01 |
+|   1.100000e+01 |   1.100000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.792795, 0.742221,        0)
+      velocity: (x,y,z)=(-0.015787, 0.0179068,        0)
+     direction: (x,y,z)=(-0.661312, 0.750111,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.792795, 0.742221,        0)
+      velocity: (x,y,z)=(-0.015787, 0.0179068,        0)
+     direction: (x,y,z)=(-0.661312, 0.750111,        0)
+
+Time Step 12, time = 12, dt = 1
+ 0 Nonlinear |R| = [32m2.944288e-01[39m
+      0 Linear |R| = [32m2.944288e-01[39m
+      1 Linear |R| = [32m4.707255e-16[39m
+ 1 Nonlinear |R| = [32m6.178886e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   1.000000e+00 |   1.000000e+00 |
+|   2.000000e+00 |   2.000000e+00 |
+|   3.000000e+00 |   3.000000e+00 |
+|   4.000000e+00 |   4.000000e+00 |
+|   5.000000e+00 |   5.000000e+00 |
+|   6.000000e+00 |   6.000000e+00 |
+|   7.000000e+00 |   7.000000e+00 |
+|   8.000000e+00 |   8.000000e+00 |
+|   9.000000e+00 |   9.000000e+00 |
+|   1.000000e+01 |   1.000000e+01 |
+|   1.100000e+01 |   1.100000e+01 |
+|   1.200000e+01 |   1.200000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.777008, 0.760128,        0)
+      velocity: (x,y,z)=(-0.0168802, 0.0168802,        0)
+     direction: (x,y,z)=(-0.707107, 0.707107,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.777008, 0.760128,        0)
+      velocity: (x,y,z)=(-0.0168802, 0.0168802,        0)
+     direction: (x,y,z)=(-0.707107, 0.707107,        0)
+
+Time Step 13, time = 13, dt = 1
+ 0 Nonlinear |R| = [32m3.021528e-01[39m
+      0 Linear |R| = [32m3.021528e-01[39m
+      1 Linear |R| = [32m2.301519e-16[39m
+ 1 Nonlinear |R| = [32m7.199026e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   1.000000e+00 |   1.000000e+00 |
+|   2.000000e+00 |   2.000000e+00 |
+|   3.000000e+00 |   3.000000e+00 |
+|   4.000000e+00 |   4.000000e+00 |
+|   5.000000e+00 |   5.000000e+00 |
+|   6.000000e+00 |   6.000000e+00 |
+|   7.000000e+00 |   7.000000e+00 |
+|   8.000000e+00 |   8.000000e+00 |
+|   9.000000e+00 |   9.000000e+00 |
+|   1.000000e+01 |   1.000000e+01 |
+|   1.100000e+01 |   1.100000e+01 |
+|   1.200000e+01 |   1.200000e+01 |
+|   1.300000e+01 |   1.300000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.760128, 0.777008,        0)
+      velocity: (x,y,z)=(-0.0179068, 0.015787,        0)
+     direction: (x,y,z)=(-0.750111, 0.661312,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.760128, 0.777008,        0)
+      velocity: (x,y,z)=(-0.0179068, 0.015787,        0)
+     direction: (x,y,z)=(-0.750111, 0.661312,        0)
+
+Time Step 14, time = 14, dt = 1
+ 0 Nonlinear |R| = [32m2.489151e-01[39m
+      0 Linear |R| = [32m2.489151e-01[39m
+      1 Linear |R| = [32m6.468537e-16[39m
+ 1 Nonlinear |R| = [32m5.991258e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   1.000000e+00 |   1.000000e+00 |
+|   2.000000e+00 |   2.000000e+00 |
+|   3.000000e+00 |   3.000000e+00 |
+|   4.000000e+00 |   4.000000e+00 |
+|   5.000000e+00 |   5.000000e+00 |
+|   6.000000e+00 |   6.000000e+00 |
+|   7.000000e+00 |   7.000000e+00 |
+|   8.000000e+00 |   8.000000e+00 |
+|   9.000000e+00 |   9.000000e+00 |
+|   1.000000e+01 |   1.000000e+01 |
+|   1.100000e+01 |   1.100000e+01 |
+|   1.200000e+01 |   1.200000e+01 |
+|   1.300000e+01 |   1.300000e+01 |
+|   1.400000e+01 |   1.400000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.742221, 0.792795,        0)
+      velocity: (x,y,z)=(-0.0188627, 0.0146314,        0)
+     direction: (x,y,z)=(-0.790155, 0.612907,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.742221, 0.792795,        0)
+      velocity: (x,y,z)=(-0.0188627, 0.0146314,        0)
+     direction: (x,y,z)=(-0.790155, 0.612907,        0)
+
+Time Step 15, time = 15, dt = 1
+ 0 Nonlinear |R| = [32m2.710990e-01[39m
+      0 Linear |R| = [32m2.710990e-01[39m
+      1 Linear |R| = [32m5.295259e-16[39m
+ 1 Nonlinear |R| = [32m6.110791e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   1.000000e+00 |   1.000000e+00 |
+|   2.000000e+00 |   2.000000e+00 |
+|   3.000000e+00 |   3.000000e+00 |
+|   4.000000e+00 |   4.000000e+00 |
+|   5.000000e+00 |   5.000000e+00 |
+|   6.000000e+00 |   6.000000e+00 |
+|   7.000000e+00 |   7.000000e+00 |
+|   8.000000e+00 |   8.000000e+00 |
+|   9.000000e+00 |   9.000000e+00 |
+|   1.000000e+01 |   1.000000e+01 |
+|   1.100000e+01 |   1.100000e+01 |
+|   1.200000e+01 |   1.200000e+01 |
+|   1.300000e+01 |   1.300000e+01 |
+|   1.400000e+01 |   1.400000e+01 |
+|   1.500000e+01 |   1.500000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.723358, 0.807426,        0)
+      velocity: (x,y,z)=(-0.0197442, 0.0134182,        0)
+     direction: (x,y,z)=(-0.827081, 0.562083,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.723358, 0.807426,        0)
+      velocity: (x,y,z)=(-0.0197442, 0.0134182,        0)
+     direction: (x,y,z)=(-0.827081, 0.562083,        0)
+
+Time Step 16, time = 16, dt = 1
+ 0 Nonlinear |R| = [32m2.890804e-01[39m
+      0 Linear |R| = [32m2.890804e-01[39m
+      1 Linear |R| = [32m1.044331e-15[39m
+ 1 Nonlinear |R| = [32m6.971039e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   2.000000e+00 |   2.000000e+00 |
+|   3.000000e+00 |   3.000000e+00 |
+|   4.000000e+00 |   4.000000e+00 |
+|   5.000000e+00 |   5.000000e+00 |
+|   6.000000e+00 |   6.000000e+00 |
+|   7.000000e+00 |   7.000000e+00 |
+|   8.000000e+00 |   8.000000e+00 |
+|   9.000000e+00 |   9.000000e+00 |
+|   1.000000e+01 |   1.000000e+01 |
+|   1.100000e+01 |   1.100000e+01 |
+|   1.200000e+01 |   1.200000e+01 |
+|   1.300000e+01 |   1.300000e+01 |
+|   1.400000e+01 |   1.400000e+01 |
+|   1.500000e+01 |   1.500000e+01 |
+|   1.600000e+01 |   1.600000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.703614, 0.820845,        0)
+      velocity: (x,y,z)=(-0.0205478, 0.0121519,        0)
+     direction: (x,y,z)=(-0.860742, 0.509041,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.703614, 0.820845,        0)
+      velocity: (x,y,z)=(-0.0205478, 0.0121519,        0)
+     direction: (x,y,z)=(-0.860742, 0.509041,        0)
+
+Time Step 17, time = 17, dt = 1
+ 0 Nonlinear |R| = [32m2.511206e-01[39m
+      0 Linear |R| = [32m2.511206e-01[39m
+      1 Linear |R| = [32m1.230282e-15[39m
+ 1 Nonlinear |R| = [32m5.493357e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   3.000000e+00 |   3.000000e+00 |
+|   4.000000e+00 |   4.000000e+00 |
+|   5.000000e+00 |   5.000000e+00 |
+|   6.000000e+00 |   6.000000e+00 |
+|   7.000000e+00 |   7.000000e+00 |
+|   8.000000e+00 |   8.000000e+00 |
+|   9.000000e+00 |   9.000000e+00 |
+|   1.000000e+01 |   1.000000e+01 |
+|   1.100000e+01 |   1.100000e+01 |
+|   1.200000e+01 |   1.200000e+01 |
+|   1.300000e+01 |   1.300000e+01 |
+|   1.400000e+01 |   1.400000e+01 |
+|   1.500000e+01 |   1.500000e+01 |
+|   1.600000e+01 |   1.600000e+01 |
+|   1.700000e+01 |   1.700000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.683066, 0.832997,        0)
+      velocity: (x,y,z)=(-0.0212703, 0.0108377,        0)
+     direction: (x,y,z)=(-0.891007,  0.45399,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.683066, 0.832997,        0)
+      velocity: (x,y,z)=(-0.0212703, 0.0108377,        0)
+     direction: (x,y,z)=(-0.891007,  0.45399,        0)
+
+Time Step 18, time = 18, dt = 1
+ 0 Nonlinear |R| = [32m2.509064e-01[39m
+      0 Linear |R| = [32m2.509064e-01[39m
+      1 Linear |R| = [32m3.668364e-16[39m
+ 1 Nonlinear |R| = [32m5.961275e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   4.000000e+00 |   4.000000e+00 |
+|   5.000000e+00 |   5.000000e+00 |
+|   6.000000e+00 |   6.000000e+00 |
+|   7.000000e+00 |   7.000000e+00 |
+|   8.000000e+00 |   8.000000e+00 |
+|   9.000000e+00 |   9.000000e+00 |
+|   1.000000e+01 |   1.000000e+01 |
+|   1.100000e+01 |   1.100000e+01 |
+|   1.200000e+01 |   1.200000e+01 |
+|   1.300000e+01 |   1.300000e+01 |
+|   1.400000e+01 |   1.400000e+01 |
+|   1.500000e+01 |   1.500000e+01 |
+|   1.600000e+01 |   1.600000e+01 |
+|   1.700000e+01 |   1.700000e+01 |
+|   1.800000e+01 |   1.800000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.661796, 0.843834,        0)
+      velocity: (x,y,z)=(-0.0219088, 0.00948078,        0)
+     direction: (x,y,z)=(-0.917755, 0.397148,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.661796, 0.843834,        0)
+      velocity: (x,y,z)=(-0.0219088, 0.00948078,        0)
+     direction: (x,y,z)=(-0.917755, 0.397148,        0)
+
+Time Step 19, time = 19, dt = 1
+ 0 Nonlinear |R| = [32m2.690259e-01[39m
+      0 Linear |R| = [32m2.690259e-01[39m
+      1 Linear |R| = [32m5.440002e-16[39m
+ 1 Nonlinear |R| = [32m6.282542e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   5.000000e+00 |   5.000000e+00 |
+|   6.000000e+00 |   6.000000e+00 |
+|   7.000000e+00 |   7.000000e+00 |
+|   8.000000e+00 |   8.000000e+00 |
+|   9.000000e+00 |   9.000000e+00 |
+|   1.000000e+01 |   1.000000e+01 |
+|   1.100000e+01 |   1.100000e+01 |
+|   1.200000e+01 |   1.200000e+01 |
+|   1.300000e+01 |   1.300000e+01 |
+|   1.400000e+01 |   1.400000e+01 |
+|   1.500000e+01 |   1.500000e+01 |
+|   1.600000e+01 |   1.600000e+01 |
+|   1.700000e+01 |   1.700000e+01 |
+|   1.800000e+01 |   1.800000e+01 |
+|   1.900000e+01 |   1.900000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.639887, 0.853315,        0)
+      velocity: (x,y,z)=(-0.0224609, 0.00808641,        0)
+     direction: (x,y,z)=(-0.940881, 0.338738,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.639887, 0.853315,        0)
+      velocity: (x,y,z)=(-0.0224609, 0.00808641,        0)
+     direction: (x,y,z)=(-0.940881, 0.338738,        0)
+
+Time Step 20, time = 20, dt = 1
+ 0 Nonlinear |R| = [32m3.030752e-01[39m
+      0 Linear |R| = [32m3.030752e-01[39m
+      1 Linear |R| = [32m2.055660e-15[39m
+ 1 Nonlinear |R| = [32m7.432248e-09[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   6.000000e+00 |   6.000000e+00 |
+|   7.000000e+00 |   7.000000e+00 |
+|   8.000000e+00 |   8.000000e+00 |
+|   9.000000e+00 |   9.000000e+00 |
+|   1.000000e+01 |   1.000000e+01 |
+|   1.100000e+01 |   1.100000e+01 |
+|   1.200000e+01 |   1.200000e+01 |
+|   1.300000e+01 |   1.300000e+01 |
+|   1.400000e+01 |   1.400000e+01 |
+|   1.500000e+01 |   1.500000e+01 |
+|   1.600000e+01 |   1.600000e+01 |
+|   1.700000e+01 |   1.700000e+01 |
+|   1.800000e+01 |   1.800000e+01 |
+|   1.900000e+01 |   1.900000e+01 |
+|   2.000000e+01 |   2.000000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.617426, 0.861401,        0)
+      velocity: (x,y,z)=(-0.0229243, 0.00666013,        0)
+     direction: (x,y,z)=(-0.960294, 0.278991,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.617426, 0.861401,        0)
+      velocity: (x,y,z)=(-0.0229243, 0.00666013,        0)
+     direction: (x,y,z)=(-0.960294, 0.278991,        0)
+
+Time Step 21, time = 21, dt = 1
+ 0 Nonlinear |R| = [32m2.766740e-01[39m
+      0 Linear |R| = [32m2.766740e-01[39m
+      1 Linear |R| = [32m1.599964e-16[39m
+ 1 Nonlinear |R| = [32m3.154754e-08[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   7.000000e+00 |   7.000000e+00 |
+|   8.000000e+00 |   8.000000e+00 |
+|   9.000000e+00 |   9.000000e+00 |
+|   1.000000e+01 |   1.000000e+01 |
+|   1.100000e+01 |   1.100000e+01 |
+|   1.200000e+01 |   1.200000e+01 |
+|   1.300000e+01 |   1.300000e+01 |
+|   1.400000e+01 |   1.400000e+01 |
+|   1.500000e+01 |   1.500000e+01 |
+|   1.600000e+01 |   1.600000e+01 |
+|   1.700000e+01 |   1.700000e+01 |
+|   1.800000e+01 |   1.800000e+01 |
+|   1.900000e+01 |   1.900000e+01 |
+|   2.000000e+01 |   2.000000e+01 |
+|   2.100000e+01 |   2.100000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.594502, 0.868062,        0)
+      velocity: (x,y,z)=(-0.0232973, 0.00520755,        0)
+     direction: (x,y,z)=(-0.975917, 0.218143,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.594502, 0.868062,        0)
+      velocity: (x,y,z)=(-0.0232973, 0.00520755,        0)
+     direction: (x,y,z)=(-0.975917, 0.218143,        0)
+
+Time Step 22, time = 22, dt = 1
+ 0 Nonlinear |R| = [32m2.786782e-01[39m
+      0 Linear |R| = [32m2.786782e-01[39m
+      1 Linear |R| = [32m2.551342e-15[39m
+ 1 Nonlinear |R| = [32m4.481575e-07[39m
+      0 Linear |R| = [32m4.481575e-07[39m
+      1 Linear |R| = [32m1.406126e-21[39m
+ 2 Nonlinear |R| = [32m3.867403e-07[39m
+      0 Linear |R| = [32m3.867403e-07[39m
+      1 Linear |R| = [32m6.601678e-22[39m
+ 3 Nonlinear |R| = [32m3.526474e-07[39m
+      0 Linear |R| = [32m3.526474e-07[39m
+      1 Linear |R| = [32m5.687563e-22[39m
+ 4 Nonlinear |R| = [32m3.163309e-07[39m
+      0 Linear |R| = [32m3.163309e-07[39m
+      1 Linear |R| = [32m4.801597e-22[39m
+ 5 Nonlinear |R| = [32m2.299776e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   8.000000e+00 |   8.000000e+00 |
+|   9.000000e+00 |   9.000000e+00 |
+|   1.000000e+01 |   1.000000e+01 |
+|   1.100000e+01 |   1.100000e+01 |
+|   1.200000e+01 |   1.200000e+01 |
+|   1.300000e+01 |   1.300000e+01 |
+|   1.400000e+01 |   1.400000e+01 |
+|   1.500000e+01 |   1.500000e+01 |
+|   1.600000e+01 |   1.600000e+01 |
+|   1.700000e+01 |   1.700000e+01 |
+|   1.800000e+01 |   1.800000e+01 |
+|   1.900000e+01 |   1.900000e+01 |
+|   2.000000e+01 |   2.000000e+01 |
+|   2.100000e+01 |   2.100000e+01 |
+|   2.200000e+01 |   2.200000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.571205, 0.873269,        0)
+      velocity: (x,y,z)=(-0.0235783, 0.00373443,        0)
+     direction: (x,y,z)=(-0.987688, 0.156434,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.571205, 0.873269,        0)
+      velocity: (x,y,z)=(-0.0235783, 0.00373443,        0)
+     direction: (x,y,z)=(-0.987688, 0.156434,        0)
+
+Time Step 23, time = 23, dt = 1
+ 0 Nonlinear |R| = [32m2.869505e-01[39m
+      0 Linear |R| = [32m2.869505e-01[39m
+      1 Linear |R| = [32m1.453969e-15[39m
+ 1 Nonlinear |R| = [32m4.624295e-07[39m
+      0 Linear |R| = [32m4.624295e-07[39m
+      1 Linear |R| = [32m6.922509e-22[39m
+ 2 Nonlinear |R| = [32m3.289681e-07[39m
+      0 Linear |R| = [32m3.289681e-07[39m
+      1 Linear |R| = [32m1.907884e-22[39m
+ 3 Nonlinear |R| = [33m3.244574e-07[39m
+      0 Linear |R| = [32m3.244574e-07[39m
+      1 Linear |R| = [32m5.634938e-22[39m
+ 4 Nonlinear |R| = [32m2.226055e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   9.000000e+00 |   9.000000e+00 |
+|   1.000000e+01 |   1.000000e+01 |
+|   1.100000e+01 |   1.100000e+01 |
+|   1.200000e+01 |   1.200000e+01 |
+|   1.300000e+01 |   1.300000e+01 |
+|   1.400000e+01 |   1.400000e+01 |
+|   1.500000e+01 |   1.500000e+01 |
+|   1.600000e+01 |   1.600000e+01 |
+|   1.700000e+01 |   1.700000e+01 |
+|   1.800000e+01 |   1.800000e+01 |
+|   1.900000e+01 |   1.900000e+01 |
+|   2.000000e+01 |   2.000000e+01 |
+|   2.100000e+01 |   2.100000e+01 |
+|   2.200000e+01 |   2.200000e+01 |
+|   2.300000e+01 |   2.300000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.547627, 0.877004,        0)
+      velocity: (x,y,z)=(-0.0237662, 0.00224657,        0)
+     direction: (x,y,z)=(-0.995562, 0.0941083,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.547627, 0.877004,        0)
+      velocity: (x,y,z)=(-0.0237662, 0.00224657,        0)
+     direction: (x,y,z)=(-0.995562, 0.0941083,        0)
+
+Time Step 24, time = 24, dt = 1
+ 0 Nonlinear |R| = [32m2.666729e-01[39m
+      0 Linear |R| = [32m2.666729e-01[39m
+      1 Linear |R| = [32m1.694437e-16[39m
+ 1 Nonlinear |R| = [32m6.326736e-07[39m
+      0 Linear |R| = [32m6.326736e-07[39m
+      1 Linear |R| = [32m1.237927e-21[39m
+ 2 Nonlinear |R| = [32m5.007347e-07[39m
+      0 Linear |R| = [32m5.007347e-07[39m
+      1 Linear |R| = [32m1.397544e-21[39m
+ 3 Nonlinear |R| = [32m3.836675e-07[39m
+      0 Linear |R| = [32m3.836675e-07[39m
+      1 Linear |R| = [32m3.754857e-22[39m
+ 4 Nonlinear |R| = [32m3.250046e-07[39m
+      0 Linear |R| = [32m3.250046e-07[39m
+      1 Linear |R| = [32m7.755571e-22[39m
+ 5 Nonlinear |R| = [33m3.193651e-07[39m
+      0 Linear |R| = [32m3.193651e-07[39m
+      1 Linear |R| = [32m3.115688e-22[39m
+ 6 Nonlinear |R| = [32m2.541327e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   1.000000e+01 |   1.000000e+01 |
+|   1.100000e+01 |   1.100000e+01 |
+|   1.200000e+01 |   1.200000e+01 |
+|   1.300000e+01 |   1.300000e+01 |
+|   1.400000e+01 |   1.400000e+01 |
+|   1.500000e+01 |   1.500000e+01 |
+|   1.600000e+01 |   1.600000e+01 |
+|   1.700000e+01 |   1.700000e+01 |
+|   1.800000e+01 |   1.800000e+01 |
+|   1.900000e+01 |   1.900000e+01 |
+|   2.000000e+01 |   2.000000e+01 |
+|   2.100000e+01 |   2.100000e+01 |
+|   2.200000e+01 |   2.200000e+01 |
+|   2.300000e+01 |   2.300000e+01 |
+|   2.400000e+01 |   2.400000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=( 0.52386,  0.87925,        0)
+      velocity: (x,y,z)=(-0.0238604, 0.000749843,        0)
+     direction: (x,y,z)=(-0.999507, 0.0314108,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=( 0.52386,  0.87925,        0)
+      velocity: (x,y,z)=(-0.0238604, 0.000749843,        0)
+     direction: (x,y,z)=(-0.999507, 0.0314108,        0)
+
+Time Step 25, time = 25, dt = 1
+ 0 Nonlinear |R| = [32m2.656655e-01[39m
+      0 Linear |R| = [32m2.656655e-01[39m
+      1 Linear |R| = [32m9.032963e-16[39m
+ 1 Nonlinear |R| = [32m6.357542e-07[39m
+      0 Linear |R| = [32m6.357542e-07[39m
+      1 Linear |R| = [32m1.416546e-21[39m
+ 2 Nonlinear |R| = [32m5.450739e-07[39m
+      0 Linear |R| = [32m5.450739e-07[39m
+      1 Linear |R| = [32m3.574629e-21[39m
+ 3 Nonlinear |R| = [32m4.029967e-07[39m
+      0 Linear |R| = [32m4.029967e-07[39m
+      1 Linear |R| = [32m5.310922e-22[39m
+ 4 Nonlinear |R| = [32m3.347527e-07[39m
+      0 Linear |R| = [32m3.347527e-07[39m
+      1 Linear |R| = [32m6.339673e-22[39m
+ 5 Nonlinear |R| = [32m2.529535e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   1.100000e+01 |   1.100000e+01 |
+|   1.200000e+01 |   1.200000e+01 |
+|   1.300000e+01 |   1.300000e+01 |
+|   1.400000e+01 |   1.400000e+01 |
+|   1.500000e+01 |   1.500000e+01 |
+|   1.600000e+01 |   1.600000e+01 |
+|   1.700000e+01 |   1.700000e+01 |
+|   1.800000e+01 |   1.800000e+01 |
+|   1.900000e+01 |   1.900000e+01 |
+|   2.000000e+01 |   2.000000e+01 |
+|   2.100000e+01 |   2.100000e+01 |
+|   2.200000e+01 |   2.200000e+01 |
+|   2.300000e+01 |   2.300000e+01 |
+|   2.400000e+01 |   2.400000e+01 |
+|   2.500000e+01 |   2.500000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(     0.5,     0.88,        0)
+      velocity: (x,y,z)=(-0.0238604, -0.000749843,        0)
+     direction: (x,y,z)=(-0.999507, -0.0314108,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(     0.5,     0.88,        0)
+      velocity: (x,y,z)=(-0.0238604, -0.000749843,        0)
+     direction: (x,y,z)=(-0.999507, -0.0314108,        0)
+
+Time Step 26, time = 26, dt = 1
+ 0 Nonlinear |R| = [32m2.812617e-01[39m
+      0 Linear |R| = [32m2.812617e-01[39m
+      1 Linear |R| = [32m2.527631e-15[39m
+ 1 Nonlinear |R| = [32m6.413958e-07[39m
+      0 Linear |R| = [32m6.413958e-07[39m
+      1 Linear |R| = [32m1.427632e-21[39m
+ 2 Nonlinear |R| = [32m5.067829e-07[39m
+      0 Linear |R| = [32m5.067829e-07[39m
+      1 Linear |R| = [32m2.528987e-21[39m
+ 3 Nonlinear |R| = [32m3.665278e-07[39m
+      0 Linear |R| = [32m3.665278e-07[39m
+      1 Linear |R| = [32m4.848000e-22[39m
+ 4 Nonlinear |R| = [32m1.481924e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_x: [33m1.303926e-07[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   1.200000e+01 |   1.200000e+01 |
+|   1.300000e+01 |   1.300000e+01 |
+|   1.400000e+01 |   1.400000e+01 |
+|   1.500000e+01 |   1.500000e+01 |
+|   1.600000e+01 |   1.600000e+01 |
+|   1.700000e+01 |   1.700000e+01 |
+|   1.800000e+01 |   1.800000e+01 |
+|   1.900000e+01 |   1.900000e+01 |
+|   2.000000e+01 |   2.000000e+01 |
+|   2.100000e+01 |   2.100000e+01 |
+|   2.200000e+01 |   2.200000e+01 |
+|   2.300000e+01 |   2.300000e+01 |
+|   2.400000e+01 |   2.400000e+01 |
+|   2.500000e+01 |   2.500000e+01 |
+|   2.600000e+01 |   2.600000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=( 0.47614,  0.87925,        0)
+      velocity: (x,y,z)=(-0.0237662, -0.00224657,        0)
+     direction: (x,y,z)=(-0.995562, -0.0941083,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=( 0.47614,  0.87925,        0)
+      velocity: (x,y,z)=(-0.0237662, -0.00224657,        0)
+     direction: (x,y,z)=(-0.995562, -0.0941083,        0)
+
+Time Step 27, time = 27, dt = 1
+ 0 Nonlinear |R| = [32m2.878520e-01[39m
+      0 Linear |R| = [32m2.878520e-01[39m
+      1 Linear |R| = [32m1.500708e-15[39m
+ 1 Nonlinear |R| = [32m6.144411e-07[39m
+      0 Linear |R| = [32m6.144411e-07[39m
+      1 Linear |R| = [32m2.892660e-21[39m
+ 2 Nonlinear |R| = [32m4.464273e-07[39m
+      0 Linear |R| = [32m4.464273e-07[39m
+      1 Linear |R| = [32m1.762789e-21[39m
+ 3 Nonlinear |R| = [32m3.545477e-07[39m
+      0 Linear |R| = [32m3.545477e-07[39m
+      1 Linear |R| = [32m1.915134e-22[39m
+ 4 Nonlinear |R| = [32m7.539960e-08[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   1.300000e+01 |   1.300000e+01 |
+|   1.400000e+01 |   1.400000e+01 |
+|   1.500000e+01 |   1.500000e+01 |
+|   1.600000e+01 |   1.600000e+01 |
+|   1.700000e+01 |   1.700000e+01 |
+|   1.800000e+01 |   1.800000e+01 |
+|   1.900000e+01 |   1.900000e+01 |
+|   2.000000e+01 |   2.000000e+01 |
+|   2.100000e+01 |   2.100000e+01 |
+|   2.200000e+01 |   2.200000e+01 |
+|   2.300000e+01 |   2.300000e+01 |
+|   2.400000e+01 |   2.400000e+01 |
+|   2.500000e+01 |   2.500000e+01 |
+|   2.600000e+01 |   2.600000e+01 |
+|   2.700000e+01 |   2.700000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.452373, 0.877004,        0)
+      velocity: (x,y,z)=(-0.0235783, -0.00373443,        0)
+     direction: (x,y,z)=(-0.987688, -0.156434,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.452373, 0.877004,        0)
+      velocity: (x,y,z)=(-0.0235783, -0.00373443,        0)
+     direction: (x,y,z)=(-0.987688, -0.156434,        0)
+
+Time Step 28, time = 28, dt = 1
+ 0 Nonlinear |R| = [32m2.535611e-01[39m
+      0 Linear |R| = [32m2.535611e-01[39m
+      1 Linear |R| = [32m1.276887e-15[39m
+ 1 Nonlinear |R| = [32m6.686149e-07[39m
+      0 Linear |R| = [32m6.686149e-07[39m
+      1 Linear |R| = [32m2.456101e-21[39m
+ 2 Nonlinear |R| = [32m5.540521e-07[39m
+      0 Linear |R| = [32m5.540521e-07[39m
+      1 Linear |R| = [32m2.443123e-21[39m
+ 3 Nonlinear |R| = [32m3.735536e-07[39m
+      0 Linear |R| = [32m3.735536e-07[39m
+      1 Linear |R| = [32m4.731348e-22[39m
+ 4 Nonlinear |R| = [32m1.950427e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   1.400000e+01 |   1.400000e+01 |
+|   1.500000e+01 |   1.500000e+01 |
+|   1.600000e+01 |   1.600000e+01 |
+|   1.700000e+01 |   1.700000e+01 |
+|   1.800000e+01 |   1.800000e+01 |
+|   1.900000e+01 |   1.900000e+01 |
+|   2.000000e+01 |   2.000000e+01 |
+|   2.100000e+01 |   2.100000e+01 |
+|   2.200000e+01 |   2.200000e+01 |
+|   2.300000e+01 |   2.300000e+01 |
+|   2.400000e+01 |   2.400000e+01 |
+|   2.500000e+01 |   2.500000e+01 |
+|   2.600000e+01 |   2.600000e+01 |
+|   2.700000e+01 |   2.700000e+01 |
+|   2.800000e+01 |   2.800000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.428795, 0.873269,        0)
+      velocity: (x,y,z)=(-0.0232973, -0.00520755,        0)
+     direction: (x,y,z)=(-0.975917, -0.218143,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.428795, 0.873269,        0)
+      velocity: (x,y,z)=(-0.0232973, -0.00520755,        0)
+     direction: (x,y,z)=(-0.975917, -0.218143,        0)
+
+Time Step 29, time = 29, dt = 1
+ 0 Nonlinear |R| = [32m2.603492e-01[39m
+      0 Linear |R| = [32m2.603492e-01[39m
+      1 Linear |R| = [32m9.754831e-16[39m
+ 1 Nonlinear |R| = [32m6.554813e-07[39m
+      0 Linear |R| = [32m6.554813e-07[39m
+      1 Linear |R| = [32m1.223419e-21[39m
+ 2 Nonlinear |R| = [32m4.552802e-07[39m
+      0 Linear |R| = [32m4.552802e-07[39m
+      1 Linear |R| = [32m9.355051e-22[39m
+ 3 Nonlinear |R| = [32m3.247098e-07[39m
+      0 Linear |R| = [32m3.247098e-07[39m
+      1 Linear |R| = [32m1.405002e-21[39m
+ 4 Nonlinear |R| = [32m1.659479e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_x: [33m1.466189e-07[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   1.500000e+01 |   1.500000e+01 |
+|   1.600000e+01 |   1.600000e+01 |
+|   1.700000e+01 |   1.700000e+01 |
+|   1.800000e+01 |   1.800000e+01 |
+|   1.900000e+01 |   1.900000e+01 |
+|   2.000000e+01 |   2.000000e+01 |
+|   2.100000e+01 |   2.100000e+01 |
+|   2.200000e+01 |   2.200000e+01 |
+|   2.300000e+01 |   2.300000e+01 |
+|   2.400000e+01 |   2.400000e+01 |
+|   2.500000e+01 |   2.500000e+01 |
+|   2.600000e+01 |   2.600000e+01 |
+|   2.700000e+01 |   2.700000e+01 |
+|   2.800000e+01 |   2.800000e+01 |
+|   2.900000e+01 |   2.900000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.405498, 0.868062,        0)
+      velocity: (x,y,z)=(-0.0229243, -0.00666013,        0)
+     direction: (x,y,z)=(-0.960294, -0.278991,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.405498, 0.868062,        0)
+      velocity: (x,y,z)=(-0.0229243, -0.00666013,        0)
+     direction: (x,y,z)=(-0.960294, -0.278991,        0)
+
+Time Step 30, time = 30, dt = 1
+ 0 Nonlinear |R| = [32m2.785555e-01[39m
+      0 Linear |R| = [32m2.785555e-01[39m
+      1 Linear |R| = [32m1.395070e-15[39m
+ 1 Nonlinear |R| = [32m6.261617e-07[39m
+      0 Linear |R| = [32m6.261617e-07[39m
+      1 Linear |R| = [32m3.976832e-21[39m
+ 2 Nonlinear |R| = [32m4.819766e-07[39m
+      0 Linear |R| = [32m4.819766e-07[39m
+      1 Linear |R| = [32m2.786809e-21[39m
+ 3 Nonlinear |R| = [32m3.797075e-07[39m
+      0 Linear |R| = [32m3.797075e-07[39m
+      1 Linear |R| = [32m4.604140e-22[39m
+ 4 Nonlinear |R| = [32m1.757078e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   1.600000e+01 |   1.600000e+01 |
+|   1.700000e+01 |   1.700000e+01 |
+|   1.800000e+01 |   1.800000e+01 |
+|   1.900000e+01 |   1.900000e+01 |
+|   2.000000e+01 |   2.000000e+01 |
+|   2.100000e+01 |   2.100000e+01 |
+|   2.200000e+01 |   2.200000e+01 |
+|   2.300000e+01 |   2.300000e+01 |
+|   2.400000e+01 |   2.400000e+01 |
+|   2.500000e+01 |   2.500000e+01 |
+|   2.600000e+01 |   2.600000e+01 |
+|   2.700000e+01 |   2.700000e+01 |
+|   2.800000e+01 |   2.800000e+01 |
+|   2.900000e+01 |   2.900000e+01 |
+|   3.000000e+01 |   3.000000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.382574, 0.861401,        0)
+      velocity: (x,y,z)=(-0.0224609, -0.00808641,        0)
+     direction: (x,y,z)=(-0.940881, -0.338738,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.382574, 0.861401,        0)
+      velocity: (x,y,z)=(-0.0224609, -0.00808641,        0)
+     direction: (x,y,z)=(-0.940881, -0.338738,        0)
+
+Time Step 31, time = 31, dt = 1
+ 0 Nonlinear |R| = [32m2.673810e-01[39m
+      0 Linear |R| = [32m2.673810e-01[39m
+      1 Linear |R| = [32m1.187967e-15[39m
+ 1 Nonlinear |R| = [32m6.274924e-07[39m
+      0 Linear |R| = [32m6.274924e-07[39m
+      1 Linear |R| = [32m2.048291e-21[39m
+ 2 Nonlinear |R| = [32m5.575689e-07[39m
+      0 Linear |R| = [32m5.575689e-07[39m
+      1 Linear |R| = [32m2.241231e-21[39m
+ 3 Nonlinear |R| = [32m4.074088e-07[39m
+      0 Linear |R| = [32m4.074088e-07[39m
+      1 Linear |R| = [32m5.810381e-22[39m
+ 4 Nonlinear |R| = [32m1.075519e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_x: [31m9.725482e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   1.700000e+01 |   1.700000e+01 |
+|   1.800000e+01 |   1.800000e+01 |
+|   1.900000e+01 |   1.900000e+01 |
+|   2.000000e+01 |   2.000000e+01 |
+|   2.100000e+01 |   2.100000e+01 |
+|   2.200000e+01 |   2.200000e+01 |
+|   2.300000e+01 |   2.300000e+01 |
+|   2.400000e+01 |   2.400000e+01 |
+|   2.500000e+01 |   2.500000e+01 |
+|   2.600000e+01 |   2.600000e+01 |
+|   2.700000e+01 |   2.700000e+01 |
+|   2.800000e+01 |   2.800000e+01 |
+|   2.900000e+01 |   2.900000e+01 |
+|   3.000000e+01 |   3.000000e+01 |
+|   3.100000e+01 |   3.100000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.360113, 0.853315,        0)
+      velocity: (x,y,z)=(-0.0219088, -0.00948078,        0)
+     direction: (x,y,z)=(-0.917755, -0.397148,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.360113, 0.853315,        0)
+      velocity: (x,y,z)=(-0.0219088, -0.00948078,        0)
+     direction: (x,y,z)=(-0.917755, -0.397148,        0)
+
+Time Step 32, time = 32, dt = 1
+ 0 Nonlinear |R| = [32m2.588873e-01[39m
+      0 Linear |R| = [32m2.588873e-01[39m
+      1 Linear |R| = [32m2.924895e-15[39m
+ 1 Nonlinear |R| = [32m6.347426e-07[39m
+      0 Linear |R| = [32m6.347426e-07[39m
+      1 Linear |R| = [32m2.978034e-21[39m
+ 2 Nonlinear |R| = [32m4.908879e-07[39m
+      0 Linear |R| = [32m4.908879e-07[39m
+      1 Linear |R| = [32m1.317280e-21[39m
+ 3 Nonlinear |R| = [32m3.595011e-07[39m
+      0 Linear |R| = [32m3.595011e-07[39m
+      1 Linear |R| = [32m5.684370e-22[39m
+ 4 Nonlinear |R| = [32m1.773697e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   1.800000e+01 |   1.800000e+01 |
+|   1.900000e+01 |   1.900000e+01 |
+|   2.000000e+01 |   2.000000e+01 |
+|   2.100000e+01 |   2.100000e+01 |
+|   2.200000e+01 |   2.200000e+01 |
+|   2.300000e+01 |   2.300000e+01 |
+|   2.400000e+01 |   2.400000e+01 |
+|   2.500000e+01 |   2.500000e+01 |
+|   2.600000e+01 |   2.600000e+01 |
+|   2.700000e+01 |   2.700000e+01 |
+|   2.800000e+01 |   2.800000e+01 |
+|   2.900000e+01 |   2.900000e+01 |
+|   3.000000e+01 |   3.000000e+01 |
+|   3.100000e+01 |   3.100000e+01 |
+|   3.200000e+01 |   3.200000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.338204, 0.843834,        0)
+      velocity: (x,y,z)=(-0.0212703, -0.0108377,        0)
+     direction: (x,y,z)=(-0.891007, -0.45399,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.338204, 0.843834,        0)
+      velocity: (x,y,z)=(-0.0212703, -0.0108377,        0)
+     direction: (x,y,z)=(-0.891007, -0.45399,        0)
+
+Time Step 33, time = 33, dt = 1
+ 0 Nonlinear |R| = [32m2.715536e-01[39m
+      0 Linear |R| = [32m2.715536e-01[39m
+      1 Linear |R| = [32m1.031254e-15[39m
+ 1 Nonlinear |R| = [32m6.213158e-07[39m
+      0 Linear |R| = [32m6.213158e-07[39m
+      1 Linear |R| = [32m2.054225e-21[39m
+ 2 Nonlinear |R| = [32m5.318867e-07[39m
+      0 Linear |R| = [32m5.318867e-07[39m
+      1 Linear |R| = [32m2.231450e-21[39m
+ 3 Nonlinear |R| = [32m4.017906e-07[39m
+      0 Linear |R| = [32m4.017906e-07[39m
+      1 Linear |R| = [32m8.159464e-22[39m
+ 4 Nonlinear |R| = [32m8.208572e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_x: [31m7.542348e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   1.900000e+01 |   1.900000e+01 |
+|   2.000000e+01 |   2.000000e+01 |
+|   2.100000e+01 |   2.100000e+01 |
+|   2.200000e+01 |   2.200000e+01 |
+|   2.300000e+01 |   2.300000e+01 |
+|   2.400000e+01 |   2.400000e+01 |
+|   2.500000e+01 |   2.500000e+01 |
+|   2.600000e+01 |   2.600000e+01 |
+|   2.700000e+01 |   2.700000e+01 |
+|   2.800000e+01 |   2.800000e+01 |
+|   2.900000e+01 |   2.900000e+01 |
+|   3.000000e+01 |   3.000000e+01 |
+|   3.100000e+01 |   3.100000e+01 |
+|   3.200000e+01 |   3.200000e+01 |
+|   3.300000e+01 |   3.300000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.316934, 0.832997,        0)
+      velocity: (x,y,z)=(-0.0205478, -0.0121519,        0)
+     direction: (x,y,z)=(-0.860742, -0.509041,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.316934, 0.832997,        0)
+      velocity: (x,y,z)=(-0.0205478, -0.0121519,        0)
+     direction: (x,y,z)=(-0.860742, -0.509041,        0)
+
+Time Step 34, time = 34, dt = 1
+ 0 Nonlinear |R| = [32m2.895953e-01[39m
+      0 Linear |R| = [32m2.895953e-01[39m
+      1 Linear |R| = [32m9.526145e-16[39m
+ 1 Nonlinear |R| = [32m6.169889e-07[39m
+      0 Linear |R| = [32m6.169889e-07[39m
+      1 Linear |R| = [32m2.285499e-21[39m
+ 2 Nonlinear |R| = [32m3.510568e-07[39m
+      0 Linear |R| = [32m3.510568e-07[39m
+      1 Linear |R| = [32m5.959860e-22[39m
+ 3 Nonlinear |R| = [32m2.206921e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_x: [33m1.829246e-07[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   2.000000e+01 |   2.000000e+01 |
+|   2.100000e+01 |   2.100000e+01 |
+|   2.200000e+01 |   2.200000e+01 |
+|   2.300000e+01 |   2.300000e+01 |
+|   2.400000e+01 |   2.400000e+01 |
+|   2.500000e+01 |   2.500000e+01 |
+|   2.600000e+01 |   2.600000e+01 |
+|   2.700000e+01 |   2.700000e+01 |
+|   2.800000e+01 |   2.800000e+01 |
+|   2.900000e+01 |   2.900000e+01 |
+|   3.000000e+01 |   3.000000e+01 |
+|   3.100000e+01 |   3.100000e+01 |
+|   3.200000e+01 |   3.200000e+01 |
+|   3.300000e+01 |   3.300000e+01 |
+|   3.400000e+01 |   3.400000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.296386, 0.820845,        0)
+      velocity: (x,y,z)=(-0.0197442, -0.0134182,        0)
+     direction: (x,y,z)=(-0.827081, -0.562083,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.296386, 0.820845,        0)
+      velocity: (x,y,z)=(-0.0197442, -0.0134182,        0)
+     direction: (x,y,z)=(-0.827081, -0.562083,        0)
+
+Time Step 35, time = 35, dt = 1
+ 0 Nonlinear |R| = [32m2.607200e-01[39m
+      0 Linear |R| = [32m2.607200e-01[39m
+      1 Linear |R| = [32m1.056374e-15[39m
+ 1 Nonlinear |R| = [32m5.352431e-07[39m
+      0 Linear |R| = [32m5.352431e-07[39m
+      1 Linear |R| = [32m8.179796e-21[39m
+ 2 Nonlinear |R| = [32m4.750537e-07[39m
+      0 Linear |R| = [32m4.750537e-07[39m
+      1 Linear |R| = [32m1.337978e-21[39m
+ 3 Nonlinear |R| = [32m2.933467e-07[39m
+      0 Linear |R| = [32m2.933467e-07[39m
+      1 Linear |R| = [32m2.231127e-22[39m
+ 4 Nonlinear |R| = [32m7.320347e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_x: [33m6.048110e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   2.100000e+01 |   2.100000e+01 |
+|   2.200000e+01 |   2.200000e+01 |
+|   2.300000e+01 |   2.300000e+01 |
+|   2.400000e+01 |   2.400000e+01 |
+|   2.500000e+01 |   2.500000e+01 |
+|   2.600000e+01 |   2.600000e+01 |
+|   2.700000e+01 |   2.700000e+01 |
+|   2.800000e+01 |   2.800000e+01 |
+|   2.900000e+01 |   2.900000e+01 |
+|   3.000000e+01 |   3.000000e+01 |
+|   3.100000e+01 |   3.100000e+01 |
+|   3.200000e+01 |   3.200000e+01 |
+|   3.300000e+01 |   3.300000e+01 |
+|   3.400000e+01 |   3.400000e+01 |
+|   3.500000e+01 |   3.500000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.276642, 0.807426,        0)
+      velocity: (x,y,z)=(-0.0188627, -0.0146314,        0)
+     direction: (x,y,z)=(-0.790155, -0.612907,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.276642, 0.807426,        0)
+      velocity: (x,y,z)=(-0.0188627, -0.0146314,        0)
+     direction: (x,y,z)=(-0.790155, -0.612907,        0)
+
+Time Step 36, time = 36, dt = 1
+ 0 Nonlinear |R| = [32m2.443597e-01[39m
+      0 Linear |R| = [32m2.443597e-01[39m
+      1 Linear |R| = [32m6.243597e-16[39m
+ 1 Nonlinear |R| = [32m9.700739e-09[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m8.190438e-09[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   2.200000e+01 |   2.200000e+01 |
+|   2.300000e+01 |   2.300000e+01 |
+|   2.400000e+01 |   2.400000e+01 |
+|   2.500000e+01 |   2.500000e+01 |
+|   2.600000e+01 |   2.600000e+01 |
+|   2.700000e+01 |   2.700000e+01 |
+|   2.800000e+01 |   2.800000e+01 |
+|   2.900000e+01 |   2.900000e+01 |
+|   3.000000e+01 |   3.000000e+01 |
+|   3.100000e+01 |   3.100000e+01 |
+|   3.200000e+01 |   3.200000e+01 |
+|   3.300000e+01 |   3.300000e+01 |
+|   3.400000e+01 |   3.400000e+01 |
+|   3.500000e+01 |   3.500000e+01 |
+|   3.600000e+01 |   3.600000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.257779, 0.792795,        0)
+      velocity: (x,y,z)=(-0.0179068, -0.015787,        0)
+     direction: (x,y,z)=(-0.750111, -0.661312,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.257779, 0.792795,        0)
+      velocity: (x,y,z)=(-0.0179068, -0.015787,        0)
+     direction: (x,y,z)=(-0.750111, -0.661312,        0)
+
+Time Step 37, time = 37, dt = 1
+ 0 Nonlinear |R| = [32m2.523214e-01[39m
+      0 Linear |R| = [32m2.523214e-01[39m
+      1 Linear |R| = [32m9.659933e-16[39m
+ 1 Nonlinear |R| = [32m1.062230e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m8.959777e-09[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   2.300000e+01 |   2.300000e+01 |
+|   2.400000e+01 |   2.400000e+01 |
+|   2.500000e+01 |   2.500000e+01 |
+|   2.600000e+01 |   2.600000e+01 |
+|   2.700000e+01 |   2.700000e+01 |
+|   2.800000e+01 |   2.800000e+01 |
+|   2.900000e+01 |   2.900000e+01 |
+|   3.000000e+01 |   3.000000e+01 |
+|   3.100000e+01 |   3.100000e+01 |
+|   3.200000e+01 |   3.200000e+01 |
+|   3.300000e+01 |   3.300000e+01 |
+|   3.400000e+01 |   3.400000e+01 |
+|   3.500000e+01 |   3.500000e+01 |
+|   3.600000e+01 |   3.600000e+01 |
+|   3.700000e+01 |   3.700000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.239872, 0.777008,        0)
+      velocity: (x,y,z)=(-0.0168802, -0.0168802,        0)
+     direction: (x,y,z)=(-0.707107, -0.707107,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.239872, 0.777008,        0)
+      velocity: (x,y,z)=(-0.0168802, -0.0168802,        0)
+     direction: (x,y,z)=(-0.707107, -0.707107,        0)
+
+Time Step 38, time = 38, dt = 1
+ 0 Nonlinear |R| = [32m2.777075e-01[39m
+      0 Linear |R| = [32m2.777075e-01[39m
+      1 Linear |R| = [32m3.268019e-15[39m
+ 1 Nonlinear |R| = [32m1.081717e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m8.920631e-09[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   2.400000e+01 |   2.400000e+01 |
+|   2.500000e+01 |   2.500000e+01 |
+|   2.600000e+01 |   2.600000e+01 |
+|   2.700000e+01 |   2.700000e+01 |
+|   2.800000e+01 |   2.800000e+01 |
+|   2.900000e+01 |   2.900000e+01 |
+|   3.000000e+01 |   3.000000e+01 |
+|   3.100000e+01 |   3.100000e+01 |
+|   3.200000e+01 |   3.200000e+01 |
+|   3.300000e+01 |   3.300000e+01 |
+|   3.400000e+01 |   3.400000e+01 |
+|   3.500000e+01 |   3.500000e+01 |
+|   3.600000e+01 |   3.600000e+01 |
+|   3.700000e+01 |   3.700000e+01 |
+|   3.800000e+01 |   3.800000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.222992, 0.760128,        0)
+      velocity: (x,y,z)=(-0.015787, -0.0179068,        0)
+     direction: (x,y,z)=(-0.661312, -0.750111,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.222992, 0.760128,        0)
+      velocity: (x,y,z)=(-0.015787, -0.0179068,        0)
+     direction: (x,y,z)=(-0.661312, -0.750111,        0)
+
+Time Step 39, time = 39, dt = 1
+ 0 Nonlinear |R| = [32m2.383130e-01[39m
+      0 Linear |R| = [32m2.383130e-01[39m
+      1 Linear |R| = [32m1.011558e-15[39m
+ 1 Nonlinear |R| = [32m1.064438e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m8.873806e-09[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   2.500000e+01 |   2.500000e+01 |
+|   2.600000e+01 |   2.600000e+01 |
+|   2.700000e+01 |   2.700000e+01 |
+|   2.800000e+01 |   2.800000e+01 |
+|   2.900000e+01 |   2.900000e+01 |
+|   3.000000e+01 |   3.000000e+01 |
+|   3.100000e+01 |   3.100000e+01 |
+|   3.200000e+01 |   3.200000e+01 |
+|   3.300000e+01 |   3.300000e+01 |
+|   3.400000e+01 |   3.400000e+01 |
+|   3.500000e+01 |   3.500000e+01 |
+|   3.600000e+01 |   3.600000e+01 |
+|   3.700000e+01 |   3.700000e+01 |
+|   3.800000e+01 |   3.800000e+01 |
+|   3.900000e+01 |   3.900000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.207205, 0.742221,        0)
+      velocity: (x,y,z)=(-0.0146314, -0.0188627,        0)
+     direction: (x,y,z)=(-0.612907, -0.790155,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.207205, 0.742221,        0)
+      velocity: (x,y,z)=(-0.0146314, -0.0188627,        0)
+     direction: (x,y,z)=(-0.612907, -0.790155,        0)
+
+Time Step 40, time = 40, dt = 1
+ 0 Nonlinear |R| = [32m2.515573e-01[39m
+      0 Linear |R| = [32m2.515573e-01[39m
+      1 Linear |R| = [32m2.356185e-15[39m
+ 1 Nonlinear |R| = [32m1.068877e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m9.056359e-09[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   2.600000e+01 |   2.600000e+01 |
+|   2.700000e+01 |   2.700000e+01 |
+|   2.800000e+01 |   2.800000e+01 |
+|   2.900000e+01 |   2.900000e+01 |
+|   3.000000e+01 |   3.000000e+01 |
+|   3.100000e+01 |   3.100000e+01 |
+|   3.200000e+01 |   3.200000e+01 |
+|   3.300000e+01 |   3.300000e+01 |
+|   3.400000e+01 |   3.400000e+01 |
+|   3.500000e+01 |   3.500000e+01 |
+|   3.600000e+01 |   3.600000e+01 |
+|   3.700000e+01 |   3.700000e+01 |
+|   3.800000e+01 |   3.800000e+01 |
+|   3.900000e+01 |   3.900000e+01 |
+|   4.000000e+01 |   4.000000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.192574, 0.723358,        0)
+      velocity: (x,y,z)=(-0.0134182, -0.0197442,        0)
+     direction: (x,y,z)=(-0.562083, -0.827081,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.192574, 0.723358,        0)
+      velocity: (x,y,z)=(-0.0134182, -0.0197442,        0)
+     direction: (x,y,z)=(-0.562083, -0.827081,        0)
+
+Time Step 41, time = 41, dt = 1
+ 0 Nonlinear |R| = [32m2.824599e-01[39m
+      0 Linear |R| = [32m2.824599e-01[39m
+      1 Linear |R| = [32m2.147995e-15[39m
+ 1 Nonlinear |R| = [32m1.130702e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m9.421391e-09[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   2.700000e+01 |   2.700000e+01 |
+|   2.800000e+01 |   2.800000e+01 |
+|   2.900000e+01 |   2.900000e+01 |
+|   3.000000e+01 |   3.000000e+01 |
+|   3.100000e+01 |   3.100000e+01 |
+|   3.200000e+01 |   3.200000e+01 |
+|   3.300000e+01 |   3.300000e+01 |
+|   3.400000e+01 |   3.400000e+01 |
+|   3.500000e+01 |   3.500000e+01 |
+|   3.600000e+01 |   3.600000e+01 |
+|   3.700000e+01 |   3.700000e+01 |
+|   3.800000e+01 |   3.800000e+01 |
+|   3.900000e+01 |   3.900000e+01 |
+|   4.000000e+01 |   4.000000e+01 |
+|   4.100000e+01 |   4.100000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.179155, 0.703614,        0)
+      velocity: (x,y,z)=(-0.0121519, -0.0205478,        0)
+     direction: (x,y,z)=(-0.509041, -0.860742,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.179155, 0.703614,        0)
+      velocity: (x,y,z)=(-0.0121519, -0.0205478,        0)
+     direction: (x,y,z)=(-0.509041, -0.860742,        0)
+
+Time Step 42, time = 42, dt = 1
+ 0 Nonlinear |R| = [32m2.751715e-01[39m
+      0 Linear |R| = [32m2.751715e-01[39m
+      1 Linear |R| = [32m1.000634e-15[39m
+ 1 Nonlinear |R| = [32m1.097543e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m9.312114e-09[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   2.800000e+01 |   2.800000e+01 |
+|   2.900000e+01 |   2.900000e+01 |
+|   3.000000e+01 |   3.000000e+01 |
+|   3.100000e+01 |   3.100000e+01 |
+|   3.200000e+01 |   3.200000e+01 |
+|   3.300000e+01 |   3.300000e+01 |
+|   3.400000e+01 |   3.400000e+01 |
+|   3.500000e+01 |   3.500000e+01 |
+|   3.600000e+01 |   3.600000e+01 |
+|   3.700000e+01 |   3.700000e+01 |
+|   3.800000e+01 |   3.800000e+01 |
+|   3.900000e+01 |   3.900000e+01 |
+|   4.000000e+01 |   4.000000e+01 |
+|   4.100000e+01 |   4.100000e+01 |
+|   4.200000e+01 |   4.200000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.167003, 0.683066,        0)
+      velocity: (x,y,z)=(-0.0108377, -0.0212703,        0)
+     direction: (x,y,z)=(-0.45399, -0.891007,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.167003, 0.683066,        0)
+      velocity: (x,y,z)=(-0.0108377, -0.0212703,        0)
+     direction: (x,y,z)=(-0.45399, -0.891007,        0)
+
+Time Step 43, time = 43, dt = 1
+ 0 Nonlinear |R| = [32m2.680920e-01[39m
+      0 Linear |R| = [32m2.680920e-01[39m
+      1 Linear |R| = [32m8.885977e-16[39m
+ 1 Nonlinear |R| = [32m1.115083e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m9.502487e-09[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   2.900000e+01 |   2.900000e+01 |
+|   3.000000e+01 |   3.000000e+01 |
+|   3.100000e+01 |   3.100000e+01 |
+|   3.200000e+01 |   3.200000e+01 |
+|   3.300000e+01 |   3.300000e+01 |
+|   3.400000e+01 |   3.400000e+01 |
+|   3.500000e+01 |   3.500000e+01 |
+|   3.600000e+01 |   3.600000e+01 |
+|   3.700000e+01 |   3.700000e+01 |
+|   3.800000e+01 |   3.800000e+01 |
+|   3.900000e+01 |   3.900000e+01 |
+|   4.000000e+01 |   4.000000e+01 |
+|   4.100000e+01 |   4.100000e+01 |
+|   4.200000e+01 |   4.200000e+01 |
+|   4.300000e+01 |   4.300000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.156166, 0.661796,        0)
+      velocity: (x,y,z)=(-0.00948078, -0.0219088,        0)
+     direction: (x,y,z)=(-0.397148, -0.917755,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.156166, 0.661796,        0)
+      velocity: (x,y,z)=(-0.00948078, -0.0219088,        0)
+     direction: (x,y,z)=(-0.397148, -0.917755,        0)
+
+Time Step 44, time = 44, dt = 1
+ 0 Nonlinear |R| = [32m2.690337e-01[39m
+      0 Linear |R| = [32m2.690337e-01[39m
+      1 Linear |R| = [32m9.707317e-16[39m
+ 1 Nonlinear |R| = [32m1.208646e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.040329e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   3.000000e+01 |   3.000000e+01 |
+|   3.100000e+01 |   3.100000e+01 |
+|   3.200000e+01 |   3.200000e+01 |
+|   3.300000e+01 |   3.300000e+01 |
+|   3.400000e+01 |   3.400000e+01 |
+|   3.500000e+01 |   3.500000e+01 |
+|   3.600000e+01 |   3.600000e+01 |
+|   3.700000e+01 |   3.700000e+01 |
+|   3.800000e+01 |   3.800000e+01 |
+|   3.900000e+01 |   3.900000e+01 |
+|   4.000000e+01 |   4.000000e+01 |
+|   4.100000e+01 |   4.100000e+01 |
+|   4.200000e+01 |   4.200000e+01 |
+|   4.300000e+01 |   4.300000e+01 |
+|   4.400000e+01 |   4.400000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.146685, 0.639887,        0)
+      velocity: (x,y,z)=(-0.00808641, -0.0224609,        0)
+     direction: (x,y,z)=(-0.338738, -0.940881,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.146685, 0.639887,        0)
+      velocity: (x,y,z)=(-0.00808641, -0.0224609,        0)
+     direction: (x,y,z)=(-0.338738, -0.940881,        0)
+
+Time Step 45, time = 45, dt = 1
+ 0 Nonlinear |R| = [32m2.687245e-01[39m
+      0 Linear |R| = [32m2.687245e-01[39m
+      1 Linear |R| = [32m1.051693e-15[39m
+ 1 Nonlinear |R| = [32m1.280755e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.098022e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   3.100000e+01 |   3.100000e+01 |
+|   3.200000e+01 |   3.200000e+01 |
+|   3.300000e+01 |   3.300000e+01 |
+|   3.400000e+01 |   3.400000e+01 |
+|   3.500000e+01 |   3.500000e+01 |
+|   3.600000e+01 |   3.600000e+01 |
+|   3.700000e+01 |   3.700000e+01 |
+|   3.800000e+01 |   3.800000e+01 |
+|   3.900000e+01 |   3.900000e+01 |
+|   4.000000e+01 |   4.000000e+01 |
+|   4.100000e+01 |   4.100000e+01 |
+|   4.200000e+01 |   4.200000e+01 |
+|   4.300000e+01 |   4.300000e+01 |
+|   4.400000e+01 |   4.400000e+01 |
+|   4.500000e+01 |   4.500000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.138599, 0.617426,        0)
+      velocity: (x,y,z)=(-0.00666013, -0.0229243,        0)
+     direction: (x,y,z)=(-0.278991, -0.960294,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.138599, 0.617426,        0)
+      velocity: (x,y,z)=(-0.00666013, -0.0229243,        0)
+     direction: (x,y,z)=(-0.278991, -0.960294,        0)
+
+Time Step 46, time = 46, dt = 1
+ 0 Nonlinear |R| = [32m2.682274e-01[39m
+      0 Linear |R| = [32m2.682274e-01[39m
+      1 Linear |R| = [32m2.707684e-16[39m
+ 1 Nonlinear |R| = [32m1.218031e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.072969e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   3.200000e+01 |   3.200000e+01 |
+|   3.300000e+01 |   3.300000e+01 |
+|   3.400000e+01 |   3.400000e+01 |
+|   3.500000e+01 |   3.500000e+01 |
+|   3.600000e+01 |   3.600000e+01 |
+|   3.700000e+01 |   3.700000e+01 |
+|   3.800000e+01 |   3.800000e+01 |
+|   3.900000e+01 |   3.900000e+01 |
+|   4.000000e+01 |   4.000000e+01 |
+|   4.100000e+01 |   4.100000e+01 |
+|   4.200000e+01 |   4.200000e+01 |
+|   4.300000e+01 |   4.300000e+01 |
+|   4.400000e+01 |   4.400000e+01 |
+|   4.500000e+01 |   4.500000e+01 |
+|   4.600000e+01 |   4.600000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.131938, 0.594502,        0)
+      velocity: (x,y,z)=(-0.00520755, -0.0232973,        0)
+     direction: (x,y,z)=(-0.218143, -0.975917,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.131938, 0.594502,        0)
+      velocity: (x,y,z)=(-0.00520755, -0.0232973,        0)
+     direction: (x,y,z)=(-0.218143, -0.975917,        0)
+
+Time Step 47, time = 47, dt = 1
+ 0 Nonlinear |R| = [32m2.722986e-01[39m
+      0 Linear |R| = [32m2.722986e-01[39m
+      1 Linear |R| = [32m4.354174e-16[39m
+ 1 Nonlinear |R| = [32m1.230487e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.075265e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   3.300000e+01 |   3.300000e+01 |
+|   3.400000e+01 |   3.400000e+01 |
+|   3.500000e+01 |   3.500000e+01 |
+|   3.600000e+01 |   3.600000e+01 |
+|   3.700000e+01 |   3.700000e+01 |
+|   3.800000e+01 |   3.800000e+01 |
+|   3.900000e+01 |   3.900000e+01 |
+|   4.000000e+01 |   4.000000e+01 |
+|   4.100000e+01 |   4.100000e+01 |
+|   4.200000e+01 |   4.200000e+01 |
+|   4.300000e+01 |   4.300000e+01 |
+|   4.400000e+01 |   4.400000e+01 |
+|   4.500000e+01 |   4.500000e+01 |
+|   4.600000e+01 |   4.600000e+01 |
+|   4.700000e+01 |   4.700000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.126731, 0.571205,        0)
+      velocity: (x,y,z)=(-0.00373443, -0.0235783,        0)
+     direction: (x,y,z)=(-0.156434, -0.987688,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.126731, 0.571205,        0)
+      velocity: (x,y,z)=(-0.00373443, -0.0235783,        0)
+     direction: (x,y,z)=(-0.156434, -0.987688,        0)
+
+Time Step 48, time = 48, dt = 1
+ 0 Nonlinear |R| = [32m2.812575e-01[39m
+      0 Linear |R| = [32m2.812575e-01[39m
+      1 Linear |R| = [32m2.732632e-16[39m
+ 1 Nonlinear |R| = [32m1.267085e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.092896e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   3.400000e+01 |   3.400000e+01 |
+|   3.500000e+01 |   3.500000e+01 |
+|   3.600000e+01 |   3.600000e+01 |
+|   3.700000e+01 |   3.700000e+01 |
+|   3.800000e+01 |   3.800000e+01 |
+|   3.900000e+01 |   3.900000e+01 |
+|   4.000000e+01 |   4.000000e+01 |
+|   4.100000e+01 |   4.100000e+01 |
+|   4.200000e+01 |   4.200000e+01 |
+|   4.300000e+01 |   4.300000e+01 |
+|   4.400000e+01 |   4.400000e+01 |
+|   4.500000e+01 |   4.500000e+01 |
+|   4.600000e+01 |   4.600000e+01 |
+|   4.700000e+01 |   4.700000e+01 |
+|   4.800000e+01 |   4.800000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.122996, 0.547627,        0)
+      velocity: (x,y,z)=(-0.00224657, -0.0237662,        0)
+     direction: (x,y,z)=(-0.0941083, -0.995562,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.122996, 0.547627,        0)
+      velocity: (x,y,z)=(-0.00224657, -0.0237662,        0)
+     direction: (x,y,z)=(-0.0941083, -0.995562,        0)
+
+Time Step 49, time = 49, dt = 1
+ 0 Nonlinear |R| = [32m2.432806e-01[39m
+      0 Linear |R| = [32m2.432806e-01[39m
+      1 Linear |R| = [32m4.968039e-16[39m
+ 1 Nonlinear |R| = [32m1.220304e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.066640e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   3.500000e+01 |   3.500000e+01 |
+|   3.600000e+01 |   3.600000e+01 |
+|   3.700000e+01 |   3.700000e+01 |
+|   3.800000e+01 |   3.800000e+01 |
+|   3.900000e+01 |   3.900000e+01 |
+|   4.000000e+01 |   4.000000e+01 |
+|   4.100000e+01 |   4.100000e+01 |
+|   4.200000e+01 |   4.200000e+01 |
+|   4.300000e+01 |   4.300000e+01 |
+|   4.400000e+01 |   4.400000e+01 |
+|   4.500000e+01 |   4.500000e+01 |
+|   4.600000e+01 |   4.600000e+01 |
+|   4.700000e+01 |   4.700000e+01 |
+|   4.800000e+01 |   4.800000e+01 |
+|   4.900000e+01 |   4.900000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=( 0.12075,  0.52386,        0)
+      velocity: (x,y,z)=(-0.000749843, -0.0238604,        0)
+     direction: (x,y,z)=(-0.0314108, -0.999507,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=( 0.12075,  0.52386,        0)
+      velocity: (x,y,z)=(-0.000749843, -0.0238604,        0)
+     direction: (x,y,z)=(-0.0314108, -0.999507,        0)
+
+Time Step 50, time = 50, dt = 1
+ 0 Nonlinear |R| = [32m2.448587e-01[39m
+      0 Linear |R| = [32m2.448587e-01[39m
+      1 Linear |R| = [32m1.722183e-15[39m
+ 1 Nonlinear |R| = [32m1.254275e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.103253e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   3.600000e+01 |   3.600000e+01 |
+|   3.700000e+01 |   3.700000e+01 |
+|   3.800000e+01 |   3.800000e+01 |
+|   3.900000e+01 |   3.900000e+01 |
+|   4.000000e+01 |   4.000000e+01 |
+|   4.100000e+01 |   4.100000e+01 |
+|   4.200000e+01 |   4.200000e+01 |
+|   4.300000e+01 |   4.300000e+01 |
+|   4.400000e+01 |   4.400000e+01 |
+|   4.500000e+01 |   4.500000e+01 |
+|   4.600000e+01 |   4.600000e+01 |
+|   4.700000e+01 |   4.700000e+01 |
+|   4.800000e+01 |   4.800000e+01 |
+|   4.900000e+01 |   4.900000e+01 |
+|   5.000000e+01 |   5.000000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(    0.12,      0.5,        0)
+      velocity: (x,y,z)=(0.000749843, -0.0238604,        0)
+     direction: (x,y,z)=(0.0314108, -0.999507,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(    0.12,      0.5,        0)
+      velocity: (x,y,z)=(0.000749843, -0.0238604,        0)
+     direction: (x,y,z)=(0.0314108, -0.999507,        0)
+
+Time Step 51, time = 51, dt = 1
+ 0 Nonlinear |R| = [32m2.713650e-01[39m
+      0 Linear |R| = [32m2.713650e-01[39m
+      1 Linear |R| = [32m1.149062e-15[39m
+ 1 Nonlinear |R| = [32m1.264280e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.117008e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   3.700000e+01 |   3.700000e+01 |
+|   3.800000e+01 |   3.800000e+01 |
+|   3.900000e+01 |   3.900000e+01 |
+|   4.000000e+01 |   4.000000e+01 |
+|   4.100000e+01 |   4.100000e+01 |
+|   4.200000e+01 |   4.200000e+01 |
+|   4.300000e+01 |   4.300000e+01 |
+|   4.400000e+01 |   4.400000e+01 |
+|   4.500000e+01 |   4.500000e+01 |
+|   4.600000e+01 |   4.600000e+01 |
+|   4.700000e+01 |   4.700000e+01 |
+|   4.800000e+01 |   4.800000e+01 |
+|   4.900000e+01 |   4.900000e+01 |
+|   5.000000e+01 |   5.000000e+01 |
+|   5.100000e+01 |   5.100000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=( 0.12075,  0.47614,        0)
+      velocity: (x,y,z)=(0.00224657, -0.0237662,        0)
+     direction: (x,y,z)=(0.0941083, -0.995562,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=( 0.12075,  0.47614,        0)
+      velocity: (x,y,z)=(0.00224657, -0.0237662,        0)
+     direction: (x,y,z)=(0.0941083, -0.995562,        0)
+
+Time Step 52, time = 52, dt = 1
+ 0 Nonlinear |R| = [32m2.806321e-01[39m
+      0 Linear |R| = [32m2.806321e-01[39m
+      1 Linear |R| = [32m3.518964e-16[39m
+ 1 Nonlinear |R| = [32m1.294370e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.128064e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   3.800000e+01 |   3.800000e+01 |
+|   3.900000e+01 |   3.900000e+01 |
+|   4.000000e+01 |   4.000000e+01 |
+|   4.100000e+01 |   4.100000e+01 |
+|   4.200000e+01 |   4.200000e+01 |
+|   4.300000e+01 |   4.300000e+01 |
+|   4.400000e+01 |   4.400000e+01 |
+|   4.500000e+01 |   4.500000e+01 |
+|   4.600000e+01 |   4.600000e+01 |
+|   4.700000e+01 |   4.700000e+01 |
+|   4.800000e+01 |   4.800000e+01 |
+|   4.900000e+01 |   4.900000e+01 |
+|   5.000000e+01 |   5.000000e+01 |
+|   5.100000e+01 |   5.100000e+01 |
+|   5.200000e+01 |   5.200000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.122996, 0.452373,        0)
+      velocity: (x,y,z)=(0.00373443, -0.0235783,        0)
+     direction: (x,y,z)=(0.156434, -0.987688,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.122996, 0.452373,        0)
+      velocity: (x,y,z)=(0.00373443, -0.0235783,        0)
+     direction: (x,y,z)=(0.156434, -0.987688,        0)
+
+Time Step 53, time = 53, dt = 1
+ 0 Nonlinear |R| = [32m2.438321e-01[39m
+      0 Linear |R| = [32m2.438321e-01[39m
+      1 Linear |R| = [32m1.178608e-15[39m
+ 1 Nonlinear |R| = [32m1.238445e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.096911e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   3.900000e+01 |   3.900000e+01 |
+|   4.000000e+01 |   4.000000e+01 |
+|   4.100000e+01 |   4.100000e+01 |
+|   4.200000e+01 |   4.200000e+01 |
+|   4.300000e+01 |   4.300000e+01 |
+|   4.400000e+01 |   4.400000e+01 |
+|   4.500000e+01 |   4.500000e+01 |
+|   4.600000e+01 |   4.600000e+01 |
+|   4.700000e+01 |   4.700000e+01 |
+|   4.800000e+01 |   4.800000e+01 |
+|   4.900000e+01 |   4.900000e+01 |
+|   5.000000e+01 |   5.000000e+01 |
+|   5.100000e+01 |   5.100000e+01 |
+|   5.200000e+01 |   5.200000e+01 |
+|   5.300000e+01 |   5.300000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.126731, 0.428795,        0)
+      velocity: (x,y,z)=(0.00520755, -0.0232973,        0)
+     direction: (x,y,z)=(0.218143, -0.975917,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.126731, 0.428795,        0)
+      velocity: (x,y,z)=(0.00520755, -0.0232973,        0)
+     direction: (x,y,z)=(0.218143, -0.975917,        0)
+
+Time Step 54, time = 54, dt = 1
+ 0 Nonlinear |R| = [32m2.203127e-01[39m
+      0 Linear |R| = [32m2.203127e-01[39m
+      1 Linear |R| = [32m3.434313e-16[39m
+ 1 Nonlinear |R| = [32m1.228675e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.097304e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   4.000000e+01 |   4.000000e+01 |
+|   4.100000e+01 |   4.100000e+01 |
+|   4.200000e+01 |   4.200000e+01 |
+|   4.300000e+01 |   4.300000e+01 |
+|   4.400000e+01 |   4.400000e+01 |
+|   4.500000e+01 |   4.500000e+01 |
+|   4.600000e+01 |   4.600000e+01 |
+|   4.700000e+01 |   4.700000e+01 |
+|   4.800000e+01 |   4.800000e+01 |
+|   4.900000e+01 |   4.900000e+01 |
+|   5.000000e+01 |   5.000000e+01 |
+|   5.100000e+01 |   5.100000e+01 |
+|   5.200000e+01 |   5.200000e+01 |
+|   5.300000e+01 |   5.300000e+01 |
+|   5.400000e+01 |   5.400000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.131938, 0.405498,        0)
+      velocity: (x,y,z)=(0.00666013, -0.0229243,        0)
+     direction: (x,y,z)=(0.278991, -0.960294,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.131938, 0.405498,        0)
+      velocity: (x,y,z)=(0.00666013, -0.0229243,        0)
+     direction: (x,y,z)=(0.278991, -0.960294,        0)
+
+Time Step 55, time = 55, dt = 1
+ 0 Nonlinear |R| = [32m2.493990e-01[39m
+      0 Linear |R| = [32m2.493990e-01[39m
+      1 Linear |R| = [32m1.245946e-15[39m
+ 1 Nonlinear |R| = [32m1.287654e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.140627e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   4.100000e+01 |   4.100000e+01 |
+|   4.200000e+01 |   4.200000e+01 |
+|   4.300000e+01 |   4.300000e+01 |
+|   4.400000e+01 |   4.400000e+01 |
+|   4.500000e+01 |   4.500000e+01 |
+|   4.600000e+01 |   4.600000e+01 |
+|   4.700000e+01 |   4.700000e+01 |
+|   4.800000e+01 |   4.800000e+01 |
+|   4.900000e+01 |   4.900000e+01 |
+|   5.000000e+01 |   5.000000e+01 |
+|   5.100000e+01 |   5.100000e+01 |
+|   5.200000e+01 |   5.200000e+01 |
+|   5.300000e+01 |   5.300000e+01 |
+|   5.400000e+01 |   5.400000e+01 |
+|   5.500000e+01 |   5.500000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.138599, 0.382574,        0)
+      velocity: (x,y,z)=(0.00808641, -0.0224609,        0)
+     direction: (x,y,z)=(0.338738, -0.940881,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.138599, 0.382574,        0)
+      velocity: (x,y,z)=(0.00808641, -0.0224609,        0)
+     direction: (x,y,z)=(0.338738, -0.940881,        0)
+
+Time Step 56, time = 56, dt = 1
+ 0 Nonlinear |R| = [32m2.613222e-01[39m
+      0 Linear |R| = [32m2.613222e-01[39m
+      1 Linear |R| = [32m1.251096e-15[39m
+ 1 Nonlinear |R| = [32m1.268951e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.129247e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   4.200000e+01 |   4.200000e+01 |
+|   4.300000e+01 |   4.300000e+01 |
+|   4.400000e+01 |   4.400000e+01 |
+|   4.500000e+01 |   4.500000e+01 |
+|   4.600000e+01 |   4.600000e+01 |
+|   4.700000e+01 |   4.700000e+01 |
+|   4.800000e+01 |   4.800000e+01 |
+|   4.900000e+01 |   4.900000e+01 |
+|   5.000000e+01 |   5.000000e+01 |
+|   5.100000e+01 |   5.100000e+01 |
+|   5.200000e+01 |   5.200000e+01 |
+|   5.300000e+01 |   5.300000e+01 |
+|   5.400000e+01 |   5.400000e+01 |
+|   5.500000e+01 |   5.500000e+01 |
+|   5.600000e+01 |   5.600000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.146685, 0.360113,        0)
+      velocity: (x,y,z)=(0.00948078, -0.0219088,        0)
+     direction: (x,y,z)=(0.397148, -0.917755,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.146685, 0.360113,        0)
+      velocity: (x,y,z)=(0.00948078, -0.0219088,        0)
+     direction: (x,y,z)=(0.397148, -0.917755,        0)
+
+Time Step 57, time = 57, dt = 1
+ 0 Nonlinear |R| = [32m2.586402e-01[39m
+      0 Linear |R| = [32m2.586402e-01[39m
+      1 Linear |R| = [32m1.898842e-16[39m
+ 1 Nonlinear |R| = [32m1.274809e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.136061e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   4.300000e+01 |   4.300000e+01 |
+|   4.400000e+01 |   4.400000e+01 |
+|   4.500000e+01 |   4.500000e+01 |
+|   4.600000e+01 |   4.600000e+01 |
+|   4.700000e+01 |   4.700000e+01 |
+|   4.800000e+01 |   4.800000e+01 |
+|   4.900000e+01 |   4.900000e+01 |
+|   5.000000e+01 |   5.000000e+01 |
+|   5.100000e+01 |   5.100000e+01 |
+|   5.200000e+01 |   5.200000e+01 |
+|   5.300000e+01 |   5.300000e+01 |
+|   5.400000e+01 |   5.400000e+01 |
+|   5.500000e+01 |   5.500000e+01 |
+|   5.600000e+01 |   5.600000e+01 |
+|   5.700000e+01 |   5.700000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.156166, 0.338204,        0)
+      velocity: (x,y,z)=(0.0108377, -0.0212703,        0)
+     direction: (x,y,z)=( 0.45399, -0.891007,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.156166, 0.338204,        0)
+      velocity: (x,y,z)=(0.0108377, -0.0212703,        0)
+     direction: (x,y,z)=( 0.45399, -0.891007,        0)
+
+Time Step 58, time = 58, dt = 1
+ 0 Nonlinear |R| = [32m2.526471e-01[39m
+      0 Linear |R| = [32m2.526471e-01[39m
+      1 Linear |R| = [32m1.381172e-16[39m
+ 1 Nonlinear |R| = [32m1.277273e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.137569e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   4.400000e+01 |   4.400000e+01 |
+|   4.500000e+01 |   4.500000e+01 |
+|   4.600000e+01 |   4.600000e+01 |
+|   4.700000e+01 |   4.700000e+01 |
+|   4.800000e+01 |   4.800000e+01 |
+|   4.900000e+01 |   4.900000e+01 |
+|   5.000000e+01 |   5.000000e+01 |
+|   5.100000e+01 |   5.100000e+01 |
+|   5.200000e+01 |   5.200000e+01 |
+|   5.300000e+01 |   5.300000e+01 |
+|   5.400000e+01 |   5.400000e+01 |
+|   5.500000e+01 |   5.500000e+01 |
+|   5.600000e+01 |   5.600000e+01 |
+|   5.700000e+01 |   5.700000e+01 |
+|   5.800000e+01 |   5.800000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.167003, 0.316934,        0)
+      velocity: (x,y,z)=(0.0121519, -0.0205478,        0)
+     direction: (x,y,z)=(0.509041, -0.860742,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.167003, 0.316934,        0)
+      velocity: (x,y,z)=(0.0121519, -0.0205478,        0)
+     direction: (x,y,z)=(0.509041, -0.860742,        0)
+
+Time Step 59, time = 59, dt = 1
+ 0 Nonlinear |R| = [32m2.593677e-01[39m
+      0 Linear |R| = [32m2.593677e-01[39m
+      1 Linear |R| = [32m1.678451e-16[39m
+ 1 Nonlinear |R| = [32m1.340837e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.183206e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   4.500000e+01 |   4.500000e+01 |
+|   4.600000e+01 |   4.600000e+01 |
+|   4.700000e+01 |   4.700000e+01 |
+|   4.800000e+01 |   4.800000e+01 |
+|   4.900000e+01 |   4.900000e+01 |
+|   5.000000e+01 |   5.000000e+01 |
+|   5.100000e+01 |   5.100000e+01 |
+|   5.200000e+01 |   5.200000e+01 |
+|   5.300000e+01 |   5.300000e+01 |
+|   5.400000e+01 |   5.400000e+01 |
+|   5.500000e+01 |   5.500000e+01 |
+|   5.600000e+01 |   5.600000e+01 |
+|   5.700000e+01 |   5.700000e+01 |
+|   5.800000e+01 |   5.800000e+01 |
+|   5.900000e+01 |   5.900000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.179155, 0.296386,        0)
+      velocity: (x,y,z)=(0.0134182, -0.0197442,        0)
+     direction: (x,y,z)=(0.562083, -0.827081,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.179155, 0.296386,        0)
+      velocity: (x,y,z)=(0.0134182, -0.0197442,        0)
+     direction: (x,y,z)=(0.562083, -0.827081,        0)
+
+Time Step 60, time = 60, dt = 1
+ 0 Nonlinear |R| = [32m2.672086e-01[39m
+      0 Linear |R| = [32m2.672086e-01[39m
+      1 Linear |R| = [32m2.104353e-15[39m
+ 1 Nonlinear |R| = [32m1.313271e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.163048e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   4.600000e+01 |   4.600000e+01 |
+|   4.700000e+01 |   4.700000e+01 |
+|   4.800000e+01 |   4.800000e+01 |
+|   4.900000e+01 |   4.900000e+01 |
+|   5.000000e+01 |   5.000000e+01 |
+|   5.100000e+01 |   5.100000e+01 |
+|   5.200000e+01 |   5.200000e+01 |
+|   5.300000e+01 |   5.300000e+01 |
+|   5.400000e+01 |   5.400000e+01 |
+|   5.500000e+01 |   5.500000e+01 |
+|   5.600000e+01 |   5.600000e+01 |
+|   5.700000e+01 |   5.700000e+01 |
+|   5.800000e+01 |   5.800000e+01 |
+|   5.900000e+01 |   5.900000e+01 |
+|   6.000000e+01 |   6.000000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.192574, 0.276642,        0)
+      velocity: (x,y,z)=(0.0146314, -0.0188627,        0)
+     direction: (x,y,z)=(0.612907, -0.790155,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.192574, 0.276642,        0)
+      velocity: (x,y,z)=(0.0146314, -0.0188627,        0)
+     direction: (x,y,z)=(0.612907, -0.790155,        0)
+
+Time Step 61, time = 61, dt = 1
+ 0 Nonlinear |R| = [32m2.757732e-01[39m
+      0 Linear |R| = [32m2.757732e-01[39m
+      1 Linear |R| = [32m6.993625e-16[39m
+ 1 Nonlinear |R| = [32m1.329391e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.174110e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   4.700000e+01 |   4.700000e+01 |
+|   4.800000e+01 |   4.800000e+01 |
+|   4.900000e+01 |   4.900000e+01 |
+|   5.000000e+01 |   5.000000e+01 |
+|   5.100000e+01 |   5.100000e+01 |
+|   5.200000e+01 |   5.200000e+01 |
+|   5.300000e+01 |   5.300000e+01 |
+|   5.400000e+01 |   5.400000e+01 |
+|   5.500000e+01 |   5.500000e+01 |
+|   5.600000e+01 |   5.600000e+01 |
+|   5.700000e+01 |   5.700000e+01 |
+|   5.800000e+01 |   5.800000e+01 |
+|   5.900000e+01 |   5.900000e+01 |
+|   6.000000e+01 |   6.000000e+01 |
+|   6.100000e+01 |   6.100000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.207205, 0.257779,        0)
+      velocity: (x,y,z)=(0.015787, -0.0179068,        0)
+     direction: (x,y,z)=(0.661312, -0.750111,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.207205, 0.257779,        0)
+      velocity: (x,y,z)=(0.015787, -0.0179068,        0)
+     direction: (x,y,z)=(0.661312, -0.750111,        0)
+
+Time Step 62, time = 62, dt = 1
+ 0 Nonlinear |R| = [32m2.975050e-01[39m
+      0 Linear |R| = [32m2.975050e-01[39m
+      1 Linear |R| = [32m3.120348e-16[39m
+ 1 Nonlinear |R| = [32m2.559292e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [31m2.364366e-07[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   4.800000e+01 |   4.800000e+01 |
+|   4.900000e+01 |   4.900000e+01 |
+|   5.000000e+01 |   5.000000e+01 |
+|   5.100000e+01 |   5.100000e+01 |
+|   5.200000e+01 |   5.200000e+01 |
+|   5.300000e+01 |   5.300000e+01 |
+|   5.400000e+01 |   5.400000e+01 |
+|   5.500000e+01 |   5.500000e+01 |
+|   5.600000e+01 |   5.600000e+01 |
+|   5.700000e+01 |   5.700000e+01 |
+|   5.800000e+01 |   5.800000e+01 |
+|   5.900000e+01 |   5.900000e+01 |
+|   6.000000e+01 |   6.000000e+01 |
+|   6.100000e+01 |   6.100000e+01 |
+|   6.200000e+01 |   6.200000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.222992, 0.239872,        0)
+      velocity: (x,y,z)=(0.0168802, -0.0168802,        0)
+     direction: (x,y,z)=(0.707107, -0.707107,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.222992, 0.239872,        0)
+      velocity: (x,y,z)=(0.0168802, -0.0168802,        0)
+     direction: (x,y,z)=(0.707107, -0.707107,        0)
+
+Time Step 63, time = 63, dt = 1
+ 0 Nonlinear |R| = [32m3.072993e-01[39m
+      0 Linear |R| = [32m3.072993e-01[39m
+      1 Linear |R| = [32m8.605340e-16[39m
+ 1 Nonlinear |R| = [32m6.861685e-07[39m
+      0 Linear |R| = [32m6.861685e-07[39m
+      1 Linear |R| = [32m4.526328e-21[39m
+ 2 Nonlinear |R| = [32m4.517161e-07[39m
+      0 Linear |R| = [32m4.517161e-07[39m
+      1 Linear |R| = [32m9.150980e-22[39m
+ 3 Nonlinear |R| = [32m1.166822e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.001462e-07[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   4.900000e+01 |   4.900000e+01 |
+|   5.000000e+01 |   5.000000e+01 |
+|   5.100000e+01 |   5.100000e+01 |
+|   5.200000e+01 |   5.200000e+01 |
+|   5.300000e+01 |   5.300000e+01 |
+|   5.400000e+01 |   5.400000e+01 |
+|   5.500000e+01 |   5.500000e+01 |
+|   5.600000e+01 |   5.600000e+01 |
+|   5.700000e+01 |   5.700000e+01 |
+|   5.800000e+01 |   5.800000e+01 |
+|   5.900000e+01 |   5.900000e+01 |
+|   6.000000e+01 |   6.000000e+01 |
+|   6.100000e+01 |   6.100000e+01 |
+|   6.200000e+01 |   6.200000e+01 |
+|   6.300000e+01 |   6.300000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.239872, 0.222992,        0)
+      velocity: (x,y,z)=(0.0179068, -0.015787,        0)
+     direction: (x,y,z)=(0.750111, -0.661312,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.239872, 0.222992,        0)
+      velocity: (x,y,z)=(0.0179068, -0.015787,        0)
+     direction: (x,y,z)=(0.750111, -0.661312,        0)
+
+Time Step 64, time = 64, dt = 1
+ 0 Nonlinear |R| = [32m2.644347e-01[39m
+      0 Linear |R| = [32m2.644347e-01[39m
+      1 Linear |R| = [32m1.438377e-15[39m
+ 1 Nonlinear |R| = [32m4.704035e-07[39m
+      0 Linear |R| = [32m4.704035e-07[39m
+      1 Linear |R| = [32m1.571025e-21[39m
+ 2 Nonlinear |R| = [32m3.863036e-07[39m
+      0 Linear |R| = [32m3.863036e-07[39m
+      1 Linear |R| = [32m1.335352e-21[39m
+ 3 Nonlinear |R| = [32m2.961223e-07[39m
+      0 Linear |R| = [32m2.961223e-07[39m
+      1 Linear |R| = [32m7.817963e-22[39m
+ 4 Nonlinear |R| = [32m1.849970e-11[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   5.000000e+01 |   5.000000e+01 |
+|   5.100000e+01 |   5.100000e+01 |
+|   5.200000e+01 |   5.200000e+01 |
+|   5.300000e+01 |   5.300000e+01 |
+|   5.400000e+01 |   5.400000e+01 |
+|   5.500000e+01 |   5.500000e+01 |
+|   5.600000e+01 |   5.600000e+01 |
+|   5.700000e+01 |   5.700000e+01 |
+|   5.800000e+01 |   5.800000e+01 |
+|   5.900000e+01 |   5.900000e+01 |
+|   6.000000e+01 |   6.000000e+01 |
+|   6.100000e+01 |   6.100000e+01 |
+|   6.200000e+01 |   6.200000e+01 |
+|   6.300000e+01 |   6.300000e+01 |
+|   6.400000e+01 |   6.400000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.257779, 0.207205,        0)
+      velocity: (x,y,z)=(0.0188627, -0.0146314,        0)
+     direction: (x,y,z)=(0.790155, -0.612907,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.257779, 0.207205,        0)
+      velocity: (x,y,z)=(0.0188627, -0.0146314,        0)
+     direction: (x,y,z)=(0.790155, -0.612907,        0)
+
+Time Step 65, time = 65, dt = 1
+ 0 Nonlinear |R| = [32m2.678553e-01[39m
+      0 Linear |R| = [32m2.678553e-01[39m
+      1 Linear |R| = [32m2.273025e-15[39m
+ 1 Nonlinear |R| = [32m4.385463e-07[39m
+      0 Linear |R| = [32m4.385463e-07[39m
+      1 Linear |R| = [32m8.815454e-22[39m
+ 2 Nonlinear |R| = [32m3.556513e-07[39m
+      0 Linear |R| = [32m3.556513e-07[39m
+      1 Linear |R| = [32m1.968030e-21[39m
+ 3 Nonlinear |R| = [32m2.784576e-07[39m
+      0 Linear |R| = [32m2.784576e-07[39m
+      1 Linear |R| = [32m3.470974e-22[39m
+ 4 Nonlinear |R| = [32m4.189125e-11[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   5.100000e+01 |   5.100000e+01 |
+|   5.200000e+01 |   5.200000e+01 |
+|   5.300000e+01 |   5.300000e+01 |
+|   5.400000e+01 |   5.400000e+01 |
+|   5.500000e+01 |   5.500000e+01 |
+|   5.600000e+01 |   5.600000e+01 |
+|   5.700000e+01 |   5.700000e+01 |
+|   5.800000e+01 |   5.800000e+01 |
+|   5.900000e+01 |   5.900000e+01 |
+|   6.000000e+01 |   6.000000e+01 |
+|   6.100000e+01 |   6.100000e+01 |
+|   6.200000e+01 |   6.200000e+01 |
+|   6.300000e+01 |   6.300000e+01 |
+|   6.400000e+01 |   6.400000e+01 |
+|   6.500000e+01 |   6.500000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.276642, 0.192574,        0)
+      velocity: (x,y,z)=(0.0197442, -0.0134182,        0)
+     direction: (x,y,z)=(0.827081, -0.562083,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.276642, 0.192574,        0)
+      velocity: (x,y,z)=(0.0197442, -0.0134182,        0)
+     direction: (x,y,z)=(0.827081, -0.562083,        0)
+
+Time Step 66, time = 66, dt = 1
+ 0 Nonlinear |R| = [32m2.879640e-01[39m
+      0 Linear |R| = [32m2.879640e-01[39m
+      1 Linear |R| = [32m1.417590e-15[39m
+ 1 Nonlinear |R| = [32m4.964044e-07[39m
+      0 Linear |R| = [32m4.964044e-07[39m
+      1 Linear |R| = [32m6.035853e-21[39m
+ 2 Nonlinear |R| = [32m3.428634e-07[39m
+      0 Linear |R| = [32m3.428634e-07[39m
+      1 Linear |R| = [32m6.640723e-22[39m
+ 3 Nonlinear |R| = [33m3.376863e-07[39m
+      0 Linear |R| = [32m3.376863e-07[39m
+      1 Linear |R| = [32m3.276315e-22[39m
+ 4 Nonlinear |R| = [32m1.128256e-10[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   5.200000e+01 |   5.200000e+01 |
+|   5.300000e+01 |   5.300000e+01 |
+|   5.400000e+01 |   5.400000e+01 |
+|   5.500000e+01 |   5.500000e+01 |
+|   5.600000e+01 |   5.600000e+01 |
+|   5.700000e+01 |   5.700000e+01 |
+|   5.800000e+01 |   5.800000e+01 |
+|   5.900000e+01 |   5.900000e+01 |
+|   6.000000e+01 |   6.000000e+01 |
+|   6.100000e+01 |   6.100000e+01 |
+|   6.200000e+01 |   6.200000e+01 |
+|   6.300000e+01 |   6.300000e+01 |
+|   6.400000e+01 |   6.400000e+01 |
+|   6.500000e+01 |   6.500000e+01 |
+|   6.600000e+01 |   6.600000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.296386, 0.179155,        0)
+      velocity: (x,y,z)=(0.0205478, -0.0121519,        0)
+     direction: (x,y,z)=(0.860742, -0.509041,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.296386, 0.179155,        0)
+      velocity: (x,y,z)=(0.0205478, -0.0121519,        0)
+     direction: (x,y,z)=(0.860742, -0.509041,        0)
+
+Time Step 67, time = 67, dt = 1
+ 0 Nonlinear |R| = [32m2.772663e-01[39m
+      0 Linear |R| = [32m2.772663e-01[39m
+      1 Linear |R| = [32m2.304347e-15[39m
+ 1 Nonlinear |R| = [32m1.778199e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.543787e-07[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   5.300000e+01 |   5.300000e+01 |
+|   5.400000e+01 |   5.400000e+01 |
+|   5.500000e+01 |   5.500000e+01 |
+|   5.600000e+01 |   5.600000e+01 |
+|   5.700000e+01 |   5.700000e+01 |
+|   5.800000e+01 |   5.800000e+01 |
+|   5.900000e+01 |   5.900000e+01 |
+|   6.000000e+01 |   6.000000e+01 |
+|   6.100000e+01 |   6.100000e+01 |
+|   6.200000e+01 |   6.200000e+01 |
+|   6.300000e+01 |   6.300000e+01 |
+|   6.400000e+01 |   6.400000e+01 |
+|   6.500000e+01 |   6.500000e+01 |
+|   6.600000e+01 |   6.600000e+01 |
+|   6.700000e+01 |   6.700000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.316934, 0.167003,        0)
+      velocity: (x,y,z)=(0.0212703, -0.0108377,        0)
+     direction: (x,y,z)=(0.891007, -0.45399,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.316934, 0.167003,        0)
+      velocity: (x,y,z)=(0.0212703, -0.0108377,        0)
+     direction: (x,y,z)=(0.891007, -0.45399,        0)
+
+Time Step 68, time = 68, dt = 1
+ 0 Nonlinear |R| = [32m2.586166e-01[39m
+      0 Linear |R| = [32m2.586166e-01[39m
+      1 Linear |R| = [32m5.226320e-16[39m
+ 1 Nonlinear |R| = [32m3.220521e-07[39m
+      0 Linear |R| = [32m3.220521e-07[39m
+      1 Linear |R| = [32m8.220803e-22[39m
+ 2 Nonlinear |R| = [32m6.715843e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m5.815919e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   5.400000e+01 |   5.400000e+01 |
+|   5.500000e+01 |   5.500000e+01 |
+|   5.600000e+01 |   5.600000e+01 |
+|   5.700000e+01 |   5.700000e+01 |
+|   5.800000e+01 |   5.800000e+01 |
+|   5.900000e+01 |   5.900000e+01 |
+|   6.000000e+01 |   6.000000e+01 |
+|   6.100000e+01 |   6.100000e+01 |
+|   6.200000e+01 |   6.200000e+01 |
+|   6.300000e+01 |   6.300000e+01 |
+|   6.400000e+01 |   6.400000e+01 |
+|   6.500000e+01 |   6.500000e+01 |
+|   6.600000e+01 |   6.600000e+01 |
+|   6.700000e+01 |   6.700000e+01 |
+|   6.800000e+01 |   6.800000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.338204, 0.156166,        0)
+      velocity: (x,y,z)=(0.0219088, -0.00948078,        0)
+     direction: (x,y,z)=(0.917755, -0.397148,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.338204, 0.156166,        0)
+      velocity: (x,y,z)=(0.0219088, -0.00948078,        0)
+     direction: (x,y,z)=(0.917755, -0.397148,        0)
+
+Time Step 69, time = 69, dt = 1
+ 0 Nonlinear |R| = [32m2.596502e-01[39m
+      0 Linear |R| = [32m2.596502e-01[39m
+      1 Linear |R| = [32m1.517352e-15[39m
+ 1 Nonlinear |R| = [32m1.212388e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.061773e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   5.500000e+01 |   5.500000e+01 |
+|   5.600000e+01 |   5.600000e+01 |
+|   5.700000e+01 |   5.700000e+01 |
+|   5.800000e+01 |   5.800000e+01 |
+|   5.900000e+01 |   5.900000e+01 |
+|   6.000000e+01 |   6.000000e+01 |
+|   6.100000e+01 |   6.100000e+01 |
+|   6.200000e+01 |   6.200000e+01 |
+|   6.300000e+01 |   6.300000e+01 |
+|   6.400000e+01 |   6.400000e+01 |
+|   6.500000e+01 |   6.500000e+01 |
+|   6.600000e+01 |   6.600000e+01 |
+|   6.700000e+01 |   6.700000e+01 |
+|   6.800000e+01 |   6.800000e+01 |
+|   6.900000e+01 |   6.900000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.360113, 0.146685,        0)
+      velocity: (x,y,z)=(0.0224609, -0.00808641,        0)
+     direction: (x,y,z)=(0.940881, -0.338738,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.360113, 0.146685,        0)
+      velocity: (x,y,z)=(0.0224609, -0.00808641,        0)
+     direction: (x,y,z)=(0.940881, -0.338738,        0)
+
+Time Step 70, time = 70, dt = 1
+ 0 Nonlinear |R| = [32m2.651532e-01[39m
+      0 Linear |R| = [32m2.651532e-01[39m
+      1 Linear |R| = [32m3.677831e-16[39m
+ 1 Nonlinear |R| = [32m1.327577e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.174308e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   5.600000e+01 |   5.600000e+01 |
+|   5.700000e+01 |   5.700000e+01 |
+|   5.800000e+01 |   5.800000e+01 |
+|   5.900000e+01 |   5.900000e+01 |
+|   6.000000e+01 |   6.000000e+01 |
+|   6.100000e+01 |   6.100000e+01 |
+|   6.200000e+01 |   6.200000e+01 |
+|   6.300000e+01 |   6.300000e+01 |
+|   6.400000e+01 |   6.400000e+01 |
+|   6.500000e+01 |   6.500000e+01 |
+|   6.600000e+01 |   6.600000e+01 |
+|   6.700000e+01 |   6.700000e+01 |
+|   6.800000e+01 |   6.800000e+01 |
+|   6.900000e+01 |   6.900000e+01 |
+|   7.000000e+01 |   7.000000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.382574, 0.138599,        0)
+      velocity: (x,y,z)=(0.0229243, -0.00666013,        0)
+     direction: (x,y,z)=(0.960294, -0.278991,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.382574, 0.138599,        0)
+      velocity: (x,y,z)=(0.0229243, -0.00666013,        0)
+     direction: (x,y,z)=(0.960294, -0.278991,        0)
+
+Time Step 71, time = 71, dt = 1
+ 0 Nonlinear |R| = [32m2.474172e-01[39m
+      0 Linear |R| = [32m2.474172e-01[39m
+      1 Linear |R| = [32m2.372483e-16[39m
+ 1 Nonlinear |R| = [32m4.726241e-07[39m
+      0 Linear |R| = [32m4.726241e-07[39m
+      1 Linear |R| = [32m2.230426e-21[39m
+ 2 Nonlinear |R| = [33m4.558657e-07[39m
+      0 Linear |R| = [32m4.558657e-07[39m
+      1 Linear |R| = [32m1.576123e-21[39m
+ 3 Nonlinear |R| = [32m4.161199e-07[39m
+      0 Linear |R| = [32m4.161199e-07[39m
+      1 Linear |R| = [32m6.841199e-22[39m
+ 4 Nonlinear |R| = [32m3.942074e-07[39m
+      0 Linear |R| = [32m3.942074e-07[39m
+      1 Linear |R| = [32m7.729545e-22[39m
+ 5 Nonlinear |R| = [32m3.419562e-07[39m
+      0 Linear |R| = [32m3.419562e-07[39m
+      1 Linear |R| = [32m1.007730e-21[39m
+ 6 Nonlinear |R| = [32m3.056157e-07[39m
+      0 Linear |R| = [32m3.056157e-07[39m
+      1 Linear |R| = [32m5.869687e-22[39m
+ 7 Nonlinear |R| = [32m2.278619e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.933808e-07[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   5.700000e+01 |   5.700000e+01 |
+|   5.800000e+01 |   5.800000e+01 |
+|   5.900000e+01 |   5.900000e+01 |
+|   6.000000e+01 |   6.000000e+01 |
+|   6.100000e+01 |   6.100000e+01 |
+|   6.200000e+01 |   6.200000e+01 |
+|   6.300000e+01 |   6.300000e+01 |
+|   6.400000e+01 |   6.400000e+01 |
+|   6.500000e+01 |   6.500000e+01 |
+|   6.600000e+01 |   6.600000e+01 |
+|   6.700000e+01 |   6.700000e+01 |
+|   6.800000e+01 |   6.800000e+01 |
+|   6.900000e+01 |   6.900000e+01 |
+|   7.000000e+01 |   7.000000e+01 |
+|   7.100000e+01 |   7.100000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.405498, 0.131938,        0)
+      velocity: (x,y,z)=(0.0232973, -0.00520755,        0)
+     direction: (x,y,z)=(0.975917, -0.218143,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.405498, 0.131938,        0)
+      velocity: (x,y,z)=(0.0232973, -0.00520755,        0)
+     direction: (x,y,z)=(0.975917, -0.218143,        0)
+
+Time Step 72, time = 72, dt = 1
+ 0 Nonlinear |R| = [32m2.499340e-01[39m
+      0 Linear |R| = [32m2.499340e-01[39m
+      1 Linear |R| = [32m1.741540e-16[39m
+ 1 Nonlinear |R| = [32m7.148741e-07[39m
+      0 Linear |R| = [32m7.148741e-07[39m
+      1 Linear |R| = [32m3.747697e-21[39m
+ 2 Nonlinear |R| = [32m6.382954e-07[39m
+      0 Linear |R| = [32m6.382954e-07[39m
+      1 Linear |R| = [32m2.394127e-21[39m
+ 3 Nonlinear |R| = [32m5.571133e-07[39m
+      0 Linear |R| = [32m5.571133e-07[39m
+      1 Linear |R| = [32m8.777050e-22[39m
+ 4 Nonlinear |R| = [32m4.525337e-07[39m
+      0 Linear |R| = [32m4.525337e-07[39m
+      1 Linear |R| = [32m1.087160e-21[39m
+ 5 Nonlinear |R| = [32m3.262256e-07[39m
+      0 Linear |R| = [32m3.262256e-07[39m
+      1 Linear |R| = [32m1.041658e-21[39m
+ 6 Nonlinear |R| = [32m2.183790e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   5.800000e+01 |   5.800000e+01 |
+|   5.900000e+01 |   5.900000e+01 |
+|   6.000000e+01 |   6.000000e+01 |
+|   6.100000e+01 |   6.100000e+01 |
+|   6.200000e+01 |   6.200000e+01 |
+|   6.300000e+01 |   6.300000e+01 |
+|   6.400000e+01 |   6.400000e+01 |
+|   6.500000e+01 |   6.500000e+01 |
+|   6.600000e+01 |   6.600000e+01 |
+|   6.700000e+01 |   6.700000e+01 |
+|   6.800000e+01 |   6.800000e+01 |
+|   6.900000e+01 |   6.900000e+01 |
+|   7.000000e+01 |   7.000000e+01 |
+|   7.100000e+01 |   7.100000e+01 |
+|   7.200000e+01 |   7.200000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.428795, 0.126731,        0)
+      velocity: (x,y,z)=(0.0235783, -0.00373443,        0)
+     direction: (x,y,z)=(0.987688, -0.156434,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.428795, 0.126731,        0)
+      velocity: (x,y,z)=(0.0235783, -0.00373443,        0)
+     direction: (x,y,z)=(0.987688, -0.156434,        0)
+
+Time Step 73, time = 73, dt = 1
+ 0 Nonlinear |R| = [32m2.832596e-01[39m
+      0 Linear |R| = [32m2.832596e-01[39m
+      1 Linear |R| = [32m1.813644e-15[39m
+ 1 Nonlinear |R| = [32m7.086434e-07[39m
+      0 Linear |R| = [32m7.086434e-07[39m
+      1 Linear |R| = [32m4.119057e-21[39m
+ 2 Nonlinear |R| = [32m5.879417e-07[39m
+      0 Linear |R| = [32m5.879417e-07[39m
+      1 Linear |R| = [32m4.135128e-21[39m
+ 3 Nonlinear |R| = [32m3.515603e-07[39m
+      0 Linear |R| = [32m3.515603e-07[39m
+      1 Linear |R| = [32m1.502650e-21[39m
+ 4 Nonlinear |R| = [32m1.510601e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   5.900000e+01 |   5.900000e+01 |
+|   6.000000e+01 |   6.000000e+01 |
+|   6.100000e+01 |   6.100000e+01 |
+|   6.200000e+01 |   6.200000e+01 |
+|   6.300000e+01 |   6.300000e+01 |
+|   6.400000e+01 |   6.400000e+01 |
+|   6.500000e+01 |   6.500000e+01 |
+|   6.600000e+01 |   6.600000e+01 |
+|   6.700000e+01 |   6.700000e+01 |
+|   6.800000e+01 |   6.800000e+01 |
+|   6.900000e+01 |   6.900000e+01 |
+|   7.000000e+01 |   7.000000e+01 |
+|   7.100000e+01 |   7.100000e+01 |
+|   7.200000e+01 |   7.200000e+01 |
+|   7.300000e+01 |   7.300000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.452373, 0.122996,        0)
+      velocity: (x,y,z)=(0.0237662, -0.00224657,        0)
+     direction: (x,y,z)=(0.995562, -0.0941083,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.452373, 0.122996,        0)
+      velocity: (x,y,z)=(0.0237662, -0.00224657,        0)
+     direction: (x,y,z)=(0.995562, -0.0941083,        0)
+
+Time Step 74, time = 74, dt = 1
+ 0 Nonlinear |R| = [32m2.796786e-01[39m
+      0 Linear |R| = [32m2.796786e-01[39m
+      1 Linear |R| = [32m1.012354e-15[39m
+ 1 Nonlinear |R| = [32m8.701659e-07[39m
+      0 Linear |R| = [32m8.701659e-07[39m
+      1 Linear |R| = [32m1.996826e-21[39m
+ 2 Nonlinear |R| = [32m5.561351e-07[39m
+      0 Linear |R| = [32m5.561351e-07[39m
+      1 Linear |R| = [32m3.276121e-21[39m
+ 3 Nonlinear |R| = [32m2.578769e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_x: [33m2.237323e-07[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   6.000000e+01 |   6.000000e+01 |
+|   6.100000e+01 |   6.100000e+01 |
+|   6.200000e+01 |   6.200000e+01 |
+|   6.300000e+01 |   6.300000e+01 |
+|   6.400000e+01 |   6.400000e+01 |
+|   6.500000e+01 |   6.500000e+01 |
+|   6.600000e+01 |   6.600000e+01 |
+|   6.700000e+01 |   6.700000e+01 |
+|   6.800000e+01 |   6.800000e+01 |
+|   6.900000e+01 |   6.900000e+01 |
+|   7.000000e+01 |   7.000000e+01 |
+|   7.100000e+01 |   7.100000e+01 |
+|   7.200000e+01 |   7.200000e+01 |
+|   7.300000e+01 |   7.300000e+01 |
+|   7.400000e+01 |   7.400000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=( 0.47614,  0.12075,        0)
+      velocity: (x,y,z)=(0.0238604, -0.000749843,        0)
+     direction: (x,y,z)=(0.999507, -0.0314108,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=( 0.47614,  0.12075,        0)
+      velocity: (x,y,z)=(0.0238604, -0.000749843,        0)
+     direction: (x,y,z)=(0.999507, -0.0314108,        0)
+
+Time Step 75, time = 75, dt = 1
+ 0 Nonlinear |R| = [32m2.683136e-01[39m
+      0 Linear |R| = [32m2.683136e-01[39m
+      1 Linear |R| = [32m5.156394e-16[39m
+ 1 Nonlinear |R| = [32m8.942682e-07[39m
+      0 Linear |R| = [32m8.942682e-07[39m
+      1 Linear |R| = [32m3.620329e-21[39m
+ 2 Nonlinear |R| = [32m5.693695e-07[39m
+      0 Linear |R| = [32m5.693695e-07[39m
+      1 Linear |R| = [32m2.741293e-21[39m
+ 3 Nonlinear |R| = [32m2.632215e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   6.100000e+01 |   6.100000e+01 |
+|   6.200000e+01 |   6.200000e+01 |
+|   6.300000e+01 |   6.300000e+01 |
+|   6.400000e+01 |   6.400000e+01 |
+|   6.500000e+01 |   6.500000e+01 |
+|   6.600000e+01 |   6.600000e+01 |
+|   6.700000e+01 |   6.700000e+01 |
+|   6.800000e+01 |   6.800000e+01 |
+|   6.900000e+01 |   6.900000e+01 |
+|   7.000000e+01 |   7.000000e+01 |
+|   7.100000e+01 |   7.100000e+01 |
+|   7.200000e+01 |   7.200000e+01 |
+|   7.300000e+01 |   7.300000e+01 |
+|   7.400000e+01 |   7.400000e+01 |
+|   7.500000e+01 |   7.500000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(     0.5,     0.12,        0)
+      velocity: (x,y,z)=(0.0238604, 0.000749843,        0)
+     direction: (x,y,z)=(0.999507, 0.0314108,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(     0.5,     0.12,        0)
+      velocity: (x,y,z)=(0.0238604, 0.000749843,        0)
+     direction: (x,y,z)=(0.999507, 0.0314108,        0)
+
+Time Step 76, time = 76, dt = 1
+ 0 Nonlinear |R| = [32m2.667473e-01[39m
+      0 Linear |R| = [32m2.667473e-01[39m
+      1 Linear |R| = [32m8.947374e-16[39m
+ 1 Nonlinear |R| = [32m8.643934e-07[39m
+      0 Linear |R| = [32m8.643934e-07[39m
+      1 Linear |R| = [32m2.244839e-21[39m
+ 2 Nonlinear |R| = [32m5.936041e-07[39m
+      0 Linear |R| = [32m5.936041e-07[39m
+      1 Linear |R| = [32m2.567239e-21[39m
+ 3 Nonlinear |R| = [32m2.391013e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   6.200000e+01 |   6.200000e+01 |
+|   6.300000e+01 |   6.300000e+01 |
+|   6.400000e+01 |   6.400000e+01 |
+|   6.500000e+01 |   6.500000e+01 |
+|   6.600000e+01 |   6.600000e+01 |
+|   6.700000e+01 |   6.700000e+01 |
+|   6.800000e+01 |   6.800000e+01 |
+|   6.900000e+01 |   6.900000e+01 |
+|   7.000000e+01 |   7.000000e+01 |
+|   7.100000e+01 |   7.100000e+01 |
+|   7.200000e+01 |   7.200000e+01 |
+|   7.300000e+01 |   7.300000e+01 |
+|   7.400000e+01 |   7.400000e+01 |
+|   7.500000e+01 |   7.500000e+01 |
+|   7.600000e+01 |   7.600000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=( 0.52386,  0.12075,        0)
+      velocity: (x,y,z)=(0.0237662, 0.00224657,        0)
+     direction: (x,y,z)=(0.995562, 0.0941083,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=( 0.52386,  0.12075,        0)
+      velocity: (x,y,z)=(0.0237662, 0.00224657,        0)
+     direction: (x,y,z)=(0.995562, 0.0941083,        0)
+
+Time Step 77, time = 77, dt = 1
+ 0 Nonlinear |R| = [32m2.706319e-01[39m
+      0 Linear |R| = [32m2.706319e-01[39m
+      1 Linear |R| = [32m2.049781e-15[39m
+ 1 Nonlinear |R| = [32m8.881619e-07[39m
+      0 Linear |R| = [32m8.881619e-07[39m
+      1 Linear |R| = [32m3.403214e-21[39m
+ 2 Nonlinear |R| = [32m6.609098e-07[39m
+      0 Linear |R| = [32m6.609098e-07[39m
+      1 Linear |R| = [32m2.750501e-21[39m
+ 3 Nonlinear |R| = [32m3.131820e-07[39m
+      0 Linear |R| = [32m3.131820e-07[39m
+      1 Linear |R| = [32m5.872626e-22[39m
+ 4 Nonlinear |R| = [32m1.301983e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_x: [31m1.176828e-07[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   6.300000e+01 |   6.300000e+01 |
+|   6.400000e+01 |   6.400000e+01 |
+|   6.500000e+01 |   6.500000e+01 |
+|   6.600000e+01 |   6.600000e+01 |
+|   6.700000e+01 |   6.700000e+01 |
+|   6.800000e+01 |   6.800000e+01 |
+|   6.900000e+01 |   6.900000e+01 |
+|   7.000000e+01 |   7.000000e+01 |
+|   7.100000e+01 |   7.100000e+01 |
+|   7.200000e+01 |   7.200000e+01 |
+|   7.300000e+01 |   7.300000e+01 |
+|   7.400000e+01 |   7.400000e+01 |
+|   7.500000e+01 |   7.500000e+01 |
+|   7.600000e+01 |   7.600000e+01 |
+|   7.700000e+01 |   7.700000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.547627, 0.122996,        0)
+      velocity: (x,y,z)=(0.0235783, 0.00373443,        0)
+     direction: (x,y,z)=(0.987688, 0.156434,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.547627, 0.122996,        0)
+      velocity: (x,y,z)=(0.0235783, 0.00373443,        0)
+     direction: (x,y,z)=(0.987688, 0.156434,        0)
+
+Time Step 78, time = 78, dt = 1
+ 0 Nonlinear |R| = [32m2.520132e-01[39m
+      0 Linear |R| = [32m2.520132e-01[39m
+      1 Linear |R| = [32m1.059099e-15[39m
+ 1 Nonlinear |R| = [32m6.993553e-07[39m
+      0 Linear |R| = [32m6.993553e-07[39m
+      1 Linear |R| = [32m3.385386e-21[39m
+ 2 Nonlinear |R| = [32m5.659980e-07[39m
+      0 Linear |R| = [32m5.659980e-07[39m
+      1 Linear |R| = [32m2.829013e-21[39m
+ 3 Nonlinear |R| = [32m1.423821e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   6.400000e+01 |   6.400000e+01 |
+|   6.500000e+01 |   6.500000e+01 |
+|   6.600000e+01 |   6.600000e+01 |
+|   6.700000e+01 |   6.700000e+01 |
+|   6.800000e+01 |   6.800000e+01 |
+|   6.900000e+01 |   6.900000e+01 |
+|   7.000000e+01 |   7.000000e+01 |
+|   7.100000e+01 |   7.100000e+01 |
+|   7.200000e+01 |   7.200000e+01 |
+|   7.300000e+01 |   7.300000e+01 |
+|   7.400000e+01 |   7.400000e+01 |
+|   7.500000e+01 |   7.500000e+01 |
+|   7.600000e+01 |   7.600000e+01 |
+|   7.700000e+01 |   7.700000e+01 |
+|   7.800000e+01 |   7.800000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.571205, 0.126731,        0)
+      velocity: (x,y,z)=(0.0232973, 0.00520755,        0)
+     direction: (x,y,z)=(0.975917, 0.218143,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.571205, 0.126731,        0)
+      velocity: (x,y,z)=(0.0232973, 0.00520755,        0)
+     direction: (x,y,z)=(0.975917, 0.218143,        0)
+
+Time Step 79, time = 79, dt = 1
+ 0 Nonlinear |R| = [32m2.547221e-01[39m
+      0 Linear |R| = [32m2.547221e-01[39m
+      1 Linear |R| = [32m1.131006e-15[39m
+ 1 Nonlinear |R| = [32m6.559892e-07[39m
+      0 Linear |R| = [32m6.559892e-07[39m
+      1 Linear |R| = [32m2.060929e-21[39m
+ 2 Nonlinear |R| = [32m5.730569e-07[39m
+      0 Linear |R| = [32m5.730569e-07[39m
+      1 Linear |R| = [32m2.575561e-21[39m
+ 3 Nonlinear |R| = [32m1.637354e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   6.500000e+01 |   6.500000e+01 |
+|   6.600000e+01 |   6.600000e+01 |
+|   6.700000e+01 |   6.700000e+01 |
+|   6.800000e+01 |   6.800000e+01 |
+|   6.900000e+01 |   6.900000e+01 |
+|   7.000000e+01 |   7.000000e+01 |
+|   7.100000e+01 |   7.100000e+01 |
+|   7.200000e+01 |   7.200000e+01 |
+|   7.300000e+01 |   7.300000e+01 |
+|   7.400000e+01 |   7.400000e+01 |
+|   7.500000e+01 |   7.500000e+01 |
+|   7.600000e+01 |   7.600000e+01 |
+|   7.700000e+01 |   7.700000e+01 |
+|   7.800000e+01 |   7.800000e+01 |
+|   7.900000e+01 |   7.900000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.594502, 0.131938,        0)
+      velocity: (x,y,z)=(0.0229243, 0.00666013,        0)
+     direction: (x,y,z)=(0.960294, 0.278991,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.594502, 0.131938,        0)
+      velocity: (x,y,z)=(0.0229243, 0.00666013,        0)
+     direction: (x,y,z)=(0.960294, 0.278991,        0)
+
+Time Step 80, time = 80, dt = 1
+ 0 Nonlinear |R| = [32m2.741744e-01[39m
+      0 Linear |R| = [32m2.741744e-01[39m
+      1 Linear |R| = [32m7.917089e-16[39m
+ 1 Nonlinear |R| = [32m8.047507e-07[39m
+      0 Linear |R| = [32m8.047507e-07[39m
+      1 Linear |R| = [32m2.954027e-21[39m
+ 2 Nonlinear |R| = [32m4.168473e-07[39m
+      0 Linear |R| = [32m4.168473e-07[39m
+      1 Linear |R| = [32m1.874129e-21[39m
+ 3 Nonlinear |R| = [32m2.300602e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.888630e-07[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   6.600000e+01 |   6.600000e+01 |
+|   6.700000e+01 |   6.700000e+01 |
+|   6.800000e+01 |   6.800000e+01 |
+|   6.900000e+01 |   6.900000e+01 |
+|   7.000000e+01 |   7.000000e+01 |
+|   7.100000e+01 |   7.100000e+01 |
+|   7.200000e+01 |   7.200000e+01 |
+|   7.300000e+01 |   7.300000e+01 |
+|   7.400000e+01 |   7.400000e+01 |
+|   7.500000e+01 |   7.500000e+01 |
+|   7.600000e+01 |   7.600000e+01 |
+|   7.700000e+01 |   7.700000e+01 |
+|   7.800000e+01 |   7.800000e+01 |
+|   7.900000e+01 |   7.900000e+01 |
+|   8.000000e+01 |   8.000000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.617426, 0.138599,        0)
+      velocity: (x,y,z)=(0.0224609, 0.00808641,        0)
+     direction: (x,y,z)=(0.940881, 0.338738,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.617426, 0.138599,        0)
+      velocity: (x,y,z)=(0.0224609, 0.00808641,        0)
+     direction: (x,y,z)=(0.940881, 0.338738,        0)
+
+Time Step 81, time = 81, dt = 1
+ 0 Nonlinear |R| = [32m2.719748e-01[39m
+      0 Linear |R| = [32m2.719748e-01[39m
+      1 Linear |R| = [32m7.181126e-16[39m
+ 1 Nonlinear |R| = [32m7.027147e-07[39m
+      0 Linear |R| = [32m7.027147e-07[39m
+      1 Linear |R| = [32m2.555100e-21[39m
+ 2 Nonlinear |R| = [33m6.745973e-07[39m
+      0 Linear |R| = [32m6.745973e-07[39m
+      1 Linear |R| = [32m1.743617e-21[39m
+ 3 Nonlinear |R| = [32m5.987200e-07[39m
+      0 Linear |R| = [32m5.987200e-07[39m
+      1 Linear |R| = [32m1.727817e-21[39m
+ 4 Nonlinear |R| = [32m4.476761e-07[39m
+      0 Linear |R| = [32m4.476761e-07[39m
+      1 Linear |R| = [32m7.301335e-22[39m
+ 5 Nonlinear |R| = [32m2.234321e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.898227e-07[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   6.700000e+01 |   6.700000e+01 |
+|   6.800000e+01 |   6.800000e+01 |
+|   6.900000e+01 |   6.900000e+01 |
+|   7.000000e+01 |   7.000000e+01 |
+|   7.100000e+01 |   7.100000e+01 |
+|   7.200000e+01 |   7.200000e+01 |
+|   7.300000e+01 |   7.300000e+01 |
+|   7.400000e+01 |   7.400000e+01 |
+|   7.500000e+01 |   7.500000e+01 |
+|   7.600000e+01 |   7.600000e+01 |
+|   7.700000e+01 |   7.700000e+01 |
+|   7.800000e+01 |   7.800000e+01 |
+|   7.900000e+01 |   7.900000e+01 |
+|   8.000000e+01 |   8.000000e+01 |
+|   8.100000e+01 |   8.100000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.639887, 0.146685,        0)
+      velocity: (x,y,z)=(0.0219088, 0.00948078,        0)
+     direction: (x,y,z)=(0.917755, 0.397148,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.639887, 0.146685,        0)
+      velocity: (x,y,z)=(0.0219088, 0.00948078,        0)
+     direction: (x,y,z)=(0.917755, 0.397148,        0)
+
+Time Step 82, time = 82, dt = 1
+ 0 Nonlinear |R| = [32m2.596094e-01[39m
+      0 Linear |R| = [32m2.596094e-01[39m
+      1 Linear |R| = [32m7.023291e-16[39m
+ 1 Nonlinear |R| = [32m7.474383e-07[39m
+      0 Linear |R| = [32m7.474383e-07[39m
+      1 Linear |R| = [32m2.823905e-21[39m
+ 2 Nonlinear |R| = [32m4.729393e-07[39m
+      0 Linear |R| = [32m4.729393e-07[39m
+      1 Linear |R| = [32m1.975510e-21[39m
+ 3 Nonlinear |R| = [32m2.244009e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   6.800000e+01 |   6.800000e+01 |
+|   6.900000e+01 |   6.900000e+01 |
+|   7.000000e+01 |   7.000000e+01 |
+|   7.100000e+01 |   7.100000e+01 |
+|   7.200000e+01 |   7.200000e+01 |
+|   7.300000e+01 |   7.300000e+01 |
+|   7.400000e+01 |   7.400000e+01 |
+|   7.500000e+01 |   7.500000e+01 |
+|   7.600000e+01 |   7.600000e+01 |
+|   7.700000e+01 |   7.700000e+01 |
+|   7.800000e+01 |   7.800000e+01 |
+|   7.900000e+01 |   7.900000e+01 |
+|   8.000000e+01 |   8.000000e+01 |
+|   8.100000e+01 |   8.100000e+01 |
+|   8.200000e+01 |   8.200000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.661796, 0.156166,        0)
+      velocity: (x,y,z)=(0.0212703, 0.0108377,        0)
+     direction: (x,y,z)=(0.891007,  0.45399,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.661796, 0.156166,        0)
+      velocity: (x,y,z)=(0.0212703, 0.0108377,        0)
+     direction: (x,y,z)=(0.891007,  0.45399,        0)
+
+Time Step 83, time = 83, dt = 1
+ 0 Nonlinear |R| = [32m2.656588e-01[39m
+      0 Linear |R| = [32m2.656588e-01[39m
+      1 Linear |R| = [32m1.128568e-15[39m
+ 1 Nonlinear |R| = [32m7.399625e-07[39m
+      0 Linear |R| = [32m7.399625e-07[39m
+      1 Linear |R| = [32m2.567019e-21[39m
+ 2 Nonlinear |R| = [32m6.079140e-07[39m
+      0 Linear |R| = [32m6.079140e-07[39m
+      1 Linear |R| = [32m1.512524e-21[39m
+ 3 Nonlinear |R| = [32m4.684001e-07[39m
+      0 Linear |R| = [32m4.684001e-07[39m
+      1 Linear |R| = [32m1.583813e-21[39m
+ 4 Nonlinear |R| = [32m2.695958e-07[39m
+      0 Linear |R| = [32m2.695958e-07[39m
+      1 Linear |R| = [32m6.728422e-22[39m
+ 5 Nonlinear |R| = [32m9.819681e-08[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   6.900000e+01 |   6.900000e+01 |
+|   7.000000e+01 |   7.000000e+01 |
+|   7.100000e+01 |   7.100000e+01 |
+|   7.200000e+01 |   7.200000e+01 |
+|   7.300000e+01 |   7.300000e+01 |
+|   7.400000e+01 |   7.400000e+01 |
+|   7.500000e+01 |   7.500000e+01 |
+|   7.600000e+01 |   7.600000e+01 |
+|   7.700000e+01 |   7.700000e+01 |
+|   7.800000e+01 |   7.800000e+01 |
+|   7.900000e+01 |   7.900000e+01 |
+|   8.000000e+01 |   8.000000e+01 |
+|   8.100000e+01 |   8.100000e+01 |
+|   8.200000e+01 |   8.200000e+01 |
+|   8.300000e+01 |   8.300000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.683066, 0.167003,        0)
+      velocity: (x,y,z)=(0.0205478, 0.0121519,        0)
+     direction: (x,y,z)=(0.860742, 0.509041,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.683066, 0.167003,        0)
+      velocity: (x,y,z)=(0.0205478, 0.0121519,        0)
+     direction: (x,y,z)=(0.860742, 0.509041,        0)
+
+Time Step 84, time = 84, dt = 1
+ 0 Nonlinear |R| = [32m2.831309e-01[39m
+      0 Linear |R| = [32m2.831309e-01[39m
+      1 Linear |R| = [32m2.159844e-15[39m
+ 1 Nonlinear |R| = [32m7.415633e-07[39m
+      0 Linear |R| = [32m7.415633e-07[39m
+      1 Linear |R| = [32m6.680441e-21[39m
+ 2 Nonlinear |R| = [32m7.033078e-07[39m
+      0 Linear |R| = [32m7.033078e-07[39m
+      1 Linear |R| = [32m4.525968e-21[39m
+ 3 Nonlinear |R| = [32m4.795187e-07[39m
+      0 Linear |R| = [32m4.795187e-07[39m
+      1 Linear |R| = [32m2.254871e-21[39m
+ 4 Nonlinear |R| = [32m1.521226e-07[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   7.000000e+01 |   7.000000e+01 |
+|   7.100000e+01 |   7.100000e+01 |
+|   7.200000e+01 |   7.200000e+01 |
+|   7.300000e+01 |   7.300000e+01 |
+|   7.400000e+01 |   7.400000e+01 |
+|   7.500000e+01 |   7.500000e+01 |
+|   7.600000e+01 |   7.600000e+01 |
+|   7.700000e+01 |   7.700000e+01 |
+|   7.800000e+01 |   7.800000e+01 |
+|   7.900000e+01 |   7.900000e+01 |
+|   8.000000e+01 |   8.000000e+01 |
+|   8.100000e+01 |   8.100000e+01 |
+|   8.200000e+01 |   8.200000e+01 |
+|   8.300000e+01 |   8.300000e+01 |
+|   8.400000e+01 |   8.400000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.703614, 0.179155,        0)
+      velocity: (x,y,z)=(0.0197442, 0.0134182,        0)
+     direction: (x,y,z)=(0.827081, 0.562083,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.703614, 0.179155,        0)
+      velocity: (x,y,z)=(0.0197442, 0.0134182,        0)
+     direction: (x,y,z)=(0.827081, 0.562083,        0)
+
+Time Step 85, time = 85, dt = 1
+ 0 Nonlinear |R| = [32m2.518495e-01[39m
+      0 Linear |R| = [32m2.518495e-01[39m
+      1 Linear |R| = [32m7.378003e-16[39m
+ 1 Nonlinear |R| = [32m1.318095e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.175490e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   7.100000e+01 |   7.100000e+01 |
+|   7.200000e+01 |   7.200000e+01 |
+|   7.300000e+01 |   7.300000e+01 |
+|   7.400000e+01 |   7.400000e+01 |
+|   7.500000e+01 |   7.500000e+01 |
+|   7.600000e+01 |   7.600000e+01 |
+|   7.700000e+01 |   7.700000e+01 |
+|   7.800000e+01 |   7.800000e+01 |
+|   7.900000e+01 |   7.900000e+01 |
+|   8.000000e+01 |   8.000000e+01 |
+|   8.100000e+01 |   8.100000e+01 |
+|   8.200000e+01 |   8.200000e+01 |
+|   8.300000e+01 |   8.300000e+01 |
+|   8.400000e+01 |   8.400000e+01 |
+|   8.500000e+01 |   8.500000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.723358, 0.192574,        0)
+      velocity: (x,y,z)=(0.0188627, 0.0146314,        0)
+     direction: (x,y,z)=(0.790155, 0.612907,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.723358, 0.192574,        0)
+      velocity: (x,y,z)=(0.0188627, 0.0146314,        0)
+     direction: (x,y,z)=(0.790155, 0.612907,        0)
+
+Time Step 86, time = 86, dt = 1
+ 0 Nonlinear |R| = [32m2.479752e-01[39m
+      0 Linear |R| = [32m2.479752e-01[39m
+      1 Linear |R| = [32m2.895586e-16[39m
+ 1 Nonlinear |R| = [32m1.303796e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [31m1.168562e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   7.200000e+01 |   7.200000e+01 |
+|   7.300000e+01 |   7.300000e+01 |
+|   7.400000e+01 |   7.400000e+01 |
+|   7.500000e+01 |   7.500000e+01 |
+|   7.600000e+01 |   7.600000e+01 |
+|   7.700000e+01 |   7.700000e+01 |
+|   7.800000e+01 |   7.800000e+01 |
+|   7.900000e+01 |   7.900000e+01 |
+|   8.000000e+01 |   8.000000e+01 |
+|   8.100000e+01 |   8.100000e+01 |
+|   8.200000e+01 |   8.200000e+01 |
+|   8.300000e+01 |   8.300000e+01 |
+|   8.400000e+01 |   8.400000e+01 |
+|   8.500000e+01 |   8.500000e+01 |
+|   8.600000e+01 |   8.600000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.742221, 0.207205,        0)
+      velocity: (x,y,z)=(0.0179068, 0.015787,        0)
+     direction: (x,y,z)=(0.750111, 0.661312,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.742221, 0.207205,        0)
+      velocity: (x,y,z)=(0.0179068, 0.015787,        0)
+     direction: (x,y,z)=(0.750111, 0.661312,        0)
+
+Time Step 87, time = 87, dt = 1
+ 0 Nonlinear |R| = [32m2.704410e-01[39m
+      0 Linear |R| = [32m2.704410e-01[39m
+      1 Linear |R| = [32m1.242020e-15[39m
+ 1 Nonlinear |R| = [32m1.302273e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.159857e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   7.300000e+01 |   7.300000e+01 |
+|   7.400000e+01 |   7.400000e+01 |
+|   7.500000e+01 |   7.500000e+01 |
+|   7.600000e+01 |   7.600000e+01 |
+|   7.700000e+01 |   7.700000e+01 |
+|   7.800000e+01 |   7.800000e+01 |
+|   7.900000e+01 |   7.900000e+01 |
+|   8.000000e+01 |   8.000000e+01 |
+|   8.100000e+01 |   8.100000e+01 |
+|   8.200000e+01 |   8.200000e+01 |
+|   8.300000e+01 |   8.300000e+01 |
+|   8.400000e+01 |   8.400000e+01 |
+|   8.500000e+01 |   8.500000e+01 |
+|   8.600000e+01 |   8.600000e+01 |
+|   8.700000e+01 |   8.700000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.760128, 0.222992,        0)
+      velocity: (x,y,z)=(0.0168802, 0.0168802,        0)
+     direction: (x,y,z)=(0.707107, 0.707107,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.760128, 0.222992,        0)
+      velocity: (x,y,z)=(0.0168802, 0.0168802,        0)
+     direction: (x,y,z)=(0.707107, 0.707107,        0)
+
+Time Step 88, time = 88, dt = 1
+ 0 Nonlinear |R| = [32m2.948125e-01[39m
+      0 Linear |R| = [32m2.948125e-01[39m
+      1 Linear |R| = [32m9.179122e-16[39m
+ 1 Nonlinear |R| = [32m1.338870e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.169247e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   7.400000e+01 |   7.400000e+01 |
+|   7.500000e+01 |   7.500000e+01 |
+|   7.600000e+01 |   7.600000e+01 |
+|   7.700000e+01 |   7.700000e+01 |
+|   7.800000e+01 |   7.800000e+01 |
+|   7.900000e+01 |   7.900000e+01 |
+|   8.000000e+01 |   8.000000e+01 |
+|   8.100000e+01 |   8.100000e+01 |
+|   8.200000e+01 |   8.200000e+01 |
+|   8.300000e+01 |   8.300000e+01 |
+|   8.400000e+01 |   8.400000e+01 |
+|   8.500000e+01 |   8.500000e+01 |
+|   8.600000e+01 |   8.600000e+01 |
+|   8.700000e+01 |   8.700000e+01 |
+|   8.800000e+01 |   8.800000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.777008, 0.239872,        0)
+      velocity: (x,y,z)=(0.015787, 0.0179068,        0)
+     direction: (x,y,z)=(0.661312, 0.750111,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.777008, 0.239872,        0)
+      velocity: (x,y,z)=(0.015787, 0.0179068,        0)
+     direction: (x,y,z)=(0.661312, 0.750111,        0)
+
+Time Step 89, time = 89, dt = 1
+ 0 Nonlinear |R| = [32m2.646522e-01[39m
+      0 Linear |R| = [32m2.646522e-01[39m
+      1 Linear |R| = [32m1.253033e-15[39m
+ 1 Nonlinear |R| = [32m1.279620e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.143210e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   7.500000e+01 |   7.500000e+01 |
+|   7.600000e+01 |   7.600000e+01 |
+|   7.700000e+01 |   7.700000e+01 |
+|   7.800000e+01 |   7.800000e+01 |
+|   7.900000e+01 |   7.900000e+01 |
+|   8.000000e+01 |   8.000000e+01 |
+|   8.100000e+01 |   8.100000e+01 |
+|   8.200000e+01 |   8.200000e+01 |
+|   8.300000e+01 |   8.300000e+01 |
+|   8.400000e+01 |   8.400000e+01 |
+|   8.500000e+01 |   8.500000e+01 |
+|   8.600000e+01 |   8.600000e+01 |
+|   8.700000e+01 |   8.700000e+01 |
+|   8.800000e+01 |   8.800000e+01 |
+|   8.900000e+01 |   8.900000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.792795, 0.257779,        0)
+      velocity: (x,y,z)=(0.0146314, 0.0188627,        0)
+     direction: (x,y,z)=(0.612907, 0.790155,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.792795, 0.257779,        0)
+      velocity: (x,y,z)=(0.0146314, 0.0188627,        0)
+     direction: (x,y,z)=(0.612907, 0.790155,        0)
+
+Time Step 90, time = 90, dt = 1
+ 0 Nonlinear |R| = [32m2.603931e-01[39m
+      0 Linear |R| = [32m2.603931e-01[39m
+      1 Linear |R| = [32m2.083594e-15[39m
+ 1 Nonlinear |R| = [32m2.658366e-07[39m
+      0 Linear |R| = [32m2.658366e-07[39m
+      1 Linear |R| = [32m7.258981e-22[39m
+ 2 Nonlinear |R| = [32m4.118369e-08[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   7.600000e+01 |   7.600000e+01 |
+|   7.700000e+01 |   7.700000e+01 |
+|   7.800000e+01 |   7.800000e+01 |
+|   7.900000e+01 |   7.900000e+01 |
+|   8.000000e+01 |   8.000000e+01 |
+|   8.100000e+01 |   8.100000e+01 |
+|   8.200000e+01 |   8.200000e+01 |
+|   8.300000e+01 |   8.300000e+01 |
+|   8.400000e+01 |   8.400000e+01 |
+|   8.500000e+01 |   8.500000e+01 |
+|   8.600000e+01 |   8.600000e+01 |
+|   8.700000e+01 |   8.700000e+01 |
+|   8.800000e+01 |   8.800000e+01 |
+|   8.900000e+01 |   8.900000e+01 |
+|   9.000000e+01 |   9.000000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.807426, 0.276642,        0)
+      velocity: (x,y,z)=(0.0134182, 0.0197442,        0)
+     direction: (x,y,z)=(0.562083, 0.827081,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.807426, 0.276642,        0)
+      velocity: (x,y,z)=(0.0134182, 0.0197442,        0)
+     direction: (x,y,z)=(0.562083, 0.827081,        0)
+
+Time Step 91, time = 91, dt = 1
+ 0 Nonlinear |R| = [32m2.763201e-01[39m
+      0 Linear |R| = [32m2.763201e-01[39m
+      1 Linear |R| = [32m1.676076e-15[39m
+ 1 Nonlinear |R| = [32m1.761160e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_x: [31m1.618803e-07[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   7.700000e+01 |   7.700000e+01 |
+|   7.800000e+01 |   7.800000e+01 |
+|   7.900000e+01 |   7.900000e+01 |
+|   8.000000e+01 |   8.000000e+01 |
+|   8.100000e+01 |   8.100000e+01 |
+|   8.200000e+01 |   8.200000e+01 |
+|   8.300000e+01 |   8.300000e+01 |
+|   8.400000e+01 |   8.400000e+01 |
+|   8.500000e+01 |   8.500000e+01 |
+|   8.600000e+01 |   8.600000e+01 |
+|   8.700000e+01 |   8.700000e+01 |
+|   8.800000e+01 |   8.800000e+01 |
+|   8.900000e+01 |   8.900000e+01 |
+|   9.000000e+01 |   9.000000e+01 |
+|   9.100000e+01 |   9.100000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.820845, 0.296386,        0)
+      velocity: (x,y,z)=(0.0121519, 0.0205478,        0)
+     direction: (x,y,z)=(0.509041, 0.860742,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.820845, 0.296386,        0)
+      velocity: (x,y,z)=(0.0121519, 0.0205478,        0)
+     direction: (x,y,z)=(0.509041, 0.860742,        0)
+
+Time Step 92, time = 92, dt = 1
+ 0 Nonlinear |R| = [32m2.862294e-01[39m
+      0 Linear |R| = [32m2.862294e-01[39m
+      1 Linear |R| = [32m3.149281e-15[39m
+ 1 Nonlinear |R| = [32m1.532465e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_x: [31m1.410572e-07[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   7.800000e+01 |   7.800000e+01 |
+|   7.900000e+01 |   7.900000e+01 |
+|   8.000000e+01 |   8.000000e+01 |
+|   8.100000e+01 |   8.100000e+01 |
+|   8.200000e+01 |   8.200000e+01 |
+|   8.300000e+01 |   8.300000e+01 |
+|   8.400000e+01 |   8.400000e+01 |
+|   8.500000e+01 |   8.500000e+01 |
+|   8.600000e+01 |   8.600000e+01 |
+|   8.700000e+01 |   8.700000e+01 |
+|   8.800000e+01 |   8.800000e+01 |
+|   8.900000e+01 |   8.900000e+01 |
+|   9.000000e+01 |   9.000000e+01 |
+|   9.100000e+01 |   9.100000e+01 |
+|   9.200000e+01 |   9.200000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.832997, 0.316934,        0)
+      velocity: (x,y,z)=(0.0108377, 0.0212703,        0)
+     direction: (x,y,z)=( 0.45399, 0.891007,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.832997, 0.316934,        0)
+      velocity: (x,y,z)=(0.0108377, 0.0212703,        0)
+     direction: (x,y,z)=( 0.45399, 0.891007,        0)
+
+Time Step 93, time = 93, dt = 1
+ 0 Nonlinear |R| = [32m2.874088e-01[39m
+      0 Linear |R| = [32m2.874088e-01[39m
+      1 Linear |R| = [32m6.924262e-16[39m
+ 1 Nonlinear |R| = [32m4.031977e-07[39m
+      0 Linear |R| = [32m4.031977e-07[39m
+      1 Linear |R| = [32m1.577379e-21[39m
+ 2 Nonlinear |R| = [32m3.660192e-07[39m
+      0 Linear |R| = [32m3.660192e-07[39m
+      1 Linear |R| = [32m9.083378e-22[39m
+ 3 Nonlinear |R| = [32m3.168865e-07[39m
+      0 Linear |R| = [32m3.168865e-07[39m
+      1 Linear |R| = [32m4.497579e-22[39m
+ 4 Nonlinear |R| = [32m2.301355e-07[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_x: [33m1.977447e-07[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   7.900000e+01 |   7.900000e+01 |
+|   8.000000e+01 |   8.000000e+01 |
+|   8.100000e+01 |   8.100000e+01 |
+|   8.200000e+01 |   8.200000e+01 |
+|   8.300000e+01 |   8.300000e+01 |
+|   8.400000e+01 |   8.400000e+01 |
+|   8.500000e+01 |   8.500000e+01 |
+|   8.600000e+01 |   8.600000e+01 |
+|   8.700000e+01 |   8.700000e+01 |
+|   8.800000e+01 |   8.800000e+01 |
+|   8.900000e+01 |   8.900000e+01 |
+|   9.000000e+01 |   9.000000e+01 |
+|   9.100000e+01 |   9.100000e+01 |
+|   9.200000e+01 |   9.200000e+01 |
+|   9.300000e+01 |   9.300000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.843834, 0.338204,        0)
+      velocity: (x,y,z)=(0.00948078, 0.0219088,        0)
+     direction: (x,y,z)=(0.397148, 0.917755,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.843834, 0.338204,        0)
+      velocity: (x,y,z)=(0.00948078, 0.0219088,        0)
+     direction: (x,y,z)=(0.397148, 0.917755,        0)
+
+Time Step 94, time = 94, dt = 1
+ 0 Nonlinear |R| = [32m3.067898e-01[39m
+      0 Linear |R| = [32m3.067898e-01[39m
+      1 Linear |R| = [32m1.834494e-15[39m
+ 1 Nonlinear |R| = [32m1.287723e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.061333e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   8.000000e+01 |   8.000000e+01 |
+|   8.100000e+01 |   8.100000e+01 |
+|   8.200000e+01 |   8.200000e+01 |
+|   8.300000e+01 |   8.300000e+01 |
+|   8.400000e+01 |   8.400000e+01 |
+|   8.500000e+01 |   8.500000e+01 |
+|   8.600000e+01 |   8.600000e+01 |
+|   8.700000e+01 |   8.700000e+01 |
+|   8.800000e+01 |   8.800000e+01 |
+|   8.900000e+01 |   8.900000e+01 |
+|   9.000000e+01 |   9.000000e+01 |
+|   9.100000e+01 |   9.100000e+01 |
+|   9.200000e+01 |   9.200000e+01 |
+|   9.300000e+01 |   9.300000e+01 |
+|   9.400000e+01 |   9.400000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.853315, 0.360113,        0)
+      velocity: (x,y,z)=(0.00808641, 0.0224609,        0)
+     direction: (x,y,z)=(0.338738, 0.940881,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.853315, 0.360113,        0)
+      velocity: (x,y,z)=(0.00808641, 0.0224609,        0)
+     direction: (x,y,z)=(0.338738, 0.940881,        0)
+
+Time Step 95, time = 95, dt = 1
+ 0 Nonlinear |R| = [32m3.181087e-01[39m
+      0 Linear |R| = [32m3.181087e-01[39m
+      1 Linear |R| = [32m9.403763e-16[39m
+ 1 Nonlinear |R| = [32m1.348853e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.177557e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   8.100000e+01 |   8.100000e+01 |
+|   8.200000e+01 |   8.200000e+01 |
+|   8.300000e+01 |   8.300000e+01 |
+|   8.400000e+01 |   8.400000e+01 |
+|   8.500000e+01 |   8.500000e+01 |
+|   8.600000e+01 |   8.600000e+01 |
+|   8.700000e+01 |   8.700000e+01 |
+|   8.800000e+01 |   8.800000e+01 |
+|   8.900000e+01 |   8.900000e+01 |
+|   9.000000e+01 |   9.000000e+01 |
+|   9.100000e+01 |   9.100000e+01 |
+|   9.200000e+01 |   9.200000e+01 |
+|   9.300000e+01 |   9.300000e+01 |
+|   9.400000e+01 |   9.400000e+01 |
+|   9.500000e+01 |   9.500000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.861401, 0.382574,        0)
+      velocity: (x,y,z)=(0.00666013, 0.0229243,        0)
+     direction: (x,y,z)=(0.278991, 0.960294,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.861401, 0.382574,        0)
+      velocity: (x,y,z)=(0.00666013, 0.0229243,        0)
+     direction: (x,y,z)=(0.278991, 0.960294,        0)
+
+Time Step 96, time = 96, dt = 1
+ 0 Nonlinear |R| = [32m2.758282e-01[39m
+      0 Linear |R| = [32m2.758282e-01[39m
+      1 Linear |R| = [32m2.821717e-16[39m
+ 1 Nonlinear |R| = [32m1.286556e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.146786e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   8.200000e+01 |   8.200000e+01 |
+|   8.300000e+01 |   8.300000e+01 |
+|   8.400000e+01 |   8.400000e+01 |
+|   8.500000e+01 |   8.500000e+01 |
+|   8.600000e+01 |   8.600000e+01 |
+|   8.700000e+01 |   8.700000e+01 |
+|   8.800000e+01 |   8.800000e+01 |
+|   8.900000e+01 |   8.900000e+01 |
+|   9.000000e+01 |   9.000000e+01 |
+|   9.100000e+01 |   9.100000e+01 |
+|   9.200000e+01 |   9.200000e+01 |
+|   9.300000e+01 |   9.300000e+01 |
+|   9.400000e+01 |   9.400000e+01 |
+|   9.500000e+01 |   9.500000e+01 |
+|   9.600000e+01 |   9.600000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.868062, 0.405498,        0)
+      velocity: (x,y,z)=(0.00520755, 0.0232973,        0)
+     direction: (x,y,z)=(0.218143, 0.975917,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.868062, 0.405498,        0)
+      velocity: (x,y,z)=(0.00520755, 0.0232973,        0)
+     direction: (x,y,z)=(0.218143, 0.975917,        0)
+
+Time Step 97, time = 97, dt = 1
+ 0 Nonlinear |R| = [32m2.709676e-01[39m
+      0 Linear |R| = [32m2.709676e-01[39m
+      1 Linear |R| = [32m1.413317e-16[39m
+ 1 Nonlinear |R| = [32m1.271535e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.128295e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   8.300000e+01 |   8.300000e+01 |
+|   8.400000e+01 |   8.400000e+01 |
+|   8.500000e+01 |   8.500000e+01 |
+|   8.600000e+01 |   8.600000e+01 |
+|   8.700000e+01 |   8.700000e+01 |
+|   8.800000e+01 |   8.800000e+01 |
+|   8.900000e+01 |   8.900000e+01 |
+|   9.000000e+01 |   9.000000e+01 |
+|   9.100000e+01 |   9.100000e+01 |
+|   9.200000e+01 |   9.200000e+01 |
+|   9.300000e+01 |   9.300000e+01 |
+|   9.400000e+01 |   9.400000e+01 |
+|   9.500000e+01 |   9.500000e+01 |
+|   9.600000e+01 |   9.600000e+01 |
+|   9.700000e+01 |   9.700000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.873269, 0.428795,        0)
+      velocity: (x,y,z)=(0.00373443, 0.0235783,        0)
+     direction: (x,y,z)=(0.156434, 0.987688,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.873269, 0.428795,        0)
+      velocity: (x,y,z)=(0.00373443, 0.0235783,        0)
+     direction: (x,y,z)=(0.156434, 0.987688,        0)
+
+Time Step 98, time = 98, dt = 1
+ 0 Nonlinear |R| = [32m2.784056e-01[39m
+      0 Linear |R| = [32m2.784056e-01[39m
+      1 Linear |R| = [32m2.132807e-15[39m
+ 1 Nonlinear |R| = [32m1.305550e-08[39m
+[32m Solve Converged![39m
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.150007e-08[39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | time           |
++----------------+----------------+
+:                :                :
+|   8.400000e+01 |   8.400000e+01 |
+|   8.500000e+01 |   8.500000e+01 |
+|   8.600000e+01 |   8.600000e+01 |
+|   8.700000e+01 |   8.700000e+01 |
+|   8.800000e+01 |   8.800000e+01 |
+|   8.900000e+01 |   8.900000e+01 |
+|   9.000000e+01 |   9.000000e+01 |
+|   9.100000e+01 |   9.100000e+01 |
+|   9.200000e+01 |   9.200000e+01 |
+|   9.300000e+01 |   9.300000e+01 |
+|   9.400000e+01 |   9.400000e+01 |
+|   9.500000e+01 |   9.500000e+01 |
+|   9.600000e+01 |   9.600000e+01 |
+|   9.700000e+01 |   9.700000e+01 |
+|   9.800000e+01 |   9.800000e+01 |
++----------------+----------------+
+
+Spatio-temporal path: path
+      position: (x,y,z)=(0.877004, 0.452373,        0)
+      velocity: (x,y,z)=(0.00224657, 0.0237662,        0)
+     direction: (x,y,z)=(0.0941083, 0.995562,        0)
+Spatio-temporal path: SpatioTemporalHeatpath
+      position: (x,y,z)=(0.877004, 0.452373,        0)
+      velocity: (x,y,z)=(0.00224657, 0.0237662,        0)
+     direction: (x,y,z)=(0.0941083, 0.995562,        0)
+
+Time Step 99, time = 99, dt = 1

@@ -204,13 +204,6 @@ NEML2ModelExecutor::addGatheredParameter(const UserObjectName & gatherer_name,
   _gathered_parameter_names.insert(param);
 }
 
-NEML2ModelExecutor::meshChanged()
-{
-  if (!NEML2Utils::shouldCompute(_fe_problem))
-    return;
-
-  _output_ready = false;
-}
 void
 NEML2ModelExecutor::initialize()
 {

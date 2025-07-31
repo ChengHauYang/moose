@@ -39,6 +39,13 @@ SpatioTemporalHeatAction::validParams()
   // for ESM to set the initial condition
   MooseEnum reinit_strategy("IC POLYNOMIAL_NEIGHBOR POLYNOMIAL_WHOLE POLYNOMIAL_NEARBY", "IC");
 
+  params.addParam<std::vector<SubdomainName>>(
+      "reinitialize_subdomains",
+      {"ANY_BLOCK_ID"},
+      "By default, any element which changes subdomain is reinitialized. If a list of subdomains "
+      "(IDs or names) is provided, then only elements whose new subdomain is in the list will be "
+      "reinitialized. If an empty list is set, then no elements will be reinitialized.");
+
   params.addParam<bool>(
       "old_subdomain_reinitialized",
       true,
@@ -116,6 +123,8 @@ SpatioTemporalHeatAction::act()
     esm_params.set<std::vector<SubdomainName>>("block") =
         getParam<std::vector<SubdomainName>>("block");
     esm_params.set<ExecFlagEnum>("execute_on") = getParam<ExecFlagEnum>("execute_on_esm");
+    esm_params.set<std::vector<SubdomainName>>("reinitialize_subdomains") =
+        getParam<std::vector<SubdomainName>>("reinitialize_subdomains");
     esm_params.set<bool>("old_subdomain_reinitialized") =
         getParam<bool>("old_subdomain_reinitialized");
     esm_params.set<std::vector<VariableName>>("reinitialize_variables") =
@@ -126,7 +135,8 @@ SpatioTemporalHeatAction::act()
         getParam<std::vector<UserObjectName>>("polynomial_fitters");
     esm_params.set<int>("nearby_kd_tree_leaf_max_size") =
         getParam<int>("nearby_kd_tree_leaf_max_size");
-    esm_params.set<int>("nearby_distance_threshold") = getParam<int>("nearby_distance_threshold");
+    esm_params.set<double>("nearby_distance_threshold") =
+        getParam<double>("nearby_distance_threshold");
 
     _problem->addUserObject("SpatioTemporalPathElementSubdomainModifier", "esm", esm_params);
   }

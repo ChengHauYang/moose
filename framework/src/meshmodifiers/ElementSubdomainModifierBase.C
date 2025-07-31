@@ -923,6 +923,9 @@ ElementSubdomainModifierBase::gatherPatchElements(const VariableName & var_name,
   auto vn = sys.variable_number(static_cast<std::string>(var_name));
   for (const auto elem : *_mesh.getActiveLocalElementRange())
   {
+    if (_reinitialized_elems.count(elem->id()))
+      continue; // Skip elements that were reinitialized
+
     dof_map.dof_indices(elem, elem_dofs, vn);
     if (!elem_dofs.empty() &&
         std::all_of(elem_dofs.begin(),
