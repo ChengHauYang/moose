@@ -365,3 +365,5 @@ OutputData
 
 # PETSc binary output
 binaryoutput
+
+log

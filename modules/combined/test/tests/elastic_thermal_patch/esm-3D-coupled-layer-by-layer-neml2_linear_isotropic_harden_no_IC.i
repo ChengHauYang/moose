@@ -142,12 +142,12 @@ neml2_input = linear_isotropic_hardening
 
     # --- new for setting IC --- #
 
-    old_subdomain_reinitialized = false
-    reinitialize_subdomains = '0 2'
-    reinitialization_strategy = "POLYNOMIAL_NEIGHBOR"
-    reinitialize_variables = "T disp_x disp_y disp_z"
+    # old_subdomain_reinitialized = false
+    # reinitialize_subdomains = '0 2'
+    # reinitialization_strategy = "POLYNOMIAL_NEIGHBOR"
+    # reinitialize_variables = "T disp_x disp_y disp_z"
 
-    polynomial_fitters = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y extrapolation_patch_disp_z'
+    # polynomial_fitters = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y extrapolation_patch_disp_z'
   []
 []
 
