@@ -2,6 +2,11 @@
   block = '0'
 []
 
+[Problem]
+  kernel_coverage_check = FALSE
+  material_coverage_check = FALSE
+[]
+
 [Mesh]
   [gmg]
     type = FileMeshGenerator
@@ -74,9 +79,10 @@
   # execute_on_esm = 'TIMESTEP_END'
 
   old_subdomain_reinitialized = false
-  reinitialize_subdomain_ids = '0'
-  ic_strategy = "IC_POLYNOMIAL"
-  nodal_patch_recovery_uo = "extrapolation_patch_T"
+  reinitialize_subdomains = '0'
+  reinitialization_strategy = "POLYNOMIAL_NEIGHBOR"
+  reinitialize_variables = 'cond'
+  polynomial_fitters = "extrapolation_patch_T"
   ## for heat source
   power = 1
   a = 0.035

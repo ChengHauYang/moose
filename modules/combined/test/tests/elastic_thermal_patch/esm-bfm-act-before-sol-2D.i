@@ -3,6 +3,11 @@
   displacements = 'disp_x disp_y'
 []
 
+[Problem]
+  kernel_coverage_check = false
+  material_coverage_check = false
+[]
+
 [Mesh]
   [gmg]
     type = FileMeshGenerator
@@ -81,9 +86,10 @@
   execute_on_esm = 'TIMESTEP_BEGIN'
 
   old_subdomain_reinitialized = false
-  reinitialize_subdomain_ids = '0'
-  ic_strategy = "IC_POLYNOMIAL"
-  nodal_patch_recovery_uo = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y'
+  reinitialize_subdomains = '0'
+  reinitialization_strategy = "POLYNOMIAL_NEIGHBOR"
+  reinitialize_variables = "T disp_x disp_y"
+  polynomial_fitters = 'extrapolation_patch_T extrapolation_patch_disp_x extrapolation_patch_disp_y'
   # for heat source
   power = 1
   a = 0.035

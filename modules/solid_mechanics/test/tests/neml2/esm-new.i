@@ -68,6 +68,26 @@ output_freq = 25
   use_displaced_mesh = false
 []
 
+
+[UserObjects]
+  [extrapolation_patch_disp_x]
+    type = NodalPatchRecoveryVariable
+    patch_polynomial_order = FIRST
+    use_specific_elements = true
+    var = 'disp_x'
+    block = '0 1 3'
+    execute_on = 'INITIAL TIMESTEP_END'
+  []
+  [extrapolation_patch_disp_y]
+    type = NodalPatchRecoveryVariable
+    patch_polynomial_order = FIRST
+    use_specific_elements = true
+    var = 'disp_y'
+    block = '0 1 3'
+    execute_on = 'INITIAL TIMESTEP_END'
+  []
+[]
+
 [MeshModifiers]
   [esm]
     type = RowElementModifier
@@ -80,12 +100,13 @@ output_freq = 25
     y_max = 2
     change_one_row = true
     execute_on = 'INITIAL TIMESTEP_END'
-
     # --- new for setting IC --- #
 
     old_subdomain_reinitialized = false
-    reinitialize_subdomain_ids = '0 1 3'
-    ic_strategy = "IC_EXTRAPOLATE_FIRST_LAYER"
+    reinitialize_subdomains = '3'
+    reinitialization_strategy = "POLYNOMIAL_NEIGHBOR"
+    reinitialize_variables = "disp_x disp_y"
+    polynomial_fitters = 'extrapolation_patch_disp_x extrapolation_patch_disp_y'
 
     # --- new for making sure all running on the same config --- #
     beginning_activation_of_row = ${beginning_activation_of_row}
