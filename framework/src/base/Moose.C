@@ -711,7 +711,7 @@ associateSyntaxInner(Syntax & syntax, ActionFactory & /*action_factory*/)
   registerSyntax("EmptyAction", "SpatioTemporalPaths");
   registerSyntaxTask("AddSpatioTemporalPathAction", "SpatioTemporalPaths/*", "add_user_object");
 
-  // Adds [SpatioTemporalPath] block
+  // Adds [SpatioTemporalHeat] block
   registerSyntax("SpatioTemporalHeatAction", "SpatioTemporalHeat");
 
 #ifdef MOOSE_MFEM_ENABLED
