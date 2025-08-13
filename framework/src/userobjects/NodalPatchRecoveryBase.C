@@ -37,11 +37,6 @@ NodalPatchRecoveryBase::validParams()
 
   params.addParamNamesToGroup("patch_polynomial_order", "Advanced");
 
-  params.addParam<bool>(
-      "use_specific_elements", false, "Whether to use specific elements for patch recovery");
-
-  params.addParam<bool>("verbose", false, "Set to true to print coefficient of the polynomial.");
-
   return params;
 }
 
@@ -51,9 +46,7 @@ NodalPatchRecoveryBase::NodalPatchRecoveryBase(const InputParameters & parameter
     _patch_polynomial_order(
         static_cast<unsigned int>(getParam<MooseEnum>("patch_polynomial_order"))),
     _multi_index(MathUtils::multiIndex(_mesh.dimension(), _patch_polynomial_order)),
-    _q(_multi_index.size()),
-    _use_specific_elements(getParam<bool>("use_specific_elements")),
-    _verbose(getParam<bool>("verbose"))
+    _q(_multi_index.size())
 {
 }
 
@@ -88,7 +81,6 @@ NodalPatchRecoveryBase::getCoefficients(const std::vector<dof_id_type> & elem_id
     RealEigenVector b = RealEigenVector::Zero(_q);
     for (auto elem_id : elem_ids)
     {
-
       if (!hasBlocks(_mesh.elemPtr(elem_id)->subdomain_id()))
         mooseError("Element with id = ",
                    elem_id,
@@ -106,16 +98,6 @@ NodalPatchRecoveryBase::getCoefficients(const std::vector<dof_id_type> & elem_id
 
     // Solve the least squares fitting
     coef = A.completeOrthogonalDecomposition().solve(b);
-
-    if (_verbose)
-    {
-      _console << std::setprecision(15) << std::scientific;
-      for (const auto & coef_i : coef)
-        _console << coef_i << " ";
-      _console << std::endl;
-
-      _console << std::defaultfloat;
-    }
 
     _cached_elem_ids = key; // Update the cached element IDs
     _cached_coef = coef;    // Update the cached coefficients
@@ -146,7 +128,6 @@ NodalPatchRecoveryBase::initialize()
 {
   _Ae.clear();
   _be.clear();
-  _query_ids.clear();
   // make sure to clear the cached coefficients
   // so that the next time we call nodalPatchRecovery, we will recompute the coefficients to make
   // sure _Ae and _be has already been different but we do not use the same coefficients for the
@@ -187,62 +168,41 @@ NodalPatchRecoveryBase::finalize()
   // When calling nodalPatchRecovery, we may need to know _Ae and _be on algebraically ghosted
   // elements. However, this userobject is only run on local elements, so we need to query those
   // information from other processors in this finalize() method.
-
-  // Populate algebraically ghosted elements to query
-  // First issue: getEvaluableElementRange is not block restricted and cause some issues
-  if (!_use_specific_elements)
-    identifyGhostElementsFromOtherProcs();
-
-  synchronizeAebe();
+  sync();
 }
 
-void
-NodalPatchRecoveryBase::identifyAdditionalElementsFromOtherProcs() const
+std::unordered_map<processor_id_type, std::vector<dof_id_type>>
+NodalPatchRecoveryBase::gatherSendList(
+    const std::optional<std::vector<dof_id_type>> & specific_elems)
 {
-  if (!_use_specific_elements)
-    return;
+  std::unordered_map<processor_id_type, std::vector<dof_id_type>> query_ids;
 
-  if (_additional_elems.empty())
-    return;
-  for (const auto & entry : _additional_elems)
+  if (specific_elems)
   {
-    const Elem * elem = _mesh.elemPtr(entry);
-    if (elem->processor_id() != processor_id())
-      _query_ids[elem->processor_id()].push_back(elem->id());
-  }
-}
-
-void
-NodalPatchRecoveryBase::identifyGhostElementsFromOtherProcs() const
-{
-  // Each processor gathers information about all elements in the computational blocks,
-  // excluding deactivated blocks. This ensures that every processor is aware of all relevant
-  // elements, regardless of how users provide elements to the `nodalPatchRecovery` function.
-  // This approach does not affect the solution, as the actual patch used for recovery
-  // still depends on the elements passed to `nodalPatchRecovery` by the user.
-  // const auto evaluable_elem_range = _fe_problem.getBlockRestrictedEvaluableElementRange();
-  const auto evaluable_elem_range = _fe_problem.getEvaluableElementRange();
-
-  std::vector<dof_id_type> evaluable_elem_ids;
-  for (const auto & elem : evaluable_elem_range)
-    if (hasBlocks(elem->subdomain_id())) // getEvaluableElementRange is not block restricted
-      evaluable_elem_ids.push_back(elem->id());
-
-  std::vector<std::vector<dof_id_type>> gathered_ids;
-  _mesh.comm().allgather(evaluable_elem_ids, gathered_ids);
-
-  for (const auto & elem_ids : gathered_ids)
-    for (const auto & elem_id : elem_ids)
+    for (const auto & entry : *specific_elems)
     {
-      const auto * elem = _mesh.elemPtr(elem_id);
-      if (elem->processor_id() != processor_id())
-        _query_ids[elem->processor_id()].push_back(elem_id);
+      const Elem * elem = _mesh.elemPtr(entry);
+      if (hasBlocks(elem->subdomain_id()))
+        if (elem->processor_id() != processor_id())
+          query_ids[elem->processor_id()].push_back(elem->id());
     }
+  }
+  else
+  {
+    for (const auto & elem : _fe_problem.getEvaluableElementRange())
+      if (hasBlocks(elem->subdomain_id()))
+        if (elem->processor_id() != processor_id())
+          query_ids[elem->processor_id()].push_back(elem->id());
+  }
+
+  return query_ids;
 }
 
 void
-NodalPatchRecoveryBase::synchronizeAebe() const
+NodalPatchRecoveryBase::sync(const std::optional<std::vector<dof_id_type>> & specific_elems)
 {
+  const auto query_ids = gatherSendList(specific_elems);
+
   typedef std::pair<RealEigenMatrix, RealEigenVector> AbPair;
 
   // Answer queries received from other processors
@@ -251,7 +211,7 @@ NodalPatchRecoveryBase::synchronizeAebe() const
                             std::vector<AbPair> & ab_pairs)
   {
     for (const auto & elem_id : elem_ids)
-      ab_pairs.emplace_back(_Ae.at(elem_id), _be.at(elem_id));
+      ab_pairs.emplace_back(libmesh_map_find(_Ae, elem_id), libmesh_map_find(_be, elem_id));
   };
 
   // Gather answers received from other processors
@@ -270,22 +230,5 @@ NodalPatchRecoveryBase::synchronizeAebe() const
 
   // the send and receive are called inside the pull_parallel_vector_data function
   libMesh::Parallel::pull_parallel_vector_data<AbPair>(
-      _communicator, _query_ids, gather_data, act_on_data, 0);
-}
-
-void
-NodalPatchRecoveryBase::cacheAdditionalElements(const std::vector<dof_id_type> & additional_elems,
-                                                bool do_synchronize) const
-{
-  if (!_use_specific_elements)
-    return;
-
-  _additional_elems = additional_elems;
-
-  if (do_synchronize)
-  {
-    identifyAdditionalElementsFromOtherProcs();
-    synchronizeAebe();
-  }
-  cleanQueryIDsAndAdditionalElements();
+      _communicator, query_ids, gather_data, act_on_data, 0);
 }

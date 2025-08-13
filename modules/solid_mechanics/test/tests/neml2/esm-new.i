@@ -73,16 +73,14 @@ output_freq = 25
   [extrapolation_patch_disp_x]
     type = NodalPatchRecoveryVariable
     patch_polynomial_order = FIRST
-    use_specific_elements = true
-    var = 'disp_x'
+    variable = 'disp_x'
     block = '0 1 3'
     execute_on = 'INITIAL TIMESTEP_END'
   []
   [extrapolation_patch_disp_y]
     type = NodalPatchRecoveryVariable
     patch_polynomial_order = FIRST
-    use_specific_elements = true
-    var = 'disp_y'
+    variable = 'disp_y'
     block = '0 1 3'
     execute_on = 'INITIAL TIMESTEP_END'
   []

@@ -97,34 +97,52 @@ Reinitialization can be further restricted by setting the parameter `old_subdoma
 
 !media large_media/mesh_modifiers/element_subdomain_modifier/from_into.png style=float:center;width:100%; caption=Reinitialization of only the elements which change subdomain ID from 3, to subdomain IDs 1 or 2
 
-## Initial condition setting for the newly-activated nodes
+## Variable (re)initialization on the **updated active** domain
 
-The `ElementSubdomainModifier` dynamically activates elements in the domain by changing their subdomain IDs. When a new set of elements becomes active from non-solved state, the nodes shared exclusively by either `newly-activated` or non-solved elements (i.e., elements not yet part of the solution) are called *newly-activated nodes*. These nodes do not carry prior solution history and must be assigned appropriate initial conditions before being incorporated into the simulation.
+In element activation simulations (e.g., for additive manufacturing), the degrees of freedom (DoFs) on the *updated active* domain have no prior solution information when they are incorporated into the solution process. In moving interface problems, the DoFs on the *updated active* domain already exist but may need to be re-initialized depending on the physics. As a result, it is necessary to selectively impose appropriate initial conditions for these DoFs.
 
-Simply assigning zero values to these nodes (e.g., zero temperature or displacement) often causes numerical difficulties, especially when using nonlinear material models like those provided by the [`neml2`](https://cardinal.cels.anl.gov/modules/solid_mechanics/NEML2.html) library. Poor convergence or unstable behavior can result.
+There are two strategies for (re)initializing variables on the *updated active* domain. The first, arguably the simplest, strategy is to project the initial condition of the variable onto the *updated active* domain.
 
-To mitigate these issues, MOOSE supports strategies for setting the initial condition (IC) on newly-activated nodes using information from the previously solved region.
+However, directly imposing such initial conditions often poses significant challenges for the solution procedure. For nonlinear material models, suboptimal initial guess could hinder convergence of the material model and/or that of the global solve. For evaluations on the deformed mesh, e.g., when geometric nonlinearity or mechanical contact is enabled, a bad initial condition of displacement could lead to ill-conditioned elements, and in extreme cases, could lead to highly skewed elements with inverted Jacobians.
 
-### Polynomial fitting from nearby values
+The second strategy aims to address these challenges. The key idea is to initialize the solution on the *updated active* domain leveraging the solution information from the *stationary active* domain. In the current implementation, we adopt the Zienkiewicz-Zhu patch recovery technique to initialize the solution field for the DoFs on *updated active* elements.
 
-When newly-activated elements are not directly connected to previously solved ones, a lightweight polynomial fitting strategy is used.
+The initialization algorithm starts with constructing a patch of elements from the *stationary active* domain. By definition, solution to the variable of interest already exists on the patch. The solution is first interpolated onto the quadrature points on the *stationary active* domain, and a polynomial is fitted against the interpolated variable values using a least-squares fit. A complete set of monomials $P_{\boldsymbol\alpha}$ up to a given order $p$ is used as the basis of the polynomial. Let $\boldsymbol\alpha$ be a multi-index of dimension $d$, where
+$$
+\boldsymbol\alpha = (\alpha_1, ..., \alpha_d), \quad \alpha_i \in \mathbb{N}_{\geq 0}, \quad |\boldsymbol\alpha| = \sum_{i=1}^{d} \alpha_i.
+$$
 
-This method leverages the nodal patch recovery technique built into MOOSE. The idea is to:
+The monomial basis for degree \( m \) can be written as:
 
-1. Collect sampled solution values \( u(\mathbf{x}_i) \) from nearby previously solved elements.
-2. Fit a polynomial (e.g., order \( p = 2 \)) using least-squares over monomials like:
+$$
+P_{|\boldsymbol\alpha| = m} = \{x^{\alpha_1} y^{\alpha_2} z^{\alpha_3}\}_{\boldsymbol\alpha}.
+$$
 
-\[
-\boldsymbol{P} = [1, x, y, x^2, xy, y^2]
-\]
+For example, in 2D ($d = 2$) with $p = 2$, the complete monomial basis can be written as $\boldsymbol P = [1, x, y, x^2, xy, y^2]$.
 
-3. Evaluate the fitted polynomial at the position of the newly-activated node:
+> **Remark**
+> The monomial generation can be implemented recursively. Define $P(0) = C$ as the constant term. Higher-order monomials are then constructed by augmenting $P(n-1)$ with all combinations of $(\alpha_1, \alpha_2, \alpha_3)$ such that $\alpha_1 + \alpha_2 + \alpha_3 = n$. That is,
+> $$
+> \boldsymbol P(n) = \boldsymbol P(n-1) \cup \{x^{\alpha_1} y^{\alpha_2} z^{\alpha_3} \mid \alpha_1 + \alpha_2 + \alpha_3 = n\}.
+> $$
 
-\[
-u(\boldsymbol{x}^*) = \boldsymbol{P}(\boldsymbol{x}^*) \boldsymbol{c}
-\]
+The fitting process solves a least-squares problem. In matrix form, it can be expressed as
+$$
+\boldsymbol A \boldsymbol c = \boldsymbol b
+$$
 
-Where:
-- \( \boldsymbol{x}^* \) is the coordinate of the newly-activated node,
-- \( \boldsymbol{P}(\boldsymbol{x}^*) \) is the polynomial basis evaluated at \( \boldsymbol{x}^* \),
-- \( \boldsymbol{c} \) is the vector of fitted coefficients from the least-squares system.
+where $\boldsymbol A$ is the patch interpolation matrix, $\boldsymbol b$ is the patch interpolation vector, and $\boldsymbol c$ contains the fitted polynomial coefficients. These matrices are assembled over $n$ quadrature points on the patch:
+
+$$
+\begin{aligned}
+\boldsymbol A &= \sum_{i=1}^n \boldsymbol P^T(\boldsymbol x_i)\boldsymbol P(\boldsymbol x_i), \\
+\boldsymbol b &= \sum_{i=1}^n \boldsymbol P^T(\boldsymbol x_i) u(\boldsymbol x_i),
+\end{aligned}
+$$
+
+where $u(\boldsymbol x_i)$ is the interpolated variable value at the quadrature point $\boldsymbol x_i$.
+
+> **Remark**
+> For least-squares fitting with the same patch of elements, the computed coefficients $\boldsymbol c$ can be cached and reused to reduce computational overhead.
+
+Once the least-squares problem is solved, the fitted polynomial is used to extrapolate the solution onto the *updated active* domain by projecting the polynomial.

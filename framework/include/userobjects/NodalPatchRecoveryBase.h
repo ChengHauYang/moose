@@ -35,41 +35,23 @@ public:
    *
    * @param elem_ids    Ids of the elements in the patch
    * @return The coefficients of the polynomial
+   *
+   * @warning This method shall not be called within a threaded region as it modifies some mutable
+   * data members
    */
   const RealEigenVector getCoefficients(const std::vector<dof_id_type> & elem_ids) const;
 
-  virtual void initialize() override;
-  virtual void execute() override;
-  virtual void threadJoin(const UserObject &) override;
-  virtual void finalize() override;
+  void initialize() override;
+  void execute() override;
+  void threadJoin(const UserObject &) override;
+  void finalize() override;
 
   /**
-   * Cache additional elements for the patch recovery.
+   * @brief Synchronizes local matrices and vectors (_Ae, _be) across processors
    *
-   * @param additional_elems    Ids of the additional elements to cache
-   * @param do_synchronize      Whether to synchronize the A and b vectors across processors
+   * Gathers and distributes data required for evaluable elements (possibly from other processors)
    */
-  void cacheAdditionalElements(const std::vector<dof_id_type> & additional_elems,
-                               bool do_synchronize = false) const;
-
-  void cleanQueryIDsAndAdditionalElements() const
-  {
-    if (!_use_specific_elements)
-      return;
-
-    _query_ids.clear();
-    _additional_elems.clear();
-  }
-
-  void identifyAdditionalElementsFromOtherProcs() const;
-
-  /// @brief Synchronizes local matrices and vectors (_Ae, _be) across processors
-  /// by gathering and distributing data for specified element IDs (_query_ids)
-  /// in a parallel computing environment.
-  void synchronizeAebe() const;
-
-  /// Returns the variable name
-  virtual const VariableName & variableName() const { return _var_name; }
+  void sync(const std::optional<std::vector<dof_id_type>> & specific_elems = std::nullopt);
 
   /// Returns the multi-index table
   const std::vector<std::vector<unsigned int>> & multiIndex() const { return _multi_index; }
@@ -77,11 +59,15 @@ public:
 protected:
   /// Compute the quantity to recover using nodal patch recovery
   virtual Real computeValue() = 0;
-  void setVariableName(const VariableName & var_name) { _var_name = var_name; }
 
   unsigned int _qp;
 
 private:
+  /// Iterates over all evaluable elements and records their IDs in a query map
+  /// if they belong to a different processor.
+  std::unordered_map<processor_id_type, std::vector<dof_id_type>>
+  gatherSendList(const std::optional<std::vector<dof_id_type>> & specific_elems = std::nullopt);
+
   /**
    * Compute the P vector at a given point
    * i.e. given dim = 2, order = 2, polynomial P has the following terms:
@@ -106,33 +92,14 @@ private:
   const unsigned int _q;
 
   /// The element-level A matrix
-  mutable std::map<dof_id_type, RealEigenMatrix> _Ae;
+  std::map<dof_id_type, RealEigenMatrix> _Ae;
 
   /// The element-level b vector
-  mutable std::map<dof_id_type, RealEigenVector> _be;
-
-  // Map to track which elements are needed from each processor
-  mutable std::unordered_map<processor_id_type, std::vector<dof_id_type>> _query_ids;
-
-  /// Additional elements to query
-  mutable std::vector<dof_id_type> _additional_elems;
-
-  /// Iterates over all evaluable elements and records their IDs in a query map
-  /// if they belong to a different processor.
-  void identifyGhostElementsFromOtherProcs() const;
-
-  /// @brief Whether we want to specify the elements for the patch recovery
-  bool _use_specific_elements;
+  std::map<dof_id_type, RealEigenVector> _be;
 
   /// @brief Cache for least-squares coefficients used in nodal patch recovery.
   /// Typically, there is a one-to-one mapping from element to coefficients,
   /// so only a single set of coefficients is cached rather than a full map.
   mutable std::vector<dof_id_type> _cached_elem_ids;
   mutable RealEigenVector _cached_coef;
-
-  /// Print coefficients of the polynomial to console
-  const bool _verbose;
-
-  /// Variable name
-  VariableName _var_name;
 };

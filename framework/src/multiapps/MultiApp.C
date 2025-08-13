@@ -481,9 +481,10 @@ MultiApp::readCommandLineArguments()
         MooseUtils::checkFileReadable(cli_args_file);
 
         std::ifstream is(cli_args_file.c_str());
-        std::copy(std::istream_iterator<std::string>(is),
-                  std::istream_iterator<std::string>(),
-                  std::back_inserter(cli_args));
+        // Read by line rather than space separated like the cli_args parameter
+        std::string line;
+        while (std::getline(is, line))
+          cli_args.push_back(line);
 
         // We do not allow empty files
         if (!cli_args.size())
@@ -662,6 +663,9 @@ MultiApp::preTransfer(Real /*dt*/, Real target_time)
     timestep_tol =
         dynamic_cast<TransientBase *>(_fe_problem.getMooseApp().getExecutioner())->timestepTol();
 
+  // Determination on whether we need to backup the app due to changes below
+  bool backup_apps = false;
+
   // First, see if any Apps need to be reset
   for (unsigned int i = 0; i < _reset_times.size(); i++)
   {
@@ -696,6 +700,9 @@ MultiApp::preTransfer(Real /*dt*/, Real target_time)
         if (target_time + timestep_tol >= _reset_times[j])
           _reset_happened[j] = true;
 
+      // Backup in case the next solve fails
+      backup_apps = true;
+
       break;
     }
   }
@@ -706,7 +713,13 @@ MultiApp::preTransfer(Real /*dt*/, Real target_time)
     _move_happened = true;
     for (unsigned int i = 0; i < _move_apps.size(); i++)
       moveApp(_move_apps[i], _move_positions[i]);
+
+    // Backup in case the next solve fails
+    backup_apps = true;
   }
+
+  if (backup_apps)
+    backup();
 }
 
 Executioner *
@@ -845,6 +858,16 @@ MultiApp::restore(bool force)
 
       _end_aux_solutions.clear();
     }
+
+    // Make sure the displaced mesh on the multiapp is up-to-date with displacement variables
+    for (const auto & app_ptr : _apps)
+      if (app_ptr->feProblem().getDisplacedProblem())
+        app_ptr->feProblem().getDisplacedProblem()->updateMesh();
+
+    // If we are restoring due to a failed solve, make sure reset the solved state in the sub-apps
+    if (!getMooseApp().getExecutioner()->lastSolveConverged())
+      for (auto & app_ptr : _apps)
+        app_ptr->getExecutioner()->fixedPointSolve().clearFixedPointStatus();
   }
   else
   {

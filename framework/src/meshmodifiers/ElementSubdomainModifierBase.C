@@ -16,6 +16,7 @@
 #include "libmesh/parallel_ghost_sync.h"
 #include "libmesh/petsc_vector.h"
 #include "libmesh/parameters.h"
+#include <iterator>
 #include <unordered_set>
 
 InputParameters
@@ -88,6 +89,13 @@ ElementSubdomainModifierBase::validParams()
       -1.0,
       "Threshold for considering elements as 'nearby' in the K-D tree search. Only elements within "
       "this distance will be considered for polynomial fitting.");
+  params.addParam<std::vector<bool>>(
+      "restore_overridden_dofs",
+      {},
+      "A list of boolean flags, one for each variable in 'reinitialize_variables', specifying "
+      "whether overridden DOF values should be restored after reinitialization for each variable. "
+      "This is useful when the solved values on these DOFs should be preserved. If the list is "
+      "empty, overridden DOF values will NOT be restored for any variable by default.");
 
   params.registerBase("MeshModifier");
 
@@ -184,8 +192,9 @@ ElementSubdomainModifierBase::initialSetup()
 
   // Determine the reinitialization strategy for each variable.
   //   (1) If they are of the same size, we perform a 1-to-1 mapping.
-  //   (2) If only one strategy is provided, it applies to all variables.
+  //   (2) If only one strategy or restore flag is provided, it applies to all variables.
   const auto reinit_strategy_in = getParam<std::vector<MooseEnum>>("reinitialization_strategy");
+  const auto restore_overridden_dofs_in = getParam<std::vector<bool>>("restore_overridden_dofs");
 
   if (std::any_of(reinit_strategy_in.begin(),
                   reinit_strategy_in.end(),
@@ -203,7 +212,38 @@ ElementSubdomainModifierBase::initialSetup()
     paramError(
         "reinitialization_strategy",
         "The 'reinitialization_strategy' parameter must have either a single value or a number "
-        "of values equal to the number of 'reinitialize_variables'.");
+        "of values equal to the number of 'reinitialize_variables'. "
+        "Got ",
+        reinit_strategy_in.size(),
+        " strategies for ",
+        _reinit_vars.size(),
+        " variables.");
+
+  if (restore_overridden_dofs_in.size() == 1)
+  {
+    if (restore_overridden_dofs_in[0])
+      _vars_to_restore_overridden_dofs =
+          _reinit_vars; // Restore overridden DOFs for all reinitialized variables
+  }
+  else if (restore_overridden_dofs_in.size() == _reinit_vars.size())
+  {
+    for (auto i : index_range(_reinit_vars))
+      if (restore_overridden_dofs_in[i])
+        _vars_to_restore_overridden_dofs.push_back(_reinit_vars[i]);
+  }
+  else
+  {
+    if (!restore_overridden_dofs_in.empty())
+      paramError(
+          "restore_overridden_dofs",
+          "The 'restore_overridden_dofs' parameter must have either a single value or a number "
+          "of values equal to the number of 'reinitialize_variables'. "
+          "Got ",
+          restore_overridden_dofs_in.size(),
+          " restore_overridden_dofs for ",
+          _reinit_vars.size(),
+          " variables.");
+  }
 
   // For all the other variables, we set the reinitialization strategy to IC
   for (const auto & var_name : _fe_problem.getVariableNames())
@@ -228,7 +268,9 @@ ElementSubdomainModifierBase::initialSetup()
                    _pr_names.size(),
                    ") is less than the number of variables to reinitialize with polynomial "
                    "extrapolation.");
-      _pr[pr_count] = &getUserObjectByName<NodalPatchRecoveryBase>(_pr_names[pr_count]);
+      _pr[pr_count] =
+          &_fe_problem.getUserObject<NodalPatchRecoveryBase>(_pr_names[pr_count], /*tid=*/0);
+      _depend_uo.insert(_pr_names[pr_count]);
       pr_count++;
     }
   if (_pr_names.size() != pr_count)
@@ -275,6 +317,10 @@ ElementSubdomainModifierBase::modify(
   if (_displaced_mesh)
     applyMovingBoundaryChanges(*_displaced_mesh);
 
+  // Some variable reinitialization strategies require patch elements to be gathered
+  // This has to be done *before* reinitializing the equation systems because we need to find
+  // currently evaluable elements
+  _evaluable_elems.clear();
   _patch_elem_ids.clear();
   for (auto i : index_range(_reinit_vars))
     prepareVariableForReinitialization(_reinit_vars[i], _reinit_strategy[i]);
@@ -282,10 +328,6 @@ ElementSubdomainModifierBase::modify(
   // Reinit equation systems
   _fe_problem.meshChanged(
       /*intermediate_change=*/false, /*contract_mesh=*/false, /*clean_refinement_flags=*/false);
-
-  // Clear the serialized solution after the mesh has changed
-  // TODO: double check if this is needed
-  _sys.cleanSerializedSolution();
 
   // Initialize solution and stateful material properties
   applyIC();
@@ -522,7 +564,7 @@ ElementSubdomainModifierBase::prepareVariableForReinitialization(const VariableN
       // The patch elements might be different for each variable
       gatherPatchElements(var_name, reinit_strategy);
       // Notify the patch recovery user object about the patch elements
-      _pr[pr_idx]->cacheAdditionalElements(_patch_elem_ids[var_name], /*synchronizeAebe=*/true);
+      _pr[pr_idx]->sync(_patch_elem_ids[var_name]);
       break;
     }
     default:
@@ -577,6 +619,14 @@ ElementSubdomainModifierBase::findReinitializedElemsAndNodes(
   _reinitialized_elems.clear();
   _reinitialized_nodes.clear();
 
+  // One more algorithm:
+  // (1) Loop over moved elements
+  // (2) If neighbor element processor ID is not the same as current processor ID (ghost element),
+  //     push the moved element ID to the neighbor processor
+
+  std::unordered_map<processor_id_type, std::unordered_set<dof_id_type>> push_data_set;
+  std::unordered_map<processor_id_type, std::vector<dof_id_type>> push_data;
+
   for (const auto & [elem_id, subdomain] : moved_elems)
   {
     mooseAssert(_mesh.elemPtr(elem_id)->active(), "Moved elements should be active");
@@ -597,12 +647,40 @@ ElementSubdomainModifierBase::findReinitializedElemsAndNodes(
       else // New subdomain is not in list of subdomains
         continue;
     }
-
     const auto & elem = _mesh.elemPtr(elem_id);
+
+    // (1) Loop over nodes of moved elements
+    // (2) node to element map is used to find neighbor elements
+    // (3) If neighbor element processor ID is not the same as current processor ID (means that the
+    // current element is ghosted element to the neighbor processor), push the moved element (or
+    // reinitialized, or newly-activated) ID to the neighbor processor
+    for (const auto & node : elem->node_ref_range())
+      for (const auto & neigh_id : _mesh.nodeToElemMap().at(node.id()))
+        if (neigh_id != elem_id) // Don't check the element itself
+        {
+          const auto neigh_elem = _mesh.elemPtr(neigh_id);
+          if (neigh_elem->processor_id() != processor_id())
+            push_data_set[neigh_elem->processor_id()].insert(elem_id);
+        }
+
     for (unsigned int i = 0; i < elem->n_nodes(); ++i)
       if (nodeIsNewlyReinitialized(elem->node_id(i)))
         _reinitialized_nodes.insert(elem->node_id(i));
   }
+
+  for (auto & [pid, s] : push_data_set)
+    push_data[pid] = {s.begin(), s.end()};
+
+  _semi_local_reinitialized_elems = _reinitialized_elems;
+
+  auto push_receiver =
+      [this](const processor_id_type, const std::vector<dof_id_type> & received_data)
+  {
+    for (const auto & id : received_data)
+      _semi_local_reinitialized_elems.insert(id);
+  };
+
+  Parallel::push_parallel_vector_data(_mesh.comm(), push_data, push_receiver);
 }
 
 bool
@@ -634,11 +712,12 @@ ElementSubdomainModifierBase::nodeIsNewlyReinitialized(dof_id_type node_id) cons
 void
 ElementSubdomainModifierBase::applyIC()
 {
-  // When we reinitialize the variables, we may be overriding some of the existing dofs.
-  // To work around this, we first store the dof values that will be overridden
-  // and then restore them after the reinitialization is done.
-  const auto & all_vars_names = _fe_problem.getVariableNames();
-  storeOverriddenDofValues(all_vars_names);
+  // Before reinitializing variables, some DOFs may be overwritten.
+  // By default, these overwritten DOF values are NOT restored.
+  // If the user sets `restore_overridden_dofs` to true, we first save the current
+  // values of these DOFs, then restore them after reinitialization.
+  for (const auto & var_name : _vars_to_restore_overridden_dofs)
+    storeOverriddenDofValues(var_name);
 
   // ReinitStrategy::IC
   std::set<VariableName> ic_vars;
@@ -654,7 +733,8 @@ ElementSubdomainModifierBase::applyIC()
     extrapolatePolynomial(var);
 
   // See the comment above, now we restore the values of the dofs that were overridden
-  restoreOverriddenDofValues(all_vars_names);
+  for (const auto & var_name : _vars_to_restore_overridden_dofs)
+    restoreOverriddenDofValues(var_name);
 
   mooseAssert(_fe_problem.numSolverSystems() <= 1,
               "This code was written for a single nonlinear system");
@@ -671,99 +751,84 @@ ElementSubdomainModifierBase::applyIC()
 }
 
 void
-ElementSubdomainModifierBase::storeOverriddenDofValues(const std::vector<VariableName> & vars_names)
+ElementSubdomainModifierBase::storeOverriddenDofValues(const VariableName & var_name)
 {
+  const auto & sys = _fe_problem.getSystem(var_name);
+  const auto & current_solution = *sys.current_local_solution;
+  const auto & dof_map = sys.get_dof_map();
+  const auto & var = _fe_problem.getStandardVariable(0, var_name);
+  const auto var_num = var.number();
 
-  for (const auto & var_name : vars_names)
+  // Get the DOFs on the reinitialized elements
+  // Here we should loop over both ghosted and local reinitialized elements.
+  // The ghosted elements here can take care of DoFs that is belong to the reinitialized
+  // elements but are not on the current processor.
+  std::set<dof_id_type> reinitialized_dofs;
+  for (const auto & elem_id : _semi_local_reinitialized_elems)
   {
-    SystemBase & sys = _aux_sys.hasVariable(var_name)
-                           ? static_cast<SystemBase &>(_fe_problem.getAuxiliarySystem())
-                           : static_cast<SystemBase &>(_fe_problem.getNonlinearSystemBase(
-                                 _fe_problem.systemNumForVariable(var_name)));
-
-    const auto & current_solution = *sys.system().current_local_solution;
-
-    DofMap & dof_map = sys.dofMap();
-
-    const auto & var = _fe_problem.getStandardVariable(0, var_name);
-    const auto var_num = var.number();
-
-    // Get the DOFs on the reinitialized elements
-    std::set<dof_id_type> reinitialized_dofs;
-    for (const auto & elem_id : _reinitialized_elems)
-    {
-      const auto & elem = _mesh.elemPtr(elem_id);
-      std::vector<dof_id_type> elem_dofs;
-      dof_map.dof_indices(elem, elem_dofs, var_num);
-      reinitialized_dofs.insert(elem_dofs.begin(), elem_dofs.end());
-    }
-
-    // Get existing DOFs on the active elements excluding reinitialized elements
-    std::set<dof_id_type> existing_dofs;
-    for (const auto * elem : *_mesh.getActiveLocalElementRange())
-    {
-      if (_reinitialized_elems.count(elem->id()))
-        continue; // Skip reinitialized elements
-      std::vector<dof_id_type> elem_dofs;
-      dof_map.dof_indices(elem, elem_dofs, var_num);
-      existing_dofs.insert(elem_dofs.begin(), elem_dofs.end());
-    }
-
-    // Get the DOFs on the nodes that are overridden on reinitialized elements
-    std::set<dof_id_type> overridden_dofs;
-    std::set_intersection(reinitialized_dofs.begin(),
-                          reinitialized_dofs.end(),
-                          existing_dofs.begin(),
-                          existing_dofs.end(),
-                          std::inserter(overridden_dofs, overridden_dofs.begin()));
-
-    std::vector<Number> values;
-    for (auto dof : overridden_dofs)
-      values.push_back(current_solution(dof));
-
-    _overridden_values_on_reinit_elems[var_name] = {
-        std::vector<dof_id_type>(overridden_dofs.begin(), overridden_dofs.end()), values};
+    const auto & elem = _mesh.elemPtr(elem_id);
+    std::vector<dof_id_type> elem_dofs;
+    dof_map.dof_indices(elem, elem_dofs, var_num);
+    reinitialized_dofs.insert(elem_dofs.begin(), elem_dofs.end());
   }
+
+  // Get existing DOFs on the active elements excluding reinitialized elements
+  std::set<dof_id_type> existing_dofs;
+  for (const auto * elem : *_mesh.getActiveLocalElementRange())
+  {
+    if (_reinitialized_elems.count(elem->id()))
+      continue; // Skip reinitialized elements
+    std::vector<dof_id_type> elem_dofs;
+    dof_map.dof_indices(elem, elem_dofs, var_num);
+    existing_dofs.insert(elem_dofs.begin(), elem_dofs.end());
+  }
+
+  // Get the DOFs on the nodes that are overridden on reinitialized elements
+  std::vector<dof_id_type> overridden_dofs;
+  std::set_intersection(reinitialized_dofs.begin(),
+                        reinitialized_dofs.end(),
+                        existing_dofs.begin(),
+                        existing_dofs.end(),
+                        std::back_inserter(overridden_dofs));
+
+  // Values before overriding (to be restored later)
+  std::vector<Number> values;
+  for (auto dof : overridden_dofs)
+    values.push_back(current_solution(dof));
+
+  _overridden_values_on_reinit_elems[var_name] = {overridden_dofs, values};
 }
 
 void
-ElementSubdomainModifierBase::restoreOverriddenDofValues(
-    const std::vector<VariableName> & vars_names)
+ElementSubdomainModifierBase::restoreOverriddenDofValues(const VariableName & var_name)
 {
-  for (const auto & var_name : vars_names)
+  const auto sn = _fe_problem.systemNumForVariable(var_name);
+  auto & sys = _fe_problem.getSystemBase(sn);
+  auto & sol = sys.solution();
+  const auto & dof_map = sys.dofMap();
+  const auto & [dof_ids, values] = _overridden_values_on_reinit_elems[var_name];
+
+  std::unordered_map<processor_id_type, std::vector<std::pair<dof_id_type, Number>>> push_data;
+
+  for (const int i : index_range(dof_ids))
   {
-    SystemBase & sys = _aux_sys.hasVariable(var_name)
-                           ? static_cast<SystemBase &>(_fe_problem.getAuxiliarySystem())
-                           : static_cast<SystemBase &>(_fe_problem.getNonlinearSystemBase(
-                                 _fe_problem.systemNumForVariable(var_name)));
-
-    DofMap & dof_map = sys.dofMap();
-
-    const auto & dof_ids = _overridden_values_on_reinit_elems[var_name].first;
-    const auto & values = _overridden_values_on_reinit_elems[var_name].second;
-
-    std::unordered_map<processor_id_type, std::vector<std::pair<dof_id_type, Number>>> push_data;
-
-    for (const int i : index_range(dof_ids))
-    {
-      if (dof_map.dof_owner(dof_ids[i]) == processor_id())
-        sys.solution().set(dof_ids[i], values[i]);
-      else
-        push_data[dof_map.dof_owner(dof_ids[i])].emplace_back(dof_ids[i], values[i]);
-    }
-
-    auto push_receiver = [&](const processor_id_type,
-                             const std::vector<std::pair<dof_id_type, Number>> & received_data)
-    {
-      for (const auto & [id, value] : received_data)
-        sys.solution().set(id, value);
-    };
-
-    Parallel::push_parallel_vector_data(_mesh.comm(), push_data, push_receiver);
-
-    sys.solution().close();
-    sys.solution().localize(*sys.system().current_local_solution, sys.dofMap().get_send_list());
+    if (dof_map.dof_owner(dof_ids[i]) == processor_id())
+      sol.set(dof_ids[i], values[i]);
+    else
+      push_data[dof_map.dof_owner(dof_ids[i])].emplace_back(dof_ids[i], values[i]);
   }
+
+  auto push_receiver = [&](const processor_id_type,
+                           const std::vector<std::pair<dof_id_type, Number>> & received_data)
+  {
+    for (const auto & [id, value] : received_data)
+      sol.set(id, value);
+  };
+
+  Parallel::push_parallel_vector_data(_mesh.comm(), push_data, push_receiver);
+
+  sol.close();
+  sol.localize(*sys.system().current_local_solution, sys.dofMap().get_send_list());
 }
 
 void
@@ -908,56 +973,60 @@ ElementSubdomainModifierBase::gatherPatchElements(const VariableName & var_name,
                                                   ReinitStrategy reinit_strategy)
 {
   _patch_elem_ids[var_name].clear();
-  mooseAssert(
-      reinit_strategy == ReinitStrategy::POLYNOMIAL_NEIGHBOR ||
-          reinit_strategy == ReinitStrategy::POLYNOMIAL_WHOLE ||
-          reinit_strategy == ReinitStrategy::POLYNOMIAL_NEARBY,
-      "reinit strategy must be POLYNOMIAL_NEIGHBOR, POLYNOMIAL_WHOLE, or POLYNOMIAL_NEARBY");
 
   // First collect all elements who own dofs in the current dofmap
-  std::unordered_set<const Elem *> candidate_elems;
-  std::vector<dof_id_type> candidate_elem_ids;
   auto & sys = _fe_problem.getSystem(var_name);
-  const auto & dof_map = sys.get_dof_map();
-  std::vector<dof_id_type> elem_dofs;
-  auto vn = sys.variable_number(static_cast<std::string>(var_name));
-  for (const auto elem : *_mesh.getActiveLocalElementRange())
-  {
-    if (_reinitialized_elems.count(elem->id()))
-      continue; // Skip elements that were reinitialized
 
-    dof_map.dof_indices(elem, elem_dofs, vn);
-    if (!elem_dofs.empty() &&
-        std::all_of(elem_dofs.begin(),
-                    elem_dofs.end(),
-                    [](dof_id_type dof) { return dof != libMesh::DofObject::invalid_id; }))
+  // Cache evaluable elements for the system if not already done
+  if (!_evaluable_elems.count(sys.number()))
+  {
+    auto & [candidate_elems, candidate_elem_ids] = _evaluable_elems[sys.number()];
+    const auto & dof_map = sys.get_dof_map();
+    std::vector<dof_id_type> elem_dofs;
+    auto vn = sys.variable_number(static_cast<std::string>(var_name));
+    for (const auto elem : *_mesh.getActiveLocalElementRange())
     {
-      candidate_elems.insert(elem);
-      candidate_elem_ids.push_back(elem->id());
+      if (std::find(_reinitialized_elems.begin(), _reinitialized_elems.end(), elem->id()) !=
+          _reinitialized_elems.end())
+        continue; // Skip elements that were reinitialized
+
+      dof_map.dof_indices(elem, elem_dofs, vn);
+      if (!elem_dofs.empty())
+      {
+        candidate_elems.insert(elem);
+        candidate_elem_ids.push_back(elem->id());
+      }
     }
   }
+  auto & [candidate_elems, candidate_elem_ids] = _evaluable_elems[sys.number()];
 
   // Now we gather patch elements based on the reinit strategy
-  std::vector<dof_id_type> & patch_elems = _patch_elem_ids[var_name];
+  auto & patch_elems = _patch_elem_ids[var_name];
+
   switch (reinit_strategy)
   {
     case ReinitStrategy::POLYNOMIAL_NEIGHBOR:
     {
-      // Loop over all candidate elements, for each element, if any of its point neighbor belongs to
-      // the reinitialized elements, we will include that element in the patch element set.
-      for (const auto * elem : candidate_elems)
+      auto has_neighbor_in_reinit_elems = [&](const Elem * elem) -> bool
+      {
         for (const auto & node : elem->node_ref_range())
           for (const auto & neigh_id : _mesh.nodeToElemMap().at(node.id()))
-            if (_reinitialized_elems.count(neigh_id))
-              patch_elems.push_back(elem->id());
-      _mesh.comm().allgather(patch_elems);
+            // here we need to use _global_reinitialized_elems gathering from all processors
+            if (_semi_local_reinitialized_elems.count(neigh_id))
+              return true;
+        return false;
+      };
+      // Loop over all candidate elements, for each element, if any of its point neighbor belongs
+      // to the reinitialized elements, we will include that element in the patch element set.
+      for (const auto * elem : candidate_elems)
+        if (has_neighbor_in_reinit_elems(elem))
+          patch_elems.push_back(elem->id());
       break;
     }
     case ReinitStrategy::POLYNOMIAL_WHOLE:
     {
-      // This is simple: just insert all candidate elements into the patch elements
+      // This is simple: all candidate elements are patch elements
       patch_elems = candidate_elem_ids;
-      _mesh.comm().allgather(patch_elems);
       break;
     }
     case ReinitStrategy::POLYNOMIAL_NEARBY:
@@ -965,14 +1034,14 @@ ElementSubdomainModifierBase::gatherPatchElements(const VariableName & var_name,
       // Before the search, we need to gather all candidate elements
       _mesh.comm().allgather(candidate_elem_ids);
       // Construct the KD-tree for searching nearby elements
-      _kd_tree = constructKDTreeFromElements(candidate_elem_ids);
+      auto kd_tree = constructKDTreeFromElements(candidate_elem_ids);
       // Loop over all reinitialized elements and find nearby elements from the KD-tree
       std::vector<nanoflann::ResultItem<std::size_t, Real>> query_result;
       for (const auto & elem_id : _reinitialized_elems)
       {
         const Elem * elem = _mesh.elemPtr(elem_id);
         const Point & centroid = elem->vertex_average();
-        _kd_tree->radiusSearch(centroid, _nearby_distance_threshold, query_result);
+        kd_tree->radiusSearch(centroid, _nearby_distance_threshold, query_result);
         for (const auto & [qid, dist] : query_result)
           patch_elems.push_back(candidate_elem_ids[qid]);
       }
@@ -982,6 +1051,10 @@ ElementSubdomainModifierBase::gatherPatchElements(const VariableName & var_name,
       mooseError("Unknown reinitialization strategy");
       break;
   }
+
+  // every processor should have the same patch elements to do the polynomial extrapolation,
+  // so we gather them across all processors
+  _mesh.comm().allgather(patch_elems);
 
   patch_elems.erase(std::unique(patch_elems.begin(), patch_elems.end()), patch_elems.end());
 }

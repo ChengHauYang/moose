@@ -48,8 +48,8 @@ public:
 
   ElementSubdomainModifierBase(const InputParameters & parameters);
 
-  virtual void initialSetup() override;
-  virtual void meshChanged() override;
+  void initialSetup() override;
+  void meshChanged() override;
 
 protected:
   /**
@@ -143,6 +143,18 @@ private:
   /// Range of reinitialized boundary nodes
   ConstBndNodeRange & reinitializedBndNodeRange();
 
+  /// @brief Gather patch elements for reinitialized elements based onthe reinitialization strategy.
+  void gatherPatchElements(const VariableName & var_name, ReinitStrategy reinit_strategy);
+
+  /// @brief Extrapolate polynomial for the given variable onto the reinitialized elements.
+  void extrapolatePolynomial(const VariableName & var_name);
+
+  /// @brief Store values from non-reinitialized nodes on reinitialized elements
+  void storeOverriddenDofValues(const VariableName & var_name);
+
+  /// @brief Restore values to non-reinitialized nodes on reinitialized elements
+  void restoreOverriddenDofValues(const VariableName & var_name);
+
   /// Reinitialize moved elements whose new subdomain is in this list
   std::vector<SubdomainID> _subdomain_ids_to_reinitialize;
 
@@ -174,6 +186,10 @@ private:
   /// Range of reinitialized elements
   std::unique_ptr<ConstElemRange> _reinitialized_elem_range;
 
+  /// Semi-local Reinitialized elements:
+  /// Ghosted and local reinitialized elements
+  std::unordered_set<dof_id_type> _semi_local_reinitialized_elems;
+
   /// Reinitialized nodes
   std::unordered_set<dof_id_type> _reinitialized_nodes;
   /// Range of reinitialized nodes
@@ -196,7 +212,7 @@ private:
   const std::vector<UserObjectName> _pr_names;
 
   /// @brief Apply initial conditions using polynomial extrapolation
-  std::vector<const NodalPatchRecoveryBase *> _pr;
+  std::vector<NodalPatchRecoveryBase *> _pr;
 
   /// @brief List of variable names to be initialized for IC
   std::vector<VariableName> _reinit_vars;
@@ -204,35 +220,33 @@ private:
   /// @brief map from variable name to the index of the nodal patch recovery user object in `_pr`
   std::map<VariableName, unsigned int> _var_name_to_pr_idx;
 
+  /**
+   * @brief local evaluable elements before reinitializing the equation systems
+   * Key of the map is the system number, value of the map is a pair of:
+   *  (1) an unordered set of evaluable elements for the system
+   *  (2) a vector of evaluable element IDs associated with those elements
+   */
+  std::map<unsigned int, std::pair<std::unordered_set<const Elem *>, std::vector<dof_id_type>>>
+      _evaluable_elems;
+
   /// @brief A map to map reinitialization strategies to their corresponding patch element IDs
   std::map<VariableName, std::vector<dof_id_type>> _patch_elem_ids;
 
+  /// KD-tree related members
+  ///@{
   /// @brief Maximum number of elements allowed in a leaf node of the k-d tree.
   int _leaf_max_size = 10;
-
-  /// @brief k-d tree used for neighbor solved element search in polynomial extrapolation.
-  std::unique_ptr<KDTree> _kd_tree = nullptr;
-
   /// @brief Centroids of all solved elements used for k-d tree construction.
   std::vector<Point> _kd_tree_points;
-
   /// @brief Radius threshold for the k-d tree neighbor search.
   double _nearby_distance_threshold;
+  ///@}
+
+  /// @brief List of variable names for which overridden DOF values should be restored.
+  std::vector<VariableName> _vars_to_restore_overridden_dofs;
 
   /// @brief Set of processor IDs that have reinitialized elements and nodes.
   std::set<processor_id_type> _global_proc_ids_for_reinit;
-
-  /// @brief Gather patch elements for reinitialized elements based onthe reinitialization strategy.
-  void gatherPatchElements(const VariableName & var_name, ReinitStrategy reinit_strategy);
-
-  /// @brief Extrapolate polynomial for the given variable onto the reinitialized elements.
-  void extrapolatePolynomial(const VariableName & var_name);
-
-  /// @brief Store values from non-reinitialized nodes on reinitialized elements
-  void storeOverriddenDofValues(const std::vector<VariableName> & vars_names);
-
-  /// @brief Restore values to non-reinitialized nodes on reinitialized elements
-  void restoreOverriddenDofValues(const std::vector<VariableName> & vars_names);
 
 private:
   /// Construct a KD-tree from the given elements

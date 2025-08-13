@@ -46,6 +46,12 @@ pin_diameter = 0.00950
   compute_power = true
   P_out = ${P_out}
   verbose_subchannel = true
+<<<<<<<< HEAD:modules/subchannel/test/tests/problems/psbt/psbt_full_monolithic_staggered.i
+  implicit = true
+  segregated = false
+  monolithic_thermal = true
+========
+>>>>>>>> subdomain_modifier_dev:modules/subchannel/test/tests/problems/psbt/psbt_explicit_staggered.i
   staggered_pressure = true
 []
 

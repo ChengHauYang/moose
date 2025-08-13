@@ -1,6 +1,6 @@
 #!/bin/bash
 #for Ny in 8 16 32; do
-for Ny in 128; do
+for Ny in 16; do
     Nx=$(awk "BEGIN {print $Ny * 1.5}")
     number_elements=$(awk "BEGIN {print $Ny/8}")
     beginning_activation_of_row=$(awk "BEGIN {print $Ny/8}")
@@ -8,7 +8,7 @@ for Ny in 128; do
     output_dir="new_output_Ny${Ny}"  # Define a unique output folder based on Ny
     mkdir -p $output_dir          # Ensure the output directory exists
 
-    mpirun -np 12  ../../../solid_mechanics-opt \
+    mpirun -np 3  ../../../solid_mechanics-opt \
         -i esm-new.i  --no-color \
         Outputs/file_base=$output_dir/results \
         nx=$Nx \

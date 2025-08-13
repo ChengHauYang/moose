@@ -36,22 +36,19 @@
   [extrapolation_patch_T]
     type = NodalPatchRecoveryVariable
     patch_polynomial_order = FIRST
-    use_specific_elements = true
-    var = 'T'
+    variable = 'T'
     execute_on = 'TIMESTEP_BEGIN'
   []
   [extrapolation_patch_disp_x]
     type = NodalPatchRecoveryVariable
     patch_polynomial_order = FIRST
-    use_specific_elements = true
-    var = 'disp_x'
+    variable = 'disp_x'
     execute_on = 'TIMESTEP_BEGIN'
   []
   [extrapolation_patch_disp_y]
     type = NodalPatchRecoveryVariable
     patch_polynomial_order = FIRST
-    use_specific_elements = true
-    var = 'disp_y'
+    variable = 'disp_y'
     execute_on = 'TIMESTEP_BEGIN'
   []
 []
