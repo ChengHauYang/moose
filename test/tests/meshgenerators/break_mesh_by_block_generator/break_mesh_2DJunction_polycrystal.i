@@ -1,5 +1,6 @@
 [Problem]
   solve = false
+  boundary_restricted_node_integrity_check = false
 []
 
 [Mesh]

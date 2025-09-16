@@ -78,8 +78,8 @@ std::unique_ptr<MeshBase>
 BreakMeshByBlockGenerator::generate()
 {
   std::unique_ptr<MeshBase> mesh = std::move(_input);
-  if (!mesh->is_replicated())
-    mooseError("BreakMeshByBlockGenerator is not implemented for distributed meshes");
+  // if (!mesh->is_replicated())
+  //   mooseError("BreakMeshByBlockGenerator is not implemented for distributed meshes");
 
   // Try to trick the rest of the world into thinking we're prepared
   mesh->prepare_for_use();
@@ -219,6 +219,7 @@ BreakMeshByBlockGenerator::generate()
                 if (should_create_new_node)
                 {
                   // add new node
+                  // TODO: mesh->n_nodes() will not work in parallel for distributed mesh
                   new_node = Node::build(*current_node, mesh->n_nodes()).release();
 
                   // We're duplicating nodes so that each subdomain elem has its own copy, so it
@@ -226,9 +227,17 @@ BreakMeshByBlockGenerator::generate()
                   // subdomain elem
                   new_node->processor_id() = current_elem->processor_id();
                   mesh->add_node(new_node);
-                  current_elem->set_node(node_id, new_node);
+                  current_elem->set_node(node_id, new_node); // override the original node with
+                                                             // the new one, remember that node_id
+                                                             // is local to the current element
                   // Add boundary info to the new node
+                  // First figure out the old node belong to which boundary ids
+                  // For example, if node is belong to bottom (ID = 3) and left (ID = 5) boundary,
+                  // then node_boundary_ids = {3, 5}
                   boundary_info.boundary_ids(current_node, node_boundary_ids);
+                  // Then add the new node to the same boundary ids
+                  // Add new_node to the nodeset (node boundary) data structure, ensuring no
+                  // duplicates, validity, and bidirectional lookup.
                   boundary_info.add_node(new_node, node_boundary_ids);
                 }
 
@@ -238,6 +247,8 @@ BreakMeshByBlockGenerator::generate()
                        // loop
               }
 
+            // now we need to assign the newly added node to "other connected elements" with the
+            // "same block_id"
             if (should_create_new_node)
             {
               for (auto connected_elem_id : connected_elems)
@@ -262,8 +273,13 @@ BreakMeshByBlockGenerator::generate()
           }
         }
 
-        // create blocks pair and assign element side to new interface boundary map
-        for (auto elem_id : connected_elems)
+        // Create block pairs and assign element sides to the new interface boundary map.
+        // Purpose: Identify sides between elements that were just split at nodes and are truly
+        // adjacent but belong to different blocks. These sides are "recorded" in
+        // "_new_boundary_sides_map", which will later be used to generate new interface boundaries.
+        for (auto elem_id :
+             connected_elems) // connected_elems: all elements connected to the same old node
+                              // (elements from different blocks are included).
         {
           for (auto connected_elem_id : connected_elems)
           {
@@ -275,7 +291,9 @@ BreakMeshByBlockGenerator::generate()
 
             if (current_elem != connected_elem && curr_elem_subid < connected_elem_subid)
             {
-              if (current_elem->has_neighbor(connected_elem))
+              if (current_elem->has_neighbor(
+                      connected_elem)) // Only consider elements that are "actually adjacent" in the
+                                       // mesh (share an edge/face)
               {
                 dof_id_type elem_id = current_elem->id();
                 dof_id_type connected_elem_id = connected_elem->id();
@@ -284,6 +302,12 @@ BreakMeshByBlockGenerator::generate()
                     connected_elem->which_neighbor_am_i(current_elem);
 
                 // in this case we need to play a game to reorder the sides
+                // When block_pairs or surrounding_blocks restrictions are used, only real block IDs
+                // (not invalid_subdomain_id) should be put into the pair.
+                // Here, (curr_elem_subid, connected_elem_subid) are reordered to ensure
+                // first < second and both are valid block IDs.
+                // Also, subid, elem_id and side are swapped accordingly to keep the mapping
+                // direction consistent.
                 if (_block_pairs_restricted || _surrounding_blocks_restricted)
                 {
                   connected_elem_subid = connected_elem->subdomain_id();
@@ -300,29 +324,62 @@ BreakMeshByBlockGenerator::generate()
                   }
                 }
 
+                // blocks_pair: forward (low ID, high ID).
+                // blocks_pair2: reverse. If `_add_interface_on_two_sides` is enabled, the
+                // element/side on the reverse pair will also be stored, ensuring both sides are
+                // marked as boundary.
                 std::pair<subdomain_id_type, subdomain_id_type> blocks_pair =
                     std::make_pair(curr_elem_subid, connected_elem_subid);
 
                 std::pair<subdomain_id_type, subdomain_id_type> blocks_pair2 =
                     std::make_pair(connected_elem_subid, curr_elem_subid);
 
+                // _new_boundary_sides_map is a map from block pairs to a set of element sides,
+                // i.e., (block1, block2) -> { (elem_id, side_id), ... }
+                // That is: which element sides are located between block1 and block2.
+                // The addInterfaceBoundary() function will later convert this entire map into
+                // actual BoundaryInfo.
+                // Example: _new_boundary_sides_map = {
+                //    (3,7) : { {12,1}, {15,2}, {20,0}, ... },   // all sides between block 3 and
+                //    block 7 (7,3) : { {25,3}, ... },                  // if double-sided, reverse
+                //    direction (4,invalid) : { ... }                     // interface between
+                //    restricted and unrestricted blocks
+                // }
+
+                auto add_boundary_sides =
+                    [&](const std::pair<subdomain_id_type, subdomain_id_type> & pair1,
+                        const std::pair<subdomain_id_type, subdomain_id_type> & pair2,
+                        dof_id_type id1,
+                        unsigned int side1,
+                        dof_id_type id2,
+                        unsigned int side2)
+                {
+                  _new_boundary_sides_map[pair1].insert(std::make_pair(id1, side1));
+                  if (_add_interface_on_two_sides)
+                    _new_boundary_sides_map[pair2].insert(std::make_pair(id2, side2));
+                };
+
                 if (_block_pairs_restricted)
                 {
                   if (findBlockPairs(blockRestrictedElementSubdomainID(current_elem),
                                      blockRestrictedElementSubdomainID(connected_elem)))
                   {
-                    _new_boundary_sides_map[blocks_pair].insert(std::make_pair(elem_id, side));
-                    if (_add_interface_on_two_sides)
-                      _new_boundary_sides_map[blocks_pair2].insert(
-                          std::make_pair(connected_elem_id, connected_elem_side));
+                    add_boundary_sides(blocks_pair,
+                                       blocks_pair2,
+                                       elem_id,
+                                       side,
+                                       connected_elem_id,
+                                       connected_elem_side);
                   }
                 }
                 else
                 {
-                  _new_boundary_sides_map[blocks_pair].insert(std::make_pair(elem_id, side));
-                  if (_add_interface_on_two_sides)
-                    _new_boundary_sides_map[blocks_pair2].insert(
-                        std::make_pair(connected_elem_id, connected_elem_side));
+                  add_boundary_sides(blocks_pair,
+                                     blocks_pair2,
+                                     elem_id,
+                                     side,
+                                     connected_elem_id,
+                                     connected_elem_side);
                 }
               }
             }
@@ -330,8 +387,8 @@ BreakMeshByBlockGenerator::generate()
         }
 
       } // end multiplicity check
-    } // end loop over nodes
-  } // end nodeptr check
+    } // end nodeptr check
+  } // end loop over nodes
 
   addInterfaceBoundary(*mesh);
   Partitioner::set_node_processor_ids(*mesh);
@@ -352,21 +409,23 @@ BreakMeshByBlockGenerator::addInterfaceBoundary(MeshBase & mesh)
   // loop over boundary sides
   for (auto & boundary_side_map : _new_boundary_sides_map)
   {
+    // Decide which boundary name / id to use for this blocks_pair
     if (!(_block_pairs_restricted || _surrounding_blocks_restricted) ||
+        // No block restrictions, or restrictions exist but transition interface is NOT requested
         ((_block_pairs_restricted || _surrounding_blocks_restricted) && !_add_transition_interface))
     {
-      // find the appropriate boundary name and id
-      // given primary and secondary block ID
-      if (_split_interface)
+      // --- Standard case --------------------------------------------------
+      if (_split_interface) // Split each block pair into a separate interface name
         findBoundaryNameAndInd(mesh,
-                               boundary_side_map.first.first,
-                               boundary_side_map.first.second,
+                               boundary_side_map.first.first,  // block A
+                               boundary_side_map.first.second, // block B
                                boundary_name,
                                boundary_id,
                                boundary_info);
-      else
+      else // All block pairs share the same interface name
       {
-        boundary_name = _interface_name;
+        boundary_name = _interface_name; // Usually "interface"
+        // If not yet assigned, find a free boundary id
         boundary_id_interface = boundary_id_interface == Moose::INVALID_BOUNDARY_ID
                                     ? findFreeBoundaryId(mesh)
                                     : boundary_id_interface;
@@ -374,16 +433,16 @@ BreakMeshByBlockGenerator::addInterfaceBoundary(MeshBase & mesh)
         boundary_info.sideset_name(boundary_id_interface) = boundary_name;
       }
     }
-    else // block resticted with transition boundary
+    else // --- Block restrictions exist and transition interface is requested ------------------
     {
-
-      const bool interior_boundary =
-          _block_set.find(boundary_side_map.first.first) != _block_set.end() &&
-          _block_set.find(boundary_side_map.first.second) != _block_set.end();
+      // Both blocks in _block_set -> interior; only one in set -> exterior (transition)
+      const bool interior_boundary = _block_set.count(boundary_side_map.first.first) &&
+                                     _block_set.count(boundary_side_map.first.second);
 
       if ((_split_interface && interior_boundary) ||
           (_split_transition_interface && !interior_boundary))
       {
+        // Assign a unique name for this block pair (could be interior or transition)
         findBoundaryNameAndInd(mesh,
                                boundary_side_map.first.first,
                                boundary_side_map.first.second,
@@ -391,7 +450,7 @@ BreakMeshByBlockGenerator::addInterfaceBoundary(MeshBase & mesh)
                                boundary_id,
                                boundary_info);
       }
-      else if (interior_boundary)
+      else if (interior_boundary) // Interior, not splitting: use _interface_name for all
       {
         boundary_name = _interface_name;
         boundary_id_interface = boundary_id_interface == Moose::INVALID_BOUNDARY_ID
@@ -401,22 +460,33 @@ BreakMeshByBlockGenerator::addInterfaceBoundary(MeshBase & mesh)
         boundary_id = boundary_id_interface;
         boundary_info.sideset_name(boundary_id_interface) = boundary_name;
       }
-      else
+      else // Exterior (transition): use transition interface name/id
       {
         boundary_id_interface_transition =
             boundary_id_interface_transition == Moose::INVALID_BOUNDARY_ID
                 ? findFreeBoundaryId(mesh)
                 : boundary_id_interface_transition;
         boundary_id = boundary_id_interface_transition;
-        boundary_info.sideset_name(boundary_id) = _interface_transition_name;
+        boundary_info.sideset_name(boundary_id) =
+            _interface_transition_name; // Default is "interface_transition"
       }
     }
+
     // loop over all the side belonging to each pair and add it to the proper interface
-    for (auto & element_side : boundary_side_map.second)
-      boundary_info.add_side(element_side.first, element_side.second, boundary_id);
+    for (auto & element_side : boundary_side_map.second /*(element ID, side ID)*/)
+      boundary_info.add_side(
+          element_side.first /*element ID*/, element_side.second /*side ID*/, boundary_id);
   }
 }
 
+// Return rules:
+//   (1) If no block restrictions are active, just give back elem->subdomain_id().
+//   (2) If restrictions are active:
+//       - If the element’s block is in the allowed set, return its real subdomain_id.
+//       - Otherwise, return Elem::invalid_subdomain_id.
+//
+// Effect: All "unlisted" blocks collapse into one dummy block so we don’t
+//         duplicate nodes or build interfaces in regions we’re not interested in.
 subdomain_id_type
 BreakMeshByBlockGenerator::blockRestrictedElementSubdomainID(const Elem * elem)
 {
@@ -431,6 +501,8 @@ BreakMeshByBlockGenerator::blockRestrictedElementSubdomainID(const Elem * elem)
 bool
 BreakMeshByBlockGenerator::findBlockPairs(subdomain_id_type block_one, subdomain_id_type block_two)
 {
+  // Using set<pair> to store _block_pairs ensures first < second, so lookup works regardless of
+  // order.
   for (auto block_pair : _block_pairs)
     if ((block_pair.first == block_one && block_pair.second == block_two) ||
         (block_pair.first == block_two && block_pair.second == block_one))

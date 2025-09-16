@@ -1,0 +1,318 @@
+Node 0 is connected to elements: 0 2 43 255 273 
+Node 1 is connected to elements: 0 254 255 
+Node 2 is connected to elements: 0 1 2 
+Node 3 is connected to elements: 1 2 5 43 61 63 
+Node 4 is connected to elements: 1 5 13 15 
+Node 5 is connected to elements: 3 21 23 332 333 337 360 
+Node 6 is connected to elements: 3 16 23 
+Node 7 is connected to elements: 3 330 337 
+Node 8 is connected to elements: 4 10 28 32 39 41 
+Node 9 is connected to elements: 4 6 7 10 27 40 
+Node 10 is connected to elements: 4 6 24 25 26 28 35 
+Node 11 is connected to elements: 5 13 17 63 65 66 
+Node 12 is connected to elements: 6 26 40 89 94 
+Node 13 is connected to elements: 7 14 20 27 36 37 
+Node 14 is connected to elements: 7 8 10 20 30 41 
+Node 15 is connected to elements: 8 12 38 39 41 
+Node 16 is connected to elements: 8 12 16 21 23 30 33 
+Node 17 is connected to elements: 9 11 14 34 37 
+Node 18 is connected to elements: 9 11 60 62 336 338 
+Node 19 is connected to elements: 9 36 37 62 96 97 
+Node 20 is connected to elements: 11 29 34 338 350 353 361 364 
+Node 21 is connected to elements: 12 16 38 
+Node 22 is connected to elements: 13 15 17 18 19 
+Node 23 is connected to elements: 14 20 29 30 33 34 
+Node 24 is connected to elements: 15 19 31 
+Node 25 is connected to elements: 17 18 22 65 73 74 99 
+Node 26 is connected to elements: 18 19 22 24 25 31 
+Node 27 is connected to elements: 21 29 33 360 364 
+Node 28 is connected to elements: 22 24 26 74 88 89 
+Node 29 is connected to elements: 25 31 35 
+Node 30 is connected to elements: 27 36 40 92 94 96 
+Node 31 is connected to elements: 28 32 35 
+Node 32 is connected to elements: 32 38 39 
+Node 33 is connected to elements: 42 57 58 59 78 
+Node 34 is connected to elements: 42 44 77 78 85 93 
+Node 35 is connected to elements: 42 44 57 81 100 108 109 
+Node 36 is connected to elements: 43 61 64 273 292 305 309 
+Node 37 is connected to elements: 44 50 81 85 86 87 102 
+Node 38 is connected to elements: 45 47 60 103 336 352 358 365 
+Node 39 is connected to elements: 45 47 54 55 56 69 104 
+Node 40 is connected to elements: 45 86 102 103 104 
+Node 41 is connected to elements: 46 51 76 79 101 
+Node 42 is connected to elements: 46 51 52 72 82 98 
+Node 43 is connected to elements: 46 71 72 79 91 107 
+Node 44 is connected to elements: 47 56 334 352 355 
+Node 45 is connected to elements: 48 49 70 84 106 
+Node 46 is connected to elements: 48 53 77 84 85 87 
+Node 47 is connected to elements: 48 53 70 105 463 464 482 484 
+Node 48 is connected to elements: 49 83 90 91 106 107 
+Node 49 is connected to elements: 49 50 83 84 87 95 
+Node 50 is connected to elements: 50 60 62 95 97 102 103 
+Node 51 is connected to elements: 51 52 101 265 266 475 
+Node 52 is connected to elements: 52 75 80 82 266 297 300 
+Node 53 is connected to elements: 53 77 93 464 471 
+Node 54 is connected to elements: 54 55 68 195 207 213 
+Node 55 is connected to elements: 54 68 69 108 109 
+Node 56 is connected to elements: 55 56 213 233 323 331 334 
+Node 57 is connected to elements: 57 59 100 222 223 238 
+Node 58 is connected to elements: 58 59 193 222 481 483 
+Node 59 is connected to elements: 58 78 93 467 471 483 
+Node 60 is connected to elements: 61 63 64 66 67 
+Node 61 is connected to elements: 64 67 75 297 308 309 
+Node 62 is connected to elements: 65 66 67 75 80 99 
+Node 63 is connected to elements: 68 100 108 185 207 223 
+Node 64 is connected to elements: 69 81 86 104 109 
+Node 65 is connected to elements: 70 76 79 105 106 107 
+Node 66 is connected to elements: 71 72 73 74 88 98 
+Node 67 is connected to elements: 71 88 89 90 91 92 94 
+Node 68 is connected to elements: 73 80 82 98 99 
+Node 69 is connected to elements: 76 101 105 475 480 484 
+Node 70 is connected to elements: 83 90 92 95 96 97 
+Node 71 is connected to elements: 110 122 124 128 138 144 153 
+Node 72 is connected to elements: 110 124 130 
+Node 73 is connected to elements: 110 142 144 
+Node 74 is connected to elements: 111 112 117 127 133 
+Node 75 is connected to elements: 111 122 124 126 130 133 
+Node 76 is connected to elements: 111 112 113 114 115 116 126 
+Node 77 is connected to elements: 112 113 117 120 125 131 132 
+Node 78 is connected to elements: 113 116 118 121 129 132 
+Node 79 is connected to elements: 114 115 123 206 234 246 
+Node 80 is connected to elements: 114 116 129 184 209 246 
+Node 81 is connected to elements: 115 122 123 126 128 
+Node 82 is connected to elements: 117 120 127 
+Node 83 is connected to elements: 118 119 129 191 209 229 
+Node 84 is connected to elements: 118 119 121 
+Node 85 is connected to elements: 119 219 229 
+Node 86 is connected to elements: 120 125 
+Node 87 is connected to elements: 121 131 132 
+Node 88 is connected to elements: 123 128 151 153 204 206 
+Node 89 is connected to elements: 125 131 
+Node 90 is connected to elements: 127 130 133 
+Node 91 is connected to elements: 134 140 141 170 173 180 
+Node 92 is connected to elements: 134 135 157 158 170 172 
+Node 93 is connected to elements: 134 135 149 150 177 180 
+Node 94 is connected to elements: 135 172 177 401 404 413 
+Node 95 is connected to elements: 136 145 148 160 161 
+Node 96 is connected to elements: 136 149 160 173 176 180 
+Node 97 is connected to elements: 136 145 149 150 477 478 488 
+Node 98 is connected to elements: 137 139 146 168 171 
+Node 99 is connected to elements: 137 138 139 151 153 164 178 
+Node 100 is connected to elements: 137 164 165 166 167 168 169 174 
+Node 101 is connected to elements: 138 142 144 164 165 
+Node 102 is connected to elements: 139 143 146 162 163 178 
+Node 103 is connected to elements: 140 141 167 168 171 179 
+Node 104 is connected to elements: 140 143 146 171 173 176 
+Node 105 is connected to elements: 141 152 157 170 179 
+Node 106 is connected to elements: 142 165 166 
+Node 107 is connected to elements: 143 160 161 162 175 176 
+Node 108 is connected to elements: 145 148 198 202 488 494 
+Node 109 is connected to elements: 147 402 405 
+Node 110 is connected to elements: 147 154 156 384 385 405 411 
+Node 111 is connected to elements: 147 156 159 
+Node 112 is connected to elements: 148 161 175 189 202 226 
+Node 113 is connected to elements: 150 177 398 401 474 478 
+Node 114 is connected to elements: 151 163 178 200 204 
+Node 115 is connected to elements: 152 155 167 169 179 181 
+Node 116 is connected to elements: 152 154 155 156 157 158 159 
+Node 117 is connected to elements: 154 158 172 409 411 413 
+Node 118 is connected to elements: 155 159 181 
+Node 119 is connected to elements: 162 163 175 199 200 226 227 
+Node 120 is connected to elements: 166 174 
+Node 121 is connected to elements: 169 174 181 
+Node 122 is connected to elements: 182 184 231 232 234 246 
+Node 123 is connected to elements: 182 186 215 232 
+Node 124 is connected to elements: 182 184 191 209 211 215 
+Node 125 is connected to elements: 183 201 205 214 236 
+Node 126 is connected to elements: 183 185 223 236 238 239 
+Node 127 is connected to elements: 183 185 195 201 203 207 235 
+Node 128 is connected to elements: 186 187 196 228 231 232 
+Node 129 is connected to elements: 186 187 211 215 241 244 247 
+Node 130 is connected to elements: 187 196 197 205 214 247 
+Node 131 is connected to elements: 188 190 192 193 222 238 239 
+Node 132 is connected to elements: 188 197 214 236 239 245 
+Node 133 is connected to elements: 188 189 190 226 227 245 
+Node 134 is connected to elements: 189 190 192 198 202 
+Node 135 is connected to elements: 191 211 217 219 229 241 242 
+Node 136 is connected to elements: 192 193 198 479 481 494 
+Node 137 is connected to elements: 194 210 221 224 240 243 
+Node 138 is connected to elements: 194 203 225 230 235 240 
+Node 139 is connected to elements: 194 195 203 210 213 233 
+Node 140 is connected to elements: 196 197 199 227 228 245 
+Node 141 is connected to elements: 199 200 204 206 228 231 234 
+Node 142 is connected to elements: 201 205 230 235 244 247 
+Node 143 is connected to elements: 208 212 221 224 237 
+Node 144 is connected to elements: 208 224 243 322 343 
+Node 145 is connected to elements: 208 212 321 322 
+Node 146 is connected to elements: 210 233 243 331 343 359 
+Node 147 is connected to elements: 212 218 220 237 
+Node 148 is connected to elements: 216 217 218 220 242 
+Node 149 is connected to elements: 216 225 230 241 242 244 
+Node 150 is connected to elements: 216 218 221 225 237 240 
+Node 151 is connected to elements: 217 219 220 
+Node 152 is connected to elements: 248 282 283 306 310 
+Node 153 is connected to elements: 248 279 280 283 284 285 287 
+Node 154 is connected to elements: 248 282 284 297 300 308 
+Node 155 is connected to elements: 249 267 295 298 449 450 
+Node 156 is connected to elements: 249 264 267 269 288 301 
+Node 157 is connected to elements: 249 264 279 280 294 295 
+Node 158 is connected to elements: 250 251 313 315 317 
+Node 159 is connected to elements: 250 260 262 311 313 314 318 
+Node 160 is connected to elements: 250 251 252 261 311 316 
+Node 161 is connected to elements: 251 272 306 307 310 316 317 
+Node 162 is connected to elements: 252 271 276 281 311 318 
+Node 163 is connected to elements: 252 261 281 290 312 
+Node 164 is connected to elements: 253 274 275 277 278 289 
+Node 165 is connected to elements: 253 258 289 
+Node 166 is connected to elements: 253 256 257 258 274 
+Node 167 is connected to elements: 254 255 268 273 292 296 
+Node 168 is connected to elements: 254 259 296 
+Node 169 is connected to elements: 256 258 
+Node 170 is connected to elements: 256 257 259 
+Node 171 is connected to elements: 257 259 268 270 274 277 296 
+Node 172 is connected to elements: 260 271 318 396 400 407 
+Node 173 is connected to elements: 260 262 400 403 466 490 
+Node 174 is connected to elements: 261 263 290 291 307 316 
+Node 175 is connected to elements: 262 314 472 487 490 
+Node 176 is connected to elements: 263 280 283 294 307 310 
+Node 177 is connected to elements: 263 291 293 294 295 298 
+Node 178 is connected to elements: 264 279 285 286 288 
+Node 179 is connected to elements: 265 266 272 282 300 306 
+Node 180 is connected to elements: 265 272 315 317 475 476 480 
+Node 181 is connected to elements: 267 269 449 
+Node 182 is connected to elements: 268 270 292 303 304 305 
+Node 183 is connected to elements: 269 301 302 
+Node 184 is connected to elements: 270 275 277 299 303 
+Node 185 is connected to elements: 271 276 393 396 458 460 
+Node 186 is connected to elements: 275 278 286 288 299 301 302 
+Node 187 is connected to elements: 276 281 312 448 456 460 
+Node 188 is connected to elements: 278 289 302 
+Node 189 is connected to elements: 284 287 304 305 308 309 
+Node 190 is connected to elements: 285 286 287 299 303 304 
+Node 191 is connected to elements: 290 291 293 312 443 456 461 
+Node 192 is connected to elements: 293 298 442 443 450 451 
+Node 193 is connected to elements: 313 314 315 470 472 476 
+Node 194 is connected to elements: 319 320 340 345 354 357 
+Node 195 is connected to elements: 319 325 328 345 353 361 
+Node 196 is connected to elements: 319 320 332 360 361 364 
+Node 197 is connected to elements: 320 332 333 335 340 342 
+Node 198 is connected to elements: 321 344 346 
+Node 199 is connected to elements: 321 322 339 343 344 359 
+Node 200 is connected to elements: 323 329 334 349 351 355 
+Node 201 is connected to elements: 323 331 339 349 359 
+Node 202 is connected to elements: 324 326 330 333 335 337 
+Node 203 is connected to elements: 324 330 
+Node 204 is connected to elements: 324 326 
+Node 205 is connected to elements: 325 327 328 329 341 351 362 
+Node 206 is connected to elements: 325 341 350 353 358 365 
+Node 207 is connected to elements: 326 335 342 
+Node 208 is connected to elements: 327 347 348 362 363 
+Node 209 is connected to elements: 327 329 339 344 346 347 349 
+Node 210 is connected to elements: 328 345 354 356 362 363 
+Node 211 is connected to elements: 336 338 350 358 
+Node 212 is connected to elements: 340 342 357 
+Node 213 is connected to elements: 341 351 352 355 365 
+Node 214 is connected to elements: 346 347 348 
+Node 215 is connected to elements: 348 356 363 
+Node 216 is connected to elements: 354 356 357 
+Node 217 is connected to elements: 366 414 416 419 421 429 
+Node 218 is connected to elements: 366 367 429 437 438 
+Node 219 is connected to elements: 366 367 376 379 382 419 
+Node 220 is connected to elements: 367 376 423 438 439 444 445 
+Node 221 is connected to elements: 368 374 375 422 425 434 
+Node 222 is connected to elements: 368 370 371 422 424 436 
+Node 223 is connected to elements: 368 371 374 384 385 432 
+Node 224 is connected to elements: 369 378 393 455 457 458 459 
+Node 225 is connected to elements: 369 393 396 407 430 433 
+Node 226 is connected to elements: 369 378 391 428 430 431 
+Node 227 is connected to elements: 370 392 406 410 415 427 436 
+Node 228 is connected to elements: 370 371 377 390 406 432 
+Node 229 is connected to elements: 372 373 392 424 436 
+Node 230 is connected to elements: 372 422 424 425 426 435 
+Node 231 is connected to elements: 372 373 380 381 394 417 435 
+Node 232 is connected to elements: 373 392 416 417 421 427 
+Node 233 is connected to elements: 374 375 385 402 405 
+Node 234 is connected to elements: 375 402 434 
+Node 235 is connected to elements: 376 382 391 423 431 
+Node 236 is connected to elements: 377 387 399 406 410 412 
+Node 237 is connected to elements: 377 390 399 404 409 413 420 
+Node 238 is connected to elements: 378 423 431 445 457 
+Node 239 is connected to elements: 379 415 419 421 427 
+Node 240 is connected to elements: 379 382 391 410 412 415 428 
+Node 241 is connected to elements: 380 381 386 389 408 
+Node 242 is connected to elements: 380 388 408 414 416 417 
+Node 243 is connected to elements: 381 386 394 
+Node 244 is connected to elements: 383 398 401 404 420 
+Node 245 is connected to elements: 383 387 395 397 399 418 420 
+Node 246 is connected to elements: 383 398 418 474 492 
+Node 247 is connected to elements: 384 390 409 411 432 
+Node 248 is connected to elements: 386 389 
+Node 249 is connected to elements: 387 397 412 428 430 433 
+Node 250 is connected to elements: 388 414 429 437 
+Node 251 is connected to elements: 388 389 408 
+Node 252 is connected to elements: 394 426 435 
+Node 253 is connected to elements: 395 397 400 403 407 433 
+Node 254 is connected to elements: 395 403 418 465 466 491 492 
+Node 255 is connected to elements: 425 426 434 
+Node 256 is connected to elements: 437 438 439 
+Node 257 is connected to elements: 439 444 447 
+Node 258 is connected to elements: 440 446 453 454 455 459 
+Node 259 is connected to elements: 440 441 446 448 456 461 462 
+Node 260 is connected to elements: 440 448 458 459 460 
+Node 261 is connected to elements: 441 446 454 
+Node 262 is connected to elements: 441 452 462 
+Node 263 is connected to elements: 442 451 452 
+Node 264 is connected to elements: 442 443 452 461 462 
+Node 265 is connected to elements: 444 445 447 453 455 457 
+Node 266 is connected to elements: 447 453 454 
+Node 267 is connected to elements: 449 450 451 
+Node 268 is connected to elements: 463 470 472 482 485 487 493 
+Node 269 is connected to elements: 463 464 467 468 469 471 493 
+Node 270 is connected to elements: 465 473 486 489 491 
+Node 271 is connected to elements: 465 466 485 486 487 490 
+Node 272 is connected to elements: 467 468 479 481 483 495 
+Node 273 is connected to elements: 468 469 473 489 495 496 
+Node 274 is connected to elements: 469 485 486 489 493 
+Node 275 is connected to elements: 470 476 480 482 484 
+Node 276 is connected to elements: 473 474 477 478 491 492 496 
+Node 277 is connected to elements: 477 479 488 494 495 496 
+Framework Information:
+MOOSE Version:           git commit 28e0f68b09 on 2025-09-15
+LibMesh Version:         
+PETSc Version:           3.23.4
+SLEPc Version:           3.23.2
+Current Time:            Tue Sep 16 15:45:15 2025
+Executable Timestamp:    Tue Sep 16 15:44:09 2025
+
+Input File(s):
+  /Users/chenghau.yang/Documents/Package/moose-czm/test/tests/meshgenerators/break_mesh_by_block_generator/break_mesh_2DJunction_polycrystal.i
+
+Checkpoint:
+  Wall Time Interval:      Every 3600 s
+  User Checkpoint:         Disabled
+  # Checkpoints Kept:      2
+  Execute On:              TIMESTEP_END 
+
+Parallelism:
+  Num Processors:          1
+  Num Threads:             1
+
+Mesh: 
+  Parallel Type:           replicated
+  Mesh Dimension:          2
+  Spatial Dimension:       2
+  Nodes:                   356
+  Elems:                   497
+  Num Subdomains:          10
+
+Nonlinear System:
+  Num DOFs:                356
+  Num Local DOFs:          356
+  Variables:               "diffused" 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Execution Information:
+  Executioner:             Steady
+  Solver Mode:             Preconditioned JFNK 
+[32m Solve Skipped![39m
