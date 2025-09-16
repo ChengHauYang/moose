@@ -1,17 +1,32 @@
+[Problem]
+  solve = false
+[]
+
 [Mesh]
-  [./fmg]
+  [fmg]
     type = FileMeshGenerator
     file = poly.msh
     #parallel_type = replicated
   []
 
-  [./breakmesh]
+  [breakmesh]
     type = BreakMeshByBlockGenerator
     input = fmg
-    split_interface = true
+    add_interface_on_two_sides = true
   []
 []
 
 [Outputs]
   exodus = true
 []
+
+[Variables]
+  [diffused]
+    order = FIRST
+  []
+[]
+
+[Executioner]
+  type = Steady
+[]
+
