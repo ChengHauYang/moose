@@ -18,6 +18,76 @@
 
 registerMooseObject("MooseApp", BreakMeshByBlockGenerator);
 
+#include <iostream>
+#include <set>
+#include <vector>
+#include <map>
+#include <algorithm>
+
+// Compare two node-to-element maps and print differences
+void
+compareNodeToElemMaps(const std::map<dof_id_type, std::vector<dof_id_type>> & mapA,
+                      const std::map<dof_id_type, std::vector<dof_id_type>> & mapB)
+{
+  // Check all nodes in mapA
+  for (const auto & pairA : mapA)
+  {
+    dof_id_type node_id = pairA.first;
+    const auto & elemsA = pairA.second;
+
+    auto itB = mapB.find(node_id);
+    if (itB == mapB.end())
+    {
+      std::cout << "Node " << node_id << " only exists in mapA\n";
+      continue;
+    }
+
+    const auto & elemsB = itB->second;
+
+    // Convert to sets for comparison
+    std::set<dof_id_type> setA(elemsA.begin(), elemsA.end());
+    std::set<dof_id_type> setB(elemsB.begin(), elemsB.end());
+
+    std::vector<dof_id_type> diffAB, diffBA;
+
+    std::set_difference(
+        setA.begin(), setA.end(), setB.begin(), setB.end(), std::back_inserter(diffAB));
+
+    std::set_difference(
+        setB.begin(), setB.end(), setA.begin(), setA.end(), std::back_inserter(diffBA));
+
+    if (!diffAB.empty() || !diffBA.empty())
+    {
+      std::cout << "Node " << node_id << " differs:\n";
+
+      if (!diffAB.empty())
+      {
+        std::cout << "  Elements only in mapA: ";
+        for (auto e : diffAB)
+          std::cout << e << " ";
+        std::cout << "\n";
+      }
+
+      if (!diffBA.empty())
+      {
+        std::cout << "  Elements only in mapB: ";
+        for (auto e : diffBA)
+          std::cout << e << " ";
+        std::cout << "\n";
+      }
+    }
+  }
+
+  // Check if mapB has nodes not in mapA
+  for (const auto & pairB : mapB)
+  {
+    if (mapA.find(pairB.first) == mapA.end())
+    {
+      std::cout << "Node " << pairB.first << " only exists in mapB\n";
+    }
+  }
+}
+
 InputParameters
 BreakMeshByBlockGenerator::validParams()
 {
@@ -136,262 +206,355 @@ BreakMeshByBlockGenerator::generate()
     for (unsigned int n = 0; n < elem->n_nodes(); n++)
       node_to_elem_map[elem->node_id(n)].push_back(elem->id());
 
+  // for (const auto & pair : node_to_elem_map)
+  // {
+  //   dof_id_type node_id = pair.first;
+  //   const auto & elements = pair.second;
+
+  //   _console << "Node " << node_id << " is connected to elements: ";
+  //   for (auto elem_id : elements)
+  //     _console << elem_id << " ";
+  //   _console << std::endl;
+  // }
+
+  unsigned int local_new_nodes = 0;
+  std::map<std::pair<dof_id_type, dof_id_type>, dof_id_type> new_nodes_order_in_current_proc;
+  dof_id_type i = 0;
   for (auto node_it = node_to_elem_map.begin(); node_it != node_to_elem_map.end(); ++node_it)
   {
     const dof_id_type current_node_id = node_it->first;
     const Node * current_node = mesh->node_ptr(current_node_id);
 
-    if (current_node != nullptr)
+    if (!current_node)
+      continue;
+
+    // First pass: Estimate the number of new nodes that will be added by each processor
+    std::set<subdomain_id_type> connected_blocks;
+    for (auto elem_id : node_it->second)
     {
-      // find node multiplicity
-      std::set<subdomain_id_type> connected_blocks;
-      for (auto elem_id = node_it->second.begin(); elem_id != node_it->second.end(); elem_id++)
+      const Elem * current_elem = mesh->elem_ptr(elem_id);
+      subdomain_id_type block_id = blockRestrictedElementSubdomainID(current_elem);
+      if (!_block_pairs_restricted || block_id != Elem::invalid_subdomain_id)
       {
-        const Elem * current_elem = mesh->elem_ptr(*elem_id);
-        subdomain_id_type block_id = blockRestrictedElementSubdomainID(current_elem);
-        if (!_block_pairs_restricted)
+        connected_blocks.insert(block_id);
+        new_nodes_order_in_current_proc[std::make_pair(current_node_id, elem_id)] = i;
+        i++;
+      }
+    }
+
+    unsigned int mult = connected_blocks.size();
+    local_new_nodes += mult;
+  }
+
+  {
+    auto & out = _console;
+    out << "==== Rank " << mesh->processor_id() << " new_nodes_order_in_current_proc ====\n";
+    for (const auto & pr : new_nodes_order_in_current_proc)
+    {
+      const auto & key = pr.first; // (node_id , elem_id)
+      out << "   old_node " << key.first << " , elem " << key.second << " -> order " << pr.second
+          << '\n';
+    }
+    out << std::flush;
+  }
+
+  dof_id_type proc_first_new_id = 0;
+
+  if (!mesh->is_replicated())
+  {
+    // Distributed: use prefix sum to allocate non-overlapping id ranges
+    std::vector<unsigned int> counts(mesh->comm().size());
+    mesh->comm().allgather(local_new_nodes, counts);
+
+    unsigned int offset = 0;
+    for (unsigned int p = 0; p < mesh->processor_id(); ++p)
+      offset += counts[p];
+
+    dof_id_type max_id = mesh->max_node_id();
+    mesh->comm().max(max_id);
+
+    const auto global_start_id = max_id + 1;
+    proc_first_new_id = global_start_id + offset;
+  }
+
+  _console << "proc_first_new_id = " << proc_first_new_id << std::endl;
+  for (auto node_it = node_to_elem_map.begin(); node_it != node_to_elem_map.end(); ++node_it)
+  {
+    const dof_id_type current_node_id = node_it->first;
+    const Node * current_node = mesh->node_ptr(current_node_id);
+
+    if (!current_node)
+      continue;
+
+    unsigned int current_new_node_added = 0;
+    // find node multiplicity
+    std::set<subdomain_id_type> connected_blocks;
+    for (auto elem_id = node_it->second.begin(); elem_id != node_it->second.end(); elem_id++)
+    {
+      const Elem * current_elem = mesh->elem_ptr(*elem_id);
+
+      subdomain_id_type block_id = blockRestrictedElementSubdomainID(current_elem);
+      if (!_block_pairs_restricted)
+        connected_blocks.insert(block_id);
+      else
+      {
+        if (block_id != Elem::invalid_subdomain_id)
           connected_blocks.insert(block_id);
-        else
+      }
+    }
+
+    unsigned int node_multiplicity = connected_blocks.size();
+
+    // check if current_node need to be duplicated
+    if (node_multiplicity > 1)
+    {
+      // retrieve connected elements from the map
+      const std::vector<dof_id_type> & connected_elems = node_it->second;
+
+      // find reference_subdomain_id (e.g. the subdomain with lower id or the
+      // Elem::invalid_subdomain_id)
+      auto subdomain_it = connected_blocks.begin();
+      subdomain_id_type reference_subdomain_id =
+          connected_blocks.find(Elem::invalid_subdomain_id) != connected_blocks.end()
+              ? Elem::invalid_subdomain_id
+              : *subdomain_it;
+
+      // For the block_pairs option, the node that is only shared by specific block pairs will
+      // be newly created.
+      bool should_create_new_node = true;
+      if (_block_pairs_restricted)
+      {
+        auto elems = node_to_elem_map[current_node->id()];
+        should_create_new_node = false;
+        std::set<subdomain_id_type> sets_blocks_for_this_node;
+        for (auto elem_id = elems.begin(); elem_id != elems.end(); elem_id++)
+          sets_blocks_for_this_node.insert(
+              blockRestrictedElementSubdomainID(mesh->elem_ptr(*elem_id)));
+        if (sets_blocks_for_this_node.size() == 2)
         {
-          if (block_id != Elem::invalid_subdomain_id)
-            connected_blocks.insert(block_id);
+          auto setIt = sets_blocks_for_this_node.begin();
+          if (findBlockPairs(*setIt, *std::next(setIt, 1)))
+            should_create_new_node = true;
         }
       }
 
-      unsigned int node_multiplicity = connected_blocks.size();
-
-      // check if current_node need to be duplicated
-      if (node_multiplicity > 1)
+      // multiplicity counter to keep track of how many nodes we added
+      unsigned int multiplicity_counter = node_multiplicity;
+      for (auto elem_id : connected_elems)
       {
-        // retrieve connected elements from the map
-        const std::vector<dof_id_type> & connected_elems = node_it->second;
+        // all the duplicate nodes are added and assigned
+        if (multiplicity_counter == 0)
+          break;
 
-        // find reference_subdomain_id (e.g. the subdomain with lower id or the
-        // Elem::invalid_subdomain_id)
-        auto subdomain_it = connected_blocks.begin();
-        subdomain_id_type reference_subdomain_id =
-            connected_blocks.find(Elem::invalid_subdomain_id) != connected_blocks.end()
-                ? Elem::invalid_subdomain_id
-                : *subdomain_it;
+        Elem * current_elem = mesh->elem_ptr(elem_id);
+        subdomain_id_type block_id = blockRestrictedElementSubdomainID(current_elem);
 
-        // For the block_pairs option, the node that is only shared by specific block pairs will be
-        // newly created.
-        bool should_create_new_node = true;
-        if (_block_pairs_restricted)
+        if ((blockRestrictedElementSubdomainID(current_elem) != reference_subdomain_id) ||
+            (_block_pairs_restricted & findBlockPairs(reference_subdomain_id, block_id)))
         {
-          auto elems = node_to_elem_map[current_node->id()];
-          should_create_new_node = false;
-          std::set<subdomain_id_type> sets_blocks_for_this_node;
-          for (auto elem_id = elems.begin(); elem_id != elems.end(); elem_id++)
-            sets_blocks_for_this_node.insert(
-                blockRestrictedElementSubdomainID(mesh->elem_ptr(*elem_id)));
-          if (sets_blocks_for_this_node.size() == 2)
-          {
-            auto setIt = sets_blocks_for_this_node.begin();
-            if (findBlockPairs(*setIt, *std::next(setIt, 1)))
-              should_create_new_node = true;
-          }
-        }
+          // assign the newly added node to current_elem
+          Node * new_node = nullptr;
 
-        // multiplicity counter to keep track of how many nodes we added
-        unsigned int multiplicity_counter = node_multiplicity;
-        for (auto elem_id : connected_elems)
-        {
-          // all the duplicate nodes are added and assigned
-          if (multiplicity_counter == 0)
-            break;
+          std::vector<boundary_id_type> node_boundary_ids;
 
-          Elem * current_elem = mesh->elem_ptr(elem_id);
-          subdomain_id_type block_id = blockRestrictedElementSubdomainID(current_elem);
-
-          if ((blockRestrictedElementSubdomainID(current_elem) != reference_subdomain_id) ||
-              (_block_pairs_restricted & findBlockPairs(reference_subdomain_id, block_id)))
-          {
-            // assign the newly added node to current_elem
-            Node * new_node = nullptr;
-
-            std::vector<boundary_id_type> node_boundary_ids;
-
-            for (unsigned int node_id = 0; node_id < current_elem->n_nodes(); ++node_id)
-              if (current_elem->node_id(node_id) ==
-                  current_node->id()) // if current node == node on element
+          for (unsigned int node_id = 0; node_id < current_elem->n_nodes(); ++node_id)
+            if (current_elem->node_id(node_id) ==
+                current_node->id()) // if current node == node on element
+            {
+              if (should_create_new_node)
               {
-                if (should_create_new_node)
-                {
-                  // add new node
-                  // TODO: mesh->n_nodes() will not work in parallel for distributed mesh
-                  new_node = Node::build(*current_node, mesh->n_nodes()).release();
 
-                  // We're duplicating nodes so that each subdomain elem has its own copy, so it
-                  // seems natural to assign this new node the same proc id as corresponding
-                  // subdomain elem
-                  new_node->processor_id() = current_elem->processor_id();
-                  mesh->add_node(new_node);
-                  current_elem->set_node(node_id, new_node); // override the original node with
-                                                             // the new one, remember that node_id
-                                                             // is local to the current element
-                  // Add boundary info to the new node
-                  // First figure out the old node belong to which boundary ids
-                  // For example, if node is belong to bottom (ID = 3) and left (ID = 5) boundary,
-                  // then node_boundary_ids = {3, 5}
-                  boundary_info.boundary_ids(current_node, node_boundary_ids);
-                  // Then add the new node to the same boundary ids
-                  // Add new_node to the nodeset (node boundary) data structure, ensuring no
-                  // duplicates, validity, and bidirectional lookup.
-                  boundary_info.add_node(new_node, node_boundary_ids);
-                }
+                _console << "current_new_node_added = " << current_new_node_added << std::endl;
+                _console << "mesh->n_nodes() = " << mesh->n_nodes() << std::endl;
+                // add new node
+                // TODO: mesh->n_nodes() will not work in parallel for distributed mesh
 
-                multiplicity_counter--; // node created, update multiplicity counter
+                const auto new_nodes_order_number_in_current_proc =
+                    new_nodes_order_in_current_proc[std::make_pair(current_node_id, elem_id)];
 
-                break; // ones the proper node has been fixed in one element we can break the
-                       // loop
+                _console << "processor_id = " << mesh->processor_id() << std::endl;
+                _console << "proc_first_new_id + new_nodes_order_number_in_current_proc = "
+                         << proc_first_new_id + new_nodes_order_number_in_current_proc << std::endl;
+                new_node =
+                    Node::build(*current_node,
+                                mesh->is_replicated()
+                                    ? mesh->n_nodes()
+                                    : proc_first_new_id + new_nodes_order_number_in_current_proc)
+                        .release();
+
+                // We're duplicating nodes so that each subdomain elem has its own copy, so it
+                // seems natural to assign this new node the same proc id as corresponding
+                // subdomain elem
+                new_node->processor_id() = current_elem->processor_id();
+                mesh->add_node(new_node);
+                current_elem->set_node(node_id,
+                                       new_node); // override the original node with
+                                                  // the new one, remember that node_id
+                                                  // is local to the current element
+                // Add boundary info to the new node
+                // First figure out the old node belong to which boundary ids
+                // For example, if node is belong to bottom (ID = 3) and left (ID = 5)
+                // boundary, then node_boundary_ids = {3, 5}
+                boundary_info.boundary_ids(current_node, node_boundary_ids);
+                // Then add the new node to the same boundary ids
+                // Add new_node to the nodeset (node boundary) data structure, ensuring no
+                // duplicates, validity, and bidirectional lookup.
+                boundary_info.add_node(new_node, node_boundary_ids);
               }
 
-            // now we need to assign the newly added node to "other connected elements" with the
-            // "same block_id"
-            if (should_create_new_node)
-            {
-              for (auto connected_elem_id : connected_elems)
-              {
-                Elem * connected_elem = mesh->elem_ptr(connected_elem_id);
+              multiplicity_counter--; // node created, update multiplicity counter
+              current_new_node_added++;
 
-                // Assign the newly added node to other connected elements with the same
-                // block_id
-                if (connected_elem->subdomain_id() == current_elem->subdomain_id() &&
-                    connected_elem != current_elem)
-                {
-                  for (unsigned int node_id = 0; node_id < connected_elem->n_nodes(); ++node_id)
-                    if (connected_elem->node_id(node_id) ==
-                        current_node->id()) // if current node == node on element
-                    {
-                      connected_elem->set_node(node_id, new_node);
-                      break;
-                    }
-                }
+              break; // ones the proper node has been fixed in one element we can break the
+                     // loop
+            }
+
+          // now we need to assign the newly added node to "other connected elements" with the
+          // "same block_id"
+          if (should_create_new_node)
+          {
+            for (auto connected_elem_id : connected_elems)
+            {
+              Elem * connected_elem = mesh->elem_ptr(connected_elem_id);
+
+              // Assign the newly added node to other connected elements with the same
+              // block_id
+              if (connected_elem->subdomain_id() == current_elem->subdomain_id() &&
+                  connected_elem != current_elem)
+              {
+                for (unsigned int node_id = 0; node_id < connected_elem->n_nodes(); ++node_id)
+                  if (connected_elem->node_id(node_id) ==
+                      current_node->id()) // if current node == node on element
+                  {
+                    connected_elem->set_node(node_id, new_node);
+                    break;
+                  }
               }
             }
           }
         }
+      }
 
-        // Create block pairs and assign element sides to the new interface boundary map.
-        // Purpose: Identify sides between elements that were just split at nodes and are truly
-        // adjacent but belong to different blocks. These sides are "recorded" in
-        // "_new_boundary_sides_map", which will later be used to generate new interface boundaries.
-        for (auto elem_id :
-             connected_elems) // connected_elems: all elements connected to the same old node
-                              // (elements from different blocks are included).
-        {
-          for (auto connected_elem_id : connected_elems)
-          {
-            Elem * current_elem = mesh->elem_ptr(elem_id);
-            Elem * connected_elem = mesh->elem_ptr(connected_elem_id);
-            subdomain_id_type curr_elem_subid = blockRestrictedElementSubdomainID(current_elem);
-            subdomain_id_type connected_elem_subid =
-                blockRestrictedElementSubdomainID(connected_elem);
+      // // Create block pairs and assign element sides to the new interface boundary map.
+      // // Purpose: Identify sides between elements that were just split at nodes and are truly
+      // // adjacent but belong to different blocks. These sides are "recorded" in
+      // // "_new_boundary_sides_map", which will later be used to generate new interface
+      // // boundaries.
+      // for (auto elem_id :
+      //      connected_elems) // connected_elems: all elements connected to the same old node
+      //                       // (elements from different blocks are included).
+      // {
+      //   for (auto connected_elem_id : connected_elems)
+      //   {
+      //     Elem * current_elem = mesh->elem_ptr(elem_id);
+      //     Elem * connected_elem = mesh->elem_ptr(connected_elem_id);
+      //     subdomain_id_type curr_elem_subid = blockRestrictedElementSubdomainID(current_elem);
+      //     subdomain_id_type connected_elem_subid =
+      //         blockRestrictedElementSubdomainID(connected_elem);
 
-            if (current_elem != connected_elem && curr_elem_subid < connected_elem_subid)
-            {
-              if (current_elem->has_neighbor(
-                      connected_elem)) // Only consider elements that are "actually adjacent" in the
-                                       // mesh (share an edge/face)
-              {
-                dof_id_type elem_id = current_elem->id();
-                dof_id_type connected_elem_id = connected_elem->id();
-                unsigned int side = current_elem->which_neighbor_am_i(connected_elem);
-                unsigned int connected_elem_side =
-                    connected_elem->which_neighbor_am_i(current_elem);
+      //     if (current_elem != connected_elem && curr_elem_subid < connected_elem_subid)
+      //     {
+      //       if (current_elem->has_neighbor(
+      //               connected_elem)) // Only consider elements that are "actually adjacent" in
+      //                                // the mesh (share an edge/face)
+      //       {
+      //         dof_id_type elem_id = current_elem->id();
+      //         dof_id_type connected_elem_id = connected_elem->id();
+      //         unsigned int side = current_elem->which_neighbor_am_i(connected_elem);
+      //         unsigned int connected_elem_side =
+      //             connected_elem->which_neighbor_am_i(current_elem);
 
-                // in this case we need to play a game to reorder the sides
-                // When block_pairs or surrounding_blocks restrictions are used, only real block IDs
-                // (not invalid_subdomain_id) should be put into the pair.
-                // Here, (curr_elem_subid, connected_elem_subid) are reordered to ensure
-                // first < second and both are valid block IDs.
-                // Also, subid, elem_id and side are swapped accordingly to keep the mapping
-                // direction consistent.
-                if (_block_pairs_restricted || _surrounding_blocks_restricted)
-                {
-                  connected_elem_subid = connected_elem->subdomain_id();
-                  if (curr_elem_subid > connected_elem_subid) // we need to switch the ids
-                  {
-                    connected_elem_subid = current_elem->subdomain_id();
-                    curr_elem_subid = connected_elem->subdomain_id();
+      //         // in this case we need to play a game to reorder the sides
+      //         // When block_pairs or surrounding_blocks restrictions are used, only real block
+      //         // IDs (not invalid_subdomain_id) should be put into the pair. Here,
+      //         // (curr_elem_subid, connected_elem_subid) are reordered to ensure first <
+      //         // second and both are valid block IDs. Also, subid, elem_id and side are
+      //         // swapped accordingly to keep the mapping direction consistent.
+      //         if (_block_pairs_restricted || _surrounding_blocks_restricted)
+      //         {
+      //           connected_elem_subid = connected_elem->subdomain_id();
+      //           if (curr_elem_subid > connected_elem_subid) // we need to switch the ids
+      //           {
+      //             connected_elem_subid = current_elem->subdomain_id();
+      //             curr_elem_subid = connected_elem->subdomain_id();
 
-                    elem_id = connected_elem->id();
-                    side = connected_elem->which_neighbor_am_i(current_elem);
+      //             elem_id = connected_elem->id();
+      //             side = connected_elem->which_neighbor_am_i(current_elem);
 
-                    connected_elem_id = current_elem->id();
-                    connected_elem_side = current_elem->which_neighbor_am_i(connected_elem);
-                  }
-                }
+      //             connected_elem_id = current_elem->id();
+      //             connected_elem_side = current_elem->which_neighbor_am_i(connected_elem);
+      //           }
+      //         }
 
-                // blocks_pair: forward (low ID, high ID).
-                // blocks_pair2: reverse. If `_add_interface_on_two_sides` is enabled, the
-                // element/side on the reverse pair will also be stored, ensuring both sides are
-                // marked as boundary.
-                std::pair<subdomain_id_type, subdomain_id_type> blocks_pair =
-                    std::make_pair(curr_elem_subid, connected_elem_subid);
+      //         // blocks_pair: forward (low ID, high ID).
+      //         // blocks_pair2: reverse. If `_add_interface_on_two_sides` is enabled, the
+      //         // element/side on the reverse pair will also be stored, ensuring both sides are
+      //         // marked as boundary.
+      //         std::pair<subdomain_id_type, subdomain_id_type> blocks_pair =
+      //             std::make_pair(curr_elem_subid, connected_elem_subid);
 
-                std::pair<subdomain_id_type, subdomain_id_type> blocks_pair2 =
-                    std::make_pair(connected_elem_subid, curr_elem_subid);
+      //         std::pair<subdomain_id_type, subdomain_id_type> blocks_pair2 =
+      //             std::make_pair(connected_elem_subid, curr_elem_subid);
 
-                // _new_boundary_sides_map is a map from block pairs to a set of element sides,
-                // i.e., (block1, block2) -> { (elem_id, side_id), ... }
-                // That is: which element sides are located between block1 and block2.
-                // The addInterfaceBoundary() function will later convert this entire map into
-                // actual BoundaryInfo.
-                // Example: _new_boundary_sides_map = {
-                //    (3,7) : { {12,1}, {15,2}, {20,0}, ... },   // all sides between block 3 and
-                //    block 7 (7,3) : { {25,3}, ... },                  // if double-sided, reverse
-                //    direction (4,invalid) : { ... }                     // interface between
-                //    restricted and unrestricted blocks
-                // }
+      //         // _new_boundary_sides_map is a map from block pairs to a set of element sides,
+      //         // i.e., (block1, block2) -> { (elem_id, side_id), ... }
+      //         // That is: which element sides are located between block1 and block2.
+      //         // The addInterfaceBoundary() function will later convert this entire map into
+      //         // actual BoundaryInfo.
+      //         // Example: _new_boundary_sides_map = {
+      //         //    (3,7) : { {12,1}, {15,2}, {20,0}, ... },   // all sides between block 3
+      //         //    and block 7 (7,3) : { {25,3}, ... },                  // if double-sided,
+      //         //    reverse direction (4,invalid) : { ... }                     // interface
+      //         //    between restricted and unrestricted blocks
+      //         // }
 
-                auto add_boundary_sides =
-                    [&](const std::pair<subdomain_id_type, subdomain_id_type> & pair1,
-                        const std::pair<subdomain_id_type, subdomain_id_type> & pair2,
-                        dof_id_type id1,
-                        unsigned int side1,
-                        dof_id_type id2,
-                        unsigned int side2)
-                {
-                  _new_boundary_sides_map[pair1].insert(std::make_pair(id1, side1));
-                  if (_add_interface_on_two_sides)
-                    _new_boundary_sides_map[pair2].insert(std::make_pair(id2, side2));
-                };
+      //         auto add_boundary_sides =
+      //             [&](const std::pair<subdomain_id_type, subdomain_id_type> & pair1,
+      //                 const std::pair<subdomain_id_type, subdomain_id_type> & pair2,
+      //                 dof_id_type id1,
+      //                 unsigned int side1,
+      //                 dof_id_type id2,
+      //                 unsigned int side2)
+      //         {
+      //           _new_boundary_sides_map[pair1].insert(std::make_pair(id1, side1));
+      //           if (_add_interface_on_two_sides)
+      //             _new_boundary_sides_map[pair2].insert(std::make_pair(id2, side2));
+      //         };
 
-                if (_block_pairs_restricted)
-                {
-                  if (findBlockPairs(blockRestrictedElementSubdomainID(current_elem),
-                                     blockRestrictedElementSubdomainID(connected_elem)))
-                  {
-                    add_boundary_sides(blocks_pair,
-                                       blocks_pair2,
-                                       elem_id,
-                                       side,
-                                       connected_elem_id,
-                                       connected_elem_side);
-                  }
-                }
-                else
-                {
-                  add_boundary_sides(blocks_pair,
-                                     blocks_pair2,
-                                     elem_id,
-                                     side,
-                                     connected_elem_id,
-                                     connected_elem_side);
-                }
-              }
-            }
-          }
-        }
+      //         if (_block_pairs_restricted)
+      //         {
+      //           if (findBlockPairs(blockRestrictedElementSubdomainID(current_elem),
+      //                              blockRestrictedElementSubdomainID(connected_elem)))
+      //           {
+      //             add_boundary_sides(blocks_pair,
+      //                                blocks_pair2,
+      //                                elem_id,
+      //                                side,
+      //                                connected_elem_id,
+      //                                connected_elem_side);
+      //           }
+      //         }
+      //         else
+      //         {
+      //           add_boundary_sides(blocks_pair,
+      //                              blocks_pair2,
+      //                              elem_id,
+      //                              side,
+      //                              connected_elem_id,
+      //                              connected_elem_side);
+      //         }
+      //       }
+      //     }
+      //   }
+      // }
 
-      } // end multiplicity check
-    } // end nodeptr check
+    } // end multiplicity check
   } // end loop over nodes
 
-  addInterfaceBoundary(*mesh);
-  Partitioner::set_node_processor_ids(*mesh);
+  // addInterfaceBoundary(*mesh);
+  // Partitioner::set_node_processor_ids(*mesh);
+
+  std::cout << "Comparing node-to-element maps before and after breaking the mesh:\n";
   return dynamic_pointer_cast<MeshBase>(mesh);
 }
 
@@ -411,7 +574,8 @@ BreakMeshByBlockGenerator::addInterfaceBoundary(MeshBase & mesh)
   {
     // Decide which boundary name / id to use for this blocks_pair
     if (!(_block_pairs_restricted || _surrounding_blocks_restricted) ||
-        // No block restrictions, or restrictions exist but transition interface is NOT requested
+        // No block restrictions, or restrictions exist but transition interface is NOT
+        // requested
         ((_block_pairs_restricted || _surrounding_blocks_restricted) && !_add_transition_interface))
     {
       // --- Standard case --------------------------------------------------
@@ -433,7 +597,8 @@ BreakMeshByBlockGenerator::addInterfaceBoundary(MeshBase & mesh)
         boundary_info.sideset_name(boundary_id_interface) = boundary_name;
       }
     }
-    else // --- Block restrictions exist and transition interface is requested ------------------
+    else // --- Block restrictions exist and transition interface is requested
+         // ------------------
     {
       // Both blocks in _block_set -> interior; only one in set -> exterior (transition)
       const bool interior_boundary = _block_set.count(boundary_side_map.first.first) &&

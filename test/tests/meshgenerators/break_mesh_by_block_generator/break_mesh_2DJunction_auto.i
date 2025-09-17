@@ -1,3 +1,8 @@
+[Problem]
+  solve = false
+  boundary_restricted_node_integrity_check = false
+[]
+
 [Mesh]
   [./fmg]
     type = FileMeshGenerator
@@ -13,3 +18,15 @@
 [Outputs]
   exodus = true
 []
+
+
+[Variables]
+  [diffused]
+    order = FIRST
+  []
+[]
+
+[Executioner]
+  type = Steady
+[]
+
