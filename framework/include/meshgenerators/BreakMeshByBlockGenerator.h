@@ -66,4 +66,6 @@ private:
   std::map<std::pair<subdomain_id_type, subdomain_id_type>,
            std::set<std::pair<dof_id_type, unsigned int>>>
       _new_boundary_sides_map;
+
+  const bool _use_n_nodes;
 };

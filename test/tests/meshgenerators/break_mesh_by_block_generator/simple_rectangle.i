@@ -1,20 +1,36 @@
+
+# nx = 1024
+nx = 16
+nx_half = '${fparse nx/2}'
+x0 = 0.5
+x0_double = '${fparse 2*x0}'
+
 [Problem]
   solve = false
   boundary_restricted_node_integrity_check = false
 []
 
 [Mesh]
-  [./fmg]
-    type = FileMeshGenerator
-    file = 4ElementJunction.e
+  [gen]
+    type = CartesianMeshGenerator
+    dim = 2
+    dx = '${x0} ${x0}'
+    dy = '${x0_double}'
+    ix = '${nx_half} ${nx_half}'
+    iy = '${nx}'
+    subdomain_id = '1 2'
   []
 
-  [./breakmesh]
+  [break]
     type = BreakMeshByBlockGenerator
-    input = fmg
+    input = gen
     split_interface = true
     add_interface_on_two_sides = true
+    # use_n_nodes = true
   []
+
+  parallel_type = distributed
+
 []
 
 [Outputs]
