@@ -17,8 +17,6 @@
 #include <typeinfo>
 
 registerMooseObject("MooseApp", BreakMeshByBlockGenerator);
-
-#include <iostream>
 #include <set>
 #include <vector>
 #include <map>
@@ -26,69 +24,7 @@ registerMooseObject("MooseApp", BreakMeshByBlockGenerator);
 
 #include "timpi/parallel_sync.h"
 
-// Compare two node-to-element maps and print differences
-void
-compareNodeToElemMaps(const std::map<dof_id_type, std::vector<dof_id_type>> & mapA,
-                      const std::map<dof_id_type, std::vector<dof_id_type>> & mapB)
-{
-  // Check all nodes in mapA
-  for (const auto & pairA : mapA)
-  {
-    dof_id_type node_id = pairA.first;
-    const auto & elemsA = pairA.second;
-
-    auto itB = mapB.find(node_id);
-    if (itB == mapB.end())
-    {
-      std::cout << "Node " << node_id << " only exists in mapA\n";
-      continue;
-    }
-
-    const auto & elemsB = itB->second;
-
-    // Convert to sets for comparison
-    std::set<dof_id_type> setA(elemsA.begin(), elemsA.end());
-    std::set<dof_id_type> setB(elemsB.begin(), elemsB.end());
-
-    std::vector<dof_id_type> diffAB, diffBA;
-
-    std::set_difference(
-        setA.begin(), setA.end(), setB.begin(), setB.end(), std::back_inserter(diffAB));
-
-    std::set_difference(
-        setB.begin(), setB.end(), setA.begin(), setA.end(), std::back_inserter(diffBA));
-
-    if (!diffAB.empty() || !diffBA.empty())
-    {
-      std::cout << "Node " << node_id << " differs:\n";
-
-      if (!diffAB.empty())
-      {
-        std::cout << "  Elements only in mapA: ";
-        for (auto e : diffAB)
-          std::cout << e << " ";
-        std::cout << "\n";
-      }
-
-      if (!diffBA.empty())
-      {
-        std::cout << "  Elements only in mapB: ";
-        for (auto e : diffBA)
-          std::cout << e << " ";
-        std::cout << "\n";
-      }
-    }
-  }
-
-  // Check if mapB has nodes not in mapA
-  for (const auto & pairB : mapB)
-  {
-    if (mapA.find(pairB.first) == mapA.end())
-    {
-      std::cout << "Node " << pairB.first << " only exists in mapB\n";
-    }
-  }
-}
+// Debug utilities removed; use the 'debug' parameter with _console instead.
 
 InputParameters
 BreakMeshByBlockGenerator::validParams()
@@ -122,6 +58,8 @@ BreakMeshByBlockGenerator::validParams()
       "use_n_nodes",
       false,
       "If true, use the number of nodes in the mesh to set the number of new nodes.");
+  params.addParam<bool>(
+      "debug", false, "Emit detailed debug logs to the console to aid development.");
   return params;
 }
 
@@ -134,7 +72,8 @@ BreakMeshByBlockGenerator::BreakMeshByBlockGenerator(const InputParameters & par
     _split_transition_interface(getParam<bool>("split_transition_interface")),
     _interface_transition_name(getParam<BoundaryName>("interface_transition_name")),
     _add_interface_on_two_sides(getParam<bool>("add_interface_on_two_sides")),
-    _use_n_nodes(getParam<bool>("use_n_nodes"))
+    _use_n_nodes(getParam<bool>("use_n_nodes")),
+    _debug(getParam<bool>("debug"))
 {
   if (_block_pairs_restricted && _surrounding_blocks_restricted)
     paramError("block_pairs_restricted",
@@ -156,13 +95,22 @@ std::unique_ptr<MeshBase>
 BreakMeshByBlockGenerator::generate()
 {
   std::unique_ptr<MeshBase> mesh = std::move(_input);
-  // if (!mesh->is_replicated())
-  //   mooseError("BreakMeshByBlockGenerator is not implemented for distributed meshes");
-
-  // Try to trick the rest of the world into thinking we're prepared
+  // Prepare mesh for operations
   mesh->prepare_for_use();
 
   BoundaryInfo & boundary_info = mesh->get_boundary_info();
+
+  if (_debug)
+  {
+    _console << "[BreakMeshByBlockGenerator] begin on rank " << mesh->processor_id()
+             << ", replicated = " << std::boolalpha << mesh->is_replicated() << std::noboolalpha
+             << std::endl;
+    _console << "  options: block_pairs_restricted=" << _block_pairs_restricted
+             << ", surrounding_blocks_restricted=" << _surrounding_blocks_restricted
+             << ", add_transition_interface=" << _add_transition_interface
+             << ", split_transition_interface=" << _split_transition_interface
+             << ", use_n_nodes=" << _use_n_nodes << std::endl;
+  }
 
   // Handle block restrictions
   if (_block_pairs_restricted)
@@ -209,10 +157,33 @@ BreakMeshByBlockGenerator::generate()
                "already exits");
 
   // initialize the node to element map
+  // typedef std::pair<dof_id_type, dof_id_type> NodeElemIDPair;
+  // std::unordered_map<processor_id_type, std::vector<NodeElemIDPair>> push_data;
   std::map<dof_id_type, std::vector<dof_id_type>> node_to_elem_map;
   for (const auto & elem : mesh->active_element_ptr_range())
     for (unsigned int n = 0; n < elem->n_nodes(); n++)
+    {
+      const auto node = mesh->node_ptr(elem->node_id(n));
       node_to_elem_map[elem->node_id(n)].push_back(elem->id());
+      // NOTE: doing like this, the ghost nodes will not have the correct connectivity to the
+      // elements
+
+      // // we need to push the node back to the processor that owns it
+      // if (node->processor_id() != mesh->processor_id() && !mesh->is_replicated())
+      //   push_data[node->processor_id()].push_back(std::make_pair(elem->node_id(n), elem->id()));
+    }
+
+  // if (!mesh->is_replicated())
+  // {
+  //   auto push_receiver =
+  //       [&](const processor_id_type, const std::vector<NodeElemIDPair> & received_data)
+  //   {
+  //     for (const auto & [node_id, elem_id] : received_data)
+  //       node_to_elem_map[node_id].push_back(elem_id);
+  //   };
+
+  //   Parallel::push_parallel_vector_data(_mesh->comm(), push_data, push_receiver);
+  // }
 
   // for (const auto & pair : node_to_elem_map)
   // {
@@ -225,9 +196,29 @@ BreakMeshByBlockGenerator::generate()
   //   _console << std::endl;
   // }
 
-  unsigned int local_new_nodes = 0;
-  std::map<std::pair<dof_id_type, dof_id_type>, dof_id_type> new_nodes_order_in_current_proc;
-  dof_id_type i = 0;
+  auto prepare_connected_blocks = [&](const std::vector<dof_id_type> & elem_ids,
+                                      std::set<subdomain_id_type> & connected_blocks_set)
+  {
+    for (auto elem_id_local = elem_ids.begin(); elem_id_local != elem_ids.end(); elem_id_local++)
+    {
+      const Elem * current_elem_local = mesh->elem_ptr(*elem_id_local);
+
+      subdomain_id_type block_id_local = blockRestrictedElementSubdomainID(current_elem_local);
+      if (!_block_pairs_restricted)
+        connected_blocks_set.insert(block_id_local);
+      else
+      {
+        if (block_id_local != Elem::invalid_subdomain_id)
+          connected_blocks_set.insert(block_id_local);
+      }
+    }
+  };
+
+  // (1) Non-owner ranks send the connected blocks of ghost nodes to the owner rank.
+  // (2) The owner rank receives this data and supplements it with its own local elements' connected
+  // blocks.
+  // (3) The owner rank then broadcasts the complete set of connected blocks to other ranks
+  // that need it.
   for (auto node_it = node_to_elem_map.begin(); node_it != node_to_elem_map.end(); ++node_it)
   {
     const dof_id_type current_node_id = node_it->first;
@@ -236,35 +227,101 @@ BreakMeshByBlockGenerator::generate()
     if (!current_node)
       continue;
 
-    // First pass: Estimate the number of new nodes that will be added by each processor
-    std::set<subdomain_id_type> connected_blocks;
+    prepare_connected_blocks(node_it->second, _nodeid_to_connected_blocks[current_node_id]);
+    if (!mesh->is_replicated())
+    {
+      // std::unordered_map<processor_id_type, std::vector<dof_id_type>> push_data;
+      std::unordered_map<processor_id_type, std::vector<NodeToConnectedBlocksMap>>
+          push_data_nodeid_and_connected_blocks;
+
+      // (1) Push ghost node and its connected blocks to the owner processor
+      if (current_node->processor_id() != mesh->processor_id())
+      {
+        NodeToConnectedBlocksMap single_entry_map;
+        auto it = _nodeid_to_connected_blocks.find(current_node_id);
+        if (it != _nodeid_to_connected_blocks.end())
+          single_entry_map.insert({it->first, it->second});
+
+        push_data_nodeid_and_connected_blocks[current_node->processor_id()].push_back(
+            single_entry_map);
+      }
+
+      // (2) Owner processor prepare connected blocks
+      auto push_receiver =
+          [&](const processor_id_type, const std::vector<NodeToConnectedBlocksMap> & received_data)
+      {
+        for (const auto & single_entry_map : received_data)
+        {
+          dof_id_type node_id = 0;
+          for (const auto & kv : single_entry_map)
+          {
+            _nodeid_to_connected_blocks[kv.first].insert(kv.second.begin(), kv.second.end());
+            node_id = kv.first;
+          }
+
+          const Node * current_node = mesh->node_ptr(node_id);
+          if (!current_node)
+            continue;
+          prepare_connected_blocks(node_to_elem_map[node_id], _nodeid_to_connected_blocks[node_id]);
+        }
+      };
+      Parallel::push_parallel_vector_data(
+          _mesh->comm(), push_data_nodeid_and_connected_blocks, push_receiver);
+
+      // (3) Owner processor push back connected blocks to other processors
+      push_data_nodeid_and_connected_blocks.clear();
+      // std::unordered_map<processor_id_type, std::vector<NodeToConnectedBlocksMap>>
+      //     push_data_nodeid_and_connected_blocks;
+
+      if (current_node->processor_id() == mesh->processor_id())
+      {
+        NodeToConnectedBlocksMap single_entry_map;
+        auto it = _nodeid_to_connected_blocks.find(current_node_id);
+        if (it != _nodeid_to_connected_blocks.end())
+          single_entry_map.insert({it->first, it->second});
+
+        for (processor_id_type pid = 0; pid < n_processors(); ++pid)
+          if (pid != processor_id())
+            push_data_nodeid_and_connected_blocks[pid].push_back(single_entry_map);
+      }
+
+      auto push_receiver_nodeid_and_connected_blocks =
+          [&](const processor_id_type, const std::vector<NodeToConnectedBlocksMap> & received_data)
+      {
+        for (const auto & single_entry_map : received_data)
+          for (const auto & kv : single_entry_map)
+            _nodeid_to_connected_blocks[kv.first].insert(kv.second.begin(), kv.second.end());
+      };
+
+      Parallel::push_parallel_vector_data(_mesh->comm(),
+                                          push_data_nodeid_and_connected_blocks,
+                                          push_receiver_nodeid_and_connected_blocks);
+    }
+  }
+
+  std::map<std::pair<dof_id_type, dof_id_type>, dof_id_type> new_nodes_order_in_current_proc;
+  dof_id_type local_new_nodes = 0;
+  for (auto node_it = node_to_elem_map.begin(); node_it != node_to_elem_map.end(); ++node_it)
+  {
+    const auto current_node_id = node_it->first;
     for (auto elem_id : node_it->second)
     {
       const Elem * current_elem = mesh->elem_ptr(elem_id);
       subdomain_id_type block_id = blockRestrictedElementSubdomainID(current_elem);
       if (!_block_pairs_restricted || block_id != Elem::invalid_subdomain_id)
       {
-        connected_blocks.insert(block_id);
-        new_nodes_order_in_current_proc[std::make_pair(current_node_id, elem_id)] = i;
-        i++;
+        new_nodes_order_in_current_proc[std::make_pair(current_node_id, elem_id)] = local_new_nodes;
+        local_new_nodes++;
       }
     }
-
-    unsigned int mult = connected_blocks.size();
-    local_new_nodes += mult;
   }
 
-  // {
-  //   auto & out = _console;
-  //   out << "==== Rank " << mesh->processor_id() << " new_nodes_order_in_current_proc ====\n";
-  //   for (const auto & pr : new_nodes_order_in_current_proc)
-  //   {
-  //     const auto & key = pr.first; // (node_id , elem_id)
-  //     out << "   old_node " << key.first << " , elem " << key.second << " -> order " << pr.second
-  //         << '\n';
-  //   }
-  //   out << std::flush;
-  // }
+  if (_debug)
+  {
+    auto & out = _console;
+    out << "[BreakMeshByBlockGenerator] rank " << mesh->processor_id()
+        << " planned new_nodes=" << local_new_nodes << std::endl;
+  }
 
   dof_id_type proc_first_new_id = 0;
 
@@ -272,7 +329,7 @@ BreakMeshByBlockGenerator::generate()
   {
     // Distributed: use prefix sum to allocate non-overlapping id ranges
     std::vector<unsigned int> counts(mesh->comm().size());
-    mesh->comm().allgather(local_new_nodes, counts);
+    mesh->comm().allgather(static_cast<unsigned int>(local_new_nodes), counts);
 
     unsigned int offset = 0;
     for (unsigned int p = 0; p < mesh->processor_id(); ++p)
@@ -283,9 +340,14 @@ BreakMeshByBlockGenerator::generate()
 
     const auto global_start_id = max_id + 1;
     proc_first_new_id = global_start_id + offset;
+
+    if (_debug)
+      _console << "[BreakMeshByBlockGenerator] rank " << mesh->processor_id()
+               << " local_new_nodes=" << local_new_nodes << ", offset=" << offset
+               << ", proc_first_new_id=" << proc_first_new_id << std::endl;
   }
 
-  _console << "proc_first_new_id = " << proc_first_new_id << std::endl;
+  // _console << "proc_first_new_id = " << proc_first_new_id << std::endl;
   typedef std::pair<dof_id_type, dof_id_type> NodeElemIDPair;
   std::unordered_map<processor_id_type, std::vector<NodeElemIDPair>> push_data_node_elem;
   for (auto node_it = node_to_elem_map.begin(); node_it != node_to_elem_map.end(); ++node_it)
@@ -297,20 +359,56 @@ BreakMeshByBlockGenerator::generate()
       continue;
 
     // find node multiplicity
-    std::set<subdomain_id_type> connected_blocks;
-    for (auto elem_id = node_it->second.begin(); elem_id != node_it->second.end(); elem_id++)
-    {
-      const Elem * current_elem = mesh->elem_ptr(*elem_id);
+    const auto connected_blocks = _nodeid_to_connected_blocks[node_it->first];
+    // std::set<subdomain_id_type> connected_blocks;
+    // prepare_connected_blocks(node_it->second, connected_blocks);
 
-      subdomain_id_type block_id = blockRestrictedElementSubdomainID(current_elem);
-      if (!_block_pairs_restricted)
-        connected_blocks.insert(block_id);
-      else
-      {
-        if (block_id != Elem::invalid_subdomain_id)
-          connected_blocks.insert(block_id);
-      }
-    }
+    // if (connected_blocks.size() > 1)
+    // {
+    //   // for (const auto & block : connected_blocks)
+    //   //   _console << "Node " << current_node_id << " connected to block " << block << std::endl;
+
+    //   const auto pos = *current_node;
+
+    //   std::ofstream fout("Dulplicate_nodes.txt", std::ios::app);
+    //   fout << pos(0) << " " << pos(1) << " " << pos(2) << std::endl;
+    // }
+
+    // std::set<subdomain_id_type> connected_blocks_check;
+    // prepare_connected_blocks(node_it->second, connected_blocks_check);
+
+    // // Find blocks present in connected_blocks_check but not in connected_blocks
+    // std::set<subdomain_id_type> only_in_check;
+    // std::set_difference(connected_blocks_check.begin(),
+    //                     connected_blocks_check.end(),
+    //                     connected_blocks.begin(),
+    //                     connected_blocks.end(),
+    //                     std::inserter(only_in_check, only_in_check.begin()));
+
+    // // Find blocks present in connected_blocks but not in connected_blocks_check
+    // std::set<subdomain_id_type> only_in_original;
+    // std::set_difference(connected_blocks.begin(),
+    //                     connected_blocks.end(),
+    //                     connected_blocks_check.begin(),
+    //                     connected_blocks_check.end(),
+    //                     std::inserter(only_in_original, only_in_original.begin()));
+
+    // // Output the results
+    // if (!only_in_check.empty())
+    // {
+    //   std::cout << "Extra blocks in connected_blocks_check: ";
+    //   for (auto b : only_in_check)
+    //     std::cout << b << " ";
+    //   std::cout << std::endl;
+    // }
+
+    // if (!only_in_original.empty())
+    // {
+    //   std::cout << "Missing blocks in connected_blocks_check (present in original): ";
+    //   for (auto b : only_in_original)
+    //     std::cout << b << " ";
+    //   std::cout << std::endl;
+    // }
 
     unsigned int node_multiplicity = connected_blocks.size();
 
@@ -362,7 +460,7 @@ BreakMeshByBlockGenerator::generate()
         // If we only do this on distributed meshes and if the elements' processor_id is not the
         // same as the node's processor_id, the nodes would not be added to the correct processor
         // (at the end: missing some nodes)
-        if (current_node->processor_id() != mesh->processor_id())
+        if (current_node->processor_id() != mesh->processor_id() && !mesh->is_replicated())
         {
           // std::cout << "mesh->processor_id() = " << mesh->processor_id() << std::endl;
           // std::cout << "current_node->processor_id() = " << current_node->processor_id()
@@ -414,7 +512,8 @@ BreakMeshByBlockGenerator::generate()
                                 mesh->is_replicated()
                                     ? mesh->n_nodes()
                                     : proc_first_new_id + new_nodes_order_number_in_current_proc)
-                        .release();
+                        .release(); // or: new_node_id = (connected_subdomain_id+1) * max_node_id +
+                                    // old_node_id
 
                 // We're duplicating nodes so that each subdomain elem has its own copy, so it
                 // seems natural to assign this new node the same proc id as corresponding
@@ -633,12 +732,10 @@ BreakMeshByBlockGenerator::generate()
         // (*current_node).print();
         // std::cout << std::endl;
 
-        if (mesh->processor_id() != current_elem->processor_id())
-        {
-          std::cout << "mesh->processor_id() = " << mesh->processor_id() << std::endl;
-          std::cout << "current_elem->processor_id() = " << current_elem->processor_id()
-                    << std::endl;
-        }
+        if (_debug && mesh->processor_id() != current_elem->processor_id())
+          _console << "[BreakMeshByBlockGenerator] cross-rank elem update: mesh pid="
+                   << mesh->processor_id() << ", elem pid=" << current_elem->processor_id()
+                   << std::endl;
 
         const auto new_node_id = (!mesh->is_replicated() && !_use_n_nodes)
                                      ? proc_first_new_id + new_nodes_order_number_in_current_proc
@@ -677,12 +774,15 @@ BreakMeshByBlockGenerator::generate()
     }
   };
 
-  Parallel::push_parallel_vector_data(_mesh->comm(), push_data_node_elem, push_receiver_node_elem);
+  if (!mesh->is_replicated())
+    Parallel::push_parallel_vector_data(
+        _mesh->comm(), push_data_node_elem, push_receiver_node_elem);
 
   // addInterfaceBoundary(*mesh);
   // Partitioner::set_node_processor_ids(*mesh);
 
-  std::cout << "Comparing node-to-element maps before and after breaking the mesh:\n";
+  if (_debug)
+    _console << "[BreakMeshByBlockGenerator] done on rank " << mesh->processor_id() << std::endl;
   return dynamic_pointer_cast<MeshBase>(mesh);
 }
 

@@ -68,4 +68,9 @@ private:
       _new_boundary_sides_map;
 
   const bool _use_n_nodes;
+  /// Enable verbose, developer-friendly debug logging
+  const bool _debug;
+
+  typedef std::map<dof_id_type, std::set<subdomain_id_type>> NodeToConnectedBlocksMap;
+  NodeToConnectedBlocksMap _nodeid_to_connected_blocks;
 };
