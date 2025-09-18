@@ -13,8 +13,10 @@
   [breakmesh]
     type = BreakMeshByBlockGenerator
     input = fmg
-    # add_interface_on_two_sides = true
+    add_interface_on_two_sides = true
   []
+
+  parallel_type = distributed
 []
 
 [Outputs]
