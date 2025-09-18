@@ -643,14 +643,28 @@ BreakMeshByBlockGenerator::generate()
         const auto new_node_id = (!mesh->is_replicated() && !_use_n_nodes)
                                      ? proc_first_new_id + new_nodes_order_number_in_current_proc
                                      : mesh->n_nodes();
+
+        const auto new_node =
+            mesh->add_point(*current_node, new_node_id, current_elem->processor_id());
+
+        for (unsigned int node_id_local = 0; node_id_local < current_elem->n_nodes();
+             ++node_id_local)
+          if (current_elem->node_id(node_id_local) ==
+              current_node->id()) // if current node == node on element
+          {
+            current_elem->set_node(node_id_local,
+                                   new_node); // override the original node with
+                                              // the new one, remember that node_id
+                                              // is local to the current element
+          }
+
         // _console << "new_node_id = " << new_node_id << std::endl;
-        auto new_node = Node::build(*current_node, new_node_id).release();
+        // auto new_node = Node::build(*current_node, new_node_id).release();
 
         // We're duplicating nodes so that each subdomain elem has its own copy, so it
         // seems natural to assign this new node the same proc id as corresponding
         // subdomain elem
-        new_node->processor_id() = current_elem->processor_id();
-        // mesh->add_node(new_node);
+        // new_node->processor_id() = current_elem->processor_id();
         // current_elem->set_node(node_id,
         //                        new_node); // override the original node with
         //                                   // the new one, remember that node_id
