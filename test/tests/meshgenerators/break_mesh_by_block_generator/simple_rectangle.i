@@ -29,7 +29,7 @@ x0_double = '${fparse 2*x0}'
     # use_n_nodes = true
   []
 
-  # parallel_type = distributed
+  parallel_type = distributed
 
 []
 

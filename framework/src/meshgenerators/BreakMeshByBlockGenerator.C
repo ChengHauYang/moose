@@ -100,6 +100,8 @@ BreakMeshByBlockGenerator::generate()
 
   BoundaryInfo & boundary_info = mesh->get_boundary_info();
 
+  const unique_id_type max_unique_id = mesh->parallel_max_unique_id();
+
   if (_debug)
   {
     _console << "[BreakMeshByBlockGenerator] begin on rank " << mesh->processor_id()
@@ -347,7 +349,6 @@ BreakMeshByBlockGenerator::generate()
                << ", proc_first_new_id=" << proc_first_new_id << std::endl;
   }
 
-  // _console << "proc_first_new_id = " << proc_first_new_id << std::endl;
   typedef std::pair<dof_id_type, dof_id_type> NodeElemIDPair;
   std::unordered_map<processor_id_type, std::vector<NodeElemIDPair>> push_data_node_elem;
   for (auto node_it = node_to_elem_map.begin(); node_it != node_to_elem_map.end(); ++node_it)
@@ -360,55 +361,6 @@ BreakMeshByBlockGenerator::generate()
 
     // find node multiplicity
     const auto connected_blocks = _nodeid_to_connected_blocks[node_it->first];
-    // std::set<subdomain_id_type> connected_blocks;
-    // prepare_connected_blocks(node_it->second, connected_blocks);
-
-    // if (connected_blocks.size() > 1)
-    // {
-    //   // for (const auto & block : connected_blocks)
-    //   //   _console << "Node " << current_node_id << " connected to block " << block << std::endl;
-
-    //   const auto pos = *current_node;
-
-    //   std::ofstream fout("Dulplicate_nodes.txt", std::ios::app);
-    //   fout << pos(0) << " " << pos(1) << " " << pos(2) << std::endl;
-    // }
-
-    // std::set<subdomain_id_type> connected_blocks_check;
-    // prepare_connected_blocks(node_it->second, connected_blocks_check);
-
-    // // Find blocks present in connected_blocks_check but not in connected_blocks
-    // std::set<subdomain_id_type> only_in_check;
-    // std::set_difference(connected_blocks_check.begin(),
-    //                     connected_blocks_check.end(),
-    //                     connected_blocks.begin(),
-    //                     connected_blocks.end(),
-    //                     std::inserter(only_in_check, only_in_check.begin()));
-
-    // // Find blocks present in connected_blocks but not in connected_blocks_check
-    // std::set<subdomain_id_type> only_in_original;
-    // std::set_difference(connected_blocks.begin(),
-    //                     connected_blocks.end(),
-    //                     connected_blocks_check.begin(),
-    //                     connected_blocks_check.end(),
-    //                     std::inserter(only_in_original, only_in_original.begin()));
-
-    // // Output the results
-    // if (!only_in_check.empty())
-    // {
-    //   std::cout << "Extra blocks in connected_blocks_check: ";
-    //   for (auto b : only_in_check)
-    //     std::cout << b << " ";
-    //   std::cout << std::endl;
-    // }
-
-    // if (!only_in_original.empty())
-    // {
-    //   std::cout << "Missing blocks in connected_blocks_check (present in original): ";
-    //   for (auto b : only_in_original)
-    //     std::cout << b << " ";
-    //   std::cout << std::endl;
-    // }
 
     unsigned int node_multiplicity = connected_blocks.size();
 
@@ -456,26 +408,14 @@ BreakMeshByBlockGenerator::generate()
 
         Elem * current_elem = mesh->elem_ptr(elem_id);
 
-        // This is for debugging (after this can run)
         // If we only do this on distributed meshes and if the elements' processor_id is not the
         // same as the node's processor_id, the nodes would not be added to the correct processor
         // (at the end: missing some nodes)
-        if (current_node->processor_id() != mesh->processor_id() && !mesh->is_replicated())
-        {
-          // std::cout << "mesh->processor_id() = " << mesh->processor_id() << std::endl;
-          // std::cout << "current_node->processor_id() = " << current_node->processor_id()
-          //           << std::endl;
-          // std::cout << "current_elem->processor_id() = " << current_elem->processor_id()
-          //           << std::endl;
-
-          // push_node_to_other_procs = true;
-          continue;
-        }
-        else
-        {
-          push_data_node_elem[current_elem->processor_id()].push_back(
-              std::make_pair(current_node->id(), current_elem->id()));
-        }
+        // if (current_node->processor_id() != mesh->processor_id() && !mesh->is_replicated())
+        //   continue;
+        // else
+        push_data_node_elem[current_elem->processor_id()].push_back(
+            std::make_pair(current_node->id(), current_elem->id()));
 
         subdomain_id_type block_id = blockRestrictedElementSubdomainID(current_elem);
 
@@ -493,27 +433,24 @@ BreakMeshByBlockGenerator::generate()
             {
               if (should_create_new_node)
               {
-                // if (!push_node_to_other_procs)
-                // {
-
-                // _console << "mesh->n_nodes() = " << mesh->n_nodes() << std::endl;
-                // add new node
-                // TODO: mesh->n_nodes() will not work in parallel for distributed mesh
-
                 const auto new_nodes_order_number_in_current_proc =
                     new_nodes_order_in_current_proc[std::make_pair(current_node_id, elem_id)];
 
-                // _console << "processor_id = " << mesh->processor_id() << std::endl;
-                // _console << "proc_first_new_id + new_nodes_order_number_in_current_proc = "
-                //          << proc_first_new_id + new_nodes_order_number_in_current_proc <<
-                //          std::endl;
-                new_node =
-                    Node::build(*current_node,
-                                mesh->is_replicated()
-                                    ? mesh->n_nodes()
-                                    : proc_first_new_id + new_nodes_order_number_in_current_proc)
-                        .release(); // or: new_node_id = (connected_subdomain_id+1) * max_node_id +
-                                    // old_node_id
+                // new_node =
+                //     Node::build(*current_node,
+                //                 mesh->is_replicated()
+                //                     ? mesh->n_nodes()
+                //                     : proc_first_new_id + new_nodes_order_number_in_current_proc)
+                //         .release(); // or: new_node_id = (connected_subdomain_id+1) * max_node_id
+                //         +
+                //                     // old_node_id
+                new_node = Node::build(*current_node,
+                                       mesh->is_replicated()
+                                           ? mesh->n_nodes()
+                                           : (current_elem->subdomain_id() + 1) * max_unique_id +
+                                                 current_node->unique_id())
+                               .release(); // or: new_node_id = (connected_subdomain_id+1) *
+                                           // max_node_id + old_node_id
 
                 // We're duplicating nodes so that each subdomain elem has its own copy, so it
                 // seems natural to assign this new node the same proc id as corresponding
