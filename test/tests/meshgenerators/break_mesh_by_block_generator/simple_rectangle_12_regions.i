@@ -11,11 +11,11 @@
     type = CartesianMeshGenerator
     dim = 2
     dx = '0.2 0.3 0.5'
-    dy = '0.3 0.7'
+    dy = '0.3 0.3 0.3 0.1'
     ix = '6 9 15'
-    iy = '9 21'
+    iy = '9 9 9 3'
 
-    subdomain_id = '1 2 3 3 4 5'
+    subdomain_id = '1 2 3 3 4 5 6 7 8 9 10 11'
   []
 
   [break]

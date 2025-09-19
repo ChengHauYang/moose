@@ -164,108 +164,225 @@ BreakMeshByBlockGenerator::generate()
     for (unsigned int n = 0; n < elem->n_nodes(); n++)
       node_to_elem_map[elem->node_id(n)].push_back(elem->id());
 
-  auto prepare_connected_blocks = [&](const std::vector<dof_id_type> & elem_ids,
-                                      std::set<subdomain_id_type> & connected_blocks_set)
-  {
-    for (auto elem_id_local = elem_ids.begin(); elem_id_local != elem_ids.end(); elem_id_local++)
-    {
-      const Elem * current_elem_local = mesh->elem_ptr(*elem_id_local);
+  // auto prepare_connected_blocks = [&](const std::vector<dof_id_type> & elem_ids,
+  //                                     std::set<subdomain_id_type> & connected_blocks_set)
+  // {
+  //   for (auto elem_id_local = elem_ids.begin(); elem_id_local != elem_ids.end(); elem_id_local++)
+  //   {
+  //     const Elem * current_elem_local = mesh->elem_ptr(*elem_id_local);
 
-      subdomain_id_type block_id_local = blockRestrictedElementSubdomainID(current_elem_local);
-      if (!_block_pairs_restricted)
-        connected_blocks_set.insert(block_id_local);
-      else
-      {
-        if (block_id_local != Elem::invalid_subdomain_id)
-          connected_blocks_set.insert(block_id_local);
-      }
-    }
-  };
+  //     subdomain_id_type block_id_local = blockRestrictedElementSubdomainID(current_elem_local);
+  //     if (!_block_pairs_restricted)
+  //       connected_blocks_set.insert(block_id_local);
+  //     else
+  //     {
+  //       if (block_id_local != Elem::invalid_subdomain_id)
+  //         connected_blocks_set.insert(block_id_local);
+  //     }
+  //   }
+  // };
 
   // (1) Non-owner ranks send the connected blocks of ghost nodes to the owner rank.
   // (2) The owner rank receives this data and supplements it with its own local elements' connected
   // blocks.
   // (3) The owner rank then broadcasts the complete set of connected blocks to other ranks
   // that need it.
-  for (auto node_it = node_to_elem_map.begin(); node_it != node_to_elem_map.end(); ++node_it)
-  {
-    const dof_id_type current_node_id = node_it->first;
-    const Node * current_node = mesh->node_ptr(current_node_id);
+  // for (auto node_it = node_to_elem_map.begin(); node_it != node_to_elem_map.end(); ++node_it)
+  // {
+  //   const dof_id_type current_node_id = node_it->first;
+  //   const Node * current_node = mesh->node_ptr(current_node_id);
 
-    if (!current_node)
-      continue;
+  //   if (!current_node)
+  //     continue;
 
-    prepare_connected_blocks(node_it->second, _nodeid_to_connected_blocks[current_node_id]);
-    if (!mesh->is_replicated())
-    {
-      // std::unordered_map<processor_id_type, std::vector<dof_id_type>> push_data;
-      std::unordered_map<processor_id_type, std::vector<NodeToConnectedBlocksMap>>
-          push_data_nodeid_and_connected_blocks;
+  //   prepare_connected_blocks(node_it->second, _nodeid_to_connected_blocks[current_node_id]);
+  //   if (!mesh->is_replicated())
+  //   {
+  //     // std::unordered_map<processor_id_type, std::vector<dof_id_type>> push_data;
+  //     std::unordered_map<processor_id_type, std::vector<NodeToConnectedBlocksMap>>
+  //         push_data_nodeid_and_connected_blocks;
 
-      // (1) Push ghost node and its connected blocks to the owner processor
-      if (current_node->processor_id() != mesh->processor_id())
-      {
-        NodeToConnectedBlocksMap single_entry_map;
-        auto it = _nodeid_to_connected_blocks.find(current_node_id);
-        if (it != _nodeid_to_connected_blocks.end())
-          single_entry_map.insert({it->first, it->second});
+  //     if (_debug)
+  //       _console << "[BreakMeshByBlockGenerator] rank " << mesh->processor_id()
+  //                << " processing node " << current_node_id
+  //                << ", owner=" << current_node->processor_id() << std::endl;
 
-        push_data_nodeid_and_connected_blocks[current_node->processor_id()].push_back(
-            single_entry_map);
-      }
+  //     // (1) Push ghost node and its connected blocks to the owner processor
+  //     if (current_node->processor_id() != mesh->processor_id())
+  //     {
+  //       NodeToConnectedBlocksMap single_entry_map;
+  //       auto it = _nodeid_to_connected_blocks.find(current_node_id);
+  //       if (it != _nodeid_to_connected_blocks.end())
+  //         single_entry_map.insert({it->first, it->second});
 
-      // (2) Owner processor prepare connected blocks
-      auto push_receiver =
-          [&](const processor_id_type, const std::vector<NodeToConnectedBlocksMap> & received_data)
-      {
-        for (const auto & single_entry_map : received_data)
-        {
-          dof_id_type node_id = 0;
-          for (const auto & kv : single_entry_map)
-          {
-            _nodeid_to_connected_blocks[kv.first].insert(kv.second.begin(), kv.second.end());
-            node_id = kv.first;
-          }
+  //       push_data_nodeid_and_connected_blocks[current_node->processor_id()].push_back(
+  //           single_entry_map);
+  //     }
 
-          const Node * current_node = mesh->node_ptr(node_id);
-          if (!current_node)
-            continue;
-          prepare_connected_blocks(node_to_elem_map[node_id], _nodeid_to_connected_blocks[node_id]);
-        }
-      };
-      Parallel::push_parallel_vector_data(
-          _mesh->comm(), push_data_nodeid_and_connected_blocks, push_receiver);
+  //     // (2) Owner processor prepare connected blocks
+  //     auto push_receiver =
+  //         [&](const processor_id_type, const std::vector<NodeToConnectedBlocksMap> &
+  //         received_data)
+  //     {
+  //       for (const auto & single_entry_map : received_data)
+  //       {
+  //         dof_id_type node_id = 0;
+  //         for (const auto & kv : single_entry_map)
+  //         {
+  //           _nodeid_to_connected_blocks[kv.first].insert(kv.second.begin(), kv.second.end());
+  //           node_id = kv.first;
+  //         }
 
-      // (3) Owner processor push back connected blocks to other processors
-      push_data_nodeid_and_connected_blocks.clear();
-      // std::unordered_map<processor_id_type, std::vector<NodeToConnectedBlocksMap>>
-      //     push_data_nodeid_and_connected_blocks;
+  //         const Node * current_node = mesh->node_ptr(node_id);
+  //         if (!current_node)
+  //           continue;
+  //         prepare_connected_blocks(node_to_elem_map[node_id],
+  //         _nodeid_to_connected_blocks[node_id]);
+  //       }
+  //     };
+  //     Parallel::push_parallel_vector_data(
+  //         _mesh->comm(), push_data_nodeid_and_connected_blocks, push_receiver);
 
-      if (current_node->processor_id() == mesh->processor_id())
-      {
-        NodeToConnectedBlocksMap single_entry_map;
-        auto it = _nodeid_to_connected_blocks.find(current_node_id);
-        if (it != _nodeid_to_connected_blocks.end())
-          single_entry_map.insert({it->first, it->second});
+  //     // (3) Owner processor push back connected blocks to other processors
+  //     push_data_nodeid_and_connected_blocks.clear();
+  //     // std::unordered_map<processor_id_type, std::vector<NodeToConnectedBlocksMap>>
+  //     //     push_data_nodeid_and_connected_blocks;
 
-        for (processor_id_type pid = 0; pid < n_processors(); ++pid)
-          if (pid != processor_id())
-            push_data_nodeid_and_connected_blocks[pid].push_back(single_entry_map);
-      }
+  //     if (current_node->processor_id() == mesh->processor_id())
+  //     {
+  //       NodeToConnectedBlocksMap single_entry_map;
+  //       auto it = _nodeid_to_connected_blocks.find(current_node_id);
+  //       if (it != _nodeid_to_connected_blocks.end())
+  //         single_entry_map.insert({it->first, it->second});
 
-      auto push_receiver_nodeid_and_connected_blocks =
-          [&](const processor_id_type, const std::vector<NodeToConnectedBlocksMap> & received_data)
-      {
-        for (const auto & single_entry_map : received_data)
-          for (const auto & kv : single_entry_map)
-            _nodeid_to_connected_blocks[kv.first].insert(kv.second.begin(), kv.second.end());
-      };
+  //       for (processor_id_type pid = 0; pid < n_processors(); ++pid)
+  //         if (pid != processor_id())
+  //           push_data_nodeid_and_connected_blocks[pid].push_back(single_entry_map);
+  //     }
 
-      Parallel::push_parallel_vector_data(_mesh->comm(),
-                                          push_data_nodeid_and_connected_blocks,
-                                          push_receiver_nodeid_and_connected_blocks);
-    }
-  }
+  //     auto push_receiver_nodeid_and_connected_blocks =
+  //         [&](const processor_id_type, const std::vector<NodeToConnectedBlocksMap> &
+  //         received_data)
+  //     {
+  //       for (const auto & single_entry_map : received_data)
+  //         for (const auto & kv : single_entry_map)
+  //           _nodeid_to_connected_blocks[kv.first].insert(kv.second.begin(), kv.second.end());
+  //     };
+
+  //     Parallel::push_parallel_vector_data(_mesh->comm(),
+  //                                         push_data_nodeid_and_connected_blocks,
+  //                                         push_receiver_nodeid_and_connected_blocks);
+  //   }
+  // }
+
+  // Helper: collect all connected blocks for a given set of elements
+  // auto prepare_connected_blocks = [&](const std::vector<dof_id_type> & elem_ids,
+  //                                     std::set<subdomain_id_type> & connected_blocks_set)
+  // {
+  //   for (auto elem_id : elem_ids)
+  //   {
+  //     const Elem * current_elem = mesh->elem_ptr(elem_id);
+  //     if (!current_elem)
+  //       continue;
+
+  //     subdomain_id_type block_id = blockRestrictedElementSubdomainID(current_elem);
+  //     if (!_block_pairs_restricted)
+  //       connected_blocks_set.insert(block_id);
+  //     else if (block_id != Elem::invalid_subdomain_id)
+  //       connected_blocks_set.insert(block_id);
+  //   }
+  // };
+
+  // // Main loop
+  // for (auto node_it = node_to_elem_map.begin(); node_it != node_to_elem_map.end(); ++node_it)
+  // {
+  //   const dof_id_type current_node_id = node_it->first;
+  //   const Node * current_node = mesh->node_ptr(current_node_id);
+
+  //   if (!current_node)
+  //     continue;
+
+  //   // Collect connected blocks locally
+  //   prepare_connected_blocks(node_it->second, _nodeid_to_connected_blocks[current_node_id]);
+
+  //   if (!mesh->is_replicated())
+  //   {
+  //     // ------------------------------------------------------
+  //     // (1) Non-owner ranks push ghost node data to the owner
+  //     // ------------------------------------------------------
+  //     NodeConnectedBlocksCommMap push_to_owner;
+
+  //     processor_id_type owner = current_node->processor_id();
+  //     processor_id_type me = mesh->processor_id();
+
+  //     if (owner != me)
+  //     {
+  //       NodeConnectedBlocksPair payload(
+  //           current_node_id,
+  //           std::vector<subdomain_id_type>(_nodeid_to_connected_blocks[current_node_id].begin(),
+  //                                          _nodeid_to_connected_blocks[current_node_id].end()));
+
+  //       push_to_owner[owner].push_back(payload);
+  //     }
+
+  //     auto recv_from_ghosts =
+  //         [&](processor_id_type /*src*/, const std::vector<NodeConnectedBlocksPair> &
+  //         received_data)
+  //     {
+  //       for (const auto & entry : received_data)
+  //       {
+  //         dof_id_type node_id = entry.first;
+  //         const auto & blocks = entry.second;
+
+  //         _nodeid_to_connected_blocks[node_id].insert(blocks.begin(), blocks.end());
+
+  //         auto it = node_to_elem_map.find(node_id);
+  //         if (it != node_to_elem_map.end())
+  //           prepare_connected_blocks(it->second, _nodeid_to_connected_blocks[node_id]);
+  //       }
+  //     };
+
+  //     Parallel::push_parallel_vector_data(mesh->comm(), push_to_owner, recv_from_ghosts);
+
+  //     // ------------------------------------------------------
+  //     // (2) Owner pushes back the complete block set
+  //     // ------------------------------------------------------
+  //     NodeConnectedBlocksCommMap push_back_to_ghosts;
+
+  //     if (owner == me)
+  //     {
+  //       NodeConnectedBlocksPair payload(
+  //           current_node_id,
+  //           std::vector<subdomain_id_type>(_nodeid_to_connected_blocks[current_node_id].begin(),
+  //                                          _nodeid_to_connected_blocks[current_node_id].end()));
+
+  //       for (processor_id_type pid = 0; pid < mesh->n_processors(); ++pid)
+  //         if (pid != me)
+  //           push_back_to_ghosts[pid].push_back(payload);
+  //     }
+
+  //     auto recv_from_owner =
+  //         [&](processor_id_type /*src*/, const std::vector<NodeConnectedBlocksPair> &
+  //         received_data)
+  //     {
+  //       for (const auto & entry : received_data)
+  //       {
+  //         dof_id_type node_id = entry.first;
+  //         const auto & blocks = entry.second;
+
+  //         _nodeid_to_connected_blocks[node_id].insert(blocks.begin(), blocks.end());
+  //       }
+  //     };
+
+  //     Parallel::push_parallel_vector_data(mesh->comm(), push_back_to_ghosts, recv_from_owner);
+  //   }
+  // }
+
+  sync_connected_blocks(node_to_elem_map, *mesh);
+
+  if (_debug)
+    _console << "[BreakMeshByBlockGenerator] rank " << mesh->processor_id()
+             << " prepared node to connected blocks map" << std::endl;
 
   // std::map<std::pair<dof_id_type, dof_id_type>, dof_id_type> new_nodes_order_in_current_proc;
   // dof_id_type local_new_nodes = 0;
@@ -699,4 +816,147 @@ BreakMeshByBlockGenerator::findBlockPairs(subdomain_id_type block_one, subdomain
         (block_pair.first == block_two && block_pair.second == block_one))
       return true;
   return false;
+}
+
+void
+BreakMeshByBlockGenerator::prepare_connected_blocks(
+    const std::vector<dof_id_type> & elem_ids,
+    std::set<subdomain_id_type> & connected_blocks_set,
+    MeshBase & mesh)
+{
+  for (const dof_id_type elem_id : elem_ids)
+  {
+    const Elem * elem = mesh.elem_ptr(elem_id);
+    if (!elem)
+      continue;
+
+    const subdomain_id_type bid = blockRestrictedElementSubdomainID(elem);
+    if (!_block_pairs_restricted || bid != Elem::invalid_subdomain_id)
+      connected_blocks_set.insert(bid);
+  }
+}
+
+void
+BreakMeshByBlockGenerator::sync_connected_blocks(
+    const std::map<dof_id_type, std::vector<dof_id_type>> & node_to_elem_map, MeshBase & mesh)
+{
+  // ---- Phase 0: each rank computes its local connected blocks ----
+  for (auto it = node_to_elem_map.begin(); it != node_to_elem_map.end(); ++it)
+  {
+    auto node_id = it->first;
+    auto node = mesh.node_ptr(node_id);
+    if (!node)
+      continue;
+
+    prepare_connected_blocks(it->second, _nodeid_to_connected_blocks[node_id], mesh);
+  }
+
+  if (mesh.is_replicated())
+    return; // no synchronization needed for replicated meshes
+
+  // ---- Phase 1: ghost nodes push their connected blocks to the owner ----
+  typedef std::pair<dof_id_type, std::vector<subdomain_id_type>> NodeConnectedBlocksPair;
+  typedef std::unordered_map<processor_id_type, std::vector<NodeConnectedBlocksPair>> ReceiveMap;
+  typedef std::tuple<dof_id_type, std::vector<subdomain_id_type>, processor_id_type>
+      NodeConnectedBlocksTuple;
+  typedef std::unordered_map<processor_id_type, std::vector<NodeConnectedBlocksTuple>> PushMap;
+
+  PushMap to_owner; // owner_pid -> [(node_id, blocks_vec, ghost_pid), ...]
+
+  const auto mesh_pid = mesh.processor_id();
+
+  for (auto it = _nodeid_to_connected_blocks.begin(); it != _nodeid_to_connected_blocks.end(); ++it)
+  {
+    auto node_id = it->first;
+    auto node = mesh.node_ptr(node_id);
+    if (!node)
+      continue;
+
+    const auto node_owner_pid = node->processor_id();
+
+    if (node_owner_pid != mesh_pid) // ghost node should send block info to the owner
+    {
+      const auto & blocks = it->second;
+      to_owner[node_owner_pid].push_back(
+          NodeConnectedBlocksTuple(node_id,
+                                   std::vector<subdomain_id_type>(blocks.begin(), blocks.end()),
+                                   mesh_pid /*ghosted pid*/));
+    }
+  }
+
+  auto & comm = mesh.comm();
+  // owner receives and merges ghost info into its local map
+  // Subscribers: node_id -> set of ghost_pids
+  std::unordered_map<dof_id_type, std::set<processor_id_type>> subscribers;
+
+  Parallel::push_parallel_vector_data(
+      comm,
+      to_owner,
+      [&](processor_id_type /*src*/, const std::vector<NodeConnectedBlocksTuple> & recv_data)
+      {
+        for (const auto & [node_id, blocks_vec, ghost_pid] : recv_data)
+        {
+          subscribers[node_id].insert(ghost_pid);
+          _nodeid_to_connected_blocks[node_id].insert(blocks_vec.begin(), blocks_vec.end());
+
+          auto itNE = node_to_elem_map.find(node_id);
+          if (itNE != node_to_elem_map.end())
+            prepare_connected_blocks(itNE->second, _nodeid_to_connected_blocks[node_id], mesh);
+        }
+      });
+
+  to_owner.clear();
+
+  // ---- Phase 2: node owners broadcast complete connected blocks to their subscribers ----
+  // not sure we need this
+  ReceiveMap from_owner;
+
+  // Iterate over all subscribers recorded in Phase 1.
+  // Each entry corresponds to one node_id and the set of ghost ranks
+  // that previously reported block connectivity for that node.
+  for (const auto & sub_entry : subscribers)
+  {
+    const auto node_id = sub_entry.first;
+    const auto & subscriber_pids = sub_entry.second; // set of ghost processor IDs
+
+    // Only the owner of the node is allowed to perform the broadcast.
+    // Other ranks simply skip this node.
+    const auto * node = mesh.node_ptr(node_id);
+    if (!node)
+      continue;
+    if (node->processor_id() != mesh_pid)
+      continue;
+
+    // Retrieve the full set of connected blocks for this node.
+    // At this point the owner has already merged information from ghosts.
+    const auto map_it = _nodeid_to_connected_blocks.find(node_id);
+    if (map_it == _nodeid_to_connected_blocks.end())
+      continue; // Should not happen, but check for safety.
+
+    const auto & blocks_set = map_it->second;
+
+    // Construct a single payload object containing the complete list of blocks.
+    NodeConnectedBlocksPair payload(
+        node_id, std::vector<subdomain_id_type>(blocks_set.begin(), blocks_set.end()));
+
+    // Send this payload to all ghost ranks that subscribed to this node.
+    for (const auto pid : subscriber_pids)
+    {
+      if (pid == mesh_pid) // Do not send back to the owner itself
+        continue;
+      from_owner[pid].push_back(payload);
+    }
+  }
+
+  Parallel::push_parallel_vector_data(
+      comm,
+      from_owner,
+      [&](processor_id_type /*src*/, const std::vector<NodeConnectedBlocksPair> & recv_data)
+      {
+        for (const auto & [node_id, blocks_vec] : recv_data)
+          _nodeid_to_connected_blocks[node_id].insert(blocks_vec.begin(), blocks_vec.end());
+      });
+
+  from_owner.clear();
+  subscribers.clear();
 }

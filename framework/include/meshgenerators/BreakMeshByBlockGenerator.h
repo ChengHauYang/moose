@@ -71,6 +71,21 @@ private:
   /// Enable verbose, developer-friendly debug logging
   const bool _debug;
 
+  // Typedef for mapping node_id -> set of connected block_ids
   typedef std::map<dof_id_type, std::set<subdomain_id_type>> NodeToConnectedBlocksMap;
   NodeToConnectedBlocksMap _nodeid_to_connected_blocks;
+
+  // Typedef for a single message entry: (node_id, vector of connected block_ids)
+  typedef std::pair<dof_id_type, std::vector<subdomain_id_type>> NodeConnectedBlocksPair;
+
+  // Typedef for communication map: processor_id -> list of (node_id, block_ids)
+  typedef std::unordered_map<processor_id_type, std::vector<NodeConnectedBlocksPair>>
+      NodeConnectedBlocksCommMap;
+
+  void prepare_connected_blocks(const std::vector<dof_id_type> & elem_ids,
+                                std::set<subdomain_id_type> & connected_blocks_set,
+                                MeshBase & mesh);
+  void
+  sync_connected_blocks(const std::map<dof_id_type, std::vector<dof_id_type>> & node_to_elem_map,
+                        MeshBase & mesh);
 };

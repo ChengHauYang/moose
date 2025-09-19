@@ -14,6 +14,7 @@
     type = BreakMeshByBlockGenerator
     input = fmg
     add_interface_on_two_sides = true
+    debug = true
   []
 
   parallel_type = distributed
