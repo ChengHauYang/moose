@@ -213,27 +213,26 @@ BreakMeshByBlockGenerator::generate()
             {
               if (should_create_new_node)
               {
-                new_node =
-                    Node::
-                        build(
-                            *current_node,
-                            mesh->is_replicated()
-                                ? mesh->n_nodes()
-                                : (current_elem->subdomain_id() + 1) * max_id + current_node
-                                                                                    ->unique_id()
-                                                                                    /*computeGlobalNewNodeId(current_node_id,
-                                                                                    elem_id)*/)
-                            .release();
-                new_node->processor_id() = current_elem->processor_id();
-                mesh->add_node(new_node);
-                // new_node = mesh->add_point(*current_node,
-                //                            mesh->is_replicated() ? mesh->n_nodes()
-                //                                                  :
-                //                                                  /*(current_elem->subdomain_id()
-                //                                                  +
-                //                                                     1) * max_id +
-                //                                                        current_node->unique_id()*/
-                //                                computeGlobalNewNodeId(current_node_id, elem_id));
+                // new_node =
+                //     Node::
+                //         build(
+                //             *current_node,
+                //             mesh->is_replicated()
+                //                 ? mesh->n_nodes()
+                //                 : (current_elem->subdomain_id() + 1) * max_id + current_node
+                //                                                                     ->unique_id()
+                //                                                                     /*computeGlobalNewNodeId(current_node_id,
+                //                                                                     elem_id)*/)
+                //             .release();
+                // new_node->processor_id() = current_elem->processor_id();
+                // mesh->add_node(new_node);
+                new_node = mesh->add_point(*current_node,
+                                           mesh->is_replicated() ? mesh->n_nodes() :
+                                                                 /*(current_elem->subdomain_id()
+                                                                 +
+                                                                    1) * max_id +
+                                                                       current_node->unique_id()*/
+                                               computeGlobalNewNodeId(current_node_id, elem_id));
                 current_elem->set_node(n_idx, new_node);
 
                 boundary_info.boundary_ids(current_node, node_boundary_ids);
