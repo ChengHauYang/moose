@@ -27,16 +27,15 @@ x0_double = '${fparse 2*x0}'
     split_interface = true
     add_interface_on_two_sides = true
     # use_n_nodes = true
+    debug = true
   []
 
   parallel_type = distributed
-
 []
 
 [Outputs]
   exodus = true
 []
-
 
 [Variables]
   [diffused]
@@ -47,7 +46,6 @@ x0_double = '${fparse 2*x0}'
 [Executioner]
   type = Steady
 []
-
 
 [AuxVariables]
   [proc]
