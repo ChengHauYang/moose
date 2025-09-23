@@ -7,7 +7,7 @@ x0_double = '${fparse 2*x0}'
 
 [Problem]
   solve = false
-  boundary_restricted_node_integrity_check = false
+  # boundary_restricted_node_integrity_check = false
 []
 
 [Mesh]
@@ -27,10 +27,10 @@ x0_double = '${fparse 2*x0}'
     split_interface = true
     add_interface_on_two_sides = true
     # use_n_nodes = true
-    debug = true
+    # debug = true
   []
 
-  parallel_type = distributed
+  # parallel_type = distributed
 []
 
 [Outputs]
