@@ -34,6 +34,8 @@ x0_double = '${fparse 2*x0}'
     add_interface_on_two_sides = true
     # prepare_end = false
   []
+
+  parallel_type = distributed
 []
 
 [Variables]
@@ -145,6 +147,20 @@ x0_double = '${fparse 2*x0}'
   [react_x]
   []
   [react_y]
+  []
+  [proc]
+    [AuxKernel]
+      type = ProcessorIDAux
+      execute_on = initial
+    []
+  []
+  [proc_elem]
+    family = MONOMIAL
+    order = CONSTANT
+    [AuxKernel]
+      type = ProcessorIDAux
+      execute_on = initial
+    []
   []
 []
 

@@ -26,11 +26,9 @@ x0_double = '${fparse 2*x0}'
     input = gen
     split_interface = true
     add_interface_on_two_sides = true
-    # use_n_nodes = true
-    # debug = true
   []
 
-  # parallel_type = distributed
+  parallel_type = distributed
 []
 
 [Outputs]
@@ -49,22 +47,17 @@ x0_double = '${fparse 2*x0}'
 
 [AuxVariables]
   [proc]
+    [AuxKernel]
+      type = ProcessorIDAux
+      execute_on = initial
+    []
   []
   [proc_elem]
     family = MONOMIAL
     order = CONSTANT
-  []
-[]
-
-[AuxKernels]
-  [proc]
-    type = ProcessorIDAux
-    variable = proc
-    execute_on = initial
-  []
-  [proc_elem]
-    type = ProcessorIDAux
-    variable = proc_elem
-    execute_on = initial
+    [AuxKernel]
+      type = ProcessorIDAux
+      execute_on = initial
+    []
   []
 []
