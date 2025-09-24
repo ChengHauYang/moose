@@ -45,6 +45,8 @@ public:
 
   void set_dof_coupling(const CouplingMatrix * dof_coupling) { _dof_coupling = dof_coupling; }
 
+  bool map_empty() const { return _map.empty(); }
+
 private:
   const std::unordered_map<std::pair<const Elem *, unsigned int>,
                            std::pair<const Elem *, unsigned int>> & _map;
@@ -76,7 +78,13 @@ void
 FakeNeighborRM::internalInitWithMesh(const MeshBase &)
 {
   // Create the functor, passing a const reference to our OWN copy of the map.
-  _functor = std::make_unique<FakeNeighborFunctorImpl>(_elem_side_to_fake_neighbor_elem_side);
+  if (!_functor)
+    _functor = std::make_unique<FakeNeighborFunctorImpl>(_elem_side_to_fake_neighbor_elem_side);
+  else if (auto fn = dynamic_cast<FakeNeighborFunctorImpl *>(_functor.get()))
+  {
+    if (fn->map_empty() && !_elem_side_to_fake_neighbor_elem_side.empty())
+      _functor = std::make_unique<FakeNeighborFunctorImpl>(_elem_side_to_fake_neighbor_elem_side);
+  }
 }
 
 void
@@ -107,4 +115,15 @@ std::unique_ptr<GhostingFunctor>
 FakeNeighborRM::clone() const
 {
   return _app.getFactory().copyConstruct(*this);
+}
+
+void
+FakeNeighborRM::set_mesh(const libMesh::MeshBase * mesh)
+{
+  // 1. Just-in-time creation
+  if (!_functor)
+    _functor = std::make_unique<FakeNeighborFunctorImpl>(_elem_side_to_fake_neighbor_elem_side);
+
+  // 2. Now that we guarantee _functor exists, safely call the base class version.
+  FunctorRelationshipManager::set_mesh(mesh);
 }

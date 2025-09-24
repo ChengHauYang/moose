@@ -23,6 +23,7 @@ public:
 protected:
   virtual void internalInitWithMesh(const MeshBase &) override;
   void dofmap_reinit() override;
+  void set_mesh(const libMesh::MeshBase * mesh) override;
 
 private:
   // The RM owns its own copy of the map.
