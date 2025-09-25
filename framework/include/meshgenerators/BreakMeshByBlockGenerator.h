@@ -67,6 +67,7 @@ private:
 
   std::set<std::pair<subdomain_id_type, subdomain_id_type>> _neighboring_block_list;
 
+  std::set<std::pair<subdomain_id_type, subdomain_id_type>> _new_boundary_sides_list;
   /// @brief a map from a pair of block ids to a set of element and side pairs
   std::map<std::pair<subdomain_id_type, subdomain_id_type>,
            std::set<std::pair<const Elem *, unsigned int>>>
