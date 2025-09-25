@@ -167,10 +167,6 @@ BreakMeshByBlockGenerator::generate()
     const auto & connected_blocks = _nodeid_to_connected_blocks.at(current_node_id);
     const unsigned int node_multiplicity = connected_blocks.size();
 
-    //
-    // if (mesh->processor_id() != current_node->processor_id())
-    //   continue;
-
     if (node_multiplicity > 1)
     {
       const std::vector<dof_id_type> & connected_elems = map_entry.second;
@@ -197,16 +193,13 @@ BreakMeshByBlockGenerator::generate()
           break;
 
         Elem * current_elem = mesh->elem_ptr(elem_id);
+
+        // if ((current_elem->processor_id() != current_node->processor_id()) &&
+        //     !mesh->is_replicated())
+        //   continue;
+
         if (!current_elem)
           continue;
-
-        //
-        // if (mesh->processor_id() != current_elem->processor_id())
-        //   continue;
-        // if (current_node->processor_id() != current_elem->processor_id())
-        //   continue;
-        // if (mesh->processor_id() != current_node->processor_id())
-        //   continue;
 
         subdomain_id_type block_id = blockRestrictedElementSubdomainID(current_elem);
 

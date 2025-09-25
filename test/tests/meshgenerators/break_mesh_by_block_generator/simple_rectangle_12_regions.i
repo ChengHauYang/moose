@@ -15,7 +15,7 @@
     ix = '6 9 15'
     iy = '9 9 9 3'
 
-    subdomain_id = '1 2 3 3 4 5 6 7 8 9 10 11'
+    subdomain_id = '1 2 3 4 5 6 7 8 9 10 11 12'
   []
 
   [break]
@@ -23,8 +23,6 @@
     input = gen
     split_interface = true
     add_interface_on_two_sides = true
-    # use_n_nodes = true
-    debug = true
   []
 
   parallel_type = distributed
