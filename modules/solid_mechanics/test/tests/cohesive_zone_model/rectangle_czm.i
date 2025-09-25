@@ -35,7 +35,7 @@ x0_double = '${fparse 2*x0}'
     # prepare_end = false
   []
 
-  parallel_type = distributed
+  # parallel_type = distributed
 []
 
 [Variables]

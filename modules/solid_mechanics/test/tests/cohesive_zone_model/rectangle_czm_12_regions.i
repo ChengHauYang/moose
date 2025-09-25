@@ -30,7 +30,7 @@ E1 = 1e3
     add_interface_on_two_sides = true
   []
 
-  parallel_type = distributed
+  # parallel_type = distributed
 []
 
 [Outputs]
