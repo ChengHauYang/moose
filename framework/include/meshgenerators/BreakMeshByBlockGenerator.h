@@ -35,7 +35,7 @@ protected:
   /// Notice that in block restricted mode, the invalid_subdomain_id is used
   /// to lump toghether all the non-listed blocks to avoid splitting the mesh
   /// where not necessary.
-  subdomain_id_type blockRestrictedElementSubdomainID(const Elem * elem) const;
+  subdomain_id_type blockRestrictedElementSubdomainID(const Elem * elem);
 
   /// Return true if block_one and block_two are found in users' provided block_pairs list
   bool findBlockPairs(subdomain_id_type block_one, subdomain_id_type block_two);
@@ -80,27 +80,4 @@ private:
   std::unordered_map<ElemSidePair, ElemSidePair> _elemid_side_to_fake_neighbor_elemid_side;
 
   bool _prepare_end;
-
-  // Typedef for mapping node_id -> set of connected block_ids
-  typedef std::map<dof_id_type, std::set<subdomain_id_type>> NodeToConnectedBlocksMap;
-  NodeToConnectedBlocksMap _nodeid_to_connected_blocks;
-
-  // Typedef for a single message entry: (node_id, vector of connected block_ids)
-  typedef std::pair<dof_id_type, std::vector<subdomain_id_type>> NodeConnectedBlocksPair;
-
-  // Typedef for communication map: processor_id -> list of (node_id, block_ids)
-  typedef std::unordered_map<processor_id_type, std::vector<NodeConnectedBlocksPair>>
-      NodeConnectedBlocksCommMap;
-
-  std::map<std::pair<dof_id_type, dof_id_type>, dof_id_type> _new_node_elem_pairs_to_new_node_id;
-
-  void prepare_connected_blocks(const std::vector<dof_id_type> & elem_ids,
-                                std::set<subdomain_id_type> & connected_blocks_set,
-                                MeshBase & mesh);
-  void syncConnectedBlocks(const std::map<dof_id_type, std::vector<dof_id_type>> & node_to_elem_map,
-                           MeshBase & mesh);
-  void
-  syncAndMapNewNodeIds(const std::map<dof_id_type, std::vector<dof_id_type>> & node_to_elem_map,
-                       MeshBase & mesh);
-  dof_id_type computeGlobalNewNodeId(dof_id_type node_id, dof_id_type elem_id) const;
 };
