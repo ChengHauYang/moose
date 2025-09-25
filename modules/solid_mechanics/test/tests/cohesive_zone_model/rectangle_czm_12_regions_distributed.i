@@ -1,11 +1,7 @@
+
 # nx = 1024
-nx = 16
-nx_half = '${fparse nx/2}'
-E1 = 1e3
-E2 = 1e3
 poi = 0.3
-x0 = 0.5
-x0_double = '${fparse 2*x0}'
+E1 = 1e3
 
 [GlobalParams]
   displacements = 'disp_x disp_y'
@@ -13,18 +9,18 @@ x0_double = '${fparse 2*x0}'
 []
 
 [Problem]
-  extra_tag_vectors = 'ref'
 []
 
 [Mesh]
   [gen]
     type = CartesianMeshGenerator
     dim = 2
-    dx = '${x0} ${x0}'
-    dy = '${x0_double}'
-    ix = '${nx_half} ${nx_half}'
-    iy = '${nx}'
-    subdomain_id = '1 2'
+    dx = '0.2 0.3 0.5'
+    dy = '0.3 0.3 0.3 0.1'
+    ix = '6 9 15'
+    iy = '9 9 9 3'
+
+    subdomain_id = '1 2 3 4 5 6 7 8 9 10 11 12'
   []
 
   [break]
@@ -32,10 +28,13 @@ x0_double = '${fparse 2*x0}'
     input = gen
     split_interface = true
     add_interface_on_two_sides = true
-    # prepare_end = false
   []
 
-  # parallel_type = distributed
+  parallel_type = distributed
+[]
+
+[Outputs]
+  exodus = true
 []
 
 [Variables]
@@ -50,7 +49,6 @@ x0_double = '${fparse 2*x0}'
     [QuasiStatic]
       [all]
         strain = SMALL
-        extra_vector_tags = 'ref'
         use_automatic_differentiation = true
         generate_output = 'stress_xx stress_xy stress_yy stress_zz strain_xx strain_xy strain_yy strain_zz'
       []
@@ -62,32 +60,25 @@ x0_double = '${fparse 2*x0}'
   [elastic_stress]
     type = ADComputeLinearElasticStress
   []
-  [elasticity_tensor_in]
+  [elasticity_tensor]
     type = ADComputeIsotropicElasticityTensor
     poissons_ratio = ${poi}
     youngs_modulus = ${E1}
-    block = 1
-  []
-  [elasticity_tensor_out]
-    type = ADComputeIsotropicElasticityTensor
-    poissons_ratio = ${poi}
-    youngs_modulus = ${E2}
-    block = 2
   []
   [jump]
     type = ADCZMComputeDisplacementJumpSmallStrain
     # displacements added through GlobalParams
-    boundary = 'Block1_Block2'
+    boundary = 'Block1_Block2 Block1_Block4 Block2_Block3 Block3_Block6 Block4_Block5 Block4_Block7 Block5_Block6 Block5_Block8 Block6_Block9 Block7_Block8 Block7_Block10 Block8_Block9 Block8_Block11 Block9_Block12 Block10_Block11 Block11_Block12'
   []
   [interface_traction]
     type = ADPureElasticTractionSeparation
     normal_stiffness = 1e4
     tangent_stiffness = 7e3
-    boundary = 'Block1_Block2'
+    boundary = 'Block1_Block2 Block1_Block4 Block2_Block3 Block3_Block6 Block4_Block5 Block4_Block7 Block5_Block6 Block5_Block8 Block6_Block9 Block7_Block8 Block7_Block10 Block8_Block9 Block8_Block11 Block9_Block12 Block10_Block11 Block11_Block12'
   []
   [global_traction]
     type = ADCZMComputeGlobalTractionSmallStrain
-    boundary = 'Block1_Block2'
+    boundary = 'Block1_Block2 Block1_Block4 Block2_Block3 Block3_Block6 Block4_Block5 Block4_Block7 Block5_Block6 Block5_Block8 Block6_Block9 Block7_Block8 Block7_Block10 Block8_Block9 Block8_Block11 Block9_Block12 Block10_Block11 Block11_Block12'
   []
 []
 
@@ -115,7 +106,7 @@ x0_double = '${fparse 2*x0}'
   [displacement_with_time]
     type = ParsedFunction
     # expression = '1e-2*sin(pi*t/160)*t'
-    expression = '1e-2*t'
+    expression = '5e-3*t'
   []
 []
 
@@ -128,22 +119,18 @@ x0_double = '${fparse 2*x0}'
     variable = disp_x
     neighbor_var = disp_x
     component = 0
-    boundary = 'Block1_Block2'
+    boundary = 'Block1_Block2 Block1_Block4 Block2_Block3 Block3_Block6 Block4_Block5 Block4_Block7 Block5_Block6 Block5_Block8 Block6_Block9 Block7_Block8 Block7_Block10 Block8_Block9 Block8_Block11 Block9_Block12 Block10_Block11 Block11_Block12'
   []
   [sczm_y]
     type = ADCZMInterfaceKernelSmallStrain
     variable = disp_y
     neighbor_var = disp_y
     component = 1
-    boundary = 'Block1_Block2'
+    boundary = 'Block1_Block2 Block1_Block4 Block2_Block3 Block3_Block6 Block4_Block5 Block4_Block7 Block5_Block6 Block5_Block8 Block6_Block9 Block7_Block8 Block7_Block10 Block8_Block9 Block8_Block11 Block9_Block12 Block10_Block11 Block11_Block12'
   []
 []
 
 [AuxVariables]
-  [react_x]
-  []
-  [react_y]
-  []
   [proc]
     [AuxKernel]
       type = ProcessorIDAux
@@ -157,23 +144,6 @@ x0_double = '${fparse 2*x0}'
       type = ProcessorIDAux
       execute_on = initial
     []
-  []
-[]
-
-[AuxKernels]
-  [react_x]
-    type = TagVectorAux
-    vector_tag = 'ref'
-    v = 'disp_x'
-    variable = 'react_x'
-    scaled = false
-  []
-  [react_y]
-    type = TagVectorAux
-    vector_tag = 'ref'
-    v = 'disp_y'
-    variable = 'react_y'
-    scaled = false
   []
 []
 
@@ -197,30 +167,5 @@ x0_double = '${fparse 2*x0}'
     boundary = 'right'
     function = displacement_with_time
     preset = false
-  []
-[]
-
-[Postprocessors]
-  [react_x]
-    type = NodalSum
-    variable = 'react_x'
-    boundary = 'right'
-  []
-  [react_y]
-    type = NodalSum
-    variable = 'react_y'
-    boundary = 'right'
-  []
-  [length]
-    type = AreaPostprocessor
-    boundary = 'right'
-  []
-[]
-
-[Outputs]
-  exodus = true
-  [csv]
-    type = CSV
-    precision = 15
   []
 []
