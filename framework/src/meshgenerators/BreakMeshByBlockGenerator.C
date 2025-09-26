@@ -230,7 +230,8 @@ BreakMeshByBlockGenerator::generate()
                 if (!mesh->is_replicated())
                 {
                   const dof_id_type new_node_id =
-                      (current_elem->subdomain_id() + 1) * max_node_id + current_node->id();
+                      /*(current_elem->subdomain_id() + 1) * max_node_id + current_node->id()*/
+                      mesh->parallel_max_unique_id() + 1;
                   new_node->set_id(new_node_id);
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
                   const unique_id_type new_unique_id =
