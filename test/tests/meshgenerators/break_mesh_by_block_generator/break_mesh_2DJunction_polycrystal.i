@@ -16,7 +16,7 @@
     split_interface = true
   []
 
-  #parallel_type = distributed
+  parallel_type = distributed
 []
 
 [Outputs]

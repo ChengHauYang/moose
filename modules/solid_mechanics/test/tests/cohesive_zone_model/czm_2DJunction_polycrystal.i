@@ -18,7 +18,7 @@
               0 -1 0'
     new_boundary = 'right left bottom'
   []
-  # parallel_type = distributed
+  parallel_type = distributed
 []
 
 [GlobalParams]
@@ -51,7 +51,7 @@
 
 #     [CohesiveZone]
 #       [czm_ik]
-#         boundary = 'Block1_Block2 Block1_Block6 Block1_Block7 Block2_Block5 Block2_Block6 Block2_Block7 Block2_Block10 Block3_Block4 Block3_Block5 Block4_Block5 Block4_Block8 Block4_Block10 Block5_Block7 Block5_Block10 Block6_Block8 Block6_Block9 Block6_Block10 Block7_Block5 Block8_Block9 Block8_Block10'
+#         boundary = 'Block1_Block2 Block1_Block6 Block1_Block7 Block2_Block5 Block2_Block6 Block2_Block7 Block2_Block10 Block3_Block4 Block3_Block5 Block4_Block5 Block4_Block8 Block4_Block10 Block5_Block7 Block5_Block10 Block6_Block8 Block6_Block9 Block6_Block10 Block8_Block9 Block8_Block10'
 #       []
 #     []
 #   []
@@ -70,17 +70,17 @@
   [jump]
     type = ADCZMComputeDisplacementJumpSmallStrain
     # displacements added through GlobalParams
-    boundary = 'Block1_Block2 Block1_Block6 Block1_Block7 Block2_Block5 Block2_Block6 Block2_Block7 Block2_Block10 Block3_Block4 Block3_Block5 Block4_Block5 Block4_Block8 Block4_Block10 Block5_Block7 Block5_Block10 Block6_Block8 Block6_Block9 Block6_Block10 Block7_Block5 Block8_Block9 Block8_Block10'
+    boundary = 'Block1_Block2 Block1_Block6 Block1_Block7 Block2_Block5 Block2_Block6 Block2_Block7 Block2_Block10 Block3_Block4 Block3_Block5 Block4_Block5 Block4_Block8 Block4_Block10 Block5_Block7 Block5_Block10 Block6_Block8 Block6_Block9 Block6_Block10 Block8_Block9 Block8_Block10'
   []
   [interface_traction]
     type = ADPureElasticTractionSeparation
     normal_stiffness = 1e4
     tangent_stiffness = 7e3
-    boundary = 'Block1_Block2 Block1_Block6 Block1_Block7 Block2_Block5 Block2_Block6 Block2_Block7 Block2_Block10 Block3_Block4 Block3_Block5 Block4_Block5 Block4_Block8 Block4_Block10 Block5_Block7 Block5_Block10 Block6_Block8 Block6_Block9 Block6_Block10 Block7_Block5 Block8_Block9 Block8_Block10'
+    boundary = 'Block1_Block2 Block1_Block6 Block1_Block7 Block2_Block5 Block2_Block6 Block2_Block7 Block2_Block10 Block3_Block4 Block3_Block5 Block4_Block5 Block4_Block8 Block4_Block10 Block5_Block7 Block5_Block10 Block6_Block8 Block6_Block9 Block6_Block10 Block8_Block9 Block8_Block10'
   []
   [global_traction]
     type = ADCZMComputeGlobalTractionSmallStrain
-    boundary = 'Block1_Block2 Block1_Block6 Block1_Block7 Block2_Block5 Block2_Block6 Block2_Block7 Block2_Block10 Block3_Block4 Block3_Block5 Block4_Block5 Block4_Block8 Block4_Block10 Block5_Block7 Block5_Block10 Block6_Block8 Block6_Block9 Block6_Block10 Block7_Block5 Block8_Block9 Block8_Block10'
+    boundary = 'Block1_Block2 Block1_Block6 Block1_Block7 Block2_Block5 Block2_Block6 Block2_Block7 Block2_Block10 Block3_Block4 Block3_Block5 Block4_Block5 Block4_Block8 Block4_Block10 Block5_Block7 Block5_Block10 Block6_Block8 Block6_Block9 Block6_Block10 Block8_Block9 Block8_Block10'
   []
 []
 
@@ -90,14 +90,14 @@
     variable = disp_x
     neighbor_var = disp_x
     component = 0
-    boundary = 'Block1_Block2 Block1_Block6 Block1_Block7 Block2_Block5 Block2_Block6 Block2_Block7 Block2_Block10 Block3_Block4 Block3_Block5 Block4_Block5 Block4_Block8 Block4_Block10 Block5_Block7 Block5_Block10 Block6_Block8 Block6_Block9 Block6_Block10 Block7_Block5 Block8_Block9 Block8_Block10'
+    boundary = 'Block1_Block2 Block1_Block6 Block1_Block7 Block2_Block5 Block2_Block6 Block2_Block7 Block2_Block10 Block3_Block4 Block3_Block5 Block4_Block5 Block4_Block8 Block4_Block10 Block5_Block7 Block5_Block10 Block6_Block8 Block6_Block9 Block6_Block10 Block8_Block9 Block8_Block10'
   []
   [sczm_y]
     type = ADCZMInterfaceKernelSmallStrain
     variable = disp_y
     neighbor_var = disp_y
     component = 1
-    boundary = 'Block1_Block2 Block1_Block6 Block1_Block7 Block2_Block5 Block2_Block6 Block2_Block7 Block2_Block10 Block3_Block4 Block3_Block5 Block4_Block5 Block4_Block8 Block4_Block10 Block5_Block7 Block5_Block10 Block6_Block8 Block6_Block9 Block6_Block10 Block7_Block5 Block8_Block9 Block8_Block10'
+    boundary = 'Block1_Block2 Block1_Block6 Block1_Block7 Block2_Block5 Block2_Block6 Block2_Block7 Block2_Block10 Block3_Block4 Block3_Block5 Block4_Block5 Block4_Block8 Block4_Block10 Block5_Block7 Block5_Block10 Block6_Block8 Block6_Block9 Block6_Block10 Block8_Block9 Block8_Block10'
   []
 []
 

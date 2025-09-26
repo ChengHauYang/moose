@@ -71,8 +71,7 @@ BreakMeshByBlockGenerator::BreakMeshByBlockGenerator(const InputParameters & par
     _split_transition_interface(getParam<bool>("split_transition_interface")),
     _interface_transition_name(getParam<BoundaryName>("interface_transition_name")),
     _add_interface_on_two_sides(getParam<bool>("add_interface_on_two_sides")),
-    _generate_boundary_pairs(getParam<bool>("generate_boundary_pairs")),
-    _prepare_end(getParam<bool>("prepare_end"))
+    _generate_boundary_pairs(getParam<bool>("generate_boundary_pairs"))
 {
   if (_block_pairs_restricted && _surrounding_blocks_restricted)
     paramError("block_pairs_restricted",
@@ -99,9 +98,6 @@ BreakMeshByBlockGenerator::generate()
   mesh->prepare_for_use();
 
   const auto max_node_id = mesh->max_node_id();
-#ifdef LIBMESH_ENABLE_UNIQUE_ID
-  const auto max_unique_id = mesh->parallel_max_unique_id();
-#endif
 
   BoundaryInfo & boundary_info = mesh->get_boundary_info();
 
@@ -158,8 +154,6 @@ BreakMeshByBlockGenerator::generate()
   // Sync connected block info across all ranks
   syncConnectedBlocks(node_to_elem_map, *mesh);
 
-  syncAndMapNewNodeIds(node_to_elem_map, *mesh);
-
   // Main loop to duplicate nodes
   for (const auto & map_entry : node_to_elem_map)
   {
@@ -198,10 +192,6 @@ BreakMeshByBlockGenerator::generate()
 
         Elem * current_elem = mesh->elem_ptr(elem_id);
 
-        // if ((current_elem->processor_id() != current_node->processor_id()) &&
-        //     !mesh->is_replicated())
-        //   continue;
-
         if (!current_elem)
           continue;
 
@@ -222,8 +212,8 @@ BreakMeshByBlockGenerator::generate()
                 new_node = Node::build(*current_node,
                                        mesh->is_replicated()
                                            ? mesh->n_nodes()
-                                           : computeGlobalNewNodeId(current_node_id, elem_id)
-                                       /*mesh->parallel_max_unique_id() + 1*/)
+                                           : (current_elem->subdomain_id() + 1) * max_node_id +
+                                                 current_node->id())
                                .release();
                 new_node->processor_id() = current_elem->processor_id();
                 mesh->add_node(new_node);
@@ -318,8 +308,11 @@ BreakMeshByBlockGenerator::generate()
                 _new_boundary_sides_map[blocks_pair].insert(
                     std::make_pair(!need_to_switch ? current_elem : connected_elem, side));
                 if (_add_interface_on_two_sides)
+                {
+                  _new_boundary_sides_list.insert(blocks_pair2);
                   _new_boundary_sides_map[blocks_pair2].insert(std::make_pair(
                       !need_to_switch ? connected_elem : current_elem, connected_elem_side));
+                }
               };
 
               if (_block_pairs_restricted)
@@ -378,9 +371,12 @@ BreakMeshByBlockGenerator::generate()
       _factory.releaseSharedObjects(*rm);
   }
 
+  mesh->prepare_for_use();
+
+  // After the mesh is prepared, we can now set the elem side to fake neighbor elem side map based
+  // on element IDs, since IDs may change after prepare_for_use.
   if (_generate_boundary_pairs)
   {
-    std::map<processor_id_type, std::vector<PairOfElemSidePair>> push_data;
     for (const auto & [pair1, pair2] : _elem_side_to_fake_neighbor_elem_side)
     {
       const auto elem_id = pair1.first->id();
@@ -390,17 +386,13 @@ BreakMeshByBlockGenerator::generate()
 
       _elemid_side_to_fake_neighbor_elemid_side[std::make_pair(elem_id, side)] =
           std::make_pair(neighbor_elem_id, neighbor_side);
+      if (_add_interface_on_two_sides)
+        _elemid_side_to_fake_neighbor_elemid_side[std::make_pair(neighbor_elem_id, neighbor_side)] =
+            std::make_pair(elem_id, side);
     }
 
     _mesh->setElemSideToFakeNeighborElemSideMap(_elemid_side_to_fake_neighbor_elemid_side);
   }
-
-  // if (_prepare_end)
-  // The following line breaks our interface neighbor info
-  mesh->prepare_for_use();
-
-  // everything works
-  // mesh->prepare_for_use(false, /*skip_find_neighbors=*/true);
 
   return dynamic_pointer_cast<MeshBase>(mesh);
 }
@@ -602,93 +594,4 @@ BreakMeshByBlockGenerator::syncConnectedBlocks(
         for (const auto & [node_id, blocks_vec] : recv_data)
           _nodeid_to_connected_blocks[node_id].insert(blocks_vec.begin(), blocks_vec.end());
       });
-}
-
-void
-BreakMeshByBlockGenerator::syncAndMapNewNodeIds(
-    const std::map<dof_id_type, std::vector<dof_id_type>> & node_to_elem_map, MeshBase & mesh)
-{
-
-  const auto max_id = mesh.parallel_max_unique_id();
-  if (mesh.is_replicated())
-    return; // Not needed for replicated meshes. IDs will be assigned sequentially.
-
-  std::set<std::pair<dof_id_type, dof_id_type>> local_pairs_to_split;
-
-  // 1. Each rank determines its LOCAL (node, elem) pairs that need splitting based on complete
-  // block info.
-  for (const auto & map_entry : node_to_elem_map)
-  {
-    const dof_id_type current_node_id = map_entry.first;
-    const auto & connected_blocks = _nodeid_to_connected_blocks.at(current_node_id);
-
-    if (connected_blocks.size() <= 1)
-      continue;
-
-    bool should_create_new_node = true;
-    if (_block_pairs_restricted)
-    {
-      if (connected_blocks.size() == 2)
-      {
-        auto it1 = connected_blocks.begin();
-        auto it2 = std::next(it1);
-        should_create_new_node = findBlockPairs(*it1, *it2);
-      }
-      else
-        should_create_new_node = false;
-    }
-
-    if (!should_create_new_node)
-      continue;
-
-    subdomain_id_type reference_subdomain_id = connected_blocks.count(Elem::invalid_subdomain_id)
-                                                   ? Elem::invalid_subdomain_id
-                                                   : *connected_blocks.begin();
-
-    for (const auto elem_id : map_entry.second)
-    {
-      const Elem * elem = mesh.elem_ptr(elem_id);
-      if (!elem)
-        continue;
-
-      subdomain_id_type block_id = blockRestrictedElementSubdomainID(elem);
-      if ((block_id != reference_subdomain_id) ||
-          (_block_pairs_restricted && findBlockPairs(reference_subdomain_id, block_id)))
-      {
-        local_pairs_to_split.insert({current_node_id, elem_id});
-      }
-    }
-  }
-
-  // 2. Gather all local lists into one global list on all ranks.
-  std::vector<std::pair<dof_id_type, dof_id_type>> global_pairs_vec(local_pairs_to_split.begin(),
-                                                                    local_pairs_to_split.end());
-  mesh.comm().allgather(global_pairs_vec);
-
-  // 3. Sort the global list to ensure deterministic ID assignment across all ranks.
-  std::sort(global_pairs_vec.begin(), global_pairs_vec.end());
-
-  // 4. Create the global ID map. Every rank does this identically.
-  unique_id_type next_id = max_id + 1;
-  for (const auto & pair : global_pairs_vec)
-  {
-    // To avoid duplication, only insert if the key is not present.
-    // This handles cases where different ranks might report the same pair if elements are shared.
-    if (_new_node_elem_pairs_to_new_node_id.find(pair) == _new_node_elem_pairs_to_new_node_id.end())
-    {
-      _new_node_elem_pairs_to_new_node_id[pair] = next_id;
-      next_id++;
-    }
-  }
-}
-
-dof_id_type
-BreakMeshByBlockGenerator::computeGlobalNewNodeId(dof_id_type node_id, dof_id_type elem_id) const
-{
-  auto it = _new_node_elem_pairs_to_new_node_id.find({node_id, elem_id});
-  if (it != _new_node_elem_pairs_to_new_node_id.end())
-    return it->second;
-  else
-    mooseError("[computeGlobalNewNodeId] Could not find new node ID for (node_id=" +
-               std::to_string(node_id) + ", elem_id=" + std::to_string(elem_id) + ")");
 }
