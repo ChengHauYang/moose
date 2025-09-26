@@ -81,20 +81,25 @@ BreakMeshByBlockGeneratorBase::generateBoundaryName(MeshBase & mesh,
 }
 
 void
-BreakMeshByBlockGeneratorBase::mapBoundaryIdAndBoundaryName(const boundary_id_type & boundaryID,
+BreakMeshByBlockGeneratorBase::mapBoundaryIdAndBoundaryName(boundary_id_type & boundaryID,
                                                             const std::string & boundaryName)
 {
   _bName_bID_set.insert(std::pair<std::string, int>(boundaryName, boundaryID));
 }
 
 void
-BreakMeshByBlockGeneratorBase::findBoundaryName(MeshBase & mesh,
-                                                const subdomain_id_type & primaryBlockID,
-                                                const subdomain_id_type & secondaryBlockID,
-                                                std::string & boundaryName,
-                                                const boundary_id_type & boundaryID,
-                                                BoundaryInfo & boundary_info)
+BreakMeshByBlockGeneratorBase::findBoundaryNameAndInd(MeshBase & mesh,
+                                                      const subdomain_id_type & primaryBlockID,
+                                                      const subdomain_id_type & secondaryBlockID,
+                                                      std::string & boundaryName,
+                                                      boundary_id_type & boundaryID,
+                                                      BoundaryInfo & boundary_info)
 {
+  // TODO need to be updated if distributed mesh is implemented
+  // comments are left to ease implementation
+
+  // mpi barrier
+  // first check which boundary name will be created
   boundaryName = generateBoundaryName(mesh, primaryBlockID, secondaryBlockID);
 
   // check if the boundary name already exist
@@ -103,15 +108,19 @@ BreakMeshByBlockGeneratorBase::findBoundaryName(MeshBase & mesh,
   {
     if (b.first.compare(boundaryName) == 0)
     {
-      mooseAssert(boundaryID == b.second, "Boundary with two inconsistent ids");
+      boundaryID = b.second;
       checkBoundaryAlreadyExist = true;
     }
   }
 
   if (checkBoundaryAlreadyExist)
+  {
+    // mpi barrier end
     return;
+  }
   else
   {
+    boundaryID = findFreeBoundaryId(mesh);
     mapBoundaryIdAndBoundaryName(boundaryID, boundaryName);
 
     boundary_info.sideset_name(boundaryID) = boundaryName;

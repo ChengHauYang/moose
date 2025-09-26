@@ -67,7 +67,6 @@ private:
 
   std::set<std::pair<subdomain_id_type, subdomain_id_type>> _neighboring_block_list;
 
-  std::set<std::pair<subdomain_id_type, subdomain_id_type>> _new_boundary_sides_list;
   /// @brief a map from a pair of block ids to a set of element and side pairs
   std::map<std::pair<subdomain_id_type, subdomain_id_type>,
            std::set<std::pair<const Elem *, unsigned int>>>
@@ -89,9 +88,19 @@ private:
   // Typedef for a single message entry: (node_id, vector of connected block_ids)
   typedef std::pair<dof_id_type, std::vector<subdomain_id_type>> NodeConnectedBlocksPair;
 
+  // Typedef for communication map: processor_id -> list of (node_id, block_ids)
+  typedef std::unordered_map<processor_id_type, std::vector<NodeConnectedBlocksPair>>
+      NodeConnectedBlocksCommMap;
+
+  std::map<std::pair<dof_id_type, dof_id_type>, dof_id_type> _new_node_elem_pairs_to_new_node_id;
+
   void prepare_connected_blocks(const std::vector<dof_id_type> & elem_ids,
                                 std::set<subdomain_id_type> & connected_blocks_set,
                                 MeshBase & mesh);
   void syncConnectedBlocks(const std::map<dof_id_type, std::vector<dof_id_type>> & node_to_elem_map,
                            MeshBase & mesh);
+  void
+  syncAndMapNewNodeIds(const std::map<dof_id_type, std::vector<dof_id_type>> & node_to_elem_map,
+                       MeshBase & mesh);
+  dof_id_type computeGlobalNewNodeId(dof_id_type node_id, dof_id_type elem_id) const;
 };
