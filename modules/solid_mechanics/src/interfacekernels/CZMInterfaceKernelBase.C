@@ -72,6 +72,13 @@ CZMInterfaceKernelBase::computeQpResidual(Moose::DGResidualType type)
       r *= _test_neighbor[_i][_qp];
       break;
   }
+
+  const Point & q_point = _q_point[_qp];
+
+  std::ofstream fout("Qp_Residual.txt", std::ios::app);
+  fout << q_point(0) << "," << q_point(1) << "," << r << "\n";
+  fout.close();
+
   return r;
 }
 
