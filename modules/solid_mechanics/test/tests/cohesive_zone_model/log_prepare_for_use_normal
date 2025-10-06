@@ -1,0 +1,4408 @@
+
+[36m
+*** Info ***
+/Users/chenghau.yang/Documents/Package/moose-czm/modules/solid_mechanics/test/tests/cohesive_zone_model/czm_patch_test_base.i:37.7:
+The following occurred in the Action 'all' of type QuasiStaticSolidMechanicsPhysics.
+
+SolidMechanics Action: selecting 'total small strain' formulation. Use `incremental = true` to select 'incremental small strain' instead.[39m
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 0
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 0
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 0
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 0
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 0
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 0
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+hasDisconnectedNeighbor(elem->id(), side) = 1
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 4
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 0
+ (generalNeighborPtr) elem_id = 1 side = 1
+ (generalNeighborPtr) elem_id = 1 side = 1
+elem_id = 1 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+ (generalNeighborPtr) elem_id = 2 side = 0
+elem_id = 2 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+ (generalNeighborPtr) elem_id = 2 side = 1
+elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 4
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 0
+ (generalNeighborPtr) elem_id = 3 side = 0
+elem_id = 3 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+ (generalNeighborPtr) elem_id = 3 side = 1
+elem_id = 3 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 4
+ (generalNeighborPtr) elem_id = 3 side = 4
+elem_id = 3 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 0
+ (generalNeighborPtr) elem_id = 4 side = 0
+elem_id = 4 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 1
+ (generalNeighborPtr) elem_id = 4 side = 1
+elem_id = 4 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 2
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 4
+ (generalNeighborPtr) elem_id = 4 side = 4
+elem_id = 4 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 0
+ (generalNeighborPtr) elem_id = 5 side = 0
+elem_id = 5 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 1
+ (generalNeighborPtr) elem_id = 5 side = 1
+elem_id = 5 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 2
+ (generalNeighborPtr) elem_id = 5 side = 2
+elem_id = 5 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 4
+ (generalNeighborPtr) elem_id = 5 side = 4
+elem_id = 5 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 0
+ (generalNeighborPtr) elem_id = 6 side = 0
+elem_id = 6 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 1
+ (generalNeighborPtr) elem_id = 6 side = 1
+elem_id = 6 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 2
+ (generalNeighborPtr) elem_id = 6 side = 3
+ (generalNeighborPtr) elem_id = 6 side = 3
+elem_id = 6 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 4
+ (generalNeighborPtr) elem_id = 6 side = 4
+elem_id = 6 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 5
+elem_id = 6 side = 5
+Found disconnected neighbor for the side
+Framework Information:
+MOOSE Version:           git commit 6f1c82801f on 2025-10-02
+LibMesh Version:         
+PETSc Version:           3.23.4
+SLEPc Version:           3.23.2
+Current Time:            Mon Oct  6 10:12:49 2025
+Executable Timestamp:    Mon Oct  6 10:10:44 2025
+
+Input File(s):
+  /Users/chenghau.yang/Documents/Package/moose-czm/modules/solid_mechanics/test/tests/cohesive_zone_model/czm_patch_test_base.i
+
+Command Line Argument(s):
+  --allow-test-objects
+
+Command Line Input Argument(s):
+  Materials/czm_mat/type=PureElasticTractionSeparationIncremental
+  Materials/czm_mat/normal_stiffness=100e2
+  Materials/czm_mat/tangent_stiffness=70e2
+  Physics/SolidMechanics/CohesiveZone/czm_ik/strain=SMALL
+  Physics/SolidMechanics/CohesiveZone/czm_ik/generate_output='traction_x traction_y traction_z normal_traction tangent_traction jump_x jump_y jump_z normal_jump tangent_jump'
+  Physics/SolidMechanics/QuasiStatic/all/strain=SMALL
+  Physics/SolidMechanics/QuasiStatic/all/use_finite_deform_jacobian=false
+  Materials/stress/type=ADComputeLinearElasticStress
+  Outputs/file_base=czm_small_strain_incremental_out
+  Outputs/exodus=true
+  Executioner/automatic_scaling=false
+  Mesh/split/mode=2
+
+Checkpoint:
+  Wall Time Interval:      Every 3600 s
+  User Checkpoint:         Disabled
+  # Checkpoints Kept:      2
+  Execute On:              TIMESTEP_END 
+
+Parallelism:
+  Num Processors:          1
+  Num Threads:             1
+
+Mesh: 
+  Parallel Type:           replicated
+  Mesh Dimension:          3
+  Spatial Dimension:       3
+  Nodes:                   56
+  Elems:                   7
+  Num Subdomains:          7
+
+Nonlinear System:
+  Num DOFs:                168
+  Num Local DOFs:          168
+  Variables:               { "disp_x" "disp_y" "disp_z" } 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Auxiliary System:
+  Num DOFs:                70
+  Num Local DOFs:          70
+  Variables:               { "traction_x" "traction_y" "traction_z" "normal_traction" "tangent_traction" 
+                             "jump_x" "jump_y" "jump_z" "normal_jump" "tangent_jump" } 
+  Finite Element Types:    "MONOMIAL" 
+  Approximation Orders:    "CONSTANT" 
+
+Execution Information:
+  Executioner:             Transient
+  TimeStepper:             ConstantDT
+  TimeIntegrator(s):       ImplicitEuler
+  Solver Mode:             NEWTON 
+  PETSc Preconditioner:    lu 
+  MOOSE Preconditioner:    SMP 
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 4
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 0
+ (generalNeighborPtr) elem_id = 1 side = 1
+ (generalNeighborPtr) elem_id = 1 side = 1
+elem_id = 1 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+ (generalNeighborPtr) elem_id = 2 side = 0
+elem_id = 2 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+ (generalNeighborPtr) elem_id = 2 side = 1
+elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 4
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 0
+ (generalNeighborPtr) elem_id = 3 side = 0
+elem_id = 3 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+ (generalNeighborPtr) elem_id = 3 side = 1
+elem_id = 3 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 4
+ (generalNeighborPtr) elem_id = 3 side = 4
+elem_id = 3 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 0
+ (generalNeighborPtr) elem_id = 4 side = 0
+elem_id = 4 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 1
+ (generalNeighborPtr) elem_id = 4 side = 1
+elem_id = 4 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 2
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 4
+ (generalNeighborPtr) elem_id = 4 side = 4
+elem_id = 4 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 0
+ (generalNeighborPtr) elem_id = 5 side = 0
+elem_id = 5 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 1
+ (generalNeighborPtr) elem_id = 5 side = 1
+elem_id = 5 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 2
+ (generalNeighborPtr) elem_id = 5 side = 2
+elem_id = 5 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 4
+ (generalNeighborPtr) elem_id = 5 side = 4
+elem_id = 5 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 0
+ (generalNeighborPtr) elem_id = 6 side = 0
+elem_id = 6 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 1
+ (generalNeighborPtr) elem_id = 6 side = 1
+elem_id = 6 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 2
+ (generalNeighborPtr) elem_id = 6 side = 3
+ (generalNeighborPtr) elem_id = 6 side = 3
+elem_id = 6 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 4
+ (generalNeighborPtr) elem_id = 6 side = 4
+elem_id = 6 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 5
+elem_id = 6 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 4
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 0
+ (generalNeighborPtr) elem_id = 1 side = 1
+ (generalNeighborPtr) elem_id = 1 side = 1
+elem_id = 1 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+ (generalNeighborPtr) elem_id = 2 side = 0
+elem_id = 2 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+ (generalNeighborPtr) elem_id = 2 side = 1
+elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 4
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 0
+ (generalNeighborPtr) elem_id = 3 side = 0
+elem_id = 3 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+ (generalNeighborPtr) elem_id = 3 side = 1
+elem_id = 3 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 4
+ (generalNeighborPtr) elem_id = 3 side = 4
+elem_id = 3 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 0
+ (generalNeighborPtr) elem_id = 4 side = 0
+elem_id = 4 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 1
+ (generalNeighborPtr) elem_id = 4 side = 1
+elem_id = 4 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 2
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 4
+ (generalNeighborPtr) elem_id = 4 side = 4
+elem_id = 4 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 0
+ (generalNeighborPtr) elem_id = 5 side = 0
+elem_id = 5 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 1
+ (generalNeighborPtr) elem_id = 5 side = 1
+elem_id = 5 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 2
+ (generalNeighborPtr) elem_id = 5 side = 2
+elem_id = 5 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 4
+ (generalNeighborPtr) elem_id = 5 side = 4
+elem_id = 5 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 0
+ (generalNeighborPtr) elem_id = 6 side = 0
+elem_id = 6 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 1
+ (generalNeighborPtr) elem_id = 6 side = 1
+elem_id = 6 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 2
+ (generalNeighborPtr) elem_id = 6 side = 3
+ (generalNeighborPtr) elem_id = 6 side = 3
+elem_id = 6 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 4
+ (generalNeighborPtr) elem_id = 6 side = 4
+elem_id = 6 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 5
+elem_id = 6 side = 5
+Found disconnected neighbor for the side
+
+Time Step 0, time = 0
+
+Postprocessor Values:
++----------------+----------------+
+| time           | nonlin         |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
++----------------+----------------+
+
+
+Time Step 1, time = 0.025, dt = 0.025
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 4
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 0
+ (generalNeighborPtr) elem_id = 1 side = 1
+ (generalNeighborPtr) elem_id = 1 side = 1
+elem_id = 1 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+ (generalNeighborPtr) elem_id = 2 side = 0
+elem_id = 2 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+ (generalNeighborPtr) elem_id = 2 side = 1
+elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 4
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 0
+ (generalNeighborPtr) elem_id = 3 side = 0
+elem_id = 3 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+ (generalNeighborPtr) elem_id = 3 side = 1
+elem_id = 3 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 4
+ (generalNeighborPtr) elem_id = 3 side = 4
+elem_id = 3 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 0
+ (generalNeighborPtr) elem_id = 4 side = 0
+elem_id = 4 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 1
+ (generalNeighborPtr) elem_id = 4 side = 1
+elem_id = 4 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 2
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 4
+ (generalNeighborPtr) elem_id = 4 side = 4
+elem_id = 4 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 0
+ (generalNeighborPtr) elem_id = 5 side = 0
+elem_id = 5 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 1
+ (generalNeighborPtr) elem_id = 5 side = 1
+elem_id = 5 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 2
+ (generalNeighborPtr) elem_id = 5 side = 2
+elem_id = 5 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 4
+ (generalNeighborPtr) elem_id = 5 side = 4
+elem_id = 5 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 0
+ (generalNeighborPtr) elem_id = 6 side = 0
+elem_id = 6 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 1
+ (generalNeighborPtr) elem_id = 6 side = 1
+elem_id = 6 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 2
+ (generalNeighborPtr) elem_id = 6 side = 3
+ (generalNeighborPtr) elem_id = 6 side = 3
+elem_id = 6 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 4
+ (generalNeighborPtr) elem_id = 6 side = 4
+elem_id = 6 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 5
+elem_id = 6 side = 5
+Found disconnected neighbor for the side
+ 0 Nonlinear |R| = [32m7.281390e+03[39m
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 4
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 0
+ (generalNeighborPtr) elem_id = 1 side = 1
+ (generalNeighborPtr) elem_id = 1 side = 1
+elem_id = 1 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+ (generalNeighborPtr) elem_id = 2 side = 0
+elem_id = 2 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+ (generalNeighborPtr) elem_id = 2 side = 1
+elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 4
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 0
+ (generalNeighborPtr) elem_id = 3 side = 0
+elem_id = 3 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+ (generalNeighborPtr) elem_id = 3 side = 1
+elem_id = 3 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 4
+ (generalNeighborPtr) elem_id = 3 side = 4
+elem_id = 3 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 0
+ (generalNeighborPtr) elem_id = 4 side = 0
+elem_id = 4 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 1
+ (generalNeighborPtr) elem_id = 4 side = 1
+elem_id = 4 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 2
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 4
+ (generalNeighborPtr) elem_id = 4 side = 4
+elem_id = 4 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 0
+ (generalNeighborPtr) elem_id = 5 side = 0
+elem_id = 5 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 1
+ (generalNeighborPtr) elem_id = 5 side = 1
+elem_id = 5 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 2
+ (generalNeighborPtr) elem_id = 5 side = 2
+elem_id = 5 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 4
+ (generalNeighborPtr) elem_id = 5 side = 4
+elem_id = 5 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 0
+ (generalNeighborPtr) elem_id = 6 side = 0
+elem_id = 6 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 1
+ (generalNeighborPtr) elem_id = 6 side = 1
+elem_id = 6 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 2
+ (generalNeighborPtr) elem_id = 6 side = 3
+ (generalNeighborPtr) elem_id = 6 side = 3
+elem_id = 6 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 4
+ (generalNeighborPtr) elem_id = 6 side = 4
+elem_id = 6 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 5
+elem_id = 6 side = 5
+Found disconnected neighbor for the side
+      0 Linear |R| = [32m7.281390e+03[39m
+      1 Linear |R| = [32m9.397031e-12[39m
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 4
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 0
+ (generalNeighborPtr) elem_id = 1 side = 1
+ (generalNeighborPtr) elem_id = 1 side = 1
+elem_id = 1 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+ (generalNeighborPtr) elem_id = 2 side = 0
+elem_id = 2 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+ (generalNeighborPtr) elem_id = 2 side = 1
+elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 4
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 0
+ (generalNeighborPtr) elem_id = 3 side = 0
+elem_id = 3 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+ (generalNeighborPtr) elem_id = 3 side = 1
+elem_id = 3 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 4
+ (generalNeighborPtr) elem_id = 3 side = 4
+elem_id = 3 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 0
+ (generalNeighborPtr) elem_id = 4 side = 0
+elem_id = 4 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 1
+ (generalNeighborPtr) elem_id = 4 side = 1
+elem_id = 4 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 2
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 4
+ (generalNeighborPtr) elem_id = 4 side = 4
+elem_id = 4 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 0
+ (generalNeighborPtr) elem_id = 5 side = 0
+elem_id = 5 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 1
+ (generalNeighborPtr) elem_id = 5 side = 1
+elem_id = 5 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 2
+ (generalNeighborPtr) elem_id = 5 side = 2
+elem_id = 5 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 4
+ (generalNeighborPtr) elem_id = 5 side = 4
+elem_id = 5 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 0
+ (generalNeighborPtr) elem_id = 6 side = 0
+elem_id = 6 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 1
+ (generalNeighborPtr) elem_id = 6 side = 1
+elem_id = 6 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 2
+ (generalNeighborPtr) elem_id = 6 side = 3
+ (generalNeighborPtr) elem_id = 6 side = 3
+elem_id = 6 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 4
+ (generalNeighborPtr) elem_id = 6 side = 4
+elem_id = 6 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 5
+elem_id = 6 side = 5
+Found disconnected neighbor for the side
+ 1 Nonlinear |R| = [32m7.275667e-12[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | nonlin         |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   2.500000e-02 |   1.000000e+00 |
++----------------+----------------+
+
+
+Time Step 2, time = 0.05, dt = 0.025
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 4
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 0
+ (generalNeighborPtr) elem_id = 1 side = 1
+ (generalNeighborPtr) elem_id = 1 side = 1
+elem_id = 1 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+ (generalNeighborPtr) elem_id = 2 side = 0
+elem_id = 2 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+ (generalNeighborPtr) elem_id = 2 side = 1
+elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 4
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 0
+ (generalNeighborPtr) elem_id = 3 side = 0
+elem_id = 3 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+ (generalNeighborPtr) elem_id = 3 side = 1
+elem_id = 3 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 4
+ (generalNeighborPtr) elem_id = 3 side = 4
+elem_id = 3 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 0
+ (generalNeighborPtr) elem_id = 4 side = 0
+elem_id = 4 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 1
+ (generalNeighborPtr) elem_id = 4 side = 1
+elem_id = 4 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 2
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 4
+ (generalNeighborPtr) elem_id = 4 side = 4
+elem_id = 4 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 0
+ (generalNeighborPtr) elem_id = 5 side = 0
+elem_id = 5 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 1
+ (generalNeighborPtr) elem_id = 5 side = 1
+elem_id = 5 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 2
+ (generalNeighborPtr) elem_id = 5 side = 2
+elem_id = 5 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 4
+ (generalNeighborPtr) elem_id = 5 side = 4
+elem_id = 5 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 0
+ (generalNeighborPtr) elem_id = 6 side = 0
+elem_id = 6 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 1
+ (generalNeighborPtr) elem_id = 6 side = 1
+elem_id = 6 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 2
+ (generalNeighborPtr) elem_id = 6 side = 3
+ (generalNeighborPtr) elem_id = 6 side = 3
+elem_id = 6 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 4
+ (generalNeighborPtr) elem_id = 6 side = 4
+elem_id = 6 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 5
+elem_id = 6 side = 5
+Found disconnected neighbor for the side
+ 0 Nonlinear |R| = [32m7.281390e+03[39m
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 4
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 0
+ (generalNeighborPtr) elem_id = 1 side = 1
+ (generalNeighborPtr) elem_id = 1 side = 1
+elem_id = 1 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+ (generalNeighborPtr) elem_id = 2 side = 0
+elem_id = 2 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+ (generalNeighborPtr) elem_id = 2 side = 1
+elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 4
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 0
+ (generalNeighborPtr) elem_id = 3 side = 0
+elem_id = 3 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+ (generalNeighborPtr) elem_id = 3 side = 1
+elem_id = 3 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 4
+ (generalNeighborPtr) elem_id = 3 side = 4
+elem_id = 3 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 0
+ (generalNeighborPtr) elem_id = 4 side = 0
+elem_id = 4 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 1
+ (generalNeighborPtr) elem_id = 4 side = 1
+elem_id = 4 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 2
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 4
+ (generalNeighborPtr) elem_id = 4 side = 4
+elem_id = 4 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 0
+ (generalNeighborPtr) elem_id = 5 side = 0
+elem_id = 5 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 1
+ (generalNeighborPtr) elem_id = 5 side = 1
+elem_id = 5 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 2
+ (generalNeighborPtr) elem_id = 5 side = 2
+elem_id = 5 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 4
+ (generalNeighborPtr) elem_id = 5 side = 4
+elem_id = 5 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 0
+ (generalNeighborPtr) elem_id = 6 side = 0
+elem_id = 6 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 1
+ (generalNeighborPtr) elem_id = 6 side = 1
+elem_id = 6 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 2
+ (generalNeighborPtr) elem_id = 6 side = 3
+ (generalNeighborPtr) elem_id = 6 side = 3
+elem_id = 6 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 4
+ (generalNeighborPtr) elem_id = 6 side = 4
+elem_id = 6 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 5
+elem_id = 6 side = 5
+Found disconnected neighbor for the side
+      0 Linear |R| = [32m7.281390e+03[39m
+      1 Linear |R| = [32m6.149710e-12[39m
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 4
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 0
+ (generalNeighborPtr) elem_id = 1 side = 1
+ (generalNeighborPtr) elem_id = 1 side = 1
+elem_id = 1 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+ (generalNeighborPtr) elem_id = 2 side = 0
+elem_id = 2 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+ (generalNeighborPtr) elem_id = 2 side = 1
+elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 4
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 0
+ (generalNeighborPtr) elem_id = 3 side = 0
+elem_id = 3 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+ (generalNeighborPtr) elem_id = 3 side = 1
+elem_id = 3 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 4
+ (generalNeighborPtr) elem_id = 3 side = 4
+elem_id = 3 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 0
+ (generalNeighborPtr) elem_id = 4 side = 0
+elem_id = 4 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 1
+ (generalNeighborPtr) elem_id = 4 side = 1
+elem_id = 4 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 2
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 4
+ (generalNeighborPtr) elem_id = 4 side = 4
+elem_id = 4 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 0
+ (generalNeighborPtr) elem_id = 5 side = 0
+elem_id = 5 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 1
+ (generalNeighborPtr) elem_id = 5 side = 1
+elem_id = 5 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 2
+ (generalNeighborPtr) elem_id = 5 side = 2
+elem_id = 5 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 4
+ (generalNeighborPtr) elem_id = 5 side = 4
+elem_id = 5 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 0
+ (generalNeighborPtr) elem_id = 6 side = 0
+elem_id = 6 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 1
+ (generalNeighborPtr) elem_id = 6 side = 1
+elem_id = 6 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 2
+ (generalNeighborPtr) elem_id = 6 side = 3
+ (generalNeighborPtr) elem_id = 6 side = 3
+elem_id = 6 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 4
+ (generalNeighborPtr) elem_id = 6 side = 4
+elem_id = 6 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 5
+elem_id = 6 side = 5
+Found disconnected neighbor for the side
+ 1 Nonlinear |R| = [32m7.494945e-12[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | nonlin         |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   2.500000e-02 |   1.000000e+00 |
+|   5.000000e-02 |   1.000000e+00 |
++----------------+----------------+
+
+
+Time Step 3, time = 0.075, dt = 0.025
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 4
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 0
+ (generalNeighborPtr) elem_id = 1 side = 1
+ (generalNeighborPtr) elem_id = 1 side = 1
+elem_id = 1 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+ (generalNeighborPtr) elem_id = 2 side = 0
+elem_id = 2 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+ (generalNeighborPtr) elem_id = 2 side = 1
+elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 4
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 0
+ (generalNeighborPtr) elem_id = 3 side = 0
+elem_id = 3 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+ (generalNeighborPtr) elem_id = 3 side = 1
+elem_id = 3 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 4
+ (generalNeighborPtr) elem_id = 3 side = 4
+elem_id = 3 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 0
+ (generalNeighborPtr) elem_id = 4 side = 0
+elem_id = 4 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 1
+ (generalNeighborPtr) elem_id = 4 side = 1
+elem_id = 4 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 2
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 4
+ (generalNeighborPtr) elem_id = 4 side = 4
+elem_id = 4 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 0
+ (generalNeighborPtr) elem_id = 5 side = 0
+elem_id = 5 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 1
+ (generalNeighborPtr) elem_id = 5 side = 1
+elem_id = 5 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 2
+ (generalNeighborPtr) elem_id = 5 side = 2
+elem_id = 5 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 4
+ (generalNeighborPtr) elem_id = 5 side = 4
+elem_id = 5 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 0
+ (generalNeighborPtr) elem_id = 6 side = 0
+elem_id = 6 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 1
+ (generalNeighborPtr) elem_id = 6 side = 1
+elem_id = 6 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 2
+ (generalNeighborPtr) elem_id = 6 side = 3
+ (generalNeighborPtr) elem_id = 6 side = 3
+elem_id = 6 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 4
+ (generalNeighborPtr) elem_id = 6 side = 4
+elem_id = 6 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 5
+elem_id = 6 side = 5
+Found disconnected neighbor for the side
+ 0 Nonlinear |R| = [32m9.469294e+03[39m
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 4
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 0
+ (generalNeighborPtr) elem_id = 1 side = 1
+ (generalNeighborPtr) elem_id = 1 side = 1
+elem_id = 1 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+ (generalNeighborPtr) elem_id = 2 side = 0
+elem_id = 2 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+ (generalNeighborPtr) elem_id = 2 side = 1
+elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 4
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 0
+ (generalNeighborPtr) elem_id = 3 side = 0
+elem_id = 3 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+ (generalNeighborPtr) elem_id = 3 side = 1
+elem_id = 3 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 4
+ (generalNeighborPtr) elem_id = 3 side = 4
+elem_id = 3 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 0
+ (generalNeighborPtr) elem_id = 4 side = 0
+elem_id = 4 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 1
+ (generalNeighborPtr) elem_id = 4 side = 1
+elem_id = 4 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 2
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 4
+ (generalNeighborPtr) elem_id = 4 side = 4
+elem_id = 4 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 0
+ (generalNeighborPtr) elem_id = 5 side = 0
+elem_id = 5 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 1
+ (generalNeighborPtr) elem_id = 5 side = 1
+elem_id = 5 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 2
+ (generalNeighborPtr) elem_id = 5 side = 2
+elem_id = 5 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 4
+ (generalNeighborPtr) elem_id = 5 side = 4
+elem_id = 5 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 0
+ (generalNeighborPtr) elem_id = 6 side = 0
+elem_id = 6 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 1
+ (generalNeighborPtr) elem_id = 6 side = 1
+elem_id = 6 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 2
+ (generalNeighborPtr) elem_id = 6 side = 3
+ (generalNeighborPtr) elem_id = 6 side = 3
+elem_id = 6 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 4
+ (generalNeighborPtr) elem_id = 6 side = 4
+elem_id = 6 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 5
+elem_id = 6 side = 5
+Found disconnected neighbor for the side
+      0 Linear |R| = [32m9.469294e+03[39m
+      1 Linear |R| = [32m3.337293e-12[39m
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 0
+elem_id = 0 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+elem_id = 0 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+elem_id = 0 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 4
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 5
+elem_id = 0 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 0
+ (generalNeighborPtr) elem_id = 1 side = 1
+ (generalNeighborPtr) elem_id = 1 side = 1
+elem_id = 1 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 2
+elem_id = 1 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 4
+elem_id = 1 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 5
+elem_id = 1 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+ (generalNeighborPtr) elem_id = 2 side = 0
+elem_id = 2 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+ (generalNeighborPtr) elem_id = 2 side = 1
+elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+elem_id = 2 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 3
+elem_id = 2 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 4
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 5
+elem_id = 2 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 0
+ (generalNeighborPtr) elem_id = 3 side = 0
+elem_id = 3 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+ (generalNeighborPtr) elem_id = 3 side = 1
+elem_id = 3 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 2
+elem_id = 3 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 3
+elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 4
+ (generalNeighborPtr) elem_id = 3 side = 4
+elem_id = 3 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 5
+elem_id = 3 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 0
+ (generalNeighborPtr) elem_id = 4 side = 0
+elem_id = 4 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 1
+ (generalNeighborPtr) elem_id = 4 side = 1
+elem_id = 4 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 2
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 3
+elem_id = 4 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 4
+ (generalNeighborPtr) elem_id = 4 side = 4
+elem_id = 4 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 4 side = 5
+elem_id = 4 side = 5
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 0
+ (generalNeighborPtr) elem_id = 5 side = 0
+elem_id = 5 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 1
+ (generalNeighborPtr) elem_id = 5 side = 1
+elem_id = 5 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 2
+ (generalNeighborPtr) elem_id = 5 side = 2
+elem_id = 5 side = 2
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 3
+elem_id = 5 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 4
+ (generalNeighborPtr) elem_id = 5 side = 4
+elem_id = 5 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 5 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 0
+ (generalNeighborPtr) elem_id = 6 side = 0
+elem_id = 6 side = 0
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 1
+ (generalNeighborPtr) elem_id = 6 side = 1
+elem_id = 6 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 2
+ (generalNeighborPtr) elem_id = 6 side = 3
+ (generalNeighborPtr) elem_id = 6 side = 3
+elem_id = 6 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 4
+ (generalNeighborPtr) elem_id = 6 side = 4
+elem_id = 6 side = 4
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 6 side = 5
+ (generalNeighborPtr) elem_id = 6 side = 5
+elem_id = 6 side = 5
+Found disconnected neighbor for the side
+ 1 Nonlinear |R| = [32m3.637842e-12[39m
+[32m Solve Converged![39m
+
+Postprocessor Values:
++----------------+----------------+
+| time           | nonlin         |
++----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |
+|   2.500000e-02 |   1.000000e+00 |
+|   5.000000e-02 |   1.000000e+00 |
+|   7.500000e-02 |   1.000000e+00 |
++----------------+----------------+
+

@@ -2498,11 +2498,76 @@ MooseMesh::disconnectedNeighbor(dof_id_type elem_id, unsigned int side) const
   return std::nullopt;
 }
 
+bool
+MooseMesh::hasDisconnectedNeighbor(dof_id_type elem_id, unsigned int side) const
+{
+  auto neigh = disconnectedNeighbor(elem_id, side);
+  // debug
+
+  if (neigh.has_value())
+  {
+    const auto * elem = _mesh->elem_ptr(elem_id);
+    const auto * connected_neigh = elem ? _mesh->elem_ptr(neigh->first) : nullptr;
+
+    const auto centroid_elem = elem->vertex_average();
+    const auto centroid_neigh =
+        connected_neigh ? connected_neigh->vertex_average() : libMesh::Point();
+    std::cout << "centroid_elem = ";
+    centroid_elem.print();
+    std::cout << std::endl;
+
+    std::cout << "centroid_neigh = ";
+    centroid_neigh.print();
+    std::cout << std::endl;
+  }
+
+  return neigh.has_value();
+}
+
 Elem *
 MooseMesh::disconnectedNeighborPtr(dof_id_type elem_id, unsigned int side) const
 {
   auto neigh = disconnectedNeighbor(elem_id, side);
   return neigh ? _mesh->elem_ptr(neigh->first) : nullptr;
+}
+
+Elem *
+MooseMesh::generalNeighborPtr(dof_id_type elem_id, unsigned int side) const
+{
+  auto neigh = disconnectedNeighbor(elem_id, side);
+
+  std::cout << " (generalNeighborPtr) elem_id = " << elem_id << " side = " << side << std::endl;
+
+  // if (_mesh->elem_ptr(neigh->first))
+  //   std::cout << "Found disconnected neighbor for the pointer" << std::endl;
+  // else if (_mesh->elem_ptr(elem_id)->neighbor_ptr(side))
+  //   std::cout << "Found connected neighbor for the pointer" << std::endl;
+  // else
+  //   std::cout << "No neighbor found for the pointer" << std::endl;
+  return neigh
+             ? _mesh->elem_ptr(neigh->first)
+             : (_mesh->elem_ptr(elem_id) ? _mesh->elem_ptr(elem_id)->neighbor_ptr(side) : nullptr);
+}
+
+unsigned int
+MooseMesh::generalSide(dof_id_type elem_id, unsigned int side) const
+{
+  auto neigh = disconnectedNeighbor(elem_id, side);
+  auto * elem = _mesh->elem_ptr(elem_id);
+  auto connected_neigh = elem->neighbor_ptr(side);
+
+  std::cout << "elem_id = " << elem_id << " side = " << side << std::endl;
+
+  if (neigh)
+    std::cout << "Found disconnected neighbor for the side" << std::endl;
+  else if (connected_neigh)
+    std::cout << "Found connected neighbor for the side" << std::endl;
+  else
+    std::cout << "No neighbor found for the side" << std::endl;
+
+  return neigh ? neigh->second
+               : (connected_neigh ? connected_neigh->which_neighbor_am_i(elem)
+                                  : libMesh::invalid_uint);
 }
 
 void
@@ -3479,9 +3544,17 @@ MooseMesh::getInflatedProcessorBoundingBox(Real inflation_multiplier) const
   return bbox;
 }
 
-MooseMesh::operator libMesh::MeshBase &() { return getMesh(); }
+MooseMesh::
+operator libMesh::MeshBase &()
+{
+  return getMesh();
+}
 
-MooseMesh::operator const libMesh::MeshBase &() const { return getMesh(); }
+MooseMesh::
+operator const libMesh::MeshBase &() const
+{
+  return getMesh();
+}
 
 const MeshBase *
 MooseMesh::getMeshPtr() const

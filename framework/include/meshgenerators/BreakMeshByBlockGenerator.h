@@ -101,4 +101,6 @@ private:
   addDisconnectedNeighborsFromMap(const std::unordered_map<std::pair<const Elem *, unsigned int>,
                                                            std::pair<const Elem *, unsigned int>> &
                                       elem_side_to_fake_neighbor_elem_side);
+
+  const unsigned int _mode;
 };

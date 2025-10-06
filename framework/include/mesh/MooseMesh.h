@@ -1419,6 +1419,12 @@ public:
   /// Find the disconnected neighbor pointer for the given element and side
   Elem * disconnectedNeighborPtr(dof_id_type elem_id, unsigned int side) const;
 
+  Elem * generalNeighborPtr(dof_id_type elem_id, unsigned int side) const;
+
+  unsigned int generalSide(dof_id_type elem_id, unsigned int side) const;
+
+  bool hasDisconnectedNeighbor(dof_id_type elem_id, unsigned int side) const;
+
 protected:
   /// Deprecated (DO NOT USE)
   std::vector<std::unique_ptr<libMesh::GhostingFunctor>> _ghosting_functors;

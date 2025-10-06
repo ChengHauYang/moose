@@ -154,19 +154,32 @@ ComputeMaterialsObjectThread::onInternalSide(const Elem * elem, unsigned int sid
 {
   if (_need_internal_side_material)
   {
-    const auto * neighbor = elem->neighbor_ptr(side);
-    unsigned int neighbor_side = libMesh::invalid_uint;
 
-    if (!neighbor)
-    {
-      neighbor = _mesh.disconnectedNeighborPtr(elem->id(), side);
-      const auto disconnected_neighbor_elem_side =
-          _mesh.disconnectedNeighbor(_assembly[_tid][0]->elem()->id(), side);
-      if (disconnected_neighbor_elem_side)
-        neighbor_side = disconnected_neighbor_elem_side->second;
-    }
-    else
-      neighbor_side = neighbor->which_neighbor_am_i(_assembly[_tid][0]->elem());
+    const auto * neighbor = _mesh.generalNeighborPtr(elem->id(), side);
+    const unsigned int neighbor_side = _mesh.generalSide(elem->id(), side);
+
+    // const auto * neighbor = elem->neighbor_ptr(side);
+    // unsigned int neighbor_side = libMesh::invalid_uint;
+
+    // if (!neighbor)
+    // {
+    //   neighbor = _mesh.disconnectedNeighborPtr(elem->id(), side);
+    //   const auto disconnected_neighbor_elem_side =
+    //       _mesh.disconnectedNeighbor(_assembly[_tid][0]->elem()->id(), side);
+    //   if (disconnected_neighbor_elem_side)
+    //     neighbor_side = disconnected_neighbor_elem_side->second;
+    // }
+    // else
+    //   neighbor_side = neighbor->which_neighbor_am_i(_assembly[_tid][0]->elem());
+
+    // std::cout << "neighbor ID from origin = " << neighbor->id() << std::endl;
+    // std::cout << "neighbor ID from disconnected = "
+    //           << _mesh.disconnectedNeighborPtr(elem->id(), side)->id() << std::endl;
+    // std::cout << "neighbor side from origin = "
+    //           << neighbor->which_neighbor_am_i(_assembly[_tid][0]->elem()) << std::endl;
+    // std::cout << "neighbor side from disconnected = "
+    //           << _mesh.disconnectedNeighbor(_assembly[_tid][0]->elem()->id(), side)->second
+    //           << std::endl;
 
     _fe_problem.reinitElemNeighborAndLowerD(elem, side, _tid);
     unsigned int face_n_points = _assembly[_tid][0]->qRuleFace()->n_points();
@@ -257,19 +270,42 @@ ComputeMaterialsObjectThread::onInterface(const Elem * elem, unsigned int side, 
           _tid, _materials.getActiveBoundaryObjects(bnd_id, _tid), face_n_points, *elem, side);
   }
 
-  const auto * neighbor = elem->neighbor_ptr(side);
-  unsigned int neighbor_side = libMesh::invalid_uint;
+  const auto * neighbor = _mesh.generalNeighborPtr(elem->id(), side);
+  const unsigned int neighbor_side = _mesh.generalSide(_assembly[_tid][0]->elem()->id(), side);
 
-  if (!neighbor)
-  {
-    neighbor = _mesh.disconnectedNeighborPtr(elem->id(), side);
-    const auto disconnected_neighbor_elem_side =
-        _mesh.disconnectedNeighbor(_assembly[_tid][0]->elem()->id(), side);
-    if (disconnected_neighbor_elem_side)
-      neighbor_side = disconnected_neighbor_elem_side->second;
-  }
-  else
-    neighbor_side = neighbor->which_neighbor_am_i(_assembly[_tid][0]->elem());
+  // const auto * neighbor = elem->neighbor_ptr(side);
+  // unsigned int neighbor_side = libMesh::invalid_uint;
+
+  // if (!neighbor)
+  // {
+  //   neighbor = _mesh.disconnectedNeighborPtr(elem->id(), side);
+  //   const auto disconnected_neighbor_elem_side =
+  //       _mesh.disconnectedNeighbor(_assembly[_tid][0]->elem()->id(), side);
+  //   if (disconnected_neighbor_elem_side)
+  //   {
+  //     neighbor_side = disconnected_neighbor_elem_side->second;
+  //     std::cout << "(CMOT)in disconnected neighbor" << std::endl;
+  //   }
+  //   else
+  //   {
+  //     std::cout << "(CMOT)no disconnected neighbor" << std::endl;
+  //   }
+  // }
+  // else
+  // {
+  //   neighbor_side = neighbor->which_neighbor_am_i(_assembly[_tid][0]->elem());
+  //   std::cout << "(CMOT)in neighbor" << std::endl;
+  // }
+
+  // std::cout << "neighbor ID from origin = " << neighbor->id() << std::endl;
+  // std::cout << "neighbor ID from disconnected = "
+  //           << _mesh.disconnectedNeighborPtr(elem->id(), side)->id() << std::endl;
+  // std::cout << "neighbor side from origin = "
+  //           << neighbor->which_neighbor_am_i(_assembly[_tid][0]->elem()) << std::endl;
+  // std::cout << "neighbor side from disconnected = "
+  //           << _mesh.disconnectedNeighbor(_assembly[_tid][0]->elem()->id(), side)->second
+  //           << std::endl;
+  // std::cout << "libMesh::invalid_uint; = " << libMesh::invalid_uint << std::endl;
 
   // Do we have neighbor stateful properties or do we have stateful interface material properties?
   // If either then we need to reinit the neighbor, so at least at a minimum _neighbor_elem isn't

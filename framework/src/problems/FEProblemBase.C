@@ -1784,9 +1784,11 @@ FEProblemBase::setCurrentSubdomainID(const Elem * elem, const THREAD_ID tid)
 void
 FEProblemBase::setNeighborSubdomainID(const Elem * elem, unsigned int side, const THREAD_ID tid)
 {
-  const auto * neighbor = elem->neighbor_ptr(side);
-  if (!neighbor)
-    neighbor = _mesh.disconnectedNeighborPtr(elem->id(), side);
+  // const auto * neighbor = elem->neighbor_ptr(side);
+  // if (!neighbor)
+  //   neighbor = _mesh.disconnectedNeighborPtr(elem->id(), side);
+  const auto * neighbor = _mesh.generalNeighborPtr(elem->id(), side);
+  const unsigned int neighbor_side = _mesh.generalSide(elem->id(), side);
 
   if (!neighbor)
     mooseError("No neighbor (real or fake) found for elem ", elem->id(), " side ", side);
@@ -2326,20 +2328,35 @@ FEProblemBase::reinitNeighbor(const Elem * elem, unsigned int side, const THREAD
 {
   setNeighborSubdomainID(elem, side, tid);
 
-  const auto * neighbor = elem->neighbor_ptr(side);
-  unsigned int neighbor_side = libMesh::invalid_uint;
+  const auto * neighbor = _mesh.generalNeighborPtr(elem->id(), side);
+  const unsigned int neighbor_side = _mesh.generalSide(elem->id(), side);
 
-  if (!neighbor)
-  {
-    auto disconnected_neighbor_elem_side = _mesh.disconnectedNeighbor(elem->id(), side);
-    if (disconnected_neighbor_elem_side)
-    {
-      neighbor = _mesh.disconnectedNeighborPtr(elem->id(), side);
-      neighbor_side = disconnected_neighbor_elem_side->second;
-    }
-  }
-  else
-    neighbor_side = neighbor->which_neighbor_am_i(elem);
+  // const auto * neighbor = elem->neighbor_ptr(side);
+  // unsigned int neighbor_side = libMesh::invalid_uint;
+
+  // if (!neighbor)
+  // {
+  //   auto disconnected_neighbor_elem_side = _mesh.disconnectedNeighbor(elem->id(), side);
+  //   if (disconnected_neighbor_elem_side)
+  //   {
+  //     std::cout << "get neighbor from disconnected" << std::endl;
+  //     neighbor = _mesh.disconnectedNeighborPtr(elem->id(), side);
+  //     neighbor_side = disconnected_neighbor_elem_side->second;
+  //   }
+  // }
+  // else
+  // {
+  //   std::cout << "get neighbor from elem" << std::endl;
+  //   neighbor_side = neighbor->which_neighbor_am_i(elem);
+  // }
+
+  // std::cout << "FEProblemBase::reinitNeighbor: disconnected neighbor!" << std::endl;
+  // std::cout << "neighbor ID from origin = " << neighbor->id() << std::endl;
+  // std::cout << "neighbor ID from disconnected = "
+  //           << _mesh.disconnectedNeighborPtr(elem->id(), side)->id() << std::endl;
+  // std::cout << "neighbor side from origin = " << neighbor->which_neighbor_am_i(elem) <<
+  // std::endl; std::cout << "neighbor side from disconnected = "
+  //           << _mesh.disconnectedNeighbor(elem->id(), side)->second << std::endl;
 
   for (const auto i : index_range(_nl))
   {
@@ -4152,23 +4169,46 @@ FEProblemBase::reinitMaterialsNeighbor(const SubdomainID blk_id,
     // NOTE: this will not work with h-adaptivity
     // lindsayad: why not?
 
-    const Elem * neighbor = _assembly[tid][0]->neighbor();
-    unsigned int neighbor_side = libMesh::invalid_uint;
+    const Elem * elem = _assembly[tid][0]->elem();
+    const unsigned int side = _assembly[tid][0]->side();
 
-    if (neighbor)
-      neighbor_side = neighbor->which_neighbor_am_i(_assembly[tid][0]->elem());
-    else
-    {
-      const auto disconnected_neighbor_elem_side =
-          _mesh.disconnectedNeighbor(_assembly[tid][0]->elem()->id(), _assembly[tid][0]->side());
+    const auto * neighbor = _mesh.generalNeighborPtr(elem->id(), side);
+    const unsigned int neighbor_side = _mesh.generalSide(elem->id(), side);
 
-      if (disconnected_neighbor_elem_side)
-      {
-        neighbor = _mesh.disconnectedNeighborPtr(_assembly[tid][0]->elem()->id(),
-                                                 _assembly[tid][0]->side());
-        neighbor_side = disconnected_neighbor_elem_side->second;
-      }
-    }
+    // const Elem * neighbor = _assembly[tid][0]->neighbor();
+    // unsigned int neighbor_side = libMesh::invalid_uint;
+
+    // if (neighbor)
+    //   neighbor_side = neighbor->which_neighbor_am_i(_assembly[tid][0]->elem());
+    // else
+    // {
+    //   const auto disconnected_neighbor_elem_side =
+    //       _mesh.disconnectedNeighbor(_assembly[tid][0]->elem()->id(), _assembly[tid][0]->side());
+
+    //   if (disconnected_neighbor_elem_side)
+    //   {
+    //     neighbor = _mesh.disconnectedNeighborPtr(_assembly[tid][0]->elem()->id(),
+    //                                              _assembly[tid][0]->side());
+    //     neighbor_side = disconnected_neighbor_elem_side->second;
+    //   }
+
+    //   std::cout << "FEProblemBase::reinitMaterialsNeighbor: disconnected neighbor!" << std::endl;
+    //   std::cout << "neighbor ID from origin = " << neighbor->id() << std::endl;
+    //   std::cout << "neighbor ID from disconnected = "
+    //             << _mesh
+    //                    .disconnectedNeighborPtr(_assembly[tid][0]->elem()->id(),
+    //                                             _assembly[tid][0]->side())
+    //                    ->id()
+    //             << std::endl;
+    //   std::cout << "neighbor side from origin = "
+    //             << neighbor->which_neighbor_am_i(_assembly[tid][0]->elem()) << std::endl;
+    //   std::cout << "neighbor side from disconnected = "
+    //             << _mesh
+    //                    .disconnectedNeighbor(_assembly[tid][0]->elem()->id(),
+    //                                          _assembly[tid][0]->side())
+    //                    ->second
+    //             << std::endl;
+    // }
 
     mooseAssert(neighbor, "neighbor should be non-null");
     mooseAssert(blk_id == neighbor->subdomain_id(),
@@ -4268,23 +4308,8 @@ FEProblemBase::swapBackMaterialsNeighbor(const THREAD_ID tid)
   const Elem * elem = _assembly[tid][0]->elem();
   const unsigned int side = _assembly[tid][0]->side();
 
-  const Elem * neighbor = _assembly[tid][0]->neighbor();
-  unsigned int neighbor_side = libMesh::invalid_uint;
-
-  if (neighbor)
-    // true neighbor
-    neighbor_side = neighbor->which_neighbor_am_i(elem);
-  else
-  {
-    // fake neighbor
-    const auto disconnected_neighbor_elem_side = _mesh.disconnectedNeighbor(elem->id(), side);
-
-    if (disconnected_neighbor_elem_side)
-    {
-      neighbor = _mesh.disconnectedNeighborPtr(elem->id(), side);
-      neighbor_side = disconnected_neighbor_elem_side->second;
-    }
-  }
+  const auto * neighbor = _mesh.generalNeighborPtr(elem->id(), side);
+  unsigned int neighbor_side = _mesh.generalSide(elem->id(), side);
 
   if (!neighbor)
   {

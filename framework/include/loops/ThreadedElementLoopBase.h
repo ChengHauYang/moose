@@ -276,9 +276,29 @@ ThreadedElementLoopBase<RangeType>::operator()(const RangeType & range, bool byp
               onBoundary(elem, side, *it, lower_d_elem);
             }
 
-          const auto * neighbor = elem->neighbor_ptr(side);
-          if (!neighbor)
-            neighbor = _mesh.disconnectedNeighborPtr(elem->id(), side);
+          const auto * neighbor = _mesh.generalNeighborPtr(elem->id(), side);
+          // const auto * neighbor = elem->neighbor_ptr(side);
+          // if (!neighbor)
+          // {
+          //   neighbor = _mesh.disconnectedNeighborPtr(elem->id(), side);
+
+          //   if (neighbor)
+          //     std::cout << "(TELB)in disconnected neighbor" << std::endl;
+          //   else
+          //     std::cout << "(TELB)no disconnected neighbor" << std::endl;
+          // }
+          // else
+          // {
+          //   std::cout << "(TELB)in neighbor" << std::endl;
+          // }
+
+          // std::cout << "neighbor ID from origin = " << elem->neighbor_ptr(side)->id() <<
+          // std::endl; std::cout << "neighbor ID from disconnected = "
+          //           << _mesh.disconnectedNeighborPtr(elem->id(), side)->id() << std::endl;
+          // std::cout << "neighbor side from origin = "
+          //           << elem->neighbor_ptr(side)->which_neighbor_am_i(elem) << std::endl;
+          // std::cout << "neighbor side from disconnected = "
+          //           << _mesh.disconnectedNeighbor(elem->id(), side)->second << std::endl;
 
           if (neighbor)
           {

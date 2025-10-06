@@ -1,0 +1,8577 @@
+
+[36m
+*** Info ***
+/Users/chenghau.yang/Documents/Package/moose-czm/modules/solid_mechanics/test/tests/cohesive_zone_model/rectangle_czm_mms.i:51.7:
+The following occurred in the Action 'all' of type QuasiStaticSolidMechanicsPhysics.
+
+SolidMechanics Action: selecting 'total small strain' formulation. Use `incremental = true` to select 'incremental small strain' instead.[39m
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+Framework Information:
+MOOSE Version:           git commit 6f1c82801f on 2025-10-02
+LibMesh Version:         
+PETSc Version:           3.23.4
+SLEPc Version:           3.23.2
+Current Time:            Fri Oct  3 08:50:00 2025
+Executable Timestamp:    Fri Oct  3 08:49:31 2025
+
+Input File(s):
+  /Users/chenghau.yang/Documents/Package/moose-czm/modules/solid_mechanics/test/tests/cohesive_zone_model/rectangle_czm_mms.i
+
+Checkpoint:
+  Wall Time Interval:      Every 3600 s
+  User Checkpoint:         Disabled
+  # Checkpoints Kept:      2
+  Execute On:              TIMESTEP_END 
+
+Parallelism:
+  Num Processors:          1
+  Num Threads:             1
+
+Mesh: 
+  Parallel Type:           replicated
+  Mesh Dimension:          2
+  Spatial Dimension:       2
+  Nodes:                   306
+  Elems:                   256
+  Num Subdomains:          2
+
+Nonlinear System:
+  Num DOFs:                612
+  Num Local DOFs:          612
+  Variables:               { "disp_x" "disp_y" } 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Auxiliary System:
+  Num DOFs:                3222
+  Num Local DOFs:          3222
+  Variables:               { "stress_xx" "stress_xy" "stress_yy" "stress_zz" "strain_xx" "strain_xy" 
+                             "strain_yy" "strain_zz" } { "react_x" "react_y" "proc" } "proc_elem" 
+  Finite Element Types:    "MONOMIAL" "LAGRANGE" "MONOMIAL" 
+  Approximation Orders:    "CONSTANT" "FIRST" "CONSTANT" 
+
+Execution Information:
+  Executioner:             Steady
+  Solver Mode:             NEWTON 
+  PETSc Preconditioner:    lu mat_superlu_dist_fact: SamePattern  mat_superlu_dist_replacetinypivot: true 
+  MOOSE Preconditioner:    SMP (auto) 
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+
+Postprocessor Values:
++----------------+----------------+------------------+
+| time           | l2_error_left_x| l2_error_right_x |
++----------------+----------------+------------------+
+|   0.000000e+00 |   0.000000e+00 |     0.000000e+00 |
++----------------+----------------+------------------+
+
+
+Performing automatic scaling calculation
+
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 4
+neighbor ID from disconnected = 4
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 20
+neighbor ID from disconnected = 20
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 36
+neighbor ID from disconnected = 36
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 52
+neighbor ID from disconnected = 52
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 68
+neighbor ID from disconnected = 68
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 84
+neighbor ID from disconnected = 84
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 100
+neighbor ID from disconnected = 100
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 116
+neighbor ID from disconnected = 116
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 132
+neighbor ID from disconnected = 132
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 148
+neighbor ID from disconnected = 148
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 164
+neighbor ID from disconnected = 164
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 180
+neighbor ID from disconnected = 180
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 196
+neighbor ID from disconnected = 196
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 212
+neighbor ID from disconnected = 212
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 228
+neighbor ID from disconnected = 228
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 244
+neighbor ID from disconnected = 244
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+ 0 Nonlinear |R| = [32m4.372927e+03[39m
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 4
+neighbor ID from disconnected = 4
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 20
+neighbor ID from disconnected = 20
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 36
+neighbor ID from disconnected = 36
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 52
+neighbor ID from disconnected = 52
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 68
+neighbor ID from disconnected = 68
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 84
+neighbor ID from disconnected = 84
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 100
+neighbor ID from disconnected = 100
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 116
+neighbor ID from disconnected = 116
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 132
+neighbor ID from disconnected = 132
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 148
+neighbor ID from disconnected = 148
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 164
+neighbor ID from disconnected = 164
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 180
+neighbor ID from disconnected = 180
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 196
+neighbor ID from disconnected = 196
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 212
+neighbor ID from disconnected = 212
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 228
+neighbor ID from disconnected = 228
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 244
+neighbor ID from disconnected = 244
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+      0 Linear |R| = [32m4.372927e+03[39m
+      1 Linear |R| = [32m4.929850e-12[39m
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 4
+neighbor ID from disconnected = 4
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 20
+neighbor ID from disconnected = 20
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 36
+neighbor ID from disconnected = 36
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 52
+neighbor ID from disconnected = 52
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 68
+neighbor ID from disconnected = 68
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 84
+neighbor ID from disconnected = 84
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 100
+neighbor ID from disconnected = 100
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 116
+neighbor ID from disconnected = 116
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 132
+neighbor ID from disconnected = 132
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 148
+neighbor ID from disconnected = 148
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 164
+neighbor ID from disconnected = 164
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 180
+neighbor ID from disconnected = 180
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 196
+neighbor ID from disconnected = 196
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 212
+neighbor ID from disconnected = 212
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 228
+neighbor ID from disconnected = 228
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+get neighbor from disconnected
+FEProblemBase::reinitNeighbor: disconnected neighbor!
+neighbor ID from origin = 244
+neighbor ID from disconnected = 244
+neighbor side from origin = 4294967295
+neighbor side from disconnected = 3
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+ 1 Nonlinear |R| = [32m5.512073e-12[39m
+[32m Solve Converged![39m
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in disconnected neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+in neighbor
+in neighbor
+no disconnected neighbor
+no disconnected neighbor
+in neighbor
+
+Postprocessor Values:
++----------------+----------------+------------------+
+| time           | l2_error_left_x| l2_error_right_x |
++----------------+----------------+------------------+
+|   0.000000e+00 |   0.000000e+00 |     0.000000e+00 |
+|   1.000000e+00 |   6.803912e-04 |     2.164852e-03 |
++----------------+----------------+------------------+
+

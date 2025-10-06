@@ -1,0 +1,588 @@
+
+[36m
+*** Info ***
+/Users/chenghau.yang/Documents/Package/moose-czm/modules/solid_mechanics/test/tests/cohesive_zone_model/czm_multiple_dimension_base.i:42.3:
+The following occurred in the Action 'all' of type QuasiStaticSolidMechanicsPhysics.
+
+SolidMechanics Action: selecting 'total small strain' formulation. Use `incremental = true` to select 'incremental small strain' instead.[39m
+ (generalNeighborPtr) elem_id = 0 side = 0
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 2
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 2
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 0
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 1
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 2
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 2
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 1 side = 2
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 3
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 0
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 0
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 3
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 0
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 0
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 3 side = 0
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 2
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 3
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 3
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 3 side = 3
+Found disconnected neighbor for the side
+Framework Information:
+MOOSE Version:           git commit 6f1c82801f on 2025-10-02
+LibMesh Version:         
+PETSc Version:           3.23.4
+SLEPc Version:           3.23.2
+Current Time:            Mon Oct  6 09:00:37 2025
+Executable Timestamp:    Mon Oct  6 08:56:13 2025
+
+Input File(s):
+  /Users/chenghau.yang/Documents/Package/moose-czm/modules/solid_mechanics/test/tests/cohesive_zone_model/czm_multiple_dimension_base.i
+
+Command Line Argument(s):
+  --disable-perf-graph-live
+  --error
+  --error-override
+  --compute-device=cpu
+
+Command Line Input Argument(s):
+  BCs/right_x/function=1*t
+  BCs/right_y/function=0*t
+  BCs/inactive='left_z right_z'
+  Outputs/out/file_base=czm_action_2D_small_strain_normal_out
+  Mesh/msh/nx=2
+  Mesh/msh/ny=2
+  Mesh/msh/dim=2
+  Mesh/subdomain_1/top_right='0.5 1 0'
+  Mesh/subdomain_2/top_right='1 1 0'
+  GlobalParams/displacements='disp_x disp_y'
+  Physics/SolidMechanics/CohesiveZone/czm1/displacements='disp_x disp_y'
+  Materials/czm_mat/displacements='disp_x disp_y'
+  Mesh/breakmesh/mode=1
+
+Checkpoint:
+  Wall Time Interval:      Every 3600 s
+  User Checkpoint:         Disabled
+  # Checkpoints Kept:      2
+  Execute On:              TIMESTEP_END 
+
+Parallelism:
+  Num Processors:          1
+  Num Threads:             1
+
+Mesh: 
+  Parallel Type:           replicated
+  Mesh Dimension:          2
+  Spatial Dimension:       2
+  Nodes:                   12
+  Elems:                   4
+  Num Subdomains:          2
+
+Nonlinear System:
+  Num DOFs:                24
+  Num Local DOFs:          24
+  Variables:               { "disp_x" "disp_y" } 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Auxiliary System:
+  Num DOFs:                64
+  Num Local DOFs:          64
+  Variables:               { "stress_xx" "stress_yy" "stress_zz" "stress_yz" "stress_xz" ... "jump_x" 
+                             "jump_y" "jump_z" "normal_jump" "tangent_jump" } 
+  Finite Element Types:    "MONOMIAL" 
+  Approximation Orders:    "CONSTANT" 
+
+Execution Information:
+  Executioner:             Transient
+  TimeStepper:             ConstantDT
+  TimeIntegrator(s):       ImplicitEuler
+  Solver Mode:             NEWTON 
+  PETSc Preconditioner:    lu 
+  MOOSE Preconditioner:    SMP 
+ (generalNeighborPtr) elem_id = 0 side = 0
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 2
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 2
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 0
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 1
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 2
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 2
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 1 side = 2
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 3
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 0
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 0
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 3
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 0
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 0
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 3 side = 0
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 2
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 3
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 3
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 3 side = 3
+Found disconnected neighbor for the side
+
+Time Step 0, time = 0
+
+Time Step 1, time = 0.2, dt = 0.2
+ (generalNeighborPtr) elem_id = 0 side = 0
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 2
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 2
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 0
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 1
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 2
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 2
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 1 side = 2
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 3
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 0
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 0
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 3
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 0
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 0
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 3 side = 0
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 2
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 3
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 3
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ 0 Nonlinear |R| = [32m4.898979e-01[39m
+ (generalNeighborPtr) elem_id = 0 side = 0
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 2
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 2
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 0
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 1
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 2
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 2
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 1 side = 2
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 3
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 0
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 0
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 3
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 0
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 0
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 3 side = 0
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 2
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 3
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 3
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 3 side = 3
+Found disconnected neighbor for the side
+      0 Linear |R| = [32m4.898979e-01[39m
+      1 Linear |R| = [32m1.332268e-16[39m
+ (generalNeighborPtr) elem_id = 0 side = 0
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 2
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 2
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 0
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 1
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 2
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 2
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 1 side = 2
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 3
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 0
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 0
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 3
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 0
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 0
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 3 side = 0
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 2
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 3
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 3
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 3 side = 3
+Found disconnected neighbor for the side
+ 1 Nonlinear |R| = [32m6.798700e-17[39m
+[32m Solve Converged![39m
+ (generalNeighborPtr) elem_id = 0 side = 0
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 2
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 0 side = 2
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 0 side = 2
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 0 side = 3
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 0
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 1
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 2
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 2
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 1 side = 2
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 1 side = 3
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 1 side = 3
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 1 side = 3
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 0
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 0
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 0
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 1
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 2 side = 1
+Found disconnected neighbor for the side
+ (generalNeighborPtr) elem_id = 2 side = 2
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 2 side = 3
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 0
+Found connected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 0
+Found connected neighbor for the pointer
+ (generalSide) elem_id = 3 side = 0
+Found connected neighbor for the side
+ (generalNeighborPtr) elem_id = 3 side = 1
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 2
+No neighbor found for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 3
+Found disconnected neighbor for the pointer
+ (generalNeighborPtr) elem_id = 3 side = 3
+Found disconnected neighbor for the pointer
+ (generalSide) elem_id = 3 side = 3
+Found disconnected neighbor for the side

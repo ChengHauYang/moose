@@ -50,7 +50,7 @@ BreakMeshByBlockGenerator::validParams()
   params.addParam<bool>(
       "generate_boundary_pairs", true, "Whether to generate boundary pairs between blocks.");
 
-  params.addParam<bool>("prepare_end", true, "Whether to call prepare_for_use at the end.");
+  params.addParam<unsigned int>("mode", 3, "The mode to call prepare_for_use.");
 
   params.addRelationshipManager("ElementSideNeighborLayers",
                                 Moose::RelationshipManagerType::GEOMETRIC |
@@ -71,7 +71,8 @@ BreakMeshByBlockGenerator::BreakMeshByBlockGenerator(const InputParameters & par
     _split_transition_interface(getParam<bool>("split_transition_interface")),
     _interface_transition_name(getParam<BoundaryName>("interface_transition_name")),
     _add_interface_on_two_sides(getParam<bool>("add_interface_on_two_sides")),
-    _generate_boundary_pairs(getParam<bool>("generate_boundary_pairs"))
+    _generate_boundary_pairs(getParam<bool>("generate_boundary_pairs")),
+    _mode(getParam<unsigned int>("mode"))
 {
   if (_block_pairs_restricted && _surrounding_blocks_restricted)
     paramError("block_pairs_restricted",
@@ -420,7 +421,23 @@ BreakMeshByBlockGenerator::generate()
       _factory.releaseSharedObjects(*rm);
   }
 
-  mesh->prepare_for_use();
+  // for debugging
+
+  if (_mode == 1)
+    // will return to original state
+    mesh->prepare_for_use(true /*skip_renumber_nodes_and_elements*/, false
+                          /*skip_find_neighbors*/);
+  else if (_mode == 2)
+    // will NOT return to original state
+    mesh->prepare_for_use(false /*skip_renumber_nodes_and_elements*/, true
+                          /*skip_find_neighbors*/);
+  else if (_mode == 3)
+    // will NOT return to original state
+    mesh->prepare_for_use();
+  else if (_mode == 0)
+    ; // do nothing, for debugging only
+  else
+    mooseError("BreakMeshByBlockGenerator: 'mode' must be 0, 1, 2, or 3.");
 
   addDisconnectedNeighborsFromMap(elem_side_to_fake_neighbor_elem_side);
 

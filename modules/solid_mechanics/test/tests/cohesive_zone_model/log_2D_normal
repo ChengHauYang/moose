@@ -1,0 +1,8 @@
+
+[36m
+*** Info ***
+/Users/chenghau.yang/Documents/Package/moose-czm/modules/solid_mechanics/test/tests/cohesive_zone_model/czm_multiple_dimension_base.i:42.3:
+The following occurred in the Action 'all' of type QuasiStaticSolidMechanicsPhysics.
+
+SolidMechanics Action: selecting 'total small strain' formulation. Use `incremental = true` to select 'incremental small strain' instead.[39m
+hasDisconnectedNeighbor(elem->id(), side) = 0

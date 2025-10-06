@@ -98,7 +98,15 @@ SideSetsFromNormalsGenerator::generate()
   for (const auto & elem : mesh->element_ptr_range())
     for (const auto side : make_range(elem->n_sides()))
     {
-      if (elem->neighbor_ptr(side))
+      const auto * neighbor = elem->neighbor_ptr(side);
+      // if (!neighbor)
+      //   neighbor = _mesh->disconnectedNeighborPtr(elem->id(), side);
+
+      // const auto * neighbor = _mesh->generalNeighborPtr(elem->id(), side);
+
+      std::cout << "hasDisconnectedNeighbor(elem->id(), side) = "
+                << _mesh->hasDisconnectedNeighbor(elem->id(), side) << std::endl;
+      if (neighbor || _mesh->hasDisconnectedNeighbor(elem->id(), side))
         continue;
 
       _fe_face->reinit(elem, side);
