@@ -425,6 +425,8 @@ BreakMeshByBlockGenerator::generate()
 
   addDisconnectedNeighborsFromMap(elem_side_to_fake_neighbor_elem_side, *mesh);
 
+  mesh->set_isnt_prepared();
+
   return dynamic_pointer_cast<MeshBase>(mesh);
 }
 
@@ -651,10 +653,10 @@ BreakMeshByBlockGenerator::addDisconnectedNeighborsFromMap(
     const auto connected_side = entry.second.second;
 
     // Register as disconnected neighbors in MooseMesh
-    mesh.add_disconnected_neighbors(MeshBase::ElemSide{elem_id, side},
-                                    MeshBase::ElemSide{connected_elem_id, connected_side});
+    mesh.add_disconnected_neighbors(std::make_pair(elem_id, side),
+                                    std::make_pair(connected_elem_id, connected_side));
   }
 
   // Update the neighbor information in the mesh
-  mesh.find_neighbors();
+  // mesh.find_neighbors();
 }
