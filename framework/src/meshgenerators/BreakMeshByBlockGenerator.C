@@ -420,12 +420,29 @@ BreakMeshByBlockGenerator::generate()
       _factory.releaseSharedObjects(*rm);
   }
 
-  // Prepare the new IDs
-  mesh->prepare_for_use();
+  // auto functor = std::make_shared<libMesh::FakeNeighborFunctorImpl>(elem_side_to_fake_neighbor_elem_side);
+  // mesh->add_ghosting_functor(functor);
 
   addDisconnectedNeighborsFromMap(elem_side_to_fake_neighbor_elem_side, *mesh);
+  mesh->prepare_for_use();
 
-  mesh->set_isnt_prepared();
+  // mesh->prepare_for_use();
+
+  // cause some test running using *opt to be failed
+  // mesh->set_isnt_prepared();
+
+  // cause some test running using *opt to be failed
+  // mesh->prepare_for_use();
+
+  // cause some test running using *opt to be failed
+  // mesh->prepare_for_use(false /*skip_renumber_nodes_and_elements*/, true /*skip_find_neighbors*/);
+
+  // cause some test running using *opt to be failed
+  // mesh->prepare_for_use(true /*skip_renumber_nodes_and_elements*/, false /*skip_find_neighbors*/);
+
+  // cause some test running using *opt to be failed
+  // mesh->prepare_for_use(true /*skip_renumber_nodes_and_elements*/, true /*skip_find_neighbors*/);
+
 
   return dynamic_pointer_cast<MeshBase>(mesh);
 }
@@ -658,5 +675,5 @@ BreakMeshByBlockGenerator::addDisconnectedNeighborsFromMap(
   }
 
   // Update the neighbor information in the mesh
-  // mesh.find_neighbors();
+  // mesh.find_disconnected_neighbors();
 }

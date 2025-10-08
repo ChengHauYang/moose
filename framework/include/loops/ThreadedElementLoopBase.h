@@ -277,6 +277,13 @@ ThreadedElementLoopBase<RangeType>::operator()(const RangeType & range, bool byp
             }
 
           const Elem * neighbor = elem->neighbor_ptr(side);
+          if (neighbor){
+            std::cout << "neighbor id: " << neighbor->id() << std::endl;
+          }
+          else {
+            std::cout << "no neighbor" << std::endl;
+          }
+
           if (neighbor)
           {
             preInternalSide(elem, side);
