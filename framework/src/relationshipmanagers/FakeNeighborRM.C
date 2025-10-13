@@ -8,7 +8,51 @@ using namespace libMesh;
 
 registerMooseObject("MooseApp", FakeNeighborRM);
 
-using namespace libMesh;
+namespace
+{
+class FakeNeighborFunctorImpl : public GhostingFunctor
+{
+public:
+  explicit FakeNeighborFunctorImpl(
+      const std::unordered_map<std::pair<const Elem *, unsigned int>,
+                               std::pair<const Elem *, unsigned int>> & map)
+    : _map(map), _dof_coupling(nullptr)
+  {
+  }
+
+  void operator()(const MeshBase::const_element_iterator & range_begin,
+                  const MeshBase::const_element_iterator & range_end,
+                  processor_id_type p,
+                  map_type & coupled_elements) override
+  {
+    for (const auto & elem : as_range(range_begin, range_end))
+    {
+      if (elem->processor_id() != p)
+        coupled_elements.emplace(elem, nullptr);
+
+      for (unsigned int side = 0; side < elem->n_sides(); ++side)
+      {
+        auto it = _map.find(std::make_pair(elem, side));
+        if (it == _map.end())
+          continue;
+
+        const Elem * neigh = it->second.first;
+        if (neigh && neigh->processor_id() != p)
+          coupled_elements.emplace(neigh, _dof_coupling);
+      }
+    }
+  }
+
+  void set_dof_coupling(const CouplingMatrix * dof_coupling) { _dof_coupling = dof_coupling; }
+
+  bool map_empty() const { return _map.empty(); }
+
+private:
+  const std::unordered_map<std::pair<const Elem *, unsigned int>,
+                           std::pair<const Elem *, unsigned int>> & _map;
+  const CouplingMatrix * _dof_coupling;
+};
+}
 
 InputParameters
 FakeNeighborRM::validParams()

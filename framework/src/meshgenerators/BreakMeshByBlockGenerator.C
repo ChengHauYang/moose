@@ -420,29 +420,9 @@ BreakMeshByBlockGenerator::generate()
       _factory.releaseSharedObjects(*rm);
   }
 
-  // auto functor = std::make_shared<libMesh::FakeNeighborFunctorImpl>(elem_side_to_fake_neighbor_elem_side);
-  // mesh->add_ghosting_functor(functor);
-
-  addDisconnectedNeighborsFromMap(elem_side_to_fake_neighbor_elem_side, *mesh);
   mesh->prepare_for_use();
 
-  // mesh->prepare_for_use();
-
-  // cause some test running using *opt to be failed
-  // mesh->set_isnt_prepared();
-
-  // cause some test running using *opt to be failed
-  // mesh->prepare_for_use();
-
-  // cause some test running using *opt to be failed
-  // mesh->prepare_for_use(false /*skip_renumber_nodes_and_elements*/, true /*skip_find_neighbors*/);
-
-  // cause some test running using *opt to be failed
-  // mesh->prepare_for_use(true /*skip_renumber_nodes_and_elements*/, false /*skip_find_neighbors*/);
-
-  // cause some test running using *opt to be failed
-  // mesh->prepare_for_use(true /*skip_renumber_nodes_and_elements*/, true /*skip_find_neighbors*/);
-
+  addDisconnectedNeighborsFromMap(elem_side_to_fake_neighbor_elem_side, *mesh);
 
   return dynamic_pointer_cast<MeshBase>(mesh);
 }
@@ -661,19 +641,32 @@ BreakMeshByBlockGenerator::addDisconnectedNeighborsFromMap(
         elem_side_to_fake_neighbor_elem_side,
     MeshBase & mesh)
 {
+  BoundaryInfo & boundary_info = mesh.get_boundary_info();
+
   // Loop over elem_side_to_fake_neighbor_elem_side to add disconnected neighbors to the MOOSE mesh
   for (const auto & entry : elem_side_to_fake_neighbor_elem_side)
   {
-    const auto elem_id = entry.first.first->id();
+    const auto elem = entry.first.first;
     const auto side = entry.first.second;
-    const auto connected_elem_id = entry.second.first->id();
+    const auto connected_elem = entry.second.first;
     const auto connected_side = entry.second.second;
 
-    // Register as disconnected neighbors in MooseMesh
-    mesh.add_disconnected_neighbors(std::make_pair(elem_id, side),
-                                    std::make_pair(connected_elem_id, connected_side));
-  }
+    // Extract boundary IDs for both sides
+    std::vector<boundary_id_type> ids;
+    boundary_info.boundary_ids(elem, side, ids);
+    boundary_id_type boundary_id = libMesh::BoundaryInfo::invalid_id;
+    if (!ids.empty())
+      boundary_id = ids.front();
 
-  // Update the neighbor information in the mesh
-  // mesh.find_disconnected_neighbors();
+    std::vector<boundary_id_type> connected_ids;
+    boundary_info.boundary_ids(connected_elem, connected_side, connected_ids);
+    boundary_id_type connected_boundary_id = libMesh::BoundaryInfo::invalid_id;
+    if (!connected_ids.empty())
+      connected_boundary_id = connected_ids.front();
+
+    // Register as disconnected neighbors in MooseMesh
+    _mesh->addDisconnectedNeighbors(
+        ConstBndElement(elem, side, boundary_id),
+        ConstBndElement(connected_elem, connected_side, connected_boundary_id));
+  }
 }
