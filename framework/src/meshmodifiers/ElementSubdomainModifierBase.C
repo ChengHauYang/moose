@@ -1056,7 +1056,103 @@ ElementSubdomainModifierBase::gatherPatchElements(const VariableName & var_name,
   // so we gather them across all processors
   _mesh.comm().allgather(patch_elems);
 
-  patch_elems.erase(std::unique(patch_elems.begin(), patch_elems.end()), patch_elems.end());
+  // patch_elems.erase(std::unique(patch_elems.begin(), patch_elems.end()), patch_elems.end());
+
+  // std::ofstream fout("patch_elems.csv");
+  // for (const auto & id : patch_elems)
+  //   for (const auto & node : _mesh.elemPtr(id)->node_ref_range())
+  //   {
+  //     fout << node(0) << " " << node(1) << " " << node(2) << std::endl;
+  //   }
+
+  std::ofstream fout("patch_elems.vtu");
+  fout << R"(<?xml version="1.0"?>)" << "\n";
+  fout << R"(<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">)" << "\n";
+  fout << "<UnstructuredGrid>\n";
+
+  std::vector<Point> points;
+  std::vector<std::vector<unsigned int>> connectivity;
+  unsigned int point_counter = 0;
+  std::map<dof_id_type, unsigned int> node_to_id;
+
+  std::cout << "patch_elems size = " << patch_elems.size() << std::endl;
+
+  for (const auto & id : patch_elems)
+  {
+    const Elem * elem = _mesh.queryElemPtr(id);
+    if (!elem)
+    {
+      std::cout << "Elem id " << id << " not found." << std::endl;
+      continue;
+    }
+
+    std::vector<unsigned int> conn;
+    for (unsigned int n = 0; n < elem->n_nodes(); ++n)
+    {
+      const Node * node = elem->node_ptr(n);
+      dof_id_type nid = node->id();
+      if (node_to_id.find(nid) == node_to_id.end())
+      {
+        node_to_id[nid] = point_counter++;
+        points.emplace_back((*node)(0), (*node)(1), (*node)(2));
+      }
+      conn.push_back(node_to_id[nid]);
+    }
+    connectivity.push_back(conn);
+  }
+
+  fout << "<Piece NumberOfPoints=\"" << points.size() << "\" NumberOfCells=\""
+       << connectivity.size() << "\">\n";
+
+  // === Points ===
+  fout << "<Points>\n<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n";
+  for (const auto & p : points)
+    fout << p(0) << " " << p(1) << " " << p(2) << "\n";
+  fout << "</DataArray>\n</Points>\n";
+
+  // === Cells ===
+  fout << "<Cells>\n";
+  fout << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
+  for (const auto & conn : connectivity)
+  {
+    for (auto idx : conn)
+      fout << idx << " ";
+    fout << "\n";
+  }
+  fout << "</DataArray>\n";
+
+  fout << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
+  int offset = 0;
+  for (const auto & conn : connectivity)
+  {
+    offset += conn.size();
+    fout << offset << "\n";
+  }
+  fout << "</DataArray>\n";
+
+  fout << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n";
+  for (const auto & conn : connectivity)
+  {
+    switch (conn.size())
+    {
+      case 4:
+        fout << "10\n";
+        break; // Tetra
+      case 8:
+        fout << "12\n";
+        break; // Hex
+      default:
+        fout << "7\n";
+        break; // Polygon
+    }
+  }
+  fout << "</DataArray>\n";
+  fout << "</Cells>\n";
+  fout << "</Piece>\n</UnstructuredGrid>\n</VTKFile>\n";
+  fout.close();
+
+  std::cout << "patch_elems.vtu written with " << points.size() << " points and "
+            << connectivity.size() << " cells.\n";
 }
 
 std::unique_ptr<KDTree>

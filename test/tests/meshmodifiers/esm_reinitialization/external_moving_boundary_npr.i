@@ -54,7 +54,10 @@
     execute_on = 'INITIAL TIMESTEP_END'
 
     # --- new for setting IC --- #
-    reinitialization_strategy = 'POLYNOMIAL_NEIGHBOR'
+    # reinitialization_strategy = 'POLYNOMIAL_NEIGHBOR'
+    # reinitialization_strategy = 'POLYNOMIAL_WHOLE'
+    reinitialization_strategy = 'POLYNOMIAL_NEARBY'
+    nearby_distance_threshold = 0.3
     reinitialize_variables = 'diff'
     old_subdomain_reinitialized = false
     reinitialize_subdomains = '1'
@@ -127,11 +130,11 @@
 [Executioner]
   type = Transient
   dt = 0.3
-  num_steps = 3
+  num_steps = 1
   nl_abs_tol = 1e-12
   nl_rel_tol = 1e-50
 []
 
 [Outputs]
-  exodus = true
+  vtk = true
 []
