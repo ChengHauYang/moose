@@ -176,6 +176,8 @@ BreakMeshByBlockGenerator::findBoundaryName(const MeshBase & mesh,
 std::unique_ptr<MeshBase>
 BreakMeshByBlockGenerator::generate()
 {
+
+  _console << "Breaking mesh by block..." << std::endl;
   std::unique_ptr<MeshBase> mesh = std::move(_input);
 
   // Max node id is used later to generate new unique node IDs
@@ -445,6 +447,8 @@ BreakMeshByBlockGenerator::generate()
                       unsigned int connected_elem_side,
                       bool need_to_switch)
               {
+                _console << "Adding interface between block " << blocks_pair.first << " and block"
+                         << blocks_pair.second << std::endl;
                 _neighboring_block_list.insert(blocks_pair);
                 _subid_pairs_to_sides[blocks_pair].emplace(
                     !need_to_switch ? current_elem : connected_elem, side);
@@ -507,7 +511,7 @@ BreakMeshByBlockGenerator::addInterface(MeshBase & mesh)
   BoundaryName boundary_name;
 
   const std::set<boundary_id_type> & ids = boundary_info.get_boundary_ids();
-  boundary_id_type new_boundaryID = ids.empty() ? -1 : *ids.rbegin() + 1;
+  boundary_id_type new_boundaryID = ids.empty() ? 0 : *ids.rbegin() + 1;
 
   // Make sure the new boundary ID is the same on every processor
   mesh.comm().set_union(_neighboring_block_list);
@@ -604,6 +608,9 @@ BreakMeshByBlockGenerator::addInterface(MeshBase & mesh)
   boundary_info.parallel_sync_side_ids();
   boundary_info.parallel_sync_node_ids();
 
+  _console << "BreakMeshByBlockGenerator: Generated " << _subid_pairs_to_boundary_id.size()
+           << " interface boundaries between blocks." << std::endl;
+
   // Generate boundary_id pairs mapping based on _subid_pairs_to_sides
   for (const auto & [sub_pair, boundary_id] : _subid_pairs_to_boundary_id)
   {
@@ -611,9 +618,13 @@ BreakMeshByBlockGenerator::addInterface(MeshBase & mesh)
     const bool has_reverse =
         _subid_pairs_to_boundary_id.find(rev_pair) != _subid_pairs_to_boundary_id.end();
     if (has_reverse)
+    {
+      _console << "boundary pair: " << boundary_id << " <-> "
+               << _subid_pairs_to_boundary_id[rev_pair] << std::endl;
       // Normal disconnected boundary pair: blockA_blockB <-> blockB_blockA
       mesh.add_disjoint_neighbor_boundary_pairs(
           boundary_id, _subid_pairs_to_boundary_id[rev_pair], RealVectorValue(0.0, 0.0, 0.0));
+    }
   }
 }
 
