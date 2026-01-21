@@ -130,6 +130,19 @@ TotalLagrangianStressDivergenceBase<G>::computeQpJacobianOutOfPlaneStrain()
   return _dpk1[_qp].contractionKl(2, 2, gradTest(_alpha)) * _out_of_plane_strain->phi()[_j][_qp];
 }
 
+template <class G>
+Real
+TotalLagrangianStressDivergenceBase<G>::computeQpJacobianAdditionalCoupledVar(
+    unsigned int add_index)
+{
+  // dPK1/d(additional_var) at this qp (provided by the material system)
+  const RankTwoTensor & dpk1_dvar = (*_dpk1_dadditional[add_index])[_qp];
+
+  // Use the coupled variable's trial function, consistent with temperature/out-of-plane
+  return dpk1_dvar.doubleContraction(gradTest(_alpha)) *
+         _additional_coupled_vars[add_index]->phi()[_j][_qp];
+}
+
 template class TotalLagrangianStressDivergenceBase<GradientOperatorCartesian>;
 template class TotalLagrangianStressDivergenceBase<GradientOperatorAxisymmetricCylindrical>;
 template class TotalLagrangianStressDivergenceBase<GradientOperatorCentrosymmetricSpherical>;

@@ -58,6 +58,9 @@ protected:
   // Derivatives of the residual w.r.t. the out-of-plane strain
   virtual Real computeQpJacobianOutOfPlaneStrain() = 0;
 
+  // Derived classes has to implement the actual weak-form contribution
+  virtual Real computeQpJacobianAdditionalCoupledVar(unsigned int add_index) { return 0.0; }
+
 protected:
   /// If true use large deformation kinematics
   const bool _large_kinematics;
@@ -105,4 +108,19 @@ protected:
 
   /// Eigenstrain derivatives wrt generate coupleds
   std::vector<std::vector<const MaterialProperty<RankTwoTensor> *>> _deigenstrain_dargs;
+
+  /// Number of additional coupled variables on which the PK1 stress depends
+  unsigned int _n_additional;
+
+  /// Variable numbers of the additional coupled variables
+  /// The ordering corresponds to the  `additional_coupled_vars` input parameter.
+  std::vector<unsigned int> _additional_var_nums;
+
+  /// Additional coupled variables, if provided. These are used only to get the trial functions
+  std::vector<const MooseVariable *> _additional_coupled_vars;
+
+  /// Derivatives of the PK1 stress with respect to the additional coupled variables
+  /// i.e. _dpk1_dadditional[a] provides d(PK1)/d(additional_var_a) as a RankTwoTensor
+  /// material property evaluated at each quadrature point.
+  std::vector<const MaterialProperty<RankTwoTensor> *> _dpk1_dadditional;
 };

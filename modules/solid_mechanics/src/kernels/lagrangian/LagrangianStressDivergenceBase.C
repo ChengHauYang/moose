@@ -36,6 +36,17 @@ LagrangianStressDivergenceBase::validParams()
   params.addCoupledVar("out_of_plane_strain",
                        "The out-of-plane strain variable for weak plane stress formulation.");
 
+  params.addCoupledVar(
+      "additional_coupled_vars",
+      "List of additional coupled variables which PK1 stress depends on. Derivatives of PK1 stress "
+      "w.r.t each of the additional coupled variable should be provided as material properties "
+      "through parameters `additional_coupling_jacobians` in the material block.");
+
+  params.addParam<std::vector<MaterialPropertyName>>(
+      "additional_coupling_jacobians",
+      {},
+      "Material properties storing derivative of PK1 (RankTwoTensor) w.r.t each additional var");
+
   return params;
 }
 
@@ -79,6 +90,31 @@ LagrangianStressDivergenceBase::LagrangianStressDivergenceBase(const InputParame
     for (auto eigenstrain_name : getParam<std::vector<MaterialPropertyName>>("eigenstrain_names"))
       _deigenstrain_dargs[i].push_back(&getMaterialPropertyDerivative<RankTwoTensor>(
           eigenstrain_name, _coupled_moose_vars[i]->name()));
+
+  _n_additional = coupledComponents("additional_coupled_vars");
+  _additional_var_nums.resize(_n_additional);
+
+  const auto & jac_names =
+      getParam<std::vector<MaterialPropertyName>>("additional_coupling_jacobians");
+
+  if (jac_names.size() != _n_additional)
+    mooseError("Size mismatch: the length of 'additional_coupling_jacobians' (" +
+               std::to_string(jac_names.size()) +
+               ") must have the same length as "
+               "'additional_coupled_vars' (" +
+               std::to_string(_n_additional) + ").");
+
+  _dpk1_dadditional.resize(_n_additional);
+
+  for (unsigned int a = 0; a < _n_additional; ++a)
+  {
+    _additional_var_nums[a] = coupled("additional_coupled_vars", a);
+
+    _additional_coupled_vars[a] = getVar("additional_coupled_vars", a);
+
+    // Each jac property is a RankTwoTensor: dPK1 / d(var_a)
+    _dpk1_dadditional[a] = &getMaterialPropertyByName<RankTwoTensor>(jac_names[a]);
+  }
 }
 
 void
@@ -136,6 +172,11 @@ LagrangianStressDivergenceBase::computeQpOffDiagJacobian(unsigned int jvar)
   // Off diagonal term due to weak plane stress
   if (_out_of_plane_strain && jvar == _out_of_plane_strain->number())
     return computeQpJacobianOutOfPlaneStrain();
+
+  // Off diagonal terms for additional coupled vars
+  for (unsigned int a = 0; a < _n_additional; ++a)
+    if (jvar == _additional_var_nums[a])
+      return computeQpJacobianAdditionalCoupledVar(a);
 
   return 0;
 }
