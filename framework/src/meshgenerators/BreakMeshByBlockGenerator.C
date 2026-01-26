@@ -148,6 +148,9 @@ BreakMeshByBlockGenerator::findBoundaryName(const MeshBase & mesh,
                                             const boundary_id_type & boundaryID,
                                             BoundaryInfo & boundary_info)
 {
+  if (primaryBlockID < secondaryBlockID)
+    std::cout << "grain" << primaryBlockID << "_grain" << secondaryBlockID << "\n";
+
   boundaryName = generateBoundaryName(mesh, primaryBlockID, secondaryBlockID);
 
   // check if the boundary name already exist
@@ -176,6 +179,8 @@ BreakMeshByBlockGenerator::findBoundaryName(const MeshBase & mesh,
 std::unique_ptr<MeshBase>
 BreakMeshByBlockGenerator::generate()
 {
+
+  std::cout << "Breaking mesh by block...\n";
   std::unique_ptr<MeshBase> mesh = std::move(_input);
 
   // Max node id is used later to generate new unique node IDs
@@ -507,7 +512,7 @@ BreakMeshByBlockGenerator::addInterface(MeshBase & mesh)
   BoundaryName boundary_name;
 
   const std::set<boundary_id_type> & ids = boundary_info.get_boundary_ids();
-  boundary_id_type new_boundaryID = ids.empty() ? -1 : *ids.rbegin() + 1;
+  boundary_id_type new_boundaryID = ids.empty() ? 0 : *ids.rbegin() + 1;
 
   // Make sure the new boundary ID is the same on every processor
   mesh.comm().set_union(_neighboring_block_list);
