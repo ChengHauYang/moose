@@ -93,6 +93,10 @@ BiLinearMixedModeTraction::computeTraction()
   computeCriticalDisplacementJump();
   computeFinalDisplacementJump();
   computeEffectiveDisplacementJump();
+  // _console << "CZMDebug | step=" << _t_step << " t=" << _t << " qp=" << _qp
+  //          << " delta_m=" << _delta_m[_qp] << " delta_init=" << _delta_init[_qp]
+  //          << " delta_final=" << _delta_final[_qp] << " d_old=" << _d_old[_qp]
+  //          << " proc=" << processor_id() << " tid=" << _tid << std::endl;
   computeDamage();
 
   // Split displacement jump into active and inactive parts
