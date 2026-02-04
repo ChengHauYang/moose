@@ -673,6 +673,37 @@ SubProblem::checkBoundaryMatProps()
 
   std::stringstream errors;
 
+  // ================= DEBUG: print boundary material properties =================
+  // mooseWarning("=== DEBUG: Boundary material properties ===");
+
+  // for (const auto & it : _map_boundary_material_props)
+  // {
+  //   BoundaryID id = it.first;
+
+  //   std::string name = restrictionBoundaryCheckName(id);
+  //   if (name.empty())
+  //     name = std::to_string(id);
+
+  //   std::ostringstream oss;
+  //   oss << "Boundary " << name << " has material properties:\n";
+
+  //   for (const auto & prop : it.second)
+  //     oss << "  - " << prop << "\n";
+
+  //   // zero material props (important for interface kernels!)
+  //   if (_zero_boundary_material_props.count(id))
+  //   {
+  //     oss << "  [zero material properties]\n";
+  //     for (const auto & prop : _zero_boundary_material_props.at(id))
+  //       oss << "  - " << prop << "\n";
+  //   }
+
+  //   mooseWarning(oss.str());
+  // }
+
+  // mooseWarning("=== END DEBUG ===");
+  // ============================================================================
+
   // Loop through the properties to check
   for (const auto & check_it : _map_boundary_material_props_check)
   {
