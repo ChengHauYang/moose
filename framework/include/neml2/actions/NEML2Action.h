@@ -97,12 +97,16 @@ protected:
 
   /// Set up MOOSE-NEML2 input variable mappings
   void setupInputMappings(const neml2::Model &);
+  /// Set up MOOSE-NEML2 side input variable mappings
+  void setupSideInputMappings(const neml2::Model &);
 
   /// Set up MOOSE-NEML2 model parameter mappings
   void setupParameterMappings(const neml2::Model &);
 
   /// Set up MOOSE-NEML2 output variable mappings
   void setupOutputMappings(const neml2::Model &);
+  /// Set up MOOSE-NEML2 side output variable mappings
+  void setupSideOutputMappings(const neml2::Model &);
 
   /// Set up MOOSE-NEML2 derivative mappings
   void setupDerivativeMappings(const neml2::Model &);
@@ -121,12 +125,16 @@ protected:
 
   /// MOOSE-NEML2 input variable mappings
   std::vector<VariableMapping> _inputs;
+  /// MOOSE-NEML2 side input variable mappings
+  std::vector<VariableMapping> _side_inputs;
 
   /// MOOSE-NEML2 model parameter mappings
   std::vector<ParameterMapping> _params;
 
   /// MOOSE-NEML2 output variable mappings
   std::vector<VariableMapping> _outputs;
+  /// MOOSE-NEML2 side output variable mappings
+  std::vector<VariableMapping> _side_outputs;
 
   /// MOOSE-NEML2 derivative mappings
   std::vector<DerivativeMapping> _derivs;
@@ -134,12 +142,18 @@ protected:
   /// MOOSE-NEML2 parameter derivative mappings
   std::vector<ParameterDerivativeMapping> _param_derivs;
 
+  /// Side boundaries for side NEML2
+  std::vector<BoundaryName> _boundary;
+
 #endif
   /// Name of the NEML2Executor user object
   const UserObjectName _executor_name;
 
   /// Name of the NEML2BatchIndexGenerator user object
   const UserObjectName _idx_generator_name;
+
+  /// Name of the NEML2SideBatchIndexGenerator user object
+  const UserObjectName _side_idx_generator_name;
 
   /// Blocks this sub-block action applies to
   const std::vector<SubdomainName> _block;

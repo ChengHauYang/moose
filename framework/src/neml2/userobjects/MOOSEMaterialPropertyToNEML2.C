@@ -33,7 +33,7 @@ MOOSEMaterialPropertyToNEML2<T, state>::validParams()
 
 template <typename T, unsigned int state>
 MOOSEMaterialPropertyToNEML2<T, state>::MOOSEMaterialPropertyToNEML2(const InputParameters & params)
-  : MOOSEToNEML2Batched<T>(params)
+  : MOOSEToNEML2Batched<T>(params) // MOOSEToNEML2Batched is inherited from ElementUserObject
 #ifdef NEML2_ENABLED
     ,
     _mat_prop(this->template getGenericMaterialProperty<T, false>("from_moose", state))

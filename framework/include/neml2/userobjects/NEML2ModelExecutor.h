@@ -12,6 +12,7 @@
 #include "NEML2ModelInterface.h"
 #include "GeneralUserObject.h"
 #include "NEML2BatchIndexGenerator.h"
+#include "NEML2SideBatchIndexGenerator.h"
 
 class MOOSEToNEML2;
 
@@ -44,6 +45,11 @@ public:
 
   /// Get the batch index for the given element ID
   std::size_t getBatchIndex(dof_id_type elem_id) const;
+
+  /// Get batch index for a given element/side/boundary (side batches only)
+  std::size_t getSideBatchIndex(dof_id_type elem_id,
+                                unsigned int side,
+                                BoundaryID boundary_id) const;
 
   /// Get a reference(!) to the requested output view
   const neml2::Tensor & getOutput(const neml2::VariableName & output_name) const;
@@ -87,6 +93,9 @@ protected:
   /// The NEML2BatchIndexGenerator used to generate the element-to-batch-index map
   const NEML2BatchIndexGenerator & _batch_index_generator;
 
+  /// The NEML2SideBatchIndexGenerator used to generate the side-to-batch-index map
+  const NEML2SideBatchIndexGenerator * _side_batch_index_generator = nullptr;
+
   /// flag that indicates if output data has been fully computed
   bool _output_ready;
 
@@ -95,6 +104,9 @@ protected:
 
   /// The input variables of the material model
   neml2::ValueMap _in;
+
+  /// The side input variables of the material model
+  neml2::ValueMap _in_side;
 
   /// The output variables of the material model
   neml2::ValueMap _out;
@@ -113,6 +125,13 @@ protected:
 
   /// MOOSE data gathering user objects
   std::vector<const MOOSEToNEML2 *> _gatherers;
+
+  /// MOOSE side data gathering user objects
+  std::vector<const MOOSEToNEML2 *> _side_gatherers;
+
+  /// Combined batch offsets for side data
+  std::size_t _side_batch_offset = 0;
+  std::size_t _side_batch_size = 0;
 
   /// set of output variables that were retrieved (by other objects)
   mutable neml2::ValueMap _retrieved_outputs;

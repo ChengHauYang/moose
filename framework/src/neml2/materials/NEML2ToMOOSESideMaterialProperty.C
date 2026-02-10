@@ -7,26 +7,26 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#include "NEML2ToMOOSEMaterialProperty.h"
+#include "NEML2ToMOOSESideMaterialProperty.h"
 #include "NEML2ModelExecutor.h"
 
-#define registerNEML2ToMOOSEMaterialProperty(alias)                                                \
-  registerMooseObject("MooseApp", NEML2ToMOOSE##alias##MaterialProperty)
+#define registerNEML2ToMOOSESideMaterialProperty(alias)                                            \
+  registerMooseObject("MooseApp", NEML2ToMOOSESide##alias##MaterialProperty)
 
-registerNEML2ToMOOSEMaterialProperty(Real);
-registerNEML2ToMOOSEMaterialProperty(SymmetricRankTwoTensor);
-registerNEML2ToMOOSEMaterialProperty(SymmetricRankFourTensor);
-registerNEML2ToMOOSEMaterialProperty(RealVectorValue);
-registerNEML2ToMOOSEMaterialProperty(RankTwoTensor);
-registerNEML2ToMOOSEMaterialProperty(RankFourTensor);
+registerNEML2ToMOOSESideMaterialProperty(Real);
+registerNEML2ToMOOSESideMaterialProperty(SymmetricRankTwoTensor);
+registerNEML2ToMOOSESideMaterialProperty(SymmetricRankFourTensor);
+registerNEML2ToMOOSESideMaterialProperty(RealVectorValue);
+registerNEML2ToMOOSESideMaterialProperty(RankTwoTensor);
+registerNEML2ToMOOSESideMaterialProperty(RankFourTensor);
 
 template <typename T>
 InputParameters
-NEML2ToMOOSEMaterialProperty<T>::validParams()
+NEML2ToMOOSESideMaterialProperty<T>::validParams()
 {
   auto params = Material::validParams();
-  params.addClassDescription("Provide an output (or its derivative) from a NEML2 model as a MOOSE "
-                             "material property of type " +
+  params.addClassDescription("Provide an output (or its derivative) from a NEML2 model as a "
+                             "MOOSE side material property of type " +
                              demangle(typeid(T).name()) + ".");
 
   params.addRequiredParam<UserObjectName>("neml2_executor",
@@ -37,7 +37,6 @@ NEML2ToMOOSEMaterialProperty<T>::validParams()
   params.addRequiredParam<std::string>("from_neml2", "NEML2 output variable to read from");
   params.addParam<std::string>(
       "neml2_input_derivative",
-
       "If supplied return the derivative of the NEML2 output variable with respect to this");
   params.addParam<std::string>(
       "neml2_parameter_derivative",
@@ -52,7 +51,8 @@ NEML2ToMOOSEMaterialProperty<T>::validParams()
 }
 
 template <typename T>
-NEML2ToMOOSEMaterialProperty<T>::NEML2ToMOOSEMaterialProperty(const InputParameters & params)
+NEML2ToMOOSESideMaterialProperty<T>::NEML2ToMOOSESideMaterialProperty(
+    const InputParameters & params)
   : Material(params)
 #ifdef NEML2_ENABLED
     ,
@@ -80,7 +80,7 @@ NEML2ToMOOSEMaterialProperty<T>::NEML2ToMOOSEMaterialProperty(const InputParamet
 #ifdef NEML2_ENABLED
 template <typename T>
 void
-NEML2ToMOOSEMaterialProperty<T>::computeProperties()
+NEML2ToMOOSESideMaterialProperty<T>::computeProperties()
 {
   // See issue #28971: Using _prop0 to set initial condition for this possibly stateful property may
   // not work. As a workaround, we set the initial condition here when _t_step == 0.
@@ -93,22 +93,26 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   if (!_execute_neml2_model.outputReady())
     return;
 
-  // If we're in a boundary material context, skip it.
-  if (_bnd)
+  // If we're not in a boundary, skip it.
+  if (!_bnd)
     return;
 
-  // look up start index for current element
-  const auto i = _execute_neml2_model.getBatchIndex(_current_elem->id());
-  for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
-    NEML2Utils::copyTensorToMOOSEData(_value.batch_index({neml2::Size(i + _qp)}), _prop[_qp]);
+  const auto start = _execute_neml2_model.getSideBatchIndex(
+      _current_elem->id(), _assembly.side(), _assembly.currentBoundaryID());
+
+  const auto nqp = _qrule->n_points();
+  for (_qp = 0; _qp < nqp; ++_qp)
+    NEML2Utils::copyTensorToMOOSEData(_value.batch_index({neml2::Size(start + _qp)}),
+                                      _prop[_qp]);
 }
 #endif
 
-#define instantiateNEML2ToMOOSEMaterialProperty(T) template class NEML2ToMOOSEMaterialProperty<T>
+#define instantiateNEML2ToMOOSESideMaterialProperty(T)                                             \
+  template class NEML2ToMOOSESideMaterialProperty<T>
 
-instantiateNEML2ToMOOSEMaterialProperty(Real);
-instantiateNEML2ToMOOSEMaterialProperty(SymmetricRankTwoTensor);
-instantiateNEML2ToMOOSEMaterialProperty(SymmetricRankFourTensor);
-instantiateNEML2ToMOOSEMaterialProperty(RealVectorValue);
-instantiateNEML2ToMOOSEMaterialProperty(RankTwoTensor);
-instantiateNEML2ToMOOSEMaterialProperty(RankFourTensor);
+instantiateNEML2ToMOOSESideMaterialProperty(Real);
+instantiateNEML2ToMOOSESideMaterialProperty(SymmetricRankTwoTensor);
+instantiateNEML2ToMOOSESideMaterialProperty(SymmetricRankFourTensor);
+instantiateNEML2ToMOOSESideMaterialProperty(RealVectorValue);
+instantiateNEML2ToMOOSESideMaterialProperty(RankTwoTensor);
+instantiateNEML2ToMOOSESideMaterialProperty(RankFourTensor);
