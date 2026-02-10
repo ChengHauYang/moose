@@ -48,6 +48,18 @@ public:
   /// Get the batch index for the given element ID
   std::size_t getBatchIndex(dof_id_type elem_id) const;
 
+  /**
+   * @brief Metadata for mapping MOOSE geometric entities to NEML2 batch indices.
+   * * In NEML2, data is processed in a flattened batch tensor where each entry corresponds
+   * to a quadrature point. This structure provides the necessary information to locate
+   * and validate the data segment associated with a specific element or side.
+   * * @param start  The global starting index of the first quadrature point in the
+   * flattened NEML2 batch tensor.
+   * @param nqp    The number of quadrature points associated with the entity.
+   * Used for data length validation and loop bounds.
+   * @param local  Indicates whether the data is computed on the current processor (true)
+   * or retrieved from the ghost/global cache (false) during MPI sync.
+   */
   struct BatchInfo
   {
     std::size_t start = 0;
@@ -65,8 +77,7 @@ public:
   bool hasLocalBatchIndex(dof_id_type elem_id) const;
 
   /// Get output tensor (local or ghost cache)
-  const neml2::Tensor & getOutputTensor(const neml2::VariableName & output_name,
-                                        bool global) const;
+  const neml2::Tensor & getOutputTensor(const neml2::VariableName & output_name, bool global) const;
 
   /// Get output derivative tensor (local or ghost cache)
   const neml2::Tensor & getOutputDerivativeTensor(const neml2::VariableName & output_name,
@@ -77,6 +88,19 @@ public:
   const neml2::Tensor & getOutputParameterDerivativeTensor(const neml2::VariableName & output_name,
                                                            const std::string & parameter_name,
                                                            bool global) const;
+
+  /// Get side output tensor (local or ghost cache)
+  const neml2::Tensor & getSideOutputTensor(const neml2::VariableName & output_name,
+                                            bool global) const;
+
+  /// Get side output derivative tensor (local or ghost cache)
+  const neml2::Tensor & getSideOutputDerivativeTensor(const neml2::VariableName & output_name,
+                                                      const neml2::VariableName & input_name,
+                                                      bool global) const;
+
+  /// Get side output parameter derivative tensor (local or ghost cache)
+  const neml2::Tensor & getSideOutputParameterDerivativeTensor(
+      const neml2::VariableName & output_name, const std::string & parameter_name, bool global) const;
 
   /// Get a reference(!) to the requested output view
   const neml2::Tensor & getOutput(const neml2::VariableName & output_name) const;
@@ -175,6 +199,8 @@ protected:
 
   /// Sync local outputs to build ghost-accessible cache
   void syncGlobalOutputs();
+  /// Sync local side outputs to build ghost-accessible cache
+  void syncGlobalSideOutputs();
 
   struct CachedTensor
   {
@@ -192,11 +218,27 @@ protected:
   std::map<neml2::VariableName, std::map<neml2::VariableName, CachedTensor>> _global_derivatives;
 
   /// Global parameter derivative cache for ghost access
+  std::map<neml2::VariableName, std::map<std::string, CachedTensor>> _global_parameter_derivatives;
+
+  /// Global side batch info for ghost access
+  std::map<NEML2SideBatchIndexGenerator::SideKey, std::pair<std::size_t, unsigned int>>
+      _global_side_batch;
+
+  /// Global side output cache for ghost access
+  std::map<neml2::VariableName, CachedTensor> _global_side_outputs;
+
+  /// Global side derivative cache for ghost access
+  std::map<neml2::VariableName, std::map<neml2::VariableName, CachedTensor>>
+      _global_side_derivatives;
+
+  /// Global side parameter derivative cache for ghost access
   std::map<neml2::VariableName, std::map<std::string, CachedTensor>>
-      _global_parameter_derivatives;
+      _global_side_parameter_derivatives;
 
   /// Whether the global cache is ready
   bool _global_cache_ready = false;
+  /// Whether the global side cache is ready
+  bool _global_side_cache_ready = false;
 
 private:
   /// Whether an error was encountered

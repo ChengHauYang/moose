@@ -107,44 +107,47 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
     return;
 
   // NEML2 outputs are defined on element volume quadrature points.
-  // If we're in a boundary/neighbor material context, skip to avoid size mismatch.
-  if (_bnd || _neighbor)
+  // If we're in a boundary material context, skip to avoid size mismatch.
+  if (_bnd)
     return;
 
   // look up start index for current element (local or ghost cache)
   const auto info = _execute_neml2_model.getBatchInfo(_current_elem->id());
   const bool use_global = !info.local;
 
-  const neml2::Tensor * src = nullptr;
-  if (_value_kind == ValueKind::Output)
-    src = &_execute_neml2_model.getOutputTensor(_from_neml2, use_global);
-  else if (_value_kind == ValueKind::OutputDerivative)
-    src = &_execute_neml2_model.getOutputDerivativeTensor(
-        _from_neml2, *_neml2_input_derivative, use_global);
-  else
-    src = &_execute_neml2_model.getOutputParameterDerivativeTensor(
-        _from_neml2, *_neml2_parameter_derivative, use_global);
+  const auto & src = [this](bool global) -> const neml2::Tensor &
+  {
+    if (_value_kind == ValueKind::Output)
+      return _execute_neml2_model.getOutputTensor(_from_neml2, global);
+    if (_value_kind == ValueKind::OutputDerivative)
+      return _execute_neml2_model.getOutputDerivativeTensor(
+          _from_neml2, *_neml2_input_derivative, global);
+    return _execute_neml2_model.getOutputParameterDerivativeTensor(
+        _from_neml2, *_neml2_parameter_derivative, global);
+  }(use_global);
 
   const auto nqp = info.nqp;
   const auto prop_size = _prop.size();
 
   if (prop_size != nqp)
-    mooseError("NEML2ToMOOSEMaterialProperty: size mismatch for '",
-               _from_neml2,
-               "': NEML2 nqp=",
-               nqp,
-               ", property size=",
-               prop_size,
-               ", elem=",
-               _current_elem->id(),
-               ", is boundary=",
-               _bnd,
-               ", is neighbor=",
-               _neighbor,
-               ". Skipping.");
+  {
+    mooseWarning("NEML2ToMOOSEMaterialProperty: size mismatch for '",
+                 _from_neml2,
+                 "': NEML2 nqp=",
+                 nqp,
+                 ", property size=",
+                 prop_size,
+                 ", elem=",
+                 _current_elem->id(),
+                 ", bnd=",
+                 _bnd,
+                 ", neighbor=",
+                 _neighbor,
+                 ". Skipping.");
+    return;
+  }
   for (_qp = 0; _qp < nqp; ++_qp)
-    NEML2Utils::copyTensorToMOOSEData(src->batch_index({neml2::Size(info.start + _qp)}),
-                                      _prop[_qp]);
+    NEML2Utils::copyTensorToMOOSEData(src.batch_index({neml2::Size(info.start + _qp)}), _prop[_qp]);
 }
 #endif
 
