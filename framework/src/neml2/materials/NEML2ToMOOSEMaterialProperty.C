@@ -126,6 +126,22 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
         _from_neml2, *_neml2_parameter_derivative, use_global);
 
   const auto nqp = info.nqp;
+  const auto prop_size = _prop.size();
+
+  if (prop_size != nqp)
+    mooseError("NEML2ToMOOSEMaterialProperty: size mismatch for '",
+               _from_neml2,
+               "': NEML2 nqp=",
+               nqp,
+               ", property size=",
+               prop_size,
+               ", elem=",
+               _current_elem->id(),
+               ", is boundary=",
+               _bnd,
+               ", is neighbor=",
+               _neighbor,
+               ". Skipping.");
   for (_qp = 0; _qp < nqp; ++_qp)
     NEML2Utils::copyTensorToMOOSEData(src->batch_index({neml2::Size(info.start + _qp)}),
                                       _prop[_qp]);

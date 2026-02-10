@@ -47,6 +47,11 @@ NEML2ActionCommon::commonParams()
       "neml2_inputs_side",
       {},
       "List of NEML2 input variables corresponding to each MOOSE data on sidesets.");
+  params.addParam<std::vector<std::string>>(
+      "side_skip_inputs",
+      {},
+      "List of NEML2 input variables that are gathered on volume but intentionally not provided "
+      "on sidesets. All other volume MATERIAL/VARIABLE inputs must be mapped on sidesets.");
 
   // Model parameters
   params.addParam<MultiMooseEnum>("moose_parameter_types",

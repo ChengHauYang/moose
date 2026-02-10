@@ -177,9 +177,35 @@ NEML2Action::act()
                      "Side inputs do not support POSTPROCESSOR types. Use MATERIAL or VARIABLE.");
         side_vars.insert(input.neml2.name);
       }
+      std::set<neml2::VariableName> side_skip;
+      std::set<neml2::VariableName> volume_vars;
       for (const auto & input : _inputs)
       {
         if (input.moose.type != MOOSEIOType::MATERIAL && input.moose.type != MOOSEIOType::VARIABLE)
+          continue;
+        volume_vars.insert(input.neml2.name);
+      }
+      for (const auto & name : getParam<std::vector<std::string>>("side_skip_inputs"))
+      {
+        const auto v = NEML2Utils::parseVariableName(name);
+        if (!_model->input_axis().has_variable(v))
+          paramError("side_skip_inputs",
+                     "The NEML2 input variable '",
+                     v,
+                     "' does not exist on the model input axis.");
+        if (!volume_vars.count(v))
+          paramError("side_skip_inputs",
+                     "The NEML2 input variable '",
+                     v,
+                     "' is not mapped on volume (MATERIAL/VARIABLE inputs). Side skipping must "
+                     "refer to an existing volume input variable.");
+        side_skip.insert(v);
+      }
+      for (const auto & input : _inputs)
+      {
+        if (input.moose.type != MOOSEIOType::MATERIAL && input.moose.type != MOOSEIOType::VARIABLE)
+          continue;
+        if (side_skip.count(input.neml2.name))
           continue;
         if (!side_vars.count(input.neml2.name))
           paramError("moose_inputs_side",
