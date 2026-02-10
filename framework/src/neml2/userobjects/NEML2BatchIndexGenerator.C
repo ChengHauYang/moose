@@ -98,10 +98,24 @@ NEML2BatchIndexGenerator::getBatchIndex(dof_id_type elem_id) const
   if (_elem_to_batch_index_cache.first == elem_id)
     return _elem_to_batch_index_cache.second;
 
+  if (_communicator.rank() != _current_elem->processor_id())
+    mooseWarning("rank=",
+                 _communicator.rank(),
+                 " elem=",
+                 _current_elem->id(),
+                 " owner=",
+                 _current_elem->processor_id());
+
   // else, search the map
   const auto it = _elem_to_batch_index.find(elem_id);
   if (it == _elem_to_batch_index.end())
     mooseError("No batch index found for element id ", elem_id);
   _elem_to_batch_index_cache = *it;
   return it->second;
+}
+
+bool
+NEML2BatchIndexGenerator::hasBatchIndex(dof_id_type elem_id) const
+{
+  return _elem_to_batch_index.find(elem_id) != _elem_to_batch_index.end();
 }

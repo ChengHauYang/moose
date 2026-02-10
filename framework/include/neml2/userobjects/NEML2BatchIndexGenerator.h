@@ -40,6 +40,9 @@ public:
   /// Whether the batch is empty
   bool isEmpty() const { return _batch_index == 0; }
 
+  /// Whether a batch index exists for the given element ID
+  bool hasBatchIndex(dof_id_type elem_id) const;
+
 protected:
   /// Whether the batch index map is outdated
   bool _outdated;

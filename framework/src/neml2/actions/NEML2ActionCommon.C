@@ -33,6 +33,18 @@ NEML2ActionCommon::commonParams()
   params.addParam<std::vector<std::string>>(
       "moose_input_kernels", {}, "NEML2 kernels defined in MOOSE that provides input data.");
 
+  // Side inputs
+  params.addParam<MultiMooseEnum>(
+      "moose_input_types_side",
+      moose_types,
+      "Type of each MOOSE data to be used as NEML2 input variable on sidesets");
+  params.addParam<std::vector<std::string>>(
+      "moose_inputs_side", {}, "List of MOOSE data to be used as inputs on sidesets.");
+  params.addParam<std::vector<std::string>>(
+      "neml2_inputs_side",
+      {},
+      "List of NEML2 input variables corresponding to each MOOSE data on sidesets.");
+
   // Model parameters
   params.addParam<MultiMooseEnum>("moose_parameter_types",
                                   moose_types,

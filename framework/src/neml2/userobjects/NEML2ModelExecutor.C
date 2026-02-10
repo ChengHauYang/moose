@@ -15,6 +15,7 @@
 #ifdef NEML2_ENABLED
 #include "libmesh/id_types.h"
 #include "neml2/tensors/functions/jacrev.h"
+#include "neml2/tensors/functions/cat.h"
 #include "neml2/dispatchers/ValueMapLoader.h"
 #endif
 
@@ -44,10 +45,17 @@ NEML2ModelExecutor::validParams()
   params.addRequiredParam<UserObjectName>(
       "batch_index_generator",
       "The NEML2BatchIndexGenerator used to generate the element-to-batch-index map.");
+  params.addParam<UserObjectName>(
+      "side_batch_index_generator",
+      "The NEML2SideBatchIndexGenerator used to generate the side-to-batch-index map.");
   params.addParam<std::vector<UserObjectName>>(
       "gatherers",
       {},
       "List of MOOSE*ToNEML2 user objects gathering MOOSE data as NEML2 input variables");
+  params.addParam<std::vector<UserObjectName>>(
+      "side_gatherers",
+      {},
+      "List of MOOSE*ToNEML2 user objects gathering MOOSE data as NEML2 input variables on sides");
   params.addParam<std::vector<UserObjectName>>(
       "param_gatherers",
       {},
@@ -78,8 +86,14 @@ NEML2ModelExecutor::NEML2ModelExecutor(const InputParameters & params)
   // add user object dependencies by name (the UOs do not need to exist yet for this)
   for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("gatherers"))
     _depend_uo.insert(gatherer_name);
+  for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("side_gatherers"))
+    _depend_uo.insert(gatherer_name);
   for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("param_gatherers"))
     _depend_uo.insert(gatherer_name);
+
+  if (isParamValid("side_batch_index_generator"))
+    _side_batch_index_generator =
+        &getUserObject<NEML2SideBatchIndexGenerator>("side_batch_index_generator");
 
   // variables to skip error checking (converting vector to set to prevent duplicate checks)
   for (const auto & var_name : getParam<std::vector<std::string>>("skip_inputs"))
@@ -115,6 +129,31 @@ NEML2ModelExecutor::initialSetup()
 
     addGatheredVariable(gatherer_name, uo.NEML2VariableName());
     _gatherers.push_back(&uo);
+  }
+
+  // deal with user object provided side inputs
+  for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("side_gatherers"))
+  {
+    const auto & uo = getUserObjectByName<MOOSEToNEML2>(gatherer_name, /*is_dependency=*/false);
+
+    if (!model().input_axis().has_variable(NEML2Utils::parseVariableName(uo.NEML2Name())))
+      mooseError("The MOOSEToNEML2 gatherer named '",
+                 gatherer_name,
+                 "' is gathering MOOSE data for a non-existent NEML2 input variable named '",
+                 uo.NEML2Name(),
+                 "'.");
+
+    const auto varname = NEML2Utils::parseVariableName(uo.NEML2Name());
+    if (varname.is_old_force() || varname.is_old_state())
+      uo.setMode(MOOSEToNEML2::Mode::OLD_VARIABLE);
+    else
+      uo.setMode(MOOSEToNEML2::Mode::VARIABLE);
+
+    // Allow side gatherers to reuse the same NEML2 variable as volume gatherers.
+    // This is required when side/volume map to the same NEML2 input name.
+    if (!_gathered_variable_names.count(uo.NEML2VariableName()))
+      addGatheredVariable(gatherer_name, uo.NEML2VariableName());
+    _side_gatherers.push_back(&uo);
   }
 
   // deal with user object provided model parameters
@@ -182,6 +221,21 @@ NEML2ModelExecutor::getBatchIndex(dof_id_type elem_id) const
   return _batch_index_generator.getBatchIndex(elem_id);
 }
 
+std::size_t
+NEML2ModelExecutor::getSideBatchIndex(dof_id_type elem_id, unsigned int side) const
+{
+  if (!_side_batch_index_generator)
+    mooseError("Side batch index generator is not configured.");
+
+  return _side_batch_index_generator->getBatchIndex(elem_id, side) + _side_batch_offset;
+}
+
+bool
+NEML2ModelExecutor::hasBatchIndex(dof_id_type elem_id) const
+{
+  return _batch_index_generator.hasBatchIndex(elem_id);
+}
+
 void
 NEML2ModelExecutor::addGatheredVariable(const UserObjectName & gatherer_name,
                                         const neml2::VariableName & var)
@@ -219,6 +273,8 @@ NEML2ModelExecutor::initialize()
   _output_ready = false;
   _error = false;
   _error_message.clear();
+  _side_batch_offset = 0;
+  _in_side.clear();
 }
 
 void
@@ -228,6 +284,8 @@ NEML2ModelExecutor::meshChanged()
     return;
 
   _output_ready = false;
+  _side_batch_offset = 0;
+  _in_side.clear();
 }
 
 void
@@ -236,8 +294,11 @@ NEML2ModelExecutor::execute()
   if (!NEML2Utils::shouldCompute(_fe_problem))
     return;
 
-  // If the batch is empty, we do not need to do anything
-  if (_batch_index_generator.isEmpty())
+  const bool vol_empty = _batch_index_generator.isEmpty();
+  const bool side_empty = !_side_batch_index_generator || _side_batch_index_generator->isEmpty();
+
+  // If both batches are empty, we do not need to do anything
+  if (vol_empty && side_empty)
     return;
 
   fillInputs();
@@ -258,6 +319,73 @@ NEML2ModelExecutor::fillInputs()
   {
     for (const auto & uo : _gatherers)
       uo->insertInto(_in, _model_params);
+    for (const auto & uo : _side_gatherers)
+      uo->insertInto(_in_side, _model_params);
+
+    const bool has_side = _side_batch_index_generator && !_side_batch_index_generator->isEmpty();
+    if (has_side)
+    {
+      // Side batches are appended after volume batches so outputs can be split later.
+      _side_batch_offset = _batch_index_generator.getBatchIndex();
+
+      // Merge side inputs into the same NEML2 variable as volume inputs.
+      // Batched variables are concatenated along the dynamic (batch) dimension:
+      // [volume batches ...] [side batches ...].
+      // Unbatched variables (e.g. POSTPROCESSOR scalars) are kept as-is and will be
+      // broadcast later when we expand inputs.
+      for (auto & [var, val] : _in_side)
+      {
+        if (_in.count(var)) // _in is volume inputs
+        {
+          const auto & in_val = _in[var];
+          if (in_val.dynamic_dim() == 0 && val.dynamic_dim() == 0)
+          {
+            // Both are unbatched values. If they match, keep the volume value;
+            // no side append is needed because unbatched values are broadcast later.
+            // some easy tests later because silently dropping side data is unsafe.
+
+            // Unbatched volume/side inputs must have identical shape.
+            if (in_val.sizes() != val.sizes())
+              mooseError("NEML2 input variable '",
+                         var,
+                         "' is provided by both volume and side gatherers as unbatched values, "
+                         "but their shapes differ: volume=",
+                         in_val.sizes(),
+                         ", side=",
+                         val.sizes(),
+                         ".");
+            // For example, if both volume and side inputs are unbatched values (e.g., scalars)
+            // but their values differ, treat this as an error.
+            if (!in_val.allclose(val))
+              mooseError("NEML2 input variable '",
+                         var,
+                         "' is provided by both volume and side gatherers as unbatched values, "
+                         "but the values are inconsistent.");
+          }
+          else if (in_val.dynamic_dim() == val.dynamic_dim())
+            _in[var] = neml2::dynamic_cat({in_val, val}, 0);
+          else
+            mooseError("NEML2 input variable '",
+                       var,
+                       "' has mismatched batching between volume (dynamic_dim=",
+                       in_val.dynamic_dim(),
+                       ") and side (dynamic_dim=",
+                       val.dynamic_dim(),
+                       "). Use consistent input types or remove one mapping.");
+        }
+        else
+          _in[var] = val;
+      }
+      // TODO: This doesn't take care of the case where some variables only have side inputs
+      // but no volume inputs.
+      _in_side.clear();
+    }
+    else
+    {
+      // original behavior
+      _side_batch_offset = 0;
+      _in_side.clear();
+    }
 
     // Send input variables and parameters to device
     for (auto & [var, val] : _in)
@@ -362,7 +490,11 @@ NEML2ModelExecutor::extractOutputs()
 {
   try
   {
-    const auto N = _batch_index_generator.getBatchIndex();
+    const auto side_batch_size =
+        (_side_batch_index_generator && !_side_batch_index_generator->isEmpty())
+            ? _side_batch_index_generator->getBatchIndex()
+            : 0;
+    const auto N = _batch_index_generator.getBatchIndex() + side_batch_size;
 
     // retrieve outputs
     for (auto & [y, target] : _retrieved_outputs)

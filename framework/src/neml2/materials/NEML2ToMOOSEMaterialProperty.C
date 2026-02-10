@@ -93,10 +93,52 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   if (!_execute_neml2_model.outputReady())
     return;
 
-  // look up start index for current element
-  const auto i = _execute_neml2_model.getBatchIndex(_current_elem->id());
+  // #ifdef DEBUG
+  if (!_execute_neml2_model.hasBatchIndex(_current_elem->id()))
+  {
+    _console << "_material_data_type: ";
+    switch (_material_data_type)
+    {
+      case Moose::BLOCK_MATERIAL_DATA:
+        _console << "BLOCK_MATERIAL_DATA";
+        break;
+      case Moose::BOUNDARY_MATERIAL_DATA:
+        _console << "BOUNDARY_MATERIAL_DATA";
+        break;
+      case Moose::FACE_MATERIAL_DATA:
+        _console << "FACE_MATERIAL_DATA";
+        break;
+      case Moose::NEIGHBOR_MATERIAL_DATA:
+        _console << "NEIGHBOR_MATERIAL_DATA";
+        break;
+      case Moose::INTERFACE_MATERIAL_DATA:
+        _console << "INTERFACE_MATERIAL_DATA";
+        break;
+      default:
+        _console << "UNKNOWN_MATERIAL_DATA_TYPE";
+    }
+    _console << "_bnd = " << _bnd << std::endl;
+    _console << std::endl;
+  }
+  // #endif
+  // TODO: some NEIGHBOR_MATERIAL_DATA comes when we go to mpirun, and cannot find the batch index.
+  // Still do not know how to deal with this.
+
+  // this is dangerous but I just want to do some easy tests first!!!
+  // TODO: remove this
+  if (_material_data_type == Moose::NEIGHBOR_MATERIAL_DATA)
+    return;
+
+  // Side batches are currently generated from boundary side loops. Therefore we only use side
+  // indices for boundary-restricted materials and fall back to volume indices for other material
+  // data contexts.
+  const bool use_side = _material_data_type == Moose::BOUNDARY_MATERIAL_DATA;
+  const auto start =
+      use_side ? _execute_neml2_model.getSideBatchIndex(_current_elem->id(), _assembly.side())
+               : _execute_neml2_model.getBatchIndex(_current_elem->id());
+
   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
-    NEML2Utils::copyTensorToMOOSEData(_value.batch_index({neml2::Size(i + _qp)}), _prop[_qp]);
+    NEML2Utils::copyTensorToMOOSEData(_value.batch_index({neml2::Size(start + _qp)}), _prop[_qp]);
 }
 #endif
 
