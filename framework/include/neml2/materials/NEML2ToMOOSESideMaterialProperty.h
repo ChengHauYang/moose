@@ -23,12 +23,12 @@
 class NEML2ModelExecutor;
 
 template <typename T>
-class NEML2ToMOOSEMaterialProperty : public Material
+class NEML2ToMOOSESideMaterialProperty : public Material
 {
 public:
   static InputParameters validParams();
 
-  NEML2ToMOOSEMaterialProperty(const InputParameters & params);
+  NEML2ToMOOSESideMaterialProperty(const InputParameters & params);
 
 #ifdef NEML2_ENABLED
   void computeProperties() override;
@@ -68,12 +68,12 @@ protected:
 #endif
 };
 
-#define DefineNEML2ToMOOSEMaterialPropertyAlias(T, alias)                                          \
-  using NEML2ToMOOSE##alias##MaterialProperty = NEML2ToMOOSEMaterialProperty<T>
+#define DefineNEML2ToMOOSESideMaterialPropertyAlias(T, alias)                                      \
+  using NEML2ToMOOSESide##alias##MaterialProperty = NEML2ToMOOSESideMaterialProperty<T>
 
-DefineNEML2ToMOOSEMaterialPropertyAlias(Real, Real);
-DefineNEML2ToMOOSEMaterialPropertyAlias(SymmetricRankTwoTensor, SymmetricRankTwoTensor);
-DefineNEML2ToMOOSEMaterialPropertyAlias(SymmetricRankFourTensor, SymmetricRankFourTensor);
-DefineNEML2ToMOOSEMaterialPropertyAlias(RealVectorValue, RealVectorValue);
-DefineNEML2ToMOOSEMaterialPropertyAlias(RankTwoTensor, RankTwoTensor);
-DefineNEML2ToMOOSEMaterialPropertyAlias(RankFourTensor, RankFourTensor);
+DefineNEML2ToMOOSESideMaterialPropertyAlias(Real, Real);
+DefineNEML2ToMOOSESideMaterialPropertyAlias(SymmetricRankTwoTensor, SymmetricRankTwoTensor);
+DefineNEML2ToMOOSESideMaterialPropertyAlias(SymmetricRankFourTensor, SymmetricRankFourTensor);
+DefineNEML2ToMOOSESideMaterialPropertyAlias(RealVectorValue, RealVectorValue);
+DefineNEML2ToMOOSESideMaterialPropertyAlias(RankTwoTensor, RankTwoTensor);
+DefineNEML2ToMOOSESideMaterialPropertyAlias(RankFourTensor, RankFourTensor);

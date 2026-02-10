@@ -50,6 +50,7 @@ NEML2BatchIndexGenerator::initialize()
     return;
 
   _elem_to_batch_index.clear();
+  _elem_to_nqp.clear();
   _elem_to_batch_index_cache = {libMesh::invalid_uint, 0};
   _batch_index = 0;
 }
@@ -64,6 +65,7 @@ NEML2BatchIndexGenerator::execute()
     return;
 
   _elem_to_batch_index[_current_elem->id()] = _batch_index;
+  _elem_to_nqp[_current_elem->id()] = _qrule->n_points();
   _batch_index += _qrule->n_points();
 }
 
@@ -81,6 +83,8 @@ NEML2BatchIndexGenerator::threadJoin(const UserObject & uo)
   // append and renumber maps
   for (const auto & [elem_id, batch_index] : m2n._elem_to_batch_index)
     _elem_to_batch_index[elem_id] = _batch_index + batch_index;
+  for (const auto & [elem_id, nqp] : m2n._elem_to_nqp)
+    _elem_to_nqp[elem_id] = nqp;
 
   _batch_index += m2n._batch_index;
 }

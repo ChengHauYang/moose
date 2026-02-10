@@ -37,6 +37,15 @@ public:
   /// Get the batch index for the given element ID
   std::size_t getBatchIndex(dof_id_type elem_id) const;
 
+  /// Access the element-to-batch-index map (local elements only)
+  const std::map<dof_id_type, std::size_t> & elemToBatchIndex() const
+  {
+    return _elem_to_batch_index;
+  }
+
+  /// Access the element-to-nqp map (local elements only)
+  const std::map<dof_id_type, unsigned int> & elemToNQPs() const { return _elem_to_nqp; }
+
   /// Whether the batch is empty
   bool isEmpty() const { return _batch_index == 0; }
 
@@ -49,6 +58,9 @@ protected:
 
   /// Map from element IDs to batch indices
   std::map<dof_id_type, std::size_t> _elem_to_batch_index;
+
+  /// Map from element IDs to number of quadrature points
+  std::map<dof_id_type, unsigned int> _elem_to_nqp;
 
   /// cache the index for the current element
   mutable std::pair<dof_id_type, std::size_t> _elem_to_batch_index_cache;

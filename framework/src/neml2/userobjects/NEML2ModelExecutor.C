@@ -13,12 +13,63 @@
 #include <string>
 
 #ifdef NEML2_ENABLED
+#include <torch/torch.h>
+#include <cstring>
 #include "libmesh/id_types.h"
 #include "neml2/tensors/functions/jacrev.h"
+#include "neml2/tensors/functions/cat.h"
 #include "neml2/dispatchers/ValueMapLoader.h"
 #endif
 
 registerMooseObject("MooseApp", NEML2ModelExecutor);
+
+#ifdef NEML2_ENABLED
+namespace
+{
+std::size_t
+tensorCompSize(const neml2::Tensor & t, std::size_t batch)
+{
+  const auto numel = static_cast<std::size_t>(t.numel());
+  return batch > 0 ? numel / batch : 0;
+}
+
+std::vector<Real>
+packElementData(const neml2::Tensor & t,
+                const std::vector<dof_id_type> & elem_ids,
+                const std::map<dof_id_type, std::size_t> & elem_to_start,
+                const std::map<dof_id_type, unsigned int> & elem_to_nqp)
+{
+  std::vector<Real> packed;
+  if (!t.defined())
+    return packed;
+
+  auto cpu = t.to(at::kCPU).contiguous();
+  const auto batch = static_cast<std::size_t>(cpu.size(0));
+  const auto comp = tensorCompSize(cpu, batch);
+  if (comp == 0)
+    return packed;
+
+  std::size_t total_qp = 0;
+  for (const auto & elem_id : elem_ids)
+    total_qp += elem_to_nqp.at(elem_id);
+  packed.reserve(total_qp * comp);
+
+  const auto * ptr = cpu.data_ptr<Real>();
+  for (const auto & elem_id : elem_ids)
+  {
+    const auto start = elem_to_start.at(elem_id);
+    const auto nqp = elem_to_nqp.at(elem_id);
+    for (unsigned int qp = 0; qp < nqp; ++qp)
+    {
+      const auto offset = (start + qp) * comp;
+      packed.insert(packed.end(), ptr + offset, ptr + offset + comp);
+    }
+  }
+
+  return packed;
+}
+} // namespace
+#endif
 
 InputParameters
 NEML2ModelExecutor::actionParams()
@@ -44,10 +95,18 @@ NEML2ModelExecutor::validParams()
   params.addRequiredParam<UserObjectName>(
       "batch_index_generator",
       "The NEML2BatchIndexGenerator used to generate the element-to-batch-index map.");
+  params.addParam<UserObjectName>(
+      "side_batch_index_generator",
+      "",
+      "The NEML2SideBatchIndexGenerator used to generate the side-to-batch-index map.");
   params.addParam<std::vector<UserObjectName>>(
       "gatherers",
       {},
       "List of MOOSE*ToNEML2 user objects gathering MOOSE data as NEML2 input variables");
+  params.addParam<std::vector<UserObjectName>>(
+      "side_gatherers",
+      {},
+      "List of MOOSE*ToNEML2 user objects gathering MOOSE side data as NEML2 input variables");
   params.addParam<std::vector<UserObjectName>>(
       "param_gatherers",
       {},
@@ -78,8 +137,17 @@ NEML2ModelExecutor::NEML2ModelExecutor(const InputParameters & params)
   // add user object dependencies by name (the UOs do not need to exist yet for this)
   for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("gatherers"))
     _depend_uo.insert(gatherer_name);
+  for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("side_gatherers"))
+    _depend_uo.insert(gatherer_name);
   for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("param_gatherers"))
     _depend_uo.insert(gatherer_name);
+  const auto & side_idx_name = getParam<UserObjectName>("side_batch_index_generator");
+  if (!side_idx_name.empty())
+  {
+    _depend_uo.insert(side_idx_name);
+    _side_batch_index_generator =
+        &getUserObject<NEML2SideBatchIndexGenerator>("side_batch_index_generator");
+  }
 
   // variables to skip error checking (converting vector to set to prevent duplicate checks)
   for (const auto & var_name : getParam<std::vector<std::string>>("skip_inputs"))
@@ -115,6 +183,35 @@ NEML2ModelExecutor::initialSetup()
 
     addGatheredVariable(gatherer_name, uo.NEML2VariableName());
     _gatherers.push_back(&uo);
+  }
+
+  // deal with user object provided side inputs
+  for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("side_gatherers"))
+  {
+    const auto & uo = getUserObjectByName<MOOSEToNEML2>(gatherer_name, /*is_dependency=*/false);
+
+    if (!model().input_axis().has_variable(NEML2Utils::parseVariableName(uo.NEML2Name())))
+      mooseError("The MOOSEToNEML2 gatherer named '",
+                 gatherer_name,
+                 "' is gathering MOOSE data for a non-existent NEML2 input variable named '",
+                 uo.NEML2Name(),
+                 "'.");
+
+    // side gatherers must target input variables, not model parameters
+    if (model().named_parameters().count(uo.NEML2Name()) == 1)
+      mooseError("The side MOOSEToNEML2 gatherer named '",
+                 gatherer_name,
+                 "' is gathering for a NEML2 model parameter named '",
+                 uo.NEML2Name(),
+                 "', which is not supported for side inputs.");
+
+    const auto varname = NEML2Utils::parseVariableName(uo.NEML2Name());
+    if (varname.is_old_force() || varname.is_old_state())
+      uo.setMode(MOOSEToNEML2::Mode::OLD_VARIABLE);
+    else
+      uo.setMode(MOOSEToNEML2::Mode::VARIABLE);
+
+    _side_gatherers.push_back(&uo);
   }
 
   // deal with user object provided model parameters
@@ -182,6 +279,115 @@ NEML2ModelExecutor::getBatchIndex(dof_id_type elem_id) const
   return _batch_index_generator.getBatchIndex(elem_id);
 }
 
+bool
+NEML2ModelExecutor::hasLocalBatchIndex(dof_id_type elem_id) const
+{
+  const auto & local_map = _batch_index_generator.elemToBatchIndex();
+  return local_map.find(elem_id) != local_map.end();
+}
+
+NEML2ModelExecutor::BatchInfo
+NEML2ModelExecutor::getBatchInfo(dof_id_type elem_id) const
+{
+  const auto & local_map = _batch_index_generator.elemToBatchIndex();
+  const auto & local_nqp = _batch_index_generator.elemToNQPs();
+  if (auto it = local_map.find(elem_id); it != local_map.end())
+  {
+    const auto nqp_it = local_nqp.find(elem_id);
+    if (nqp_it == local_nqp.end())
+      mooseError("No nqp found for element id ", elem_id);
+    return {it->second, nqp_it->second, true};
+  }
+
+  if (_global_cache_ready)
+  {
+    if (auto it = _global_elem_batch.find(elem_id); it != _global_elem_batch.end())
+      return {it->second.first, it->second.second, false};
+  }
+
+  mooseError("No batch index found for element id ", elem_id);
+  return {};
+}
+
+NEML2ModelExecutor::BatchInfo
+NEML2ModelExecutor::getSideBatchInfo(dof_id_type elem_id,
+                                     unsigned int side,
+                                     BoundaryID boundary_id) const
+{
+  if (!_side_batch_index_generator)
+    mooseError("Side batch index generator is not configured.");
+
+  const auto & local_map = _side_batch_index_generator->sideToBatchIndex();
+  const auto & local_nqp = _side_batch_index_generator->sideToNQPs();
+  NEML2SideBatchIndexGenerator::SideKey key{elem_id, side, boundary_id};
+
+  if (auto it = local_map.find(key); it != local_map.end())
+  {
+    const auto nqp_it = local_nqp.find(key);
+    if (nqp_it == local_nqp.end())
+      mooseError("No nqp found for element id ", elem_id, " side ", side, " boundary ",
+                 boundary_id);
+    return {it->second + _side_batch_offset, nqp_it->second, true};
+  }
+
+  mooseError("No side batch index found for element id ", elem_id, " side ", side, " boundary ",
+             boundary_id);
+  return {};
+}
+
+const neml2::Tensor &
+NEML2ModelExecutor::getOutputTensor(const neml2::VariableName & output_name, bool global) const
+{
+  if (!global)
+    return _retrieved_outputs.at(output_name);
+  const auto it = _global_outputs.find(output_name);
+  if (it == _global_outputs.end())
+    mooseError("No global output cache found for NEML2 output variable '", output_name, "'.");
+  return it->second.tensor;
+}
+
+const neml2::Tensor &
+NEML2ModelExecutor::getOutputDerivativeTensor(const neml2::VariableName & output_name,
+                                              const neml2::VariableName & input_name,
+                                              bool global) const
+{
+  if (!global)
+    return _retrieved_derivatives.at(output_name).at(input_name);
+  const auto it = _global_derivatives.find(output_name);
+  if (it == _global_derivatives.end())
+    mooseError("No global derivative cache found for NEML2 output variable '", output_name, "'.");
+  const auto it2 = it->second.find(input_name);
+  if (it2 == it->second.end())
+    mooseError("No global derivative cache found for NEML2 derivative '",
+               output_name,
+               "' w.r.t. '",
+               input_name,
+               "'.");
+  return it2->second.tensor;
+}
+
+const neml2::Tensor &
+NEML2ModelExecutor::getOutputParameterDerivativeTensor(const neml2::VariableName & output_name,
+                                                       const std::string & parameter_name,
+                                                       bool global) const
+{
+  if (!global)
+    return _retrieved_parameter_derivatives.at(output_name).at(parameter_name);
+  const auto it = _global_parameter_derivatives.find(output_name);
+  if (it == _global_parameter_derivatives.end())
+    mooseError("No global parameter-derivative cache found for NEML2 output variable '",
+               output_name,
+               "'.");
+  const auto it2 = it->second.find(parameter_name);
+  if (it2 == it->second.end())
+    mooseError("No global parameter-derivative cache found for NEML2 output variable '",
+               output_name,
+               "' w.r.t. parameter '",
+               parameter_name,
+               "'.");
+  return it2->second.tensor;
+}
+
 void
 NEML2ModelExecutor::addGatheredVariable(const UserObjectName & gatherer_name,
                                         const neml2::VariableName & var)
@@ -219,6 +425,14 @@ NEML2ModelExecutor::initialize()
   _output_ready = false;
   _error = false;
   _error_message.clear();
+  _side_batch_offset = 0;
+  _side_batch_size = 0;
+  _in_side.clear();
+  _global_elem_batch.clear();
+  _global_outputs.clear();
+  _global_derivatives.clear();
+  _global_parameter_derivatives.clear();
+  _global_cache_ready = false;
 }
 
 void
@@ -228,6 +442,14 @@ NEML2ModelExecutor::meshChanged()
     return;
 
   _output_ready = false;
+  _side_batch_offset = 0;
+  _side_batch_size = 0;
+  _in_side.clear();
+  _global_elem_batch.clear();
+  _global_outputs.clear();
+  _global_derivatives.clear();
+  _global_parameter_derivatives.clear();
+  _global_cache_ready = false;
 }
 
 void
@@ -236,8 +458,12 @@ NEML2ModelExecutor::execute()
   if (!NEML2Utils::shouldCompute(_fe_problem))
     return;
 
-  // If the batch is empty, we do not need to do anything
-  if (_batch_index_generator.isEmpty())
+  const bool vol_empty = _batch_index_generator.isEmpty();
+  const bool side_empty =
+      !_side_batch_index_generator || _side_batch_index_generator->isEmpty();
+
+  // If both batches are empty, we do not need to do anything
+  if (vol_empty && side_empty)
     return;
 
   fillInputs();
@@ -258,6 +484,31 @@ NEML2ModelExecutor::fillInputs()
   {
     for (const auto & uo : _gatherers)
       uo->insertInto(_in, _model_params);
+    for (const auto & uo : _side_gatherers)
+      uo->insertInto(_in_side, _model_params);
+
+    const bool has_side =
+        _side_batch_index_generator && !_side_batch_index_generator->isEmpty();
+    if (has_side)
+    {
+      _side_batch_offset = _batch_index_generator.getBatchIndex();
+      _side_batch_size = _side_batch_index_generator->getBatchIndex();
+
+      for (auto & [var, val] : _in_side)
+      {
+        if (_in.count(var))
+          _in[var] = neml2::base_cat({ _in[var], val }, 0);
+        else
+          _in[var] = val;
+      }
+      _in_side.clear();
+    }
+    else
+    {
+      _side_batch_offset = 0;
+      _side_batch_size = 0;
+      _in_side.clear();
+    }
 
     // Send input variables and parameters to device
     for (auto & [var, val] : _in)
@@ -362,7 +613,7 @@ NEML2ModelExecutor::extractOutputs()
 {
   try
   {
-    const auto N = _batch_index_generator.getBatchIndex();
+    const auto N = _batch_index_generator.getBatchIndex() + _side_batch_size;
 
     // retrieve outputs
     for (auto & [y, target] : _retrieved_outputs)
@@ -402,6 +653,239 @@ NEML2ModelExecutor::extractOutputs()
 }
 
 void
+NEML2ModelExecutor::syncGlobalOutputs()
+{
+  if (_communicator.size() <= 1)
+  {
+    _global_cache_ready = false;
+    return;
+  }
+
+  const auto my_rank = _communicator.rank();
+  const auto & mesh = _fe_problem.mesh().getMesh();
+
+  // Build request list: ghost elements on this rank that are in the NEML2 blocks
+  std::map<processor_id_type, std::vector<dof_id_type>> requests;
+  for (auto it = mesh.semilocal_elements_begin(); it != mesh.semilocal_elements_end(); ++it)
+  {
+    const auto * elem = *it;
+    if (!elem || !elem->active())
+      continue;
+    const auto owner = elem->processor_id();
+    if (owner == my_rank)
+      continue;
+    if (!_batch_index_generator.hasBlocks(elem->subdomain_id()))
+      continue;
+    requests[owner].push_back(elem->id());
+  }
+
+  // Determine how many incoming request messages to expect
+  std::vector<unsigned int> send_counts(_communicator.size(), 0);
+  for (const auto & [pid, list] : requests)
+    send_counts[pid] = static_cast<unsigned int>(list.size());
+
+  std::vector<std::vector<unsigned int>> all_send_counts;
+  _communicator.allgather(send_counts, all_send_counts, /* identical buffer lengths = */ true);
+
+  unsigned int total_incoming_msgs = 0;
+  for (const auto & per_rank : all_send_counts)
+    if (per_rank[my_rank] > 0)
+      total_incoming_msgs++;
+
+  Parallel::MessageTag tag_requests = _communicator.get_unique_tag();
+  Parallel::MessageTag tag_nqp = _communicator.get_unique_tag();
+
+  std::size_t num_channels = 0;
+  num_channels += _retrieved_outputs.size();
+  for (const auto & [y, dy] : _retrieved_derivatives)
+    num_channels += dy.size();
+  for (const auto & [y, dy] : _retrieved_parameter_derivatives)
+    num_channels += dy.size();
+
+  std::vector<Parallel::MessageTag> data_tags;
+  data_tags.reserve(num_channels);
+  for (std::size_t i = 0; i < num_channels; ++i)
+    data_tags.push_back(_communicator.get_unique_tag());
+
+  // Send requests
+  std::vector<Parallel::Request> send_reqs;
+  for (const auto & [pid, list] : requests)
+  {
+    if (list.empty())
+      continue;
+    send_reqs.emplace_back();
+    _communicator.send(pid, list, send_reqs.back(), tag_requests);
+  }
+
+  // Receive incoming requests
+  std::map<processor_id_type, std::vector<dof_id_type>> incoming;
+  for (unsigned int i = 0; i < total_incoming_msgs; ++i)
+  {
+    Parallel::Status status(_communicator.probe(Parallel::any_source, tag_requests));
+    const auto source_pid = static_cast<processor_id_type>(status.source());
+    std::vector<dof_id_type> req;
+    _communicator.receive(source_pid, req, tag_requests);
+    incoming[source_pid] = std::move(req);
+  }
+
+  const auto & local_map = _batch_index_generator.elemToBatchIndex();
+  const auto & local_nqp = _batch_index_generator.elemToNQPs();
+
+  // Respond to incoming requests with packed data
+  std::vector<Parallel::Request> response_reqs;
+  for (const auto & [pid, list] : incoming)
+  {
+    if (list.empty())
+      continue;
+
+    // Send nqp list
+    std::vector<unsigned int> nqp_list;
+    nqp_list.reserve(list.size());
+    for (const auto & elem_id : list)
+      nqp_list.push_back(local_nqp.at(elem_id));
+    response_reqs.emplace_back();
+    _communicator.send(pid, nqp_list, response_reqs.back(), tag_nqp);
+
+    // Send outputs
+    std::size_t tag_offset = 0;
+    for (const auto & [y, tensor] : _retrieved_outputs)
+    {
+      auto data = packElementData(tensor, list, local_map, local_nqp);
+      response_reqs.emplace_back();
+      _communicator.send(pid, data, response_reqs.back(), data_tags[tag_offset++]);
+    }
+
+    // Send derivatives
+    for (const auto & [y, dy] : _retrieved_derivatives)
+      for (const auto & [x, tensor] : dy)
+      {
+        auto data = packElementData(tensor, list, local_map, local_nqp);
+        response_reqs.emplace_back();
+        _communicator.send(pid, data, response_reqs.back(), data_tags[tag_offset++]);
+      }
+
+    // Send parameter derivatives
+    for (const auto & [y, dy] : _retrieved_parameter_derivatives)
+      for (const auto & [p, tensor] : dy)
+      {
+        auto data = packElementData(tensor, list, local_map, local_nqp);
+        response_reqs.emplace_back();
+        _communicator.send(pid, data, response_reqs.back(), data_tags[tag_offset++]);
+      }
+  }
+
+  // Receive responses for our own requests and build ghost cache
+  _global_elem_batch.clear();
+  _global_outputs.clear();
+  _global_derivatives.clear();
+  _global_parameter_derivatives.clear();
+
+  std::size_t ghost_batch = 0;
+  std::vector<dof_id_type> ghost_order;
+  std::vector<unsigned int> ghost_nqp;
+
+  for (const auto & [pid, list] : requests)
+  {
+    if (list.empty())
+      continue;
+
+    // Receive nqp list
+    std::vector<unsigned int> nqp_list;
+    _communicator.receive(pid, nqp_list, tag_nqp);
+    if (nqp_list.size() != list.size())
+      mooseError("Received nqp list size mismatch for NEML2 ghost sync.");
+
+    for (std::size_t i = 0; i < list.size(); ++i)
+    {
+      _global_elem_batch[list[i]] = {ghost_batch, nqp_list[i]};
+      ghost_order.push_back(list[i]);
+      ghost_nqp.push_back(nqp_list[i]);
+      ghost_batch += nqp_list[i];
+    }
+
+    std::size_t tag_offset = 0;
+    // Receive outputs
+    for (const auto & [y, tensor] : _retrieved_outputs)
+    {
+      std::vector<Real> data;
+      _communicator.receive(pid, data, data_tags[tag_offset++]);
+      auto & cache = _global_outputs[y];
+      cache.data.insert(cache.data.end(), data.begin(), data.end());
+    }
+
+    // Receive derivatives
+    for (const auto & [y, dy] : _retrieved_derivatives)
+      for (const auto & [x, tensor] : dy)
+      {
+        std::vector<Real> data;
+        _communicator.receive(pid, data, data_tags[tag_offset++]);
+        auto & cache = _global_derivatives[y][x];
+        cache.data.insert(cache.data.end(), data.begin(), data.end());
+      }
+
+    // Receive parameter derivatives
+    for (const auto & [y, dy] : _retrieved_parameter_derivatives)
+      for (const auto & [p, tensor] : dy)
+      {
+        std::vector<Real> data;
+        _communicator.receive(pid, data, data_tags[tag_offset++]);
+        auto & cache = _global_parameter_derivatives[y][p];
+        cache.data.insert(cache.data.end(), data.begin(), data.end());
+      }
+  }
+
+  // Build tensors from packed ghost data
+  for (const auto & [y, tensor] : _retrieved_outputs)
+  {
+    auto & cache = _global_outputs[y];
+    if (cache.data.empty())
+      continue;
+    std::vector<int64_t> shape(tensor.sizes().begin(), tensor.sizes().end());
+    if (!shape.empty())
+      shape[0] = static_cast<int64_t>(ghost_batch);
+    auto t = at::from_blob(cache.data.data(),
+                           shape,
+                           at::TensorOptions().dtype(neml2::kFloat64));
+    cache.tensor = neml2::Tensor(t, 1);
+  }
+
+  for (const auto & [y, dy] : _retrieved_derivatives)
+    for (const auto & [x, tensor] : dy)
+    {
+      auto & cache = _global_derivatives[y][x];
+      if (cache.data.empty())
+        continue;
+      std::vector<int64_t> shape(tensor.sizes().begin(), tensor.sizes().end());
+      if (!shape.empty())
+        shape[0] = static_cast<int64_t>(ghost_batch);
+      auto t = at::from_blob(cache.data.data(),
+                             shape,
+                             at::TensorOptions().dtype(neml2::kFloat64));
+      cache.tensor = neml2::Tensor(t, 1);
+    }
+
+  for (const auto & [y, dy] : _retrieved_parameter_derivatives)
+    for (const auto & [p, tensor] : dy)
+    {
+      auto & cache = _global_parameter_derivatives[y][p];
+      if (cache.data.empty())
+        continue;
+      std::vector<int64_t> shape(tensor.sizes().begin(), tensor.sizes().end());
+      if (!shape.empty())
+        shape[0] = static_cast<int64_t>(ghost_batch);
+      auto t = at::from_blob(cache.data.data(),
+                             shape,
+                             at::TensorOptions().dtype(neml2::kFloat64));
+      cache.tensor = neml2::Tensor(t, 1);
+    }
+
+  Parallel::wait(send_reqs);
+  Parallel::wait(response_reqs);
+
+  _global_cache_ready = ghost_batch > 0;
+}
+
+void
 NEML2ModelExecutor::finalize()
 {
   if (!NEML2Utils::shouldCompute(_fe_problem))
@@ -428,7 +912,10 @@ NEML2ModelExecutor::finalize()
     _fe_problem.setFailNextNonlinearConvergenceCheck();
   }
   else if (_t_step > 0)
+  {
+    syncGlobalOutputs();
     _output_ready = true;
+  }
 }
 
 void

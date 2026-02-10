@@ -12,6 +12,9 @@
 #include "NEML2ModelInterface.h"
 #include "GeneralUserObject.h"
 #include "NEML2BatchIndexGenerator.h"
+#include "NEML2SideBatchIndexGenerator.h"
+
+#include <unordered_map>
 
 class MOOSEToNEML2;
 
@@ -44,6 +47,36 @@ public:
 
   /// Get the batch index for the given element ID
   std::size_t getBatchIndex(dof_id_type elem_id) const;
+
+  struct BatchInfo
+  {
+    std::size_t start = 0;
+    unsigned int nqp = 0;
+    bool local = true;
+  };
+
+  /// Get batch info for a given element ID (local first, then ghost cache)
+  BatchInfo getBatchInfo(dof_id_type elem_id) const;
+
+  /// Get batch info for a given element/side/boundary (side batches only)
+  BatchInfo getSideBatchInfo(dof_id_type elem_id, unsigned int side, BoundaryID boundary_id) const;
+
+  /// Whether a local batch index exists for the given element ID
+  bool hasLocalBatchIndex(dof_id_type elem_id) const;
+
+  /// Get output tensor (local or ghost cache)
+  const neml2::Tensor & getOutputTensor(const neml2::VariableName & output_name,
+                                        bool global) const;
+
+  /// Get output derivative tensor (local or ghost cache)
+  const neml2::Tensor & getOutputDerivativeTensor(const neml2::VariableName & output_name,
+                                                  const neml2::VariableName & input_name,
+                                                  bool global) const;
+
+  /// Get output parameter derivative tensor (local or ghost cache)
+  const neml2::Tensor & getOutputParameterDerivativeTensor(const neml2::VariableName & output_name,
+                                                           const std::string & parameter_name,
+                                                           bool global) const;
 
   /// Get a reference(!) to the requested output view
   const neml2::Tensor & getOutput(const neml2::VariableName & output_name) const;
@@ -86,6 +119,8 @@ protected:
 
   /// The NEML2BatchIndexGenerator used to generate the element-to-batch-index map
   const NEML2BatchIndexGenerator & _batch_index_generator;
+  /// The NEML2SideBatchIndexGenerator used to generate the side-to-batch-index map
+  const NEML2SideBatchIndexGenerator * _side_batch_index_generator = nullptr;
 
   /// flag that indicates if output data has been fully computed
   bool _output_ready;
@@ -95,6 +130,8 @@ protected:
 
   /// The input variables of the material model
   neml2::ValueMap _in;
+  /// The side input variables of the material model
+  neml2::ValueMap _in_side;
 
   /// The output variables of the material model
   neml2::ValueMap _out;
@@ -113,6 +150,12 @@ protected:
 
   /// MOOSE data gathering user objects
   std::vector<const MOOSEToNEML2 *> _gatherers;
+  /// MOOSE side data gathering user objects
+  std::vector<const MOOSEToNEML2 *> _side_gatherers;
+
+  /// Combined batch offsets for side data
+  std::size_t _side_batch_offset = 0;
+  std::size_t _side_batch_size = 0;
 
   /// set of output variables that were retrieved (by other objects)
   mutable neml2::ValueMap _retrieved_outputs;
@@ -129,6 +172,31 @@ protected:
 
   /// Whether the model has any old state variable
   bool _has_old_state = false;
+
+  /// Sync local outputs to build ghost-accessible cache
+  void syncGlobalOutputs();
+
+  struct CachedTensor
+  {
+    std::vector<Real> data;
+    neml2::Tensor tensor;
+  };
+
+  /// Global element batch info for ghost access
+  std::unordered_map<dof_id_type, std::pair<std::size_t, unsigned int>> _global_elem_batch;
+
+  /// Global output cache for ghost access
+  std::map<neml2::VariableName, CachedTensor> _global_outputs;
+
+  /// Global derivative cache for ghost access
+  std::map<neml2::VariableName, std::map<neml2::VariableName, CachedTensor>> _global_derivatives;
+
+  /// Global parameter derivative cache for ghost access
+  std::map<neml2::VariableName, std::map<std::string, CachedTensor>>
+      _global_parameter_derivatives;
+
+  /// Whether the global cache is ready
+  bool _global_cache_ready = false;
 
 private:
   /// Whether an error was encountered
