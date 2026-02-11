@@ -39,7 +39,7 @@ public:
   RealVectorValue distanceVectorToSurface(const Point & p) const;
 
   /// Return unsigned distance value
-  Real value(Real t, const Point & p) const override;
+  virtual Real value(Real t, const Point & p) const override;
 
   /// Return the spatial gradient of the unsigned distance function.
   /// The gradient is a unit vector pointing in the direction of decreasing

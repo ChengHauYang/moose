@@ -33,5 +33,19 @@
       detail = 'the distance field correctly when multiple distance representations (signed and mesh-based) are used together in 3D.'
     []
 
+    [2D_signed_distance]
+      type = 'Exodiff'
+      input = '2D_signed_distance.i'
+      exodiff = '2D_signed_distance_out.e'
+      detail = 'the signed distance field is computed correctly in 2D.'
+    []
+
+    [2D_multiple_distance]
+      type = 'Exodiff'
+      input = '2D_multiple_distances.i'
+      exodiff = '2D_multiple_distances_out.e'
+      detail = 'the distance field is computed correctly when multiple distance representations are used together.'
+    []
+
   []
 []

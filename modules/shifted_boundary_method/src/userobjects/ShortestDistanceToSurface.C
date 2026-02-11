@@ -18,19 +18,30 @@ ShortestDistanceToSurface::validParams()
   InputParameters params = ElementUserObject::validParams();
   params.addRequiredParam<std::vector<FunctionName>>("surfaces",
                                                      "Level-set function for distance.");
+  params.addParam<bool>(
+      "signed_distance", false, "Whether the distance functions are signed or unsigned.");
 
   params.addClassDescription("Base distance user object.");
   return params;
 }
 
 ShortestDistanceToSurface::ShortestDistanceToSurface(const InputParameters & parameters)
-  : ElementUserObject(parameters)
+  : ElementUserObject(parameters), _signed_distance(getParam<bool>("signed_distance"))
 {
   const auto function_names = getParam<std::vector<FunctionName>>("surfaces");
   _distance_functions = SBMUtils::buildDistanceFunctions(function_names, *this);
 
   if (_distance_functions.empty())
     paramError("surfaces", "ShortestDistanceToSurface requires at least one surface function.");
+}
+
+Real
+ShortestDistanceToSurface::value(Real t, const Point & p) const
+{
+  if (!_signed_distance)
+    return distanceVector(p).norm();
+
+  return SBMUtils::unionSignedDistance(_distance_functions, t, p);
 }
 
 RealVectorValue
