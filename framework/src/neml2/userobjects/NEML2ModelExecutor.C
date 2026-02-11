@@ -460,9 +460,8 @@ NEML2ModelExecutor::getSideOutputDerivativeTensor(const neml2::VariableName & ou
     return _retrieved_derivatives.at(output_name).at(input_name);
   const auto it = _global_side_derivatives.find(output_name);
   if (it == _global_side_derivatives.end())
-    mooseError("No global side derivative cache found for NEML2 output variable '",
-               output_name,
-               "'.");
+    mooseError(
+        "No global side derivative cache found for NEML2 output variable '", output_name, "'.");
   const auto it2 = it->second.find(input_name);
   if (it2 == it->second.end())
     mooseError("No global side derivative cache found for NEML2 derivative '",
@@ -474,8 +473,9 @@ NEML2ModelExecutor::getSideOutputDerivativeTensor(const neml2::VariableName & ou
 }
 
 const neml2::Tensor &
-NEML2ModelExecutor::getSideOutputParameterDerivativeTensor(
-    const neml2::VariableName & output_name, const std::string & parameter_name, bool global) const
+NEML2ModelExecutor::getSideOutputParameterDerivativeTensor(const neml2::VariableName & output_name,
+                                                           const std::string & parameter_name,
+                                                           bool global) const
 {
   if (!global)
     return _retrieved_parameter_derivatives.at(output_name).at(parameter_name);
