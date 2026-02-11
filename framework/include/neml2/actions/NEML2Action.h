@@ -110,6 +110,8 @@ protected:
 
   /// Set up MOOSE-NEML2 derivative mappings
   void setupDerivativeMappings(const neml2::Model &);
+  /// Set up MOOSE-NEML2 side derivative mappings
+  void setupSideDerivativeMappings(const neml2::Model &);
 
   /// Set up MOOSE-NEML2 parameter derivative mappings
   void setupParameterDerivativeMappings(const neml2::Model &);
@@ -138,6 +140,8 @@ protected:
 
   /// MOOSE-NEML2 derivative mappings
   std::vector<DerivativeMapping> _derivs;
+  /// MOOSE-NEML2 side derivative mappings
+  std::vector<DerivativeMapping> _side_derivs;
 
   /// MOOSE-NEML2 parameter derivative mappings
   std::vector<ParameterDerivativeMapping> _param_derivs;

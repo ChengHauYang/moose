@@ -149,7 +149,10 @@ NEML2ModelExecutor::initialSetup()
     else
       uo.setMode(MOOSEToNEML2::Mode::VARIABLE);
 
-    addGatheredVariable(gatherer_name, uo.NEML2VariableName());
+    // Allow side gatherers to reuse the same NEML2 variable as volume gatherers.
+    // This is required when side/volume map to the same NEML2 input name.
+    if (!_gathered_variable_names.count(uo.NEML2VariableName()))
+      addGatheredVariable(gatherer_name, uo.NEML2VariableName());
     _side_gatherers.push_back(&uo);
   }
 
@@ -321,9 +324,12 @@ NEML2ModelExecutor::fillInputs()
     const bool has_side = _side_batch_index_generator && !_side_batch_index_generator->isEmpty();
     if (has_side)
     {
+      // Side batches are appended after volume batches so outputs can be split later.
       _side_batch_offset = _batch_index_generator.getBatchIndex();
       _side_batch_size = _side_batch_index_generator->getBatchIndex();
 
+      // Merge side inputs into the same NEML2 variable as volume inputs:
+      // [volume QPs ...] [side QPs ...]
       for (auto & [var, val] : _in_side)
       {
         if (_in.count(var))
@@ -331,6 +337,8 @@ NEML2ModelExecutor::fillInputs()
         else
           _in[var] = val;
       }
+      // TODO: I am not sure this take care of the case where some variables only have side inputs
+      // but no volume inputs.
       _in_side.clear();
     }
     else

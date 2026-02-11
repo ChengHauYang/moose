@@ -161,31 +161,31 @@ NEML2Action::act()
     setupOutputMappings(*_model);
     setupSideOutputMappings(*_model);
     setupDerivativeMappings(*_model);
+    setupSideDerivativeMappings(*_model);
     setupParameterDerivativeMappings(*_model);
 
     const bool has_boundary = !_boundary.empty();
     const bool has_side = !_side_inputs.empty() || !_side_outputs.empty();
     if (has_boundary && !has_side)
-      paramError("boundary",
-                 "boundary is specified but no side inputs/outputs were provided.");
+      paramError("boundary", "boundary is specified but no side inputs/outputs were provided.");
     if (!has_boundary && has_side)
-      paramError("moose_inputs_side",
-                 "side inputs/outputs are provided but boundary is empty.");
+      paramError("moose_inputs_side", "side inputs/outputs are provided but boundary is empty.");
 
     if (has_side)
     {
       std::set<neml2::VariableName> side_vars;
       for (const auto & input : _side_inputs)
-      {
-        if (input.moose.type == MOOSEIOType::POSTPROCESSOR)
-          paramError("moose_input_types_side",
-                     "Side inputs do not support POSTPROCESSOR types. Use MATERIAL or VARIABLE.");
         side_vars.insert(input.neml2.name);
-      }
 
       std::set<neml2::VariableName> volume_vars;
+      std::set<neml2::VariableName> volume_postprocessors;
       for (const auto & input : _inputs)
       {
+        if (input.moose.type == MOOSEIOType::POSTPROCESSOR)
+        {
+          volume_postprocessors.insert(input.neml2.name);
+          continue;
+        }
         if (input.moose.type != MOOSEIOType::MATERIAL && input.moose.type != MOOSEIOType::VARIABLE)
           continue;
         volume_vars.insert(input.neml2.name);
@@ -201,17 +201,26 @@ NEML2Action::act()
                      v,
                      "' does not exist on the model input axis.");
         if (!volume_vars.count(v))
+        {
+          if (volume_postprocessors.count(v))
+          {
+            mooseWarning("side_skip_inputs includes NEML2 variable '",
+                         v,
+                         "' gathered via POSTPROCESSOR; side skipping only applies to "
+                         "MATERIAL/VARIABLE inputs. Ignoring.");
+            continue;
+          }
           paramError("side_skip_inputs",
                      "The NEML2 input variable '",
                      v,
                      "' is not mapped on volume (MATERIAL/VARIABLE inputs). Side skipping must "
                      "refer to an existing volume input variable.");
+        }
         side_skip.insert(v);
       }
       for (const auto & input : _inputs)
       {
-        if (input.moose.type != MOOSEIOType::MATERIAL &&
-            input.moose.type != MOOSEIOType::VARIABLE)
+        if (input.moose.type != MOOSEIOType::MATERIAL && input.moose.type != MOOSEIOType::VARIABLE)
           continue;
         if (side_skip.count(input.neml2.name))
           continue;
@@ -299,7 +308,6 @@ NEML2Action::act()
         auto obj_params = _factory.getValidParams(obj_type);
         obj_params.set<MaterialPropertyName>("from_moose") = input.moose.name;
         obj_params.set<std::string>("to_neml2") = neml2::utils::stringify(input.neml2.name);
-        obj_params.set<std::vector<SubdomainName>>("block") = _block;
         obj_params.set<std::vector<BoundaryName>>("boundary") = _boundary;
         _problem->addUserObject(obj_type, obj_name, obj_params);
         side_gatherers.push_back(obj_name);
@@ -314,8 +322,21 @@ NEML2Action::act()
         auto obj_params = _factory.getValidParams(obj_type);
         obj_params.set<std::vector<VariableName>>("from_moose") = {input.moose.name};
         obj_params.set<std::string>("to_neml2") = neml2::utils::stringify(input.neml2.name);
-        obj_params.set<std::vector<SubdomainName>>("block") = _block;
         obj_params.set<std::vector<BoundaryName>>("boundary") = _boundary;
+        _problem->addUserObject(obj_type, obj_name, obj_params);
+        side_gatherers.push_back(obj_name);
+      }
+      else if (input.moose.type == MOOSEIOType::POSTPROCESSOR)
+      {
+        auto obj_name = "__moose_side(" + input.moose.name + ")->neml2(" +
+                        neml2::utils::stringify(input.neml2.name) + ")" + name() + "__";
+        auto obj_moose_type = std::string("Postprocessor");
+        if (input.neml2.name.is_old_force() || input.neml2.name.is_old_state())
+          obj_moose_type = "Old" + obj_moose_type;
+        auto obj_type = "MOOSE" + obj_moose_type + "ToNEML2";
+        auto obj_params = _factory.getValidParams(obj_type);
+        obj_params.set<PostprocessorName>("from_moose") = input.moose.name;
+        obj_params.set<std::string>("to_neml2") = neml2::utils::stringify(input.neml2.name);
         _problem->addUserObject(obj_type, obj_name, obj_params);
         side_gatherers.push_back(obj_name);
       }
@@ -448,8 +469,8 @@ NEML2Action::act()
     {
       if (output.moose.type == MOOSEIOType::MATERIAL)
       {
-        auto obj_name = "__neml2_side(" + neml2::utils::stringify(output.neml2.name) +
-                        ")->moose(" + output.moose.name + ")_" + name() + "__";
+        auto obj_name = "__neml2_side(" + neml2::utils::stringify(output.neml2.name) + ")->moose(" +
+                        output.moose.name + ")_" + name() + "__";
         if (!tensor_type_map.count(output.neml2.type))
           mooseError("NEML2 type ", output.neml2.type, " not yet mapped to MOOSE");
         auto obj_type =
@@ -507,6 +528,43 @@ NEML2Action::act()
       else
         paramError("moose_derivative_types",
                    "Unsupported type corresponding to the moose derivative ",
+                   deriv.moose.name);
+    }
+
+    // NEML2ToMOOSE side derivative retrievers
+    for (const auto & deriv : _side_derivs)
+    {
+      if (deriv.moose.type == MOOSEIOType::MATERIAL)
+      {
+        auto obj_name = "__neml2_side(d(" + neml2::utils::stringify(deriv.neml2.y.name) + ")/d(" +
+                        neml2::utils::stringify(deriv.neml2.x.name) + "))->moose(" +
+                        deriv.moose.name + ")_" + name() + "__";
+        if (!deriv_type_map.count({deriv.neml2.y.type, deriv.neml2.x.type}))
+          mooseError("NEML2 derivative type for d(",
+                     deriv.neml2.y.type,
+                     ")/d(",
+                     deriv.neml2.x.type,
+                     ") not yet mapped to MOOSE");
+        auto deriv_type = deriv_type_map.at({deriv.neml2.y.type, deriv.neml2.x.type});
+        if (!tensor_type_map.count(deriv_type))
+          mooseError("NEML2 type ", deriv_type, " not yet mapped to MOOSE");
+        auto obj_type = "NEML2ToMOOSESide" + tensor_type_map.at(deriv_type) + "MaterialProperty";
+        auto obj_params = _factory.getValidParams(obj_type);
+        obj_params.set<UserObjectName>("neml2_executor") = _executor_name;
+        obj_params.set<MaterialPropertyName>("to_moose") = deriv.moose.name;
+        obj_params.set<std::string>("from_neml2") = neml2::utils::stringify(deriv.neml2.y.name);
+        obj_params.set<std::string>("neml2_input_derivative") =
+            neml2::utils::stringify(deriv.neml2.x.name);
+        obj_params.set<std::vector<SubdomainName>>("block") = _block;
+        obj_params.set<std::vector<BoundaryName>>("boundary") = _boundary;
+        if (_export_output_targets.count(deriv.moose.name))
+          obj_params.set<std::vector<OutputName>>("outputs") =
+              _export_output_targets[deriv.moose.name];
+        _problem->addMaterial(obj_type, obj_name, obj_params);
+      }
+      else
+        paramError("moose_derivative_types_side",
+                   "Unsupported type corresponding to the moose side derivative ",
                    deriv.moose.name);
     }
 
@@ -653,6 +711,30 @@ NEML2Action::setupDerivativeMappings(const neml2::Model & model)
     auto neml2_y = NEML2Utils::parseVariableName(neml2_derivs[i][0]);
     auto neml2_x = NEML2Utils::parseVariableName(neml2_derivs[i][1]);
     _derivs.push_back({
+        {moose_derivs[i], moose_deriv_types[i]},
+        {{neml2_y, model.output_variable(neml2_y).type()},
+         {neml2_x, model.input_variable(neml2_x).type()}},
+    });
+  }
+}
+
+void
+NEML2Action::setupSideDerivativeMappings(const neml2::Model & model)
+{
+  const auto [moose_deriv_types, moose_derivs, neml2_derivs] =
+      getInputParameterMapping<MOOSEIOType, std::string, std::vector<std::string>>(
+          "moose_derivative_types_side", "moose_derivatives_side", "neml2_derivatives_side");
+
+  for (auto i : index_range(moose_derivs))
+  {
+    if (neml2_derivs[i].size() != 2)
+      paramError("neml2_derivatives_side",
+                 "The length of each pair in neml2_derivatives_side must be 2.");
+
+    auto neml2_y = NEML2Utils::parseVariableName(neml2_derivs[i][0]);
+    auto neml2_x = NEML2Utils::parseVariableName(neml2_derivs[i][1]);
+
+    _side_derivs.push_back({
         {moose_derivs[i], moose_deriv_types[i]},
         {{neml2_y, model.output_variable(neml2_y).type()},
          {neml2_x, model.input_variable(neml2_x).type()}},

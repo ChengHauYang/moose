@@ -97,7 +97,7 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   if (_bnd)
     return;
 
-  // look up start index for current element
+  // Volume batch index: reads from the front (volume) portion of the combined batch.
   const auto i = _execute_neml2_model.getBatchIndex(_current_elem->id());
   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
     NEML2Utils::copyTensorToMOOSEData(_value.batch_index({neml2::Size(i + _qp)}), _prop[_qp]);

@@ -97,6 +97,7 @@ NEML2ToMOOSESideMaterialProperty<T>::computeProperties()
   if (!_bnd)
     return;
 
+  // Side batch index: reads from the back (side) portion of the combined batch.
   const auto start = _execute_neml2_model.getSideBatchIndex(
       _current_elem->id(), _assembly.side(), _assembly.currentBoundaryID());
 
