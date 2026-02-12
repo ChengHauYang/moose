@@ -90,6 +90,9 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
     return;
   }
 
+  if (_bnd)
+    return;
+
   if (!_execute_neml2_model.outputReady())
     return;
 
