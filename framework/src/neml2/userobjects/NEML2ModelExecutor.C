@@ -340,8 +340,8 @@ NEML2ModelExecutor::fillInputs()
           const auto & in_val = _in[var];
           if (in_val.dynamic_dim() == 0 && val.dynamic_dim() == 0)
           {
-            // Both are unbatched values. If they match, keep the volume value;
-            // no side append is needed because unbatched values are broadcast later.
+            // Both are `unbatched` values. If they match, keep the volume value;
+            // "no side append is needed" because unbatched values are broadcast later.
             // some easy tests later because silently dropping side data is unsafe.
 
             // Unbatched volume/side inputs must have identical shape.
@@ -363,7 +363,7 @@ NEML2ModelExecutor::fillInputs()
                          "but the values are inconsistent.");
           }
           else if (in_val.dynamic_dim() == val.dynamic_dim())
-            _in[var] = neml2::dynamic_cat({in_val, val}, 0);
+            _in[var] = neml2::dynamic_cat({in_val, val}, /*dim=*/0);
           else
             mooseError("NEML2 input variable '",
                        var,
@@ -442,7 +442,20 @@ NEML2ModelExecutor::expandInputs()
   std::vector<neml2::Tensor> defined;
   for (const auto & [key, value] : _in)
     defined.push_back(value);
-  const auto s = neml2::utils::broadcast_dynamic_sizes(defined);
+  auto s = neml2::utils::broadcast_dynamic_sizes(defined);
+
+  // If all inputs are unbatched, infer the batch size from the index generators so
+  // unbatched constants are expanded to [volume batches][side batches].
+  if (s.empty())
+  {
+    const auto side_batch_size =
+        (_side_batch_index_generator && !_side_batch_index_generator->isEmpty())
+            ? _side_batch_index_generator->getBatchIndex()
+            : 0;
+    const auto total_batch_size = _batch_index_generator.getBatchIndex() + side_batch_size;
+    if (total_batch_size > 0)
+      s = {neml2::Size(total_batch_size)};
+  }
 
   // Make all inputs conformal
   for (auto & [key, value] : _in)
