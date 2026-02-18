@@ -50,7 +50,7 @@ NEML2SideBatchIndexGenerator::initialize()
     return;
 
   _side_to_batch_index.clear();
-  _side_to_batch_index_cache = {SideKey(), 0};
+  _side_to_batch_index_cache = {ElemSide(libMesh::invalid_uint, libMesh::invalid_uint), 0};
   _batch_index = 0;
 }
 
@@ -63,13 +63,17 @@ NEML2SideBatchIndexGenerator::execute()
   if (!_outdated)
     return;
 
-  SideKey key;
-  key.elem_id = _current_elem->id();
-  key.side = _current_side;
+  const ElemSide key{_current_elem->id(), _current_side};
 
   // Side batch indices are generated starting from 0 (same as volume batch)
   // NEML2ModelExecutor shifts them by the volume batch count when side and volume
   // batches are concatenated.
+  if (_side_to_batch_index.find(key) != _side_to_batch_index.end())
+    mooseError("Duplicate side batch index key for element ",
+               _current_elem->id(),
+               ", side ",
+               _current_side,
+               ".");
   _side_to_batch_index[key] = _batch_index;
   _batch_index += _qrule->n_points();
 }
@@ -87,7 +91,16 @@ NEML2SideBatchIndexGenerator::threadJoin(const UserObject & uo)
 
   // append and renumber maps
   for (const auto & [key, batch_index] : m2n._side_to_batch_index)
+  {
+    if (_side_to_batch_index.find(key) != _side_to_batch_index.end())
+      mooseError("Duplicate side batch index key encountered during thread join for element ",
+                 std::get<0>(key),
+                 ", side ",
+                 std::get<1>(key),
+                 ".");
     _side_to_batch_index[key] = _batch_index + batch_index;
+  }
+
   _batch_index += m2n._batch_index;
 }
 
@@ -98,19 +111,20 @@ NEML2SideBatchIndexGenerator::finalize()
 }
 
 std::size_t
-NEML2SideBatchIndexGenerator::getBatchIndex(dof_id_type elem_id, unsigned int side) const
+NEML2SideBatchIndexGenerator::getBatchIndex(const ElemSide & key) const
 {
-  SideKey key{elem_id, side};
-
   // return cached map lookup if applicable
-  if (_side_to_batch_index_cache.first.elem_id == key.elem_id &&
-      _side_to_batch_index_cache.first.side == key.side)
+  if (_side_to_batch_index_cache.first == key)
     return _side_to_batch_index_cache.second;
 
   // else, search the map
   const auto it = _side_to_batch_index.find(key);
   if (it == _side_to_batch_index.end())
-    mooseError("No side batch index found for element id ", elem_id, " side ", side);
+    mooseError("No side batch index found for element id ",
+               std::get<0>(key),
+               ", side ",
+               std::get<1>(key),
+               ".");
   _side_to_batch_index_cache = *it;
   return it->second;
 }

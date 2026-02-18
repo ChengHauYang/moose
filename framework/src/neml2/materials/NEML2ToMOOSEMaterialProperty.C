@@ -93,52 +93,143 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   if (!_execute_neml2_model.outputReady())
     return;
 
-  // #ifdef DEBUG
-  if (!_execute_neml2_model.hasBatchIndex(_current_elem->id()))
+#ifdef DEBUG
+  // if (!_execute_neml2_model.hasBatchIndex(_current_elem->id()))
+  // {
+  //   _console << "_material_data_type: ";
+  //   switch (_material_data_type)
+  //   {
+  //     case Moose::BLOCK_MATERIAL_DATA:
+  //       _console << "BLOCK_MATERIAL_DATA";
+  //       break;
+  //     case Moose::BOUNDARY_MATERIAL_DATA:
+  //       _console << "BOUNDARY_MATERIAL_DATA";
+  //       break;
+  //     case Moose::FACE_MATERIAL_DATA:
+  //       _console << "FACE_MATERIAL_DATA";
+  //       break;
+  //     case Moose::NEIGHBOR_MATERIAL_DATA:
+  //       _console << "NEIGHBOR_MATERIAL_DATA";
+  //       break;
+  //     case Moose::INTERFACE_MATERIAL_DATA:
+  //       _console << "INTERFACE_MATERIAL_DATA";
+  //       break;
+  //     default:
+  //       _console << "UNKNOWN_MATERIAL_DATA_TYPE";
+  //   }
+  //   _console << "_bnd = " << _bnd << std::endl;
+  //   _console << std::endl;
+  // }
+
+  _console << "_material_data_type: ";
+  switch (_material_data_type)
   {
-    _console << "_material_data_type: ";
-    switch (_material_data_type)
-    {
-      case Moose::BLOCK_MATERIAL_DATA:
-        _console << "BLOCK_MATERIAL_DATA";
-        break;
-      case Moose::BOUNDARY_MATERIAL_DATA:
-        _console << "BOUNDARY_MATERIAL_DATA";
-        break;
-      case Moose::FACE_MATERIAL_DATA:
-        _console << "FACE_MATERIAL_DATA";
-        break;
-      case Moose::NEIGHBOR_MATERIAL_DATA:
-        _console << "NEIGHBOR_MATERIAL_DATA";
-        break;
-      case Moose::INTERFACE_MATERIAL_DATA:
-        _console << "INTERFACE_MATERIAL_DATA";
-        break;
-      default:
-        _console << "UNKNOWN_MATERIAL_DATA_TYPE";
-    }
-    _console << "_bnd = " << _bnd << std::endl;
-    _console << std::endl;
+    case Moose::BLOCK_MATERIAL_DATA:
+      _console << "BLOCK_MATERIAL_DATA";
+      break;
+    case Moose::BOUNDARY_MATERIAL_DATA:
+      _console << "BOUNDARY_MATERIAL_DATA";
+      break;
+    case Moose::FACE_MATERIAL_DATA:
+      _console << "FACE_MATERIAL_DATA";
+      break;
+    case Moose::NEIGHBOR_MATERIAL_DATA:
+      _console << "NEIGHBOR_MATERIAL_DATA";
+      break;
+    case Moose::INTERFACE_MATERIAL_DATA:
+      _console << "INTERFACE_MATERIAL_DATA";
+      break;
+    default:
+      _console << "UNKNOWN_MATERIAL_DATA_TYPE";
   }
-  // #endif
-  // TODO: some NEIGHBOR_MATERIAL_DATA comes when we go to mpirun, and cannot find the batch index.
-  // Still do not know how to deal with this.
+  _console << ", _bnd = " << _bnd;
+
+  _console << ", proc = " << processor_id() << ", elem=" << _current_elem->id() << std::endl;
+
+  for (int side = 0; side < _current_elem->n_sides(); ++side)
+    if (_execute_neml2_model.hasSideBatchIndex(NEML2SideBatchIndexGenerator::ElemSide{0, side}))
+      _console << "elem 0 side " << side << " has side batch index" << std::endl;
+    else
+      _console << "elem 0 side " << side << " does NOT have side batch index" << std::endl;
+
+  for (int side = 0; side < _current_elem->n_sides(); ++side)
+    if (_execute_neml2_model.hasSideBatchIndex(NEML2SideBatchIndexGenerator::ElemSide{1, side}))
+      _console << "elem 1 side " << side << " has side batch index" << std::endl;
+    else
+      _console << "elem 1 side " << side << " does NOT have side batch index" << std::endl;
+
+  _console << "elem id = " << _current_elem->id() << " ,";
+  _console << "elem side = " << _current_side << " ,";
+  _console << " _qrule->n_points() = " << _qrule->n_points() << " ,";
+  for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+    _console << "pos = " << _q_point[_qp];
+
+#endif
+  // TODO: some NEIGHBOR_MATERIAL_DATA errors come when we go to mpirun, and cannot find the batch
+  // index. Still do not know how to deal with this.
 
   // this is dangerous but I just want to do some easy tests first!!!
   // TODO: remove this
-  if (_material_data_type == Moose::NEIGHBOR_MATERIAL_DATA)
-    return;
+
+  // if (_material_data_type == Moose::NEIGHBOR_MATERIAL_DATA && _bnd)
+  //   return;
 
   // Side batches are currently generated from boundary side loops. Therefore we only use side
   // indices for boundary-restricted materials and fall back to volume indices for other material
   // data contexts.
-  const bool use_side = _material_data_type == Moose::BOUNDARY_MATERIAL_DATA;
+  const bool use_side = _bnd;
+
+  // std::ofstream fout("side_pos.csv", std::ios::app);
+  // if (_material_data_type != Moose::BLOCK_MATERIAL_DATA)
+  // {
+  //   const auto pos = _current_elem->vertex_average();
+  //   fout << pos(0) << ", " << pos(1) << ", " << pos(2);
+  //   fout << std::endl;
+  // }
+
+  // fout.close();
+
+  // std::ofstream fout1("bnd.csv", std::ios::app);
+  // if (_bnd)
+  // {
+  //   const auto pos = _current_elem->vertex_average();
+  //   fout1 << pos(0) << ", " << pos(1) << ", " << pos(2);
+  //   fout1 << std::endl;
+  // }
+
+  // fout1.close();
+
+#ifdef DEBUG
+  std::ofstream fout2("q_point.csv", std::ios::app);
+#endif
+
   const auto start =
-      use_side ? _execute_neml2_model.getSideBatchIndex(_current_elem->id(), _assembly.side())
+      use_side ? _execute_neml2_model.getSideBatchIndex(
+                     NEML2SideBatchIndexGenerator::ElemSide{_current_elem->id(), _current_side})
                : _execute_neml2_model.getBatchIndex(_current_elem->id());
 
   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+  {
+#ifdef DEBUG
+    const auto pos = _q_point[_qp];
+    fout2 << pos(0) << ", " << pos(1) << ", " << pos(2);
+    fout2 << std::endl;
+
+    _console << "proc = " << processor_id() << " elem=" << _current_elem->id() << " qp=" << _qp
+             << ", x=" << _q_point[_qp];
+#endif
+
     NEML2Utils::copyTensorToMOOSEData(_value.batch_index({neml2::Size(start + _qp)}), _prop[_qp]);
+
+#ifdef DEBUG
+    _console << "\nprop=" << _prop[_qp] << std::endl;
+#endif
+  }
+#ifdef DEBUG
+  fout2.close();
+  _console << "----------------------";
+  _console << std::endl;
+#endif
 }
 #endif
 

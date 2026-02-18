@@ -46,11 +46,14 @@ public:
   /// Get the batch index for the given element ID
   std::size_t getBatchIndex(dof_id_type elem_id) const;
 
-  /// Get batch index for a given element/side (side batches only)
-  std::size_t getSideBatchIndex(dof_id_type elem_id, unsigned int side) const;
+  /// Get batch index for a given element/side tuple (side batches only)
+  std::size_t getSideBatchIndex(const NEML2SideBatchIndexGenerator::ElemSide & elem_side) const;
 
   /// Check if a batch index exists for the given element ID
   bool hasBatchIndex(dof_id_type elem_id) const;
+
+  /// Check if a side batch index exists for the given element/side tuple
+  bool hasSideBatchIndex(const NEML2SideBatchIndexGenerator::ElemSide & elem_side) const;
 
   /// Get a reference(!) to the requested output view
   const neml2::Tensor & getOutput(const neml2::VariableName & output_name) const;

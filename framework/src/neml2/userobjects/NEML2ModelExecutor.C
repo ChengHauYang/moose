@@ -222,18 +222,29 @@ NEML2ModelExecutor::getBatchIndex(dof_id_type elem_id) const
 }
 
 std::size_t
-NEML2ModelExecutor::getSideBatchIndex(dof_id_type elem_id, unsigned int side) const
+NEML2ModelExecutor::getSideBatchIndex(
+    const NEML2SideBatchIndexGenerator::ElemSide & elem_side) const
 {
   if (!_side_batch_index_generator)
     mooseError("Side batch index generator is not configured.");
 
-  return _side_batch_index_generator->getBatchIndex(elem_id, side) + _side_batch_offset;
+  return _side_batch_index_generator->getBatchIndex(elem_side) + _side_batch_offset;
 }
 
 bool
 NEML2ModelExecutor::hasBatchIndex(dof_id_type elem_id) const
 {
   return _batch_index_generator.hasBatchIndex(elem_id);
+}
+
+bool
+NEML2ModelExecutor::hasSideBatchIndex(
+    const NEML2SideBatchIndexGenerator::ElemSide & elem_side) const
+{
+  if (!_side_batch_index_generator)
+    return false;
+
+  return _side_batch_index_generator->sideToBatchIndex().count(elem_side) != 0;
 }
 
 void
