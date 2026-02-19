@@ -276,6 +276,24 @@ NEML2ModelExecutor::fillInputs()
     for (const auto & uo : _gatherers)
       uo->insertInto(_in, _model_params);
 
+    // Consistency check: batched inputs should match this executor's batch size (or be scalar-like
+    // with batch size 1 for broadcasting).
+    const auto expected_batch_size = _batch_index_generator.getBatchIndex();
+    for (const auto & [var, val] : _in)
+      if (val.dynamic_dim() > 0)
+      {
+        const auto actual_batch_size = val.dynamic_size(0).concrete();
+        if (actual_batch_size != expected_batch_size && actual_batch_size != 1)
+          mooseError("Inconsistent NEML2 input batch size for `",
+                     var,
+                     "`: got ",
+                     actual_batch_size,
+                     ", but expected ",
+                     expected_batch_size,
+                     " (or 1 for broadcasting). This usually means the NEML2 executor batch index "
+                     "generator and input gatherers are restricted to different domains.");
+      }
+
     // Send input variables and parameters to device
     for (auto & [var, val] : _in)
       val = val.to(device());
@@ -404,31 +422,7 @@ NEML2ModelExecutor::extractOutputs()
       {
         const auto & source = _dout_din[y][x];
         if (source.defined())
-        {
-          auto value = source.to(output_device());
-          if (value.dynamic_dim() == 0)
-            target = value.dynamic_unsqueeze(0).dynamic_expand({neml2::Size(N)});
-          else
-          {
-            const auto source_batch_size = value.dynamic_size(0).concrete();
-            if (source_batch_size == N)
-              target = value;
-            else if (source_batch_size == 1)
-              target = value.dynamic_expand({neml2::Size(N)});
-            else
-              mooseError("Inconsistent NEML2 derivative batch size for d(",
-                         y,
-                         ")/d(",
-                         x,
-                         "): got ",
-                         source_batch_size,
-                         ", but expected ",
-                         N,
-                         ". This usually means the NEML2 executor batch index generator and the "
-                         "gatherers/retrievers are restricted to different domains (e.g. mixing "
-                         "volume and boundary-restricted objects).");
-          }
-        }
+          target = source.to(output_device()).dynamic_expand({neml2::Size(N)});
       }
 
     // clear derivatives
