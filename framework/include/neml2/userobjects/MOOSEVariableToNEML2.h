@@ -25,6 +25,8 @@ public:
 #ifdef NEML2_ENABLED
 protected:
   const MooseArray<Real> & elemMOOSEData() const override { return _moose_variable; }
+  // TODO: not sure we can keep it the same as elemMOOSEData?
+  const MooseArray<Real> & elemSideMOOSEData() const override { return _moose_variable; }
 
   /// Coupled MOOSE variable to read data from
   const VariableValue & _moose_variable;

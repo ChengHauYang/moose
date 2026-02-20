@@ -55,6 +55,9 @@ protected:
   /// MOOSE data for the current element
   virtual const MooseArray<T> & elemMOOSEData() const = 0;
 
+  /// MOOSE data for the current element side
+  virtual const MooseArray<T> & elemSideMOOSEData() const = 0;
+
   /// Intermediate data buffer, filled during the element loop
   std::vector<T> _buffer;
 #endif
@@ -116,7 +119,7 @@ MOOSEToNEML2Batched<T>::executeOnBoundary()
   if (!shouldExecuteOnInterface())
     return;
 
-  const auto & elem_data = this->elemMOOSEData();
+  const auto & elem_data = this->elemSideMOOSEData();
 
   for (auto i : index_range(elem_data))
     _buffer.push_back(elem_data[i]);
