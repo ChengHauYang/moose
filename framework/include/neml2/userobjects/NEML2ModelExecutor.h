@@ -48,6 +48,9 @@ public:
   /// Get the batch index for the given element side
   std::size_t getSideBatchIndex(const NEML2BatchIndexGenerator::ElemSide & elem_side) const;
 
+  /// Is the batch index for the given element side exist
+  bool isSideBatchIndexExist(const NEML2BatchIndexGenerator::ElemSide & elem_side) const;
+
   /// Get a reference(!) to the requested output view
   const neml2::Tensor & getOutput(const neml2::VariableName & output_name) const;
 

@@ -155,3 +155,9 @@ NEML2BatchIndexGenerator::getSideBatchIndex(const ElemSide & elem_side) const
   _elemside_to_batch_index_cache = *it;
   return it->second;
 }
+
+bool
+NEML2BatchIndexGenerator::isSideBatchIndexExist(const ElemSide & elem_side) const
+{
+  return _elemside_to_batch_index.find(elem_side) != _elemside_to_batch_index.end();
+}

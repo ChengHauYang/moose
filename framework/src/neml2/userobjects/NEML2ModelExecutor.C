@@ -183,20 +183,28 @@ NEML2ModelExecutor::initialSetup()
 std::size_t
 NEML2ModelExecutor::getBatchIndex(dof_id_type elem_id) const
 {
-  if (_boundary_restricted)
-    mooseError("The NEML2 model is boundary restricted, so batch indices should be accessed with "
-               "element sides instead of element IDs.");
+  // if (_boundary_restricted)
+  //   mooseError("The NEML2 model is boundary restricted, so batch indices should be accessed with
+  //   "
+  //              "element sides instead of element IDs.");
   return _batch_index_generator.getBatchIndex(elem_id);
 }
 
 std::size_t
 NEML2ModelExecutor::getSideBatchIndex(const NEML2BatchIndexGenerator::ElemSide & elem_side) const
 {
-  if (!_boundary_restricted)
-    mooseError(
-        "The NEML2 model is not boundary restricted, so batch indices should be accessed with "
-        "element IDs instead of element sides.");
+  // if (!_boundary_restricted)
+  //   mooseError(
+  //       "The NEML2 model is not boundary restricted, so batch indices should be accessed with "
+  //       "element IDs instead of element sides.");
   return _batch_index_generator.getSideBatchIndex(elem_side);
+}
+
+bool
+NEML2ModelExecutor::isSideBatchIndexExist(
+    const NEML2BatchIndexGenerator::ElemSide & elem_side) const
+{
+  return _batch_index_generator.isSideBatchIndexExist(elem_side);
 }
 
 void

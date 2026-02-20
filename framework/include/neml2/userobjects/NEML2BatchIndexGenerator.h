@@ -46,6 +46,9 @@ public:
   /// Whether the batch is empty
   bool isEmpty() const { return _batch_index == 0; }
 
+  /// Whether the batch index map contains the given ElemSide
+  bool isSideBatchIndexExist(const ElemSide & elem_side) const;
+
 protected:
   /// Whether the batch index map is outdated
   bool _outdated;

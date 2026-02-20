@@ -20,6 +20,28 @@ registerNEML2ToMOOSEMaterialProperty(RealVectorValue);
 registerNEML2ToMOOSEMaterialProperty(RankTwoTensor);
 registerNEML2ToMOOSEMaterialProperty(RankFourTensor);
 
+#ifdef NEML2_ENABLED
+namespace
+{
+const neml2::Tensor &
+requestedNEML2Value(const InputParameters & params, const NEML2ModelExecutor & executor)
+{
+  const auto output_name = NEML2Utils::parseVariableName(params.get<std::string>("from_neml2"));
+
+  if (params.isParamValid("neml2_input_derivative"))
+    return executor.getOutputDerivative(
+        output_name,
+        NEML2Utils::parseVariableName(params.get<std::string>("neml2_input_derivative")));
+
+  if (params.isParamValid("neml2_parameter_derivative"))
+    return executor.getOutputParameterDerivative(
+        output_name, params.get<std::string>("neml2_parameter_derivative"));
+
+  return executor.getOutput(output_name);
+}
+}
+#endif
+
 template <typename T>
 InputParameters
 NEML2ToMOOSEMaterialProperty<T>::validParams()
@@ -31,6 +53,9 @@ NEML2ToMOOSEMaterialProperty<T>::validParams()
 
   params.addRequiredParam<UserObjectName>("neml2_executor",
                                           "User object managing the execution of the NEML2 model.");
+  params.addParam<UserObjectName>(
+      "neml2_executor_side", "User object managing the execution of the NEML2 model on sides.");
+
   params.addRequiredParam<MaterialPropertyName>(
       "to_moose",
       "MOOSE material property used to store the NEML2 output variable (or its derivative)");
@@ -57,21 +82,17 @@ NEML2ToMOOSEMaterialProperty<T>::NEML2ToMOOSEMaterialProperty(const InputParamet
 #ifdef NEML2_ENABLED
     ,
     _execute_neml2_model(getUserObject<NEML2ModelExecutor>("neml2_executor")),
+    _execute_neml2_model_side(isParamValid("neml2_executor_side") &&
+                                      hasUserObject<NEML2ModelExecutor>("neml2_executor_side")
+                                  ? &getUserObject<NEML2ModelExecutor>("neml2_executor_side")
+                                  : nullptr),
     _prop(declareProperty<T>(getParam<MaterialPropertyName>("to_moose"))),
     _prop0(isParamValid("moose_material_property_init")
                ? &getMaterialProperty<T>("moose_material_property_init")
                : nullptr),
-    _value(
-        !isParamValid("neml2_input_derivative")
-            ? (!isParamValid("neml2_parameter_derivative")
-                   ? _execute_neml2_model.getOutput(
-                         NEML2Utils::parseVariableName(getParam<std::string>("from_neml2")))
-                   : _execute_neml2_model.getOutputParameterDerivative(
-                         NEML2Utils::parseVariableName(getParam<std::string>("from_neml2")),
-                         getParam<std::string>("neml2_parameter_derivative")))
-            : _execute_neml2_model.getOutputDerivative(
-                  NEML2Utils::parseVariableName(getParam<std::string>("from_neml2")),
-                  NEML2Utils::parseVariableName(getParam<std::string>("neml2_input_derivative"))))
+    _value(requestedNEML2Value(params, _execute_neml2_model)),
+    _value_side(_execute_neml2_model_side ? requestedNEML2Value(params, *_execute_neml2_model_side)
+                                          : _value)
 #endif
 {
   NEML2Utils::assertNEML2Enabled();
@@ -90,16 +111,107 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
     return;
   }
 
-  if (!_execute_neml2_model.outputReady())
+  if (_bnd && !_execute_neml2_model_side)
+    mooseError("Boundary NEML2 material retrieval requires 'neml2_executor_side'.");
+
+  const auto & executor = _bnd ? *_execute_neml2_model_side : _execute_neml2_model;
+  const neml2::Tensor * value = _bnd ? &_value_side : &_value;
+
+  if (!executor.outputReady())
     return;
 
+#ifdef DEBUG
+  // std::cout << "_execute_neml2_model.boundaryRestricted(): "
+  //           << _execute_neml2_model.boundaryRestricted() << std::endl;
+
+  // std::cout << "_qrule->n_points() = " << _qrule->n_points() << std::endl;
+
+  // std::cout << "_material_data_type: ";
+  // switch (_material_data_type)
+  // {
+  //   case Moose::BLOCK_MATERIAL_DATA:
+  //     std::cout << "BLOCK_MATERIAL_DATA";
+  //     break;
+  //   case Moose::BOUNDARY_MATERIAL_DATA:
+  //     std::cout << "BOUNDARY_MATERIAL_DATA";
+  //     break;
+  //   case Moose::FACE_MATERIAL_DATA:
+  //     std::cout << "FACE_MATERIAL_DATA";
+  //     break;
+  //   case Moose::NEIGHBOR_MATERIAL_DATA:
+  //     std::cout << "NEIGHBOR_MATERIAL_DATA";
+  //     break;
+  //   case Moose::INTERFACE_MATERIAL_DATA:
+  //     std::cout << "INTERFACE_MATERIAL_DATA";
+  //     break;
+  //   default:
+  //     std::cout << "UNKNOWN_MATERIAL_DATA_TYPE";
+  // }
+  // std::cout << ", _bnd = " << _bnd << ", ";
+  // for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+  //   std::cout << "q_point[" << _qp << "] = " << _q_point[_qp] << std::endl;
+
+#endif
+
+  // if this material is face but the side batch index for the current element side
+  // does not exist, return without doing anything
+  std::size_t i = 0;
+#ifdef DEBUG
+  std::size_t i_volume = 0;
+  bool compare_volume_and_side = false;
+#endif
+  if (_bnd)
+  {
+    const NEML2BatchIndexGenerator::ElemSide elem_side{_current_elem->id(), _current_side};
+    if (!executor.isSideBatchIndexExist(elem_side))
+    {
+      // fall back to element batch index if side batch index does not exist
+      i = _execute_neml2_model.getBatchIndex(_current_elem->id());
+      value = &_value;
+    }
+    else
+    {
+      i = executor.getSideBatchIndex(elem_side);
+#ifdef DEBUG
+      if (!_execute_neml2_model.boundaryRestricted())
+      {
+        i_volume = _execute_neml2_model.getBatchIndex(_current_elem->id());
+        compare_volume_and_side = true;
+      }
+#endif
+    }
+  }
+  else
+    i = executor.getBatchIndex(_current_elem->id());
+
+#ifdef DEBUG
+  // if (_bnd)
+  //   std::cout << "NEML2ToMOOSEMaterialProperty: boundary material data, current element ID = "
+  //             << _current_elem->id() << ", current side = " << _current_side << std::endl;
+
+  if (compare_volume_and_side)
+  {
+    std::cout << "------------\n";
+    for (std::size_t qp = 0; qp < _qrule->n_points(); ++qp)
+    {
+      const auto value_volume = _value.batch_index({neml2::Size(i_volume + qp)});
+      const auto value_side = _value_side.batch_index({neml2::Size(i + qp)});
+      const auto abs_diff = (value_volume - value_side).abs();
+      const auto rel_diff = abs_diff / (value_side.abs() + 1e-16);
+
+      std::cout << "q_point[" << qp << "] = " << _q_point[qp] << std::endl;
+      std::cout << "NEML2ToMOOSEMaterialProperty: side/volume "
+                << " for element " << _current_elem->id() << ", side " << _current_side << ", qp "
+                << qp << std::endl
+                << "  abs(value_volume - value_side) / (abs(value_side) + 1e-16) = " << rel_diff
+                << std::endl;
+    }
+  }
+#endif
+
   // look up start index for current element
-  const auto i = _execute_neml2_model.boundaryRestricted()
-                     ? _execute_neml2_model.getSideBatchIndex(
-                           NEML2BatchIndexGenerator::ElemSide{_current_elem->id(), _current_side})
-                     : _execute_neml2_model.getBatchIndex(_current_elem->id());
   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
-    NEML2Utils::copyTensorToMOOSEData(_value.batch_index({neml2::Size(i + _qp)}), _prop[_qp]);
+    NEML2Utils::copyTensorToMOOSEData(value->batch_index({neml2::Size(i + _qp)}), _prop[_qp]);
 }
 #endif
 

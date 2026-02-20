@@ -37,6 +37,9 @@ protected:
   /// User object managing the execution of the NEML2 model
   const NEML2ModelExecutor & _execute_neml2_model;
 
+  /// @brief User object managing the execution of the NEML2 model on sides.
+  const NEML2ModelExecutor * _execute_neml2_model_side = nullptr;
+
   /// Emitted material property
   MaterialProperty<T> & _prop;
 
@@ -45,6 +48,9 @@ protected:
 
   /// Reference to the requested output (or its derivative) value
   const neml2::Tensor & _value;
+
+  /// Reference to the requested side output (or derivative), defaults to _value when unset
+  const neml2::Tensor & _value_side;
 #endif
 };
 
