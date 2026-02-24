@@ -28,7 +28,8 @@ MOOSEVariableToNEML2Templ<0>::MOOSEVariableToNEML2Templ(const InputParameters & 
   : MOOSEToNEML2Batched(params)
 #ifdef NEML2_ENABLED
     ,
-    _moose_variable(coupledValue("from_moose"))
+    _moose_variable(coupledValue("from_moose")),
+    _moose_variable_neighbor(coupledNeighborValue("from_moose"))
 #endif
 {
 }
@@ -38,7 +39,8 @@ MOOSEVariableToNEML2Templ<1>::MOOSEVariableToNEML2Templ(const InputParameters & 
   : MOOSEToNEML2Batched(params)
 #ifdef NEML2_ENABLED
     ,
-    _moose_variable(coupledValueOld("from_moose"))
+    _moose_variable(coupledValueOld("from_moose")),
+    _moose_variable_neighbor(coupledNeighborValueOld("from_moose"))
 #endif
 {
 }
