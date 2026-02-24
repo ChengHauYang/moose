@@ -93,8 +93,77 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   if (!_execute_neml2_model.outputReady())
     return;
 
+  // std::cout << "_material_data_type: ";
+  // switch (_material_data_type)
+  // {
+  //   case Moose::BLOCK_MATERIAL_DATA:
+  //     std::cout << "BLOCK_MATERIAL_DATA";
+  //     break;
+  //   case Moose::BOUNDARY_MATERIAL_DATA:
+  //     std::cout << "BOUNDARY_MATERIAL_DATA";
+  //     break;
+  //   case Moose::FACE_MATERIAL_DATA:
+  //     std::cout << "FACE_MATERIAL_DATA";
+  //     break;
+  //   case Moose::NEIGHBOR_MATERIAL_DATA:
+  //     std::cout << "NEIGHBOR_MATERIAL_DATA";
+  //     break;
+  //   case Moose::INTERFACE_MATERIAL_DATA:
+  //     std::cout << "INTERFACE_MATERIAL_DATA";
+  //     break;
+  //   default:
+  //     std::cout << "UNKNOWN_MATERIAL_DATA_TYPE";
+  // }
+
+  // if (_bnd && !_execute_neml2_model.isSideBatchIndexExist(
+  //                 NEML2BatchIndexGenerator::ElemSide(_current_elem->id(), _current_side)))
+  //   return;
+
+  // if (_material_data_type == Moose::BOUNDARY_MATERIAL_DATA ||
+  //     _material_data_type == Moose::FACE_MATERIAL_DATA ||
+  //     _material_data_type == Moose::NEIGHBOR_MATERIAL_DATA)
+  //   return;
+
+  // if (!_execute_neml2_model.isSideBatchIndexExist(
+  //         NEML2BatchIndexGenerator::ElemSide(_current_elem->id(), _current_side)))
+  // {
+  //   std::cout << "_material_data_type: ";
+  //   switch (_material_data_type)
+  //   {
+  //     case Moose::BLOCK_MATERIAL_DATA:
+  //       std::cout << "BLOCK_MATERIAL_DATA";
+  //       break;
+  //     case Moose::BOUNDARY_MATERIAL_DATA:
+  //       std::cout << "BOUNDARY_MATERIAL_DATA";
+  //       break;
+  //     case Moose::FACE_MATERIAL_DATA:
+  //       std::cout << "FACE_MATERIAL_DATA";
+  //       break;
+  //     case Moose::NEIGHBOR_MATERIAL_DATA:
+  //       std::cout << "NEIGHBOR_MATERIAL_DATA";
+  //       break;
+  //     case Moose::INTERFACE_MATERIAL_DATA:
+  //       std::cout << "INTERFACE_MATERIAL_DATA";
+  //       break;
+  //     default:
+  //       std::cout << "UNKNOWN_MATERIAL_DATA_TYPE";
+  //   }
+  //   // In Material: _current_elem(_neighbor ? _assembly.neighbor() : _assembly.elem())
+  //   // _current_side(_neighbor ? _assembly.neighborSide() : _assembly.side())
+  //   std::ofstream fout("face_GP_fail.txt", std::ios::app);
+  //   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+  //     fout << _q_point[_qp](0) << " " << _q_point[_qp](1) << " " << _q_point[_qp](2) << " "
+  //          << _current_elem->id() << " " << _current_side << std::endl;
+  //   std::cout << std::endl;
+  //   std::cout << "element id: " << _current_elem->id() << ", side: " << _current_side
+  //             << ", current subdomain id: " << _current_elem->subdomain_id() << std::endl;
+  // }
+
   // look up start index for current element
-  const auto i = _execute_neml2_model.getBatchIndex(_current_elem->id());
+  const auto i = (_bnd && !_execute_neml2_model.volumeGPOnly())
+                     ? _execute_neml2_model.getSideBatchIndex(
+                           NEML2BatchIndexGenerator::ElemSide(_current_elem->id(), _current_side))
+                     : _execute_neml2_model.getBatchIndex(_current_elem->id());
   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
     NEML2Utils::copyTensorToMOOSEData(_value.batch_index({neml2::Size(i + _qp)}), _prop[_qp]);
 }
