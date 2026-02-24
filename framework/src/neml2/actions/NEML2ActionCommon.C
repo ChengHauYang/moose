@@ -19,6 +19,8 @@ NEML2ActionCommon::commonParams()
 {
   auto params = NEML2ModelInterface<Action>::validParams();
   params += NEML2ModelExecutor::actionParams();
+  params.addParam<bool>(
+      "volume_gp_only", false, "Whether to only execute the NEML2 model at volume Gauss points.");
 
   MultiMooseEnum moose_types("MATERIAL VARIABLE POSTPROCESSOR");
 

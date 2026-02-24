@@ -45,6 +45,12 @@ public:
   /// Get the batch index for the given element ID
   std::size_t getBatchIndex(dof_id_type elem_id) const;
 
+  /// Get the batch index for the given element side
+  std::size_t getSideBatchIndex(const NEML2BatchIndexGenerator::ElemSide & elem_side) const;
+
+  /// Check if a batch index exists for the given element side
+  bool isSideBatchIndexExist(const NEML2BatchIndexGenerator::ElemSide & elem_side) const;
+
   /// Get a reference(!) to the requested output view
   const neml2::Tensor & getOutput(const neml2::VariableName & output_name) const;
 
@@ -58,6 +64,9 @@ public:
 
   /// check if the output is fully computed and ready to be fetched
   bool outputReady() const { return _output_ready; }
+
+  /// Whether to only execute the NEML2 model at volume Gauss points
+  bool volumeGPOnly() const { return _volume_gp_only; }
 
 protected:
   /// Register a NEML2 input variable gathered by a gatherer
@@ -150,5 +159,7 @@ private:
   bool _error;
   /// Error message
   std::string _error_message;
+
+  bool _volume_gp_only;
 #endif
 };
