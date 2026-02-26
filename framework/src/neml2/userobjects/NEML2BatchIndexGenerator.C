@@ -94,9 +94,11 @@ NEML2BatchIndexGenerator::executeOnElement()
   _elem_to_batch_index[_current_elem->id()] = _batch_index;
   _batch_index += qPoints().size();
 
+#ifdef DEBUG
   std::ofstream fout2("elem_GP.txt", std::ios::app);
   for (const auto qp : make_range(qRule().n_points()))
     fout2 << qPoints()[qp](0) << " " << qPoints()[qp](1) << " " << qPoints()[qp](2) << std::endl;
+#endif
 }
 
 void
@@ -120,12 +122,14 @@ NEML2BatchIndexGenerator::executeOnBoundary()
     _batch_index += qPoints().size();
   }
 
+#ifdef DEBUG
   std::ofstream fout("boundary_GP.txt", std::ios::app);
   for (const auto qp : make_range(qRule().n_points()))
     fout << qPoints()[qp](0) << " " << qPoints()[qp](1) << " " << qPoints()[qp](2) << " "
          << _current_elem->subdomain_id() << " " << _current_elem->id() << " " << _current_side
          << " "
          << "boundary" << std::endl;
+#endif
 }
 
 void
@@ -156,12 +160,14 @@ NEML2BatchIndexGenerator::executeOnInternalSide()
     }
   }
 
+#ifdef DEBUG
   std::ofstream fout("internal_GP.txt", std::ios::app);
   for (const auto qp : make_range(qRule().n_points()))
     fout << qPoints()[qp](0) << " " << qPoints()[qp](1) << " " << qPoints()[qp](2) << " "
          << _current_elem->subdomain_id() << " " << _current_elem->id() << " " << _current_side
          << " "
          << "internal_side" << std::endl;
+#endif
 }
 
 void
@@ -192,13 +198,14 @@ NEML2BatchIndexGenerator::executeOnInterface()
   //   _elemside_to_batch_index[ElemSide(_neighbor_elem->id(), neighbor_side)] = _batch_index;
   //   _batch_index += qPoints().size();
   // }
-
+#ifdef DEBUG
   std::ofstream fout("interface_GP.txt", std::ios::app);
   for (const auto qp : make_range(qRule().n_points()))
     fout << qPoints()[qp](0) << " " << qPoints()[qp](1) << " " << qPoints()[qp](2) << " "
          << _current_elem->subdomain_id() << " " << _current_elem->id() << " " << _current_side
          << " "
          << "interface" << std::endl;
+#endif
 }
 
 void
