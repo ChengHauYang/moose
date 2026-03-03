@@ -93,26 +93,30 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   if (!_execute_neml2_model.outputReady())
     return;
 
-  // std::cout << "_material_data_type: ";
-  // switch (_material_data_type)
+  // if (_bnd)
   // {
-  //   case Moose::BLOCK_MATERIAL_DATA:
-  //     std::cout << "BLOCK_MATERIAL_DATA";
-  //     break;
-  //   case Moose::BOUNDARY_MATERIAL_DATA:
-  //     std::cout << "BOUNDARY_MATERIAL_DATA";
-  //     break;
-  //   case Moose::FACE_MATERIAL_DATA:
-  //     std::cout << "FACE_MATERIAL_DATA";
-  //     break;
-  //   case Moose::NEIGHBOR_MATERIAL_DATA:
-  //     std::cout << "NEIGHBOR_MATERIAL_DATA";
-  //     break;
-  //   case Moose::INTERFACE_MATERIAL_DATA:
-  //     std::cout << "INTERFACE_MATERIAL_DATA";
-  //     break;
-  //   default:
-  //     std::cout << "UNKNOWN_MATERIAL_DATA_TYPE";
+  //   std::cout << "_material_data_type: ";
+  //   switch (_material_data_type)
+  //   {
+  //     case Moose::BLOCK_MATERIAL_DATA:
+  //       std::cout << "BLOCK_MATERIAL_DATA";
+  //       break;
+  //     case Moose::BOUNDARY_MATERIAL_DATA:
+  //       std::cout << "BOUNDARY_MATERIAL_DATA";
+  //       break;
+  //     case Moose::FACE_MATERIAL_DATA:
+  //       std::cout << "FACE_MATERIAL_DATA";
+  //       break;
+  //     case Moose::NEIGHBOR_MATERIAL_DATA:
+  //       std::cout << "NEIGHBOR_MATERIAL_DATA";
+  //       break;
+  //     case Moose::INTERFACE_MATERIAL_DATA:
+  //       std::cout << "INTERFACE_MATERIAL_DATA";
+  //       break;
+  //     default:
+  //       std::cout << "UNKNOWN_MATERIAL_DATA_TYPE";
+  //   }
+  //   std::cout << std::endl;
   // }
 
   // if (_bnd && !_execute_neml2_model.isSideBatchIndexExist(
@@ -165,7 +169,11 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
                            NEML2BatchIndexGenerator::ElemSide(_current_elem->id(), _current_side))
                      : _execute_neml2_model.getBatchIndex(_current_elem->id());
   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+  {
     NEML2Utils::copyTensorToMOOSEData(_value.batch_index({neml2::Size(i + _qp)}), _prop[_qp]);
+    // if (_bnd)
+    //   std::cout << "qp: " << _qp << ", value: " << _prop[_qp] << std::endl;
+  }
 }
 #endif
 
