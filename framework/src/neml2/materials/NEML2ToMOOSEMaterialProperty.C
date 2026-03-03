@@ -58,6 +58,12 @@ NEML2ToMOOSEMaterialProperty<T>::NEML2ToMOOSEMaterialProperty(const InputParamet
     ,
     _execute_neml2_model(getUserObject<NEML2ModelExecutor>("neml2_executor")),
     _prop(declareProperty<T>(getParam<MaterialPropertyName>("to_moose"))),
+    _neighbor_prop(
+        _execute_neml2_model.onElemSides() && _material_data_type == Moose::BOUNDARY_MATERIAL_DATA
+            ? &_fe_problem.getMaterialData(Moose::NEIGHBOR_MATERIAL_DATA, _tid, this)
+                   .template declareProperty<T, false>(getParam<MaterialPropertyName>("to_moose"),
+                                                       *this)
+            : nullptr),
     _prop0(isParamValid("moose_material_property_init")
                ? &getMaterialProperty<T>("moose_material_property_init")
                : nullptr),
@@ -87,6 +93,8 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   if (_t_step == 0 && _prop0)
   {
     _prop.set() = _prop0->get();
+    if (_neighbor_prop && _assembly.neighbor())
+      _neighbor_prop->set() = _prop0->get();
     return;
   }
 
@@ -100,8 +108,17 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   const auto i = isBoundaryMaterial()
                      ? _execute_neml2_model.getBatchIndex(_current_elem->id(), _current_side)
                      : _execute_neml2_model.getBatchIndex(_current_elem->id());
+  const auto * const neighbor_elem = _neighbor_prop ? _assembly.neighbor() : nullptr;
+  const auto neighbor_side = neighbor_elem ? neighbor_elem->which_neighbor_am_i(_current_elem) : 0;
+  const auto neighbor_i =
+      neighbor_elem ? _execute_neml2_model.getBatchIndex(neighbor_elem->id(), neighbor_side) : 0;
   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+  {
     NEML2Utils::copyTensorToMOOSEData(_value.batch_index({neml2::Size(i + _qp)}), _prop[_qp]);
+    if (_neighbor_prop && neighbor_elem)
+      NEML2Utils::copyTensorToMOOSEData(_value.batch_index({neml2::Size(neighbor_i + _qp)}),
+                                        (*_neighbor_prop)[_qp]);
+  }
 }
 #endif
 

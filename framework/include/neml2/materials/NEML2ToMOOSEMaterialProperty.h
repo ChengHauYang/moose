@@ -40,6 +40,9 @@ protected:
   /// Emitted material property
   MaterialProperty<T> & _prop;
 
+  /// Matching property stored on the neighbor material data for internal interfaces
+  MaterialProperty<T> * _neighbor_prop;
+
   /// Initial condition
   const MaterialProperty<T> * _prop0;
 
