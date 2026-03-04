@@ -42,15 +42,14 @@ public:
 
   void initialSetup() override;
 
-  /// Whether this executor operates on elements or element sides
-  bool onElems() const;
-  bool onElemSides() const;
-
   /// Get the batch index for the given element ID
   std::size_t getBatchIndex(dof_id_type elem_id) const;
 
-  /// Get the batch index for the given element ID and side ID
-  std::size_t getBatchIndex(dof_id_type elem_id, unsigned int side_id) const;
+  /// Get the batch index for the given element side
+  std::size_t getSideBatchIndex(const NEML2BatchIndexGenerator::ElemSide & elem_side) const;
+
+  /// Check if a batch index exists for the given element side
+  bool isSideBatchIndexExist(const NEML2BatchIndexGenerator::ElemSide & elem_side) const;
 
   /// Get a reference(!) to the requested output view
   const neml2::Tensor & getOutput(const neml2::VariableName & output_name) const;
@@ -94,17 +93,14 @@ protected:
   /// Update cached inputs/outputs for on-device state advance
   void advanceDeviceCaches();
 
+  /// The NEML2BatchIndexGenerator used to generate the element-to-batch-index map
+  const NEML2BatchIndexGenerator & _batch_index_generator;
+
   /// Advance state on device (rather than via MOSOE material properties)
   const bool _keep_tensors_on_device;
 
   /// Dump input tensor info on failure to aid debugging
   const bool _debug_inputs_on_failure;
-
-  /// The NEML2BatchIndexGenerator used to generate the element-to-batch-index map
-  const NEML2BatchIndexGenerator * _batch_index_generator;
-
-  /// The NEML2BoundaryBatchIndexGenerator used to generate the element-to-batch-index map
-  const NEML2BoundaryBatchIndexGenerator * _bnd_batch_index_generator;
 
   /// flag that indicates if output data has been fully computed
   bool _output_ready;

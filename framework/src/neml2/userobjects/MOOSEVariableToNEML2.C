@@ -11,34 +11,32 @@
 
 registerMooseObject("MooseApp", MOOSEVariableToNEML2);
 registerMooseObject("MooseApp", MOOSEOldVariableToNEML2);
-registerMooseObject("MooseApp", MOOSEBoundaryVariableToNEML2);
-registerMooseObject("MooseApp", MOOSEBoundaryOldVariableToNEML2);
 
-template <typename UOBase, unsigned int state>
+template <unsigned int state>
 InputParameters
-MOOSEVariableToNEML2Tmpl<UOBase, state>::validParams()
+MOOSEVariableToNEML2Templ<state>::validParams()
 {
-  auto params = MOOSEToNEML2Batched<Real, UOBase>::validParams();
+  auto params = MOOSEToNEML2Batched::validParams();
   params.addClassDescription("Gather a MOOSE variable for insertion into the specified input or "
                              "model parameter of a NEML2 model.");
   params.addRequiredCoupledVar("from_moose", "MOOSE variable to read from");
   return params;
 }
 
-template <typename UOBase, unsigned int state>
-MOOSEVariableToNEML2Tmpl<UOBase, state>::MOOSEVariableToNEML2Tmpl(const InputParameters & params)
-  : MOOSEToNEML2Batched<Real, UOBase>(params)
+template <unsigned int state>
+MOOSEVariableToNEML2Templ<state>::MOOSEVariableToNEML2Templ(const InputParameters & params)
+  : MOOSEToNEML2Batched<Real>(params)
 #ifdef NEML2_ENABLED
     ,
     _moose_variable(state == 0 ? this->coupledValue("from_moose")
-                               : this->coupledValueOld("from_moose"))
+                               : this->coupledValueOld("from_moose")),
+    _moose_variable_neighbor(state == 0 ? this->coupledNeighborValue("from_moose")
+                                        : this->coupledNeighborValueOld("from_moose"))
 #endif
 {
   static_assert(state < 2,
                 "MOOSEVariableToNEML2Tmpl supports only state=0 (current) or state=1 (old)");
 }
 
-template class MOOSEVariableToNEML2Tmpl<ElementUserObject, 0>;
-template class MOOSEVariableToNEML2Tmpl<ElementUserObject, 1>;
-template class MOOSEVariableToNEML2Tmpl<SideUserObject, 0>;
-template class MOOSEVariableToNEML2Tmpl<SideUserObject, 1>;
+template class MOOSEVariableToNEML2Templ<0>;
+template class MOOSEVariableToNEML2Templ<1>;

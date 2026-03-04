@@ -14,24 +14,30 @@
 /**
  * Gather a MOOSE variable for insertion into the NEML2 model.
  */
-template <typename UOBase, unsigned int state>
-class MOOSEVariableToNEML2Tmpl : public MOOSEToNEML2Batched<Real, UOBase>
+template <unsigned int state>
+class MOOSEVariableToNEML2Templ : public MOOSEToNEML2Batched<Real>
 {
 public:
   static InputParameters validParams();
 
-  MOOSEVariableToNEML2Tmpl(const InputParameters & params);
+  MOOSEVariableToNEML2Templ(const InputParameters & params);
 
 #ifdef NEML2_ENABLED
 protected:
   const MooseArray<Real> & elemMOOSEData() const override { return _moose_variable; }
+  const MooseArray<Real> & elemSideMOOSEData() const override { return _moose_variable; }
+  const MooseArray<Real> & elemNeighborSideMOOSEData() const override
+  {
+    return _moose_variable_neighbor;
+  }
 
   /// Coupled MOOSE variable to read data from
   const VariableValue & _moose_variable;
+
+  /// Coupled neighboring MOOSE variable to read data from
+  const VariableValue & _moose_variable_neighbor;
 #endif
 };
 
-using MOOSEVariableToNEML2 = MOOSEVariableToNEML2Tmpl<ElementUserObject, 0>;
-using MOOSEOldVariableToNEML2 = MOOSEVariableToNEML2Tmpl<ElementUserObject, 1>;
-using MOOSEBoundaryVariableToNEML2 = MOOSEVariableToNEML2Tmpl<SideUserObject, 0>;
-using MOOSEBoundaryOldVariableToNEML2 = MOOSEVariableToNEML2Tmpl<SideUserObject, 1>;
+using MOOSEVariableToNEML2 = MOOSEVariableToNEML2Templ<0>;
+using MOOSEOldVariableToNEML2 = MOOSEVariableToNEML2Templ<1>;

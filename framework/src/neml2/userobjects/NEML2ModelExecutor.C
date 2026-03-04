@@ -55,12 +55,9 @@ NEML2ModelExecutor::validParams()
   params += NEML2ModelExecutor::actionParams();
   params.addClassDescription("Execute the specified NEML2 model");
 
-  params.addParam<UserObjectName>(
+  params.addRequiredParam<UserObjectName>(
       "batch_index_generator",
       "The NEML2BatchIndexGenerator used to generate the element-to-batch-index map.");
-  params.addParam<UserObjectName>(
-      "boundary_batch_index_generator",
-      "The NEML2BoundaryBatchIndexGenerator used to generate the element-to-batch-index map.");
   params.addParam<std::vector<UserObjectName>>(
       "gatherers",
       {},
@@ -71,8 +68,9 @@ NEML2ModelExecutor::validParams()
       "List of MOOSE*ToNEML2 user objects gathering MOOSE data as NEML2 model parameters");
 
   // Since we use the NEML2 model to evaluate the residual AND the Jacobian at the same time, we
-  // want to execute this user object only at execute_on = LINEAR (i.e. during residual evaluation).
-  // The NONLINEAR exec flag below is for computing Jacobian during automatic scaling.
+  // want to execute this user object only at execute_on = LINEAR (i.e. during residual
+  // evaluation). The NONLINEAR exec flag below is for computing Jacobian during automatic
+  // scaling.
   ExecFlagEnum execute_options = MooseUtils::getDefaultExecFlagEnum();
   execute_options = {EXEC_INITIAL, EXEC_LINEAR, EXEC_NONLINEAR, EXEC_TIMESTEP_END};
   params.set<ExecFlagEnum>("execute_on") = execute_options;
@@ -84,27 +82,15 @@ NEML2ModelExecutor::NEML2ModelExecutor(const InputParameters & params)
   : NEML2ModelInterface<GeneralUserObject>(params)
 #ifdef NEML2_ENABLED
     ,
+    _batch_index_generator(getUserObject<NEML2BatchIndexGenerator>("batch_index_generator")),
     _keep_tensors_on_device(getParam<bool>("keep_tensors_on_device")),
     _debug_inputs_on_failure(getParam<bool>("debug_inputs_on_failure")),
-    _batch_index_generator(isParamValid("batch_index_generator")
-                               ? &getUserObject<NEML2BatchIndexGenerator>("batch_index_generator")
-                               : nullptr),
-    _bnd_batch_index_generator(
-        isParamValid("boundary_batch_index_generator")
-            ? &getUserObject<NEML2BoundaryBatchIndexGenerator>("boundary_batch_index_generator")
-            : nullptr),
     _output_ready(false),
     _error_message("")
 #endif
 {
 #ifdef NEML2_ENABLED
   validateModel();
-
-  // neml2 executor either operates on elements or element sides, not both
-  if (bool(_batch_index_generator) == bool(_bnd_batch_index_generator))
-    paramError("batch_index_generator",
-               "Exactly one of 'batch_index_generator' or 'boundary_batch_index_generator' must be "
-               "provided.");
 
   // add user object dependencies by name (the UOs do not need to exist yet for this)
   for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("gatherers"))
@@ -119,18 +105,6 @@ NEML2ModelExecutor::NEML2ModelExecutor(const InputParameters & params)
 }
 
 #ifdef NEML2_ENABLED
-bool
-NEML2ModelExecutor::onElems() const
-{
-  return _batch_index_generator;
-}
-
-bool
-NEML2ModelExecutor::onElemSides() const
-{
-  return _bnd_batch_index_generator;
-}
-
 void
 NEML2ModelExecutor::initialSetup()
 {
@@ -224,17 +198,20 @@ NEML2ModelExecutor::initialSetup()
 std::size_t
 NEML2ModelExecutor::getBatchIndex(dof_id_type elem_id) const
 {
-  if (!_batch_index_generator)
-    mooseError("The NEML2BatchIndexGenerator is not initialized.");
-  return _batch_index_generator->getBatchIndex(elem_id);
+  return _batch_index_generator.getBatchIndex(elem_id);
 }
 
 std::size_t
-NEML2ModelExecutor::getBatchIndex(dof_id_type elem_id, unsigned int side_id) const
+NEML2ModelExecutor::getSideBatchIndex(const NEML2BatchIndexGenerator::ElemSide & elem_side) const
 {
-  if (!_bnd_batch_index_generator)
-    mooseError("The NEML2BoundaryBatchIndexGenerator is not initialized.");
-  return _bnd_batch_index_generator->getBatchIndex(elem_id, side_id);
+  return _batch_index_generator.getSideBatchIndex(elem_side);
+}
+
+bool
+NEML2ModelExecutor::isSideBatchIndexExist(
+    const NEML2BatchIndexGenerator::ElemSide & elem_side) const
+{
+  return _batch_index_generator.isSideBatchIndexExist(elem_side);
 }
 
 void
@@ -303,9 +280,7 @@ NEML2ModelExecutor::execute()
   }
 
   // If the batch is empty, we do not need to do anything
-  if (_batch_index_generator && _batch_index_generator->isEmpty())
-    return;
-  if (_bnd_batch_index_generator && _bnd_batch_index_generator->isEmpty())
+  if (_batch_index_generator.isEmpty())
     return;
 
   fillInputs();
@@ -341,9 +316,7 @@ NEML2ModelExecutor::fillInputs()
     if (_keep_tensors_on_device || !_skip_vars.empty())
     {
       const auto options = neml2::default_tensor_options().dtype(neml2::kFloat64).device(device());
-      const auto N = _batch_index_generator ? _batch_index_generator->getBatchIndex()
-                                            : _bnd_batch_index_generator->getBatchIndex();
-      const auto shape = neml2::TensorShape{neml2::Size(N)};
+      const auto shape = neml2::TensorShape{neml2::Size(_batch_index_generator.getBatchIndex())};
 
       for (const auto & [vname, var] : model().input_variables())
       {
@@ -587,8 +560,7 @@ NEML2ModelExecutor::extractOutputs()
 {
   try
   {
-    const auto N = _batch_index_generator ? _batch_index_generator->getBatchIndex()
-                                          : _bnd_batch_index_generator->getBatchIndex();
+    const auto N = _batch_index_generator.getBatchIndex();
 
     // retrieve outputs
     for (auto & [y, target] : _retrieved_outputs)
@@ -626,6 +598,10 @@ NEML2ModelExecutor::extractOutputs()
                e.what(),
                NEML2Utils::NEML2_help_message);
   }
+
+  // Mark outputs ready as soon as the tensors are populated so downstream material retrieval
+  // during the same execute phase can see the fresh values.
+  _output_ready = true;
 }
 
 void
