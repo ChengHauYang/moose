@@ -9,6 +9,7 @@
 
 #include "NEML2ToMOOSEMaterialProperty.h"
 #include "NEML2ModelExecutor.h"
+#include "Moose.h"
 
 #define registerNEML2ToMOOSEMaterialProperty(alias)                                                \
   registerMooseObject("MooseApp", NEML2ToMOOSE##alias##MaterialProperty)
@@ -125,7 +126,34 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   }
 
   if (_execute_neml2_model.onElemSides() && _material_data_type == Moose::NEIGHBOR_MATERIAL_DATA)
-    std::cout << "\033[31mThis is a neighbor material data on element sides.\033[0m" << std::endl;
+    _console << COLOR_BLUE << "This is a neighbor material data on element sides." << COLOR_DEFAULT
+             << std::endl;
+
+  if (_execute_neml2_model.onElemSides())
+  {
+    _console << "_material_data_type: ";
+    switch (_material_data_type)
+    {
+      case Moose::BLOCK_MATERIAL_DATA:
+        _console << COLOR_RED << "BLOCK_MATERIAL_DATA." << COLOR_DEFAULT;
+        break;
+      case Moose::BOUNDARY_MATERIAL_DATA:
+        _console << COLOR_RED << "BOUNDARY_MATERIAL_DATA." << COLOR_DEFAULT;
+        break;
+      case Moose::FACE_MATERIAL_DATA:
+        _console << COLOR_RED << "FACE_MATERIAL_DATA." << COLOR_DEFAULT;
+        break;
+      case Moose::NEIGHBOR_MATERIAL_DATA:
+        _console << COLOR_RED << "NEIGHBOR_MATERIAL_DATA." << COLOR_DEFAULT;
+        break;
+      case Moose::INTERFACE_MATERIAL_DATA:
+        _console << COLOR_RED << "INTERFACE_MATERIAL_DATA." << COLOR_DEFAULT;
+        break;
+      default:
+        _console << COLOR_RED << "UNKNOWN_MATERIAL_DATA_TYPE." << COLOR_DEFAULT;
+    }
+    _console << std::endl;
+  }
 
   if (isBoundaryMaterial() && !_execute_neml2_model.onElemSides())
     return;
