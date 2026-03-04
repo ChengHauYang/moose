@@ -93,6 +93,40 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   if (!_execute_neml2_model.outputReady())
     return;
 
+  if (!_execute_neml2_model.onElemSides() && isBoundaryMaterial())
+  {
+    std::cout << "_material_data_type: ";
+    switch (_material_data_type)
+    {
+      case Moose::BLOCK_MATERIAL_DATA:
+        std::cout << "BLOCK_MATERIAL_DATA";
+        break;
+      case Moose::BOUNDARY_MATERIAL_DATA:
+        std::cout << "BOUNDARY_MATERIAL_DATA";
+        break;
+      case Moose::FACE_MATERIAL_DATA:
+        std::cout << "FACE_MATERIAL_DATA";
+        break;
+      case Moose::NEIGHBOR_MATERIAL_DATA:
+        std::cout << "NEIGHBOR_MATERIAL_DATA";
+        break;
+      case Moose::INTERFACE_MATERIAL_DATA:
+        std::cout << "INTERFACE_MATERIAL_DATA";
+        break;
+      default:
+        std::cout << "UNKNOWN_MATERIAL_DATA_TYPE";
+    }
+    std::cout << std::endl;
+
+    std::ofstream fout("GP.txt", std::ios::app);
+    for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+      fout << _q_point[_qp](0) << " " << _q_point[_qp](1) << " " << _q_point[_qp](2) << std::endl;
+    fout.close();
+  }
+
+  if (_execute_neml2_model.onElemSides() && _material_data_type == Moose::NEIGHBOR_MATERIAL_DATA)
+    std::cout << "\033[31mThis is a neighbor material data on element sides.\033[0m" << std::endl;
+
   if (isBoundaryMaterial() && !_execute_neml2_model.onElemSides())
     return;
 
