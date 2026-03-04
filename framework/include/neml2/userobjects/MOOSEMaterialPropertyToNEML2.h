@@ -39,9 +39,9 @@ protected:
   using MOOSEOld##T##MaterialPropertyToNEML2 =                                                     \
       MOOSEMaterialPropertyToNEML2<T, ElementUserObject, 1>;                                       \
   using MOOSEBoundary##T##MaterialPropertyToNEML2 =                                                \
-      MOOSEMaterialPropertyToNEML2<T, SideUserObject, 0>;                                          \
+      MOOSEMaterialPropertyToNEML2<T, InterfaceUserObject, 0>;                                     \
   using MOOSEBoundaryOld##T##MaterialPropertyToNEML2 =                                             \
-      MOOSEMaterialPropertyToNEML2<T, SideUserObject, 1>
+      MOOSEMaterialPropertyToNEML2<T, InterfaceUserObject, 1>
 
 DefineMOOSEMaterialPropertyToNEML2Alias(Real);
 DefineMOOSEMaterialPropertyToNEML2Alias(RankTwoTensor);

@@ -40,5 +40,5 @@ MOOSEVariableToNEML2Tmpl<UOBase, state>::MOOSEVariableToNEML2Tmpl(const InputPar
 
 template class MOOSEVariableToNEML2Tmpl<ElementUserObject, 0>;
 template class MOOSEVariableToNEML2Tmpl<ElementUserObject, 1>;
-template class MOOSEVariableToNEML2Tmpl<SideUserObject, 0>;
-template class MOOSEVariableToNEML2Tmpl<SideUserObject, 1>;
+template class MOOSEVariableToNEML2Tmpl<InterfaceUserObject, 0>;
+template class MOOSEVariableToNEML2Tmpl<InterfaceUserObject, 1>;

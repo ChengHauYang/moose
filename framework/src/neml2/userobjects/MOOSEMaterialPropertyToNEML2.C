@@ -47,8 +47,8 @@ MOOSEMaterialPropertyToNEML2<T, UOBase, state>::MOOSEMaterialPropertyToNEML2(
 #define instantiateMOOSEMaterialPropertyToNEML2(T)                                                 \
   template class MOOSEMaterialPropertyToNEML2<T, ElementUserObject, 0>;                            \
   template class MOOSEMaterialPropertyToNEML2<T, ElementUserObject, 1>;                            \
-  template class MOOSEMaterialPropertyToNEML2<T, SideUserObject, 0>;                               \
-  template class MOOSEMaterialPropertyToNEML2<T, SideUserObject, 1>
+  template class MOOSEMaterialPropertyToNEML2<T, InterfaceUserObject, 0>;                          \
+  template class MOOSEMaterialPropertyToNEML2<T, InterfaceUserObject, 1>
 
 instantiateMOOSEMaterialPropertyToNEML2(Real);
 instantiateMOOSEMaterialPropertyToNEML2(RankTwoTensor);

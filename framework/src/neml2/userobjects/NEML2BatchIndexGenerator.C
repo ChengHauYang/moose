@@ -112,8 +112,8 @@ NEML2BatchIndexGeneratorTmpl<ElementUserObject>::currentIndex()
 }
 
 template <>
-BatchIndexKey<SideUserObject>
-NEML2BatchIndexGeneratorTmpl<SideUserObject>::currentIndex()
+BatchIndexKey<InterfaceUserObject>
+NEML2BatchIndexGeneratorTmpl<InterfaceUserObject>::currentIndex()
 {
   return {_current_elem->id(), _current_side};
 }
@@ -140,4 +140,4 @@ NEML2BatchIndexGeneratorTmpl<Base>::getBatchIndexImpl(const BatchIndexKey<Base> 
 }
 
 template class NEML2BatchIndexGeneratorTmpl<ElementUserObject>;
-template class NEML2BatchIndexGeneratorTmpl<SideUserObject>;
+template class NEML2BatchIndexGeneratorTmpl<InterfaceUserObject>;

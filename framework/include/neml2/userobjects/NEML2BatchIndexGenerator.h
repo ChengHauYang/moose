@@ -10,19 +10,21 @@
 #pragma once
 
 #include "ElementUserObject.h"
-#include "SideUserObject.h"
+#include "InterfaceUserObject.h"
 
 #include <map>
 
-/// Type of the key for the batch index map, which depends on whether this is an ElementUserObject or a SideUserObject
+/// Type of the key for the batch index map, which depends on whether this is an ElementUserObject
+/// or an InterfaceUserObject
 template <typename Base>
 using BatchIndexKey = std::conditional_t<std::is_same_v<Base, ElementUserObject>,
                                          dof_id_type,
                                          std::pair<dof_id_type, unsigned int>>;
 
 /**
- * NEML2BatchIndexGenerator iterates over the mesh and generates a map from element ID to batch
- * index which is used by NEML2ModelExecutor for transfer data between MOOSE and NEML2.
+ * NEML2BatchIndexGenerator iterates over the mesh and generates a map from the current execution
+ * entity (element or interface side) to batch index. The map is used by NEML2ModelExecutor for
+ * transfer data between MOOSE and NEML2.
  */
 template <class Base>
 class NEML2BatchIndexGeneratorTmpl : public Base
@@ -49,7 +51,7 @@ public:
 
   /// Get the batch index for the given element ID and side
   template <typename B = Base>
-  std::enable_if_t<std::is_same_v<B, SideUserObject>, std::size_t>
+  std::enable_if_t<std::is_same_v<B, InterfaceUserObject>, std::size_t>
   getBatchIndex(dof_id_type elem_id, unsigned int side) const;
 
   /// Whether the batch is empty
@@ -79,7 +81,7 @@ protected:
 };
 
 using NEML2BatchIndexGenerator = NEML2BatchIndexGeneratorTmpl<ElementUserObject>;
-using NEML2BoundaryBatchIndexGenerator = NEML2BatchIndexGeneratorTmpl<SideUserObject>;
+using NEML2BoundaryBatchIndexGenerator = NEML2BatchIndexGeneratorTmpl<InterfaceUserObject>;
 
 template <class Base>
 template <typename B>
@@ -91,7 +93,7 @@ NEML2BatchIndexGeneratorTmpl<Base>::getBatchIndex(dof_id_type elem_id) const
 
 template <class Base>
 template <typename B>
-std::enable_if_t<std::is_same_v<B, SideUserObject>, std::size_t>
+std::enable_if_t<std::is_same_v<B, InterfaceUserObject>, std::size_t>
 NEML2BatchIndexGeneratorTmpl<Base>::getBatchIndex(dof_id_type elem_id, unsigned int side) const
 {
   return getBatchIndexImpl({elem_id, side});

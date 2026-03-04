@@ -11,7 +11,7 @@
 
 #include "MOOSEToNEML2.h"
 #include "ElementUserObject.h"
-#include "SideUserObject.h"
+#include "InterfaceUserObject.h"
 
 /**
  * @brief Generic gatherer for collecting "batched" MOOSE data for NEML2
@@ -20,12 +20,12 @@
  * MooseArray<T>.
  *
  * It is not so generic in the sense that the collected data is always a std::vector of
- * MooseArray<T>, where the vector size is generally the number of elements this ElementUserObject
- * operates on, and the MooseArray<T> size is generally the number of quadrature points in each
- * element.
+ * MooseArray<T>, where the vector size is generally the number of UO execute() calls and the
+ * MooseArray<T> size is generally the number of quadrature points on the current entity.
  *
  * @tparam T Type of the underlying MOOSE data, e.g., Real, SymmetricRankTwoTensor, etc.
- * @tparam UOBase Type of the underlying UserObject, e.g., ElementUserObject, SideUserObject, etc.
+ * @tparam UOBase Type of the underlying UserObject, e.g., ElementUserObject,
+ * InterfaceUserObject, etc.
  */
 template <typename T, typename UOBase>
 class MOOSEToNEML2Batched : public MOOSEToNEML2, public UOBase

@@ -33,5 +33,5 @@ protected:
 
 using MOOSEVariableToNEML2 = MOOSEVariableToNEML2Tmpl<ElementUserObject, 0>;
 using MOOSEOldVariableToNEML2 = MOOSEVariableToNEML2Tmpl<ElementUserObject, 1>;
-using MOOSEBoundaryVariableToNEML2 = MOOSEVariableToNEML2Tmpl<SideUserObject, 0>;
-using MOOSEBoundaryOldVariableToNEML2 = MOOSEVariableToNEML2Tmpl<SideUserObject, 1>;
+using MOOSEBoundaryVariableToNEML2 = MOOSEVariableToNEML2Tmpl<InterfaceUserObject, 0>;
+using MOOSEBoundaryOldVariableToNEML2 = MOOSEVariableToNEML2Tmpl<InterfaceUserObject, 1>;

@@ -60,7 +60,7 @@ NEML2ModelExecutor::validParams()
       "The NEML2BatchIndexGenerator used to generate the element-to-batch-index map.");
   params.addParam<UserObjectName>(
       "boundary_batch_index_generator",
-      "The NEML2BoundaryBatchIndexGenerator used to generate the element-to-batch-index map.");
+      "The NEML2BoundaryBatchIndexGenerator used to generate the interface-to-batch-index map.");
   params.addParam<std::vector<UserObjectName>>(
       "gatherers",
       {},
@@ -100,7 +100,7 @@ NEML2ModelExecutor::NEML2ModelExecutor(const InputParameters & params)
 #ifdef NEML2_ENABLED
   validateModel();
 
-  // neml2 executor either operates on elements or element sides, not both
+  // NEML2 executor either operates on elements or interfaces, not both
   if (bool(_batch_index_generator) == bool(_bnd_batch_index_generator))
     paramError("batch_index_generator",
                "Exactly one of 'batch_index_generator' or 'boundary_batch_index_generator' must be "
@@ -235,6 +235,14 @@ NEML2ModelExecutor::getBatchIndex(dof_id_type elem_id, unsigned int side_id) con
   if (!_bnd_batch_index_generator)
     mooseError("The NEML2BoundaryBatchIndexGenerator is not initialized.");
   return _bnd_batch_index_generator->getBatchIndex(elem_id, side_id);
+}
+
+std::size_t
+NEML2ModelExecutor::getBatchIndex(dof_id_type elem_id,
+                                  unsigned int side_id,
+                                  bool on_elem_side) const
+{
+  return on_elem_side ? getBatchIndex(elem_id, side_id) : getBatchIndex(elem_id);
 }
 
 void
@@ -626,6 +634,10 @@ NEML2ModelExecutor::extractOutputs()
                e.what(),
                NEML2Utils::NEML2_help_message);
   }
+
+  // Mark outputs ready as soon as the tensors are populated so downstream material retrieval
+  // during the same execute phase can see the fresh values.
+  _output_ready = true;
 }
 
 void
@@ -654,8 +666,6 @@ NEML2ModelExecutor::finalize()
     }
     _fe_problem.setFailNextNonlinearConvergenceCheck();
   }
-  else if (_t_step > 0)
-    _output_ready = true;
 }
 
 void
