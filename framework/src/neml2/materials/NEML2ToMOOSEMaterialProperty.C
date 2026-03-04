@@ -94,8 +94,21 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
     return;
 
   // look up start index for current element
-  const auto i =
-      _execute_neml2_model.getBatchIndex(_current_elem->id(), _current_side, _bnd);
+  const auto i = _execute_neml2_model.getBatchIndex(_current_elem->id(), _current_side, _bnd);
+  const auto batch_sizes = _value.batch_sizes().concrete();
+  if (!batch_sizes.empty() && i + _qrule->n_points() > batch_sizes[0])
+    mooseError("NEML2 output batch access is out of range for material '",
+               name(),
+               "'. The selected ",
+               (_bnd ? "boundary" : "element"),
+               " batch window [",
+               i,
+               ", ",
+               i + _qrule->n_points(),
+               ") exceeds the available batch size ",
+               batch_sizes[0],
+               ". This usually means the retriever is using the wrong batch domain for the "
+               "current NEML2 executor output.");
   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
     NEML2Utils::copyTensorToMOOSEData(_value.batch_index({neml2::Size(i + _qp)}), _prop[_qp]);
 }

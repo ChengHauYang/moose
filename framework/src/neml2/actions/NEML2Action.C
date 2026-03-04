@@ -81,8 +81,8 @@ NEML2Action::NEML2Action(const InputParameters & params)
                             : "neml2_index_" + getParam<std::string>("model") + "_" + name()),
     _bnd_idx_generator_name(isParamValid("boundary_batch_index_generator_name")
                                 ? getParam<std::string>("boundary_batch_index_generator_name")
-                                : "neml2_boundary_index_" + getParam<std::string>("model") +
-                                      "_" + name()),
+                                : "neml2_boundary_index_" + getParam<std::string>("model") + "_" +
+                                      name()),
     _block(getParam<std::vector<SubdomainName>>("block")),
     _bnd(getParam<std::vector<BoundaryName>>("boundary"))
 {

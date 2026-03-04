@@ -23,6 +23,23 @@
 
 registerMooseObject("MooseApp", NEML2ModelExecutor);
 
+#ifdef NEML2_ENABLED
+namespace
+{
+neml2::TensorShape
+concreteDynamicSizes(const neml2::ValueMap & values)
+{
+  std::vector<neml2::Tensor> defined;
+  for (const auto & [name, value] : values)
+    if (value.defined())
+      defined.push_back(value);
+
+  return defined.empty() ? neml2::TensorShape{}
+                         : neml2::utils::broadcast_dynamic_sizes(defined).concrete();
+}
+}
+#endif
+
 InputParameters
 NEML2ModelExecutor::actionParams()
 {
@@ -310,10 +327,9 @@ NEML2ModelExecutor::execute()
     return;
   }
 
-  // If the batch is empty, we do not need to do anything
-  if (_batch_index_generator && _batch_index_generator->isEmpty())
-    return;
-  if (_bnd_batch_index_generator && _bnd_batch_index_generator->isEmpty())
+  // Only skip execution when every available batch domain is empty.
+  if ((!_batch_index_generator || _batch_index_generator->isEmpty()) &&
+      (!_bnd_batch_index_generator || _bnd_batch_index_generator->isEmpty()))
     return;
 
   fillInputs();
@@ -349,9 +365,30 @@ NEML2ModelExecutor::fillInputs()
     if (_keep_tensors_on_device || !_skip_vars.empty())
     {
       const auto options = neml2::default_tensor_options().dtype(neml2::kFloat64).device(device());
-      const auto N = _batch_index_generator ? _batch_index_generator->getBatchIndex()
-                                            : _bnd_batch_index_generator->getBatchIndex();
-      const auto shape = neml2::TensorShape{neml2::Size(N)};
+      auto shape = concreteDynamicSizes(_in);
+
+      if (shape.empty())
+      {
+        const auto elem_batch_size =
+            _batch_index_generator ? _batch_index_generator->getBatchIndex() : 0;
+        const auto bnd_batch_size =
+            _bnd_batch_index_generator ? _bnd_batch_index_generator->getBatchIndex() : 0;
+
+        if (elem_batch_size && bnd_batch_size && elem_batch_size != bnd_batch_size)
+          mooseError("Unable to infer the active NEML2 batch size for executor '",
+                     name(),
+                     "'. Gathered inputs do not carry any batch dimension, but the element batch "
+                     "size (",
+                     elem_batch_size,
+                     ") and boundary batch size (",
+                     bnd_batch_size,
+                     ") disagree. Add at least one batched input so the executor can infer the "
+                     "active batch domain.");
+
+        const auto batch_size = elem_batch_size ? elem_batch_size : bnd_batch_size;
+        if (batch_size)
+          shape = {neml2::Size(batch_size)};
+      }
 
       for (const auto & [vname, var] : model().input_variables())
       {
@@ -363,7 +400,8 @@ NEML2ModelExecutor::fillInputs()
             !(_keep_tensors_on_device && (vname.is_old_state() || vname.is_old_force())))
           continue;
 
-        _in[vname] = var->zeros(options).dynamic_expand({shape});
+        auto value = var->zeros(options);
+        _in[vname] = shape.empty() ? value : value.dynamic_expand(shape);
       }
     }
 
@@ -595,8 +633,7 @@ NEML2ModelExecutor::extractOutputs()
 {
   try
   {
-    const auto N = _batch_index_generator ? _batch_index_generator->getBatchIndex()
-                                          : _bnd_batch_index_generator->getBatchIndex();
+    const auto output_batch_shape = concreteDynamicSizes(_out);
 
     // retrieve outputs
     for (auto & [y, target] : _retrieved_outputs)
@@ -605,12 +642,15 @@ NEML2ModelExecutor::extractOutputs()
     // retrieve parameter derivatives
     for (auto & [y, dy] : _retrieved_parameter_derivatives)
       for (auto & [p, target] : dy)
-        target = neml2::jacrev(_out[y],
-                               model().get_parameter(p),
-                               /*retain_graph=*/true,
-                               /*create_graph=*/false,
-                               /*allow_unused=*/false)
-                     .to(output_device());
+      {
+        auto value = neml2::jacrev(_out[y],
+                                   model().get_parameter(p),
+                                   /*retain_graph=*/true,
+                                   /*create_graph=*/false,
+                                   /*allow_unused=*/false)
+                         .to(output_device());
+        target = output_batch_shape.empty() ? value : value.dynamic_expand(output_batch_shape);
+      }
 
     // clear output unless we need it for on-device state advance
     if (!_keep_tensors_on_device)
@@ -622,7 +662,10 @@ NEML2ModelExecutor::extractOutputs()
       {
         const auto & source = _dout_din[y][x];
         if (source.defined())
-          target = source.to(output_device()).dynamic_expand({neml2::Size(N)});
+        {
+          auto value = source.to(output_device());
+          target = output_batch_shape.empty() ? value : value.dynamic_expand(output_batch_shape);
+        }
       }
 
     // clear derivatives
