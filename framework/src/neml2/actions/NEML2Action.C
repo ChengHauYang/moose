@@ -56,9 +56,14 @@ NEML2Action::validParams()
                                "model's name, and <block-name> is this action sub-block's name.");
   params.addParam<std::string>(
       "batch_index_generator_name",
-      "Name of the NEML2BatchIndexGenerator user object. The default name is "
+      "Name of the element-based NEML2BatchIndexGenerator user object. The default name is "
       "'neml2_index_<model-name>_<block-name>' where <model-name> is the NEML2 model's name, and "
       "<block-name> is this action sub-block's name.");
+  params.addParam<std::string>(
+      "boundary_batch_index_generator_name",
+      "Name of the boundary-based NEML2BoundaryBatchIndexGenerator user object. The default "
+      "name is 'neml2_boundary_index_<model-name>_<block-name>' where <model-name> is the NEML2 "
+      "model's name, and <block-name> is this action sub-block's name.");
   params.addParam<std::vector<SubdomainName>>(
       "block", {}, "List of blocks (subdomains) where the material model is defined");
   params.addParam<std::vector<BoundaryName>>(
@@ -74,6 +79,10 @@ NEML2Action::NEML2Action(const InputParameters & params)
     _idx_generator_name(isParamValid("batch_index_generator_name")
                             ? getParam<std::string>("batch_index_generator_name")
                             : "neml2_index_" + getParam<std::string>("model") + "_" + name()),
+    _bnd_idx_generator_name(isParamValid("boundary_batch_index_generator_name")
+                                ? getParam<std::string>("boundary_batch_index_generator_name")
+                                : "neml2_boundary_index_" + getParam<std::string>("model") +
+                                      "_" + name()),
     _block(getParam<std::vector<SubdomainName>>("block")),
     _bnd(getParam<std::vector<BoundaryName>>("boundary"))
 {
@@ -284,12 +293,24 @@ NEML2Action::act()
                    param.moose.name);
     }
 
-    // The index generator UO
+    // The element-based index generator UO
     {
-      auto type = "NEML2" + bnd_prefix + "BatchIndexGenerator";
+      auto type = "NEML2BatchIndexGenerator";
       auto params = _factory.getValidParams(type);
       params.applyParameters(parameters());
+      if (is_blk)
+        params.set<std::vector<SubdomainName>>("block") = _block;
       _problem->addUserObject(type, _idx_generator_name, params);
+    }
+
+    // The boundary-based index generator UO
+    {
+      auto type = "NEML2BoundaryBatchIndexGenerator";
+      auto params = _factory.getValidParams(type);
+      params.applyParameters(parameters());
+      if (is_bnd)
+        params.set<std::vector<BoundaryName>>("boundary") = _bnd;
+      _problem->addUserObject(type, _bnd_idx_generator_name, params);
     }
 
     // The Executor UO
@@ -297,10 +318,8 @@ NEML2Action::act()
       auto type = "NEML2ModelExecutor";
       auto params = _factory.getValidParams(type);
       params.applyParameters(parameters());
-      if (is_bnd)
-        params.set<UserObjectName>("boundary_batch_index_generator") = _idx_generator_name;
-      else
-        params.set<UserObjectName>("batch_index_generator") = _idx_generator_name;
+      params.set<UserObjectName>("batch_index_generator") = _idx_generator_name;
+      params.set<UserObjectName>("boundary_batch_index_generator") = _bnd_idx_generator_name;
       params.set<std::vector<UserObjectName>>("gatherers") = gatherers;
       params.set<std::vector<UserObjectName>>("param_gatherers") = param_gatherers;
       _problem->addUserObject(type, _executor_name, params);

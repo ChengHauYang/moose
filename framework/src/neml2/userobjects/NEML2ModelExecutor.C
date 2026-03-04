@@ -100,11 +100,11 @@ NEML2ModelExecutor::NEML2ModelExecutor(const InputParameters & params)
 #ifdef NEML2_ENABLED
   validateModel();
 
-  // NEML2 executor either operates on elements or interfaces, not both
-  if (bool(_batch_index_generator) == bool(_bnd_batch_index_generator))
+  // At least one index generator must be provided for batch lookup.
+  if (!_batch_index_generator && !_bnd_batch_index_generator)
     paramError("batch_index_generator",
-               "Exactly one of 'batch_index_generator' or 'boundary_batch_index_generator' must be "
-               "provided.");
+               "At least one of 'batch_index_generator' or 'boundary_batch_index_generator' must "
+               "be provided.");
 
   // add user object dependencies by name (the UOs do not need to exist yet for this)
   for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("gatherers"))
