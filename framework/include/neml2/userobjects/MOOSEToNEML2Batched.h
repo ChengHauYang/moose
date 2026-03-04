@@ -36,6 +36,8 @@ public:
 
   MOOSEToNEML2Batched(const InputParameters & params);
 
+  void finalize() override {}
+
 #ifndef NEML2_ENABLED
   void initialize() override {}
   void executeOnElement() override {}
@@ -51,7 +53,6 @@ public:
   void executeOnInternalSide() override;
   void executeOnExternalSide(const Elem * elem, unsigned int side) override;
   void executeOnInterface() override;
-  void finalize() override {}
   void threadJoin(const UserObject &) override;
 
   neml2::Tensor gatheredData() const override;
