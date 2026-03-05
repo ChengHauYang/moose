@@ -151,6 +151,20 @@ NEML2BatchIndexGenerator::executeOnInterface()
     _batch_index += qPoints().size();
   }
 
+  const auto * neighbor_elem = _current_elem->neighbor_ptr(_current_side);
+
+  if (neighbor_elem)
+  {
+    const auto neighbor_side = neighbor_elem->which_neighbor_am_i(_current_elem);
+    const auto neighbor_elem_side = ElemSide(neighbor_elem->id(), neighbor_side);
+    if (!isSideBatchIndexExist(neighbor_elem_side))
+    {
+      insertUniqueElemSideBatchIndex(
+          _elemside_to_batch_index, neighbor_elem_side, _batch_index, __func__);
+      _batch_index += qPoints().size();
+    }
+  }
+
 #ifdef DEBUG
   std::ofstream fout("interface_GP.txt", std::ios::app);
   for (const auto qp : make_range(qRule().n_points()))
