@@ -121,6 +121,12 @@ template <typename T>
 void
 MOOSEToNEML2Batched<T>::executeOnBoundary()
 {
+
+  // std::cout << "[executeOnBoundary]";
+  // std::cout << "_current_elem->neighbor_ptr(_current_side): "
+  //           << _current_elem->neighbor_ptr(_current_side);
+  // std::cout << ", _neighbor_elem: " << _neighbor_elem << std::endl;
+
   // Keep boundary gathering consistent with the side-index generator:
   // sides that have a neighbor are gathered in internal/interface callbacks.
   if (_current_elem->neighbor_ptr(_current_side))
@@ -139,6 +145,12 @@ template <typename T>
 void
 MOOSEToNEML2Batched<T>::executeOnInterface()
 {
+
+  // std::cout << "[executeOnInterface]";
+  // std::cout << "_current_elem->neighbor_ptr(_current_side): "
+  //           << _current_elem->neighbor_ptr(_current_side);
+  // std::cout << ", _neighbor_elem: " << _neighbor_elem << std::endl;
+
   const auto elem_side = ElemSide(_current_elem->id(), _current_side);
   if (_visited_elem_sides.insert(elem_side).second)
   {
@@ -148,6 +160,7 @@ MOOSEToNEML2Batched<T>::executeOnInterface()
   }
 
   const auto * neighbor_elem = _current_elem->neighbor_ptr(_current_side);
+
   if (neighbor_elem)
   {
     const auto neighbor_side = neighbor_elem->which_neighbor_am_i(_current_elem);
