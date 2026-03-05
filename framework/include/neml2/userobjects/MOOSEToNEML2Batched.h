@@ -41,17 +41,11 @@ public:
 #ifndef NEML2_ENABLED
   void initialize() override {}
   void executeOnElement() override {}
-  void executeOnBoundary() override {}
-  void executeOnInternalSide() override {}
-  void executeOnExternalSide(const Elem * elem, unsigned int side) override {}
   void executeOnInterface() override {}
   void threadJoin(const UserObject &) override {}
 #else
   void initialize() override;
   void executeOnElement() override;
-  void executeOnBoundary() override;
-  void executeOnInternalSide() override;
-  void executeOnExternalSide(const Elem * elem, unsigned int side) override;
   void executeOnInterface() override;
   void threadJoin(const UserObject &) override;
 
@@ -123,56 +117,6 @@ MOOSEToNEML2Batched<T>::executeOnElement()
 
 template <typename T>
 void
-MOOSEToNEML2Batched<T>::executeOnBoundary()
-{
-  // Keep boundary gathering consistent with the side-index generator:
-  // sides that have a neighbor are gathered in internal/interface callbacks.
-  if (_neighbor_elem)
-    return;
-
-  const auto elem_side = ElemSide(_current_elem->id(), _current_side);
-  if (_visited_elem_sides.insert(elem_side).second)
-  {
-    const auto & elem_data = this->elemSideMOOSEData();
-    for (auto i : index_range(elem_data))
-      _buffer.push_back(elem_data[i]);
-  }
-}
-
-template <typename T>
-void
-MOOSEToNEML2Batched<T>::executeOnInternalSide()
-{
-  const auto elem_side = ElemSide(_current_elem->id(), _current_side);
-  if (_visited_elem_sides.insert(elem_side).second)
-  {
-    const auto & elem_data = this->elemSideMOOSEData();
-    for (auto i : index_range(elem_data))
-      _buffer.push_back(elem_data[i]);
-  }
-
-  if (_neighbor_elem)
-  {
-    const auto neighbor_side = _neighbor_elem->which_neighbor_am_i(_current_elem);
-    const auto neighbor_elem_side = ElemSide(_neighbor_elem->id(), neighbor_side);
-    if (_visited_elem_sides.insert(neighbor_elem_side).second)
-    {
-      const auto & neighbor_elem_data = this->elemNeighborSideMOOSEData();
-      for (auto i : index_range(neighbor_elem_data))
-        _buffer.push_back(neighbor_elem_data[i]);
-    }
-  }
-}
-
-template <typename T>
-void
-MOOSEToNEML2Batched<T>::executeOnExternalSide(const Elem * /*elem*/, unsigned int /*side*/)
-{
-  // DomainUserObject does not reinit side/qp data for external-side callbacks.
-}
-
-template <typename T>
-void
 MOOSEToNEML2Batched<T>::executeOnInterface()
 {
   // We do not want to double count the internal side data in the loop, so we only gather data from
@@ -184,10 +128,6 @@ MOOSEToNEML2Batched<T>::executeOnInterface()
     for (auto i : index_range(elem_data))
       _buffer.push_back(elem_data[i]);
   }
-
-  // const auto & neighbor_elem_data = this->elemNeighborSideMOOSEData();
-  // for (auto i : index_range(neighbor_elem_data))
-  //   _buffer.push_back(neighbor_elem_data[i]);
 }
 
 template <typename T>

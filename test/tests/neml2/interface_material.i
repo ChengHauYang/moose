@@ -56,24 +56,24 @@
 []
 
 [NEML2]
-  input = 'models/custom_model.i'
-  model = 'interface_source'
-  verbose = true
-  device = 'cpu'
+  [all]
+    input = 'models/custom_model.i'
+    model = 'interface_source'
+    verbose = true
+    device = 'cpu'
 
-  moose_input_types = 'VARIABLE'
-  moose_inputs = 'u'
-  neml2_inputs = 'state/u'
+    moose_input_types = 'VARIABLE'
+    moose_inputs = 'u'
+    neml2_inputs = 'state/u'
 
-  moose_output_types = 'MATERIAL'
-  moose_outputs = 's'
-  neml2_outputs = 'state/s'
+    moose_output_types = 'MATERIAL'
+    moose_outputs = 's'
+    neml2_outputs = 'state/s'
 
-  moose_derivative_types = 'MATERIAL'
-  moose_derivatives = 'ds/du'
-  neml2_derivatives = 'state/s state/u'
-  [block]
-    block = 'A B'
+    moose_derivative_types = 'MATERIAL'
+    moose_derivatives = 'ds/du'
+    neml2_derivatives = 'state/s state/u'
+    interface = 'A_B'
   []
 []
 

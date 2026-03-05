@@ -102,81 +102,6 @@ NEML2BatchIndexGenerator::executeOnElement()
 }
 
 void
-NEML2BatchIndexGenerator::executeOnBoundary()
-{
-  if (!NEML2Utils::shouldCompute(_fe_problem))
-    return;
-
-  if (!_outdated)
-    return;
-
-  // Sides on interfaces can appear in both boundary and internal-side callbacks.
-  // Let internal/interface callbacks own those entries to avoid double counting.
-  if (_neighbor_elem)
-    return;
-
-  const auto elem_side = ElemSide(_current_elem->id(), _current_side);
-  if (!isSideBatchIndexExist(elem_side))
-  {
-    insertUniqueElemSideBatchIndex(_elemside_to_batch_index, elem_side, _batch_index, __func__);
-    _batch_index += qPoints().size();
-  }
-
-#ifdef DEBUG
-  std::ofstream fout("boundary_GP.txt", std::ios::app);
-  for (const auto qp : make_range(qRule().n_points()))
-    fout << qPoints()[qp](0) << " " << qPoints()[qp](1) << " " << qPoints()[qp](2) << " "
-         << _current_elem->subdomain_id() << " " << _current_elem->id() << " " << _current_side
-         << " "
-         << "boundary" << std::endl;
-#endif
-}
-
-void
-NEML2BatchIndexGenerator::executeOnInternalSide()
-{
-  if (!NEML2Utils::shouldCompute(_fe_problem))
-    return;
-
-  if (!_outdated)
-    return;
-
-  const auto elem_side = ElemSide(_current_elem->id(), _current_side);
-  if (!isSideBatchIndexExist(elem_side))
-  {
-    insertUniqueElemSideBatchIndex(_elemside_to_batch_index, elem_side, _batch_index, __func__);
-    _batch_index += qPoints().size();
-  }
-
-  if (_neighbor_elem)
-  {
-    const auto neighbor_side = _neighbor_elem->which_neighbor_am_i(_current_elem);
-    const auto neighbor_elem_side = ElemSide(_neighbor_elem->id(), neighbor_side);
-    if (!isSideBatchIndexExist(neighbor_elem_side))
-    {
-      insertUniqueElemSideBatchIndex(
-          _elemside_to_batch_index, neighbor_elem_side, _batch_index, __func__);
-      _batch_index += qPoints().size();
-    }
-  }
-
-#ifdef DEBUG
-  std::ofstream fout("internal_GP.txt", std::ios::app);
-  for (const auto qp : make_range(qRule().n_points()))
-    fout << qPoints()[qp](0) << " " << qPoints()[qp](1) << " " << qPoints()[qp](2) << " "
-         << _current_elem->subdomain_id() << " " << _current_elem->id() << " " << _current_side
-         << " "
-         << "internal_side" << std::endl;
-#endif
-}
-
-void
-NEML2BatchIndexGenerator::executeOnExternalSide(const Elem * /*elem*/, unsigned int /*side*/)
-{
-  // DomainUserObject does not reinit side/qp data for external-side callbacks.
-}
-
-void
 NEML2BatchIndexGenerator::executeOnInterface()
 {
   if (!NEML2Utils::shouldCompute(_fe_problem))
@@ -192,12 +117,6 @@ NEML2BatchIndexGenerator::executeOnInterface()
     _batch_index += qPoints().size();
   }
 
-  // if (_neighbor_elem)
-  // {
-  //   const auto neighbor_side = _neighbor_elem->which_neighbor_am_i(_current_elem);
-  //   _elemside_to_batch_index[ElemSide(_neighbor_elem->id(), neighbor_side)] = _batch_index;
-  //   _batch_index += qPoints().size();
-  // }
 #ifdef DEBUG
   std::ofstream fout("interface_GP.txt", std::ios::app);
   for (const auto qp : make_range(qRule().n_points()))
