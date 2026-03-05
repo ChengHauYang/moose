@@ -139,14 +139,25 @@ template <typename T>
 void
 MOOSEToNEML2Batched<T>::executeOnInterface()
 {
-  // We do not want to double count the internal side data in the loop, so we only gather data from
-  // the "elem" side of the interface, and skip the "neighbor elem" side
   const auto elem_side = ElemSide(_current_elem->id(), _current_side);
   if (_visited_elem_sides.insert(elem_side).second)
   {
     const auto & elem_data = this->elemSideMOOSEData();
     for (auto i : index_range(elem_data))
       _buffer.push_back(elem_data[i]);
+  }
+
+  const auto * neighbor_elem = _current_elem->neighbor_ptr(_current_side);
+  if (neighbor_elem)
+  {
+    const auto neighbor_side = neighbor_elem->which_neighbor_am_i(_current_elem);
+    const auto neighbor_elem_side = ElemSide(neighbor_elem->id(), neighbor_side);
+    if (_visited_elem_sides.insert(neighbor_elem_side).second)
+    {
+      const auto & neighbor_elem_data = this->elemNeighborSideMOOSEData();
+      for (auto i : index_range(neighbor_elem_data))
+        _buffer.push_back(neighbor_elem_data[i]);
+    }
   }
 }
 

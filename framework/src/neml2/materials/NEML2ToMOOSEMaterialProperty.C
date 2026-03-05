@@ -97,12 +97,66 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
           NEML2BatchIndexGenerator::ElemSide(_current_elem->id(), _current_side)) &&
       _bnd)
   {
+#ifdef DEBUG
     std::ofstream fout("GP_batch_index_not_found.txt", std::ios::app);
     for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
-      fout << _q_point[_qp](0) << " " << _q_point[_qp](1) << std::endl;
+      fout << _q_point[_qp](0) << " " << _q_point[_qp](1) << " ";
+
+    switch (_material_data_type)
+    {
+      case Moose::BLOCK_MATERIAL_DATA:
+        fout << "BLOCK_MATERIAL_DATA";
+        break;
+      case Moose::BOUNDARY_MATERIAL_DATA:
+        fout << "BOUNDARY_MATERIAL_DATA";
+        break;
+      case Moose::FACE_MATERIAL_DATA:
+        fout << "FACE_MATERIAL_DATA";
+        break;
+      case Moose::NEIGHBOR_MATERIAL_DATA:
+        fout << "NEIGHBOR_MATERIAL_DATA";
+        break;
+      case Moose::INTERFACE_MATERIAL_DATA:
+        fout << "INTERFACE_MATERIAL_DATA";
+        break;
+      default:
+        fout << "UNKNOWN_MATERIAL_DATA_TYPE";
+    }
+    fout << std::endl;
     fout.close();
+#endif
     return;
   }
+
+#ifdef DEBUG
+
+  std::ofstream fout1("GP_batch_index_found.txt", std::ios::app);
+  for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+    fout1 << _q_point[_qp](0) << " " << _q_point[_qp](1) << " ";
+
+  switch (_material_data_type)
+  {
+    case Moose::BLOCK_MATERIAL_DATA:
+      fout1 << "BLOCK_MATERIAL_DATA";
+      break;
+    case Moose::BOUNDARY_MATERIAL_DATA:
+      fout1 << "BOUNDARY_MATERIAL_DATA";
+      break;
+    case Moose::FACE_MATERIAL_DATA:
+      fout1 << "FACE_MATERIAL_DATA";
+      break;
+    case Moose::NEIGHBOR_MATERIAL_DATA:
+      fout1 << "NEIGHBOR_MATERIAL_DATA";
+      break;
+    case Moose::INTERFACE_MATERIAL_DATA:
+      fout1 << "INTERFACE_MATERIAL_DATA";
+      break;
+    default:
+      fout1 << "UNKNOWN_MATERIAL_DATA_TYPE";
+  }
+  fout1 << std::endl;
+  fout1.close();
+#endif
 
   // look up start index for current element
   const auto i = (_bnd && !_execute_neml2_model.volumeGPOnly())
