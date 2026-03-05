@@ -26,9 +26,6 @@ public:
 
   void initialize() override;
   void executeOnElement() override;
-  void executeOnBoundary() override;
-  void executeOnInternalSide() override;
-  void executeOnExternalSide(const Elem * elem, unsigned int side) override;
   void executeOnInterface() override;
   void threadJoin(const UserObject &) override;
   void finalize() override;

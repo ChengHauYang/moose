@@ -61,6 +61,10 @@ NEML2Action::validParams()
       "<block-name> is this action sub-block's name.");
   params.addParam<std::vector<SubdomainName>>(
       "block", {}, "List of blocks (subdomains) where the material model is defined");
+
+  params.addParam<std::vector<BoundaryName>>(
+      "interface", {}, "List of interfaces where the material model is defined");
+
   return params;
 }
 
@@ -72,7 +76,8 @@ NEML2Action::NEML2Action(const InputParameters & params)
     _idx_generator_name(isParamValid("batch_index_generator_name")
                             ? getParam<std::string>("batch_index_generator_name")
                             : "neml2_index_" + getParam<std::string>("model") + "_" + name()),
-    _block(getParam<std::vector<SubdomainName>>("block"))
+    _block(getParam<std::vector<SubdomainName>>("block")),
+    _interface(getParam<std::vector<BoundaryName>>("interface"))
 {
   NEML2Utils::assertNEML2Enabled();
 
@@ -167,6 +172,8 @@ NEML2Action::act()
         obj_params.set<MaterialPropertyName>("from_moose") = input.moose.name;
         obj_params.set<std::string>("to_neml2") = neml2::utils::stringify(input.neml2.name);
         obj_params.set<std::vector<SubdomainName>>("block") = _block;
+        if (!_interface.empty())
+          obj_params.set<std::vector<BoundaryName>>("interface_boundaries") = _interface;
         _problem->addUserObject(obj_type, obj_name, obj_params);
         gatherers.push_back(obj_name);
       }
@@ -182,6 +189,8 @@ NEML2Action::act()
         obj_params.set<std::vector<VariableName>>("from_moose") = {input.moose.name};
         obj_params.set<std::string>("to_neml2") = neml2::utils::stringify(input.neml2.name);
         obj_params.set<std::vector<SubdomainName>>("block") = _block;
+        if (!_interface.empty())
+          obj_params.set<std::vector<BoundaryName>>("interface_boundaries") = _interface;
         _problem->addUserObject(obj_type, obj_name, obj_params);
         gatherers.push_back(obj_name);
       }
@@ -227,6 +236,9 @@ NEML2Action::act()
         obj_params.set<MaterialPropertyName>("from_moose") = param.moose.name;
         obj_params.set<std::string>("to_neml2") = param.neml2.name;
         obj_params.set<std::vector<SubdomainName>>("block") = _block;
+        if (!_interface.empty())
+          obj_params.set<std::vector<BoundaryName>>("interface_boundaries") = _interface;
+
         _problem->addUserObject(obj_type, obj_name, obj_params);
         param_gatherers.push_back(obj_name);
       }
@@ -239,6 +251,9 @@ NEML2Action::act()
         obj_params.set<std::vector<VariableName>>("from_moose") = {param.moose.name};
         obj_params.set<std::string>("to_neml2") = neml2::utils::stringify(param.neml2.name);
         obj_params.set<std::vector<SubdomainName>>("block") = _block;
+        if (!_interface.empty())
+          obj_params.set<std::vector<BoundaryName>>("interface_boundaries") = _interface;
+
         _problem->addUserObject(obj_type, obj_name, obj_params);
         param_gatherers.push_back(obj_name);
       }
@@ -265,6 +280,9 @@ NEML2Action::act()
       auto type = "NEML2BatchIndexGenerator";
       auto params = _factory.getValidParams(type);
       params.applyParameters(parameters());
+      if (!_interface.empty())
+        params.set<std::vector<BoundaryName>>("interface_boundaries") = _interface;
+
       _problem->addUserObject(type, _idx_generator_name, params);
     }
 

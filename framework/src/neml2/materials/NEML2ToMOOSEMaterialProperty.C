@@ -93,6 +93,17 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   if (!_execute_neml2_model.outputReady())
     return;
 
+  if (!_execute_neml2_model.isSideBatchIndexExist(
+          NEML2BatchIndexGenerator::ElemSide(_current_elem->id(), _current_side)) &&
+      _bnd)
+  {
+    std::ofstream fout("GP_batch_index_not_found.txt", std::ios::app);
+    for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+      fout << _q_point[_qp](0) << " " << _q_point[_qp](1) << std::endl;
+    fout.close();
+    return;
+  }
+
   // look up start index for current element
   const auto i = (_bnd && !_execute_neml2_model.volumeGPOnly())
                      ? _execute_neml2_model.getSideBatchIndex(
