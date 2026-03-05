@@ -102,6 +102,40 @@ NEML2BatchIndexGenerator::executeOnElement()
 }
 
 void
+NEML2BatchIndexGenerator::executeOnBoundary()
+{
+  if (!NEML2Utils::shouldCompute(_fe_problem))
+    return;
+
+  if (!_outdated)
+    return;
+
+  // Sides on interfaces can appear in both boundary and internal-side callbacks.
+  // Let internal/interface callbacks own those entries to avoid double counting.
+  // _current_elem->neighbor_ptr(_current_side) seems to be more robust than _neighbor_elem for
+  // checking if the side has a neighbor
+  // don't know why
+  if (_current_elem->neighbor_ptr(_current_side))
+    return;
+
+  const auto elem_side = ElemSide(_current_elem->id(), _current_side);
+  if (!isSideBatchIndexExist(elem_side))
+  {
+    insertUniqueElemSideBatchIndex(_elemside_to_batch_index, elem_side, _batch_index, __func__);
+    _batch_index += qPoints().size();
+  }
+
+#ifdef DEBUG
+  std::ofstream fout("boundary_GP.txt", std::ios::app);
+  for (const auto qp : make_range(qRule().n_points()))
+    fout << qPoints()[qp](0) << " " << qPoints()[qp](1) << " " << qPoints()[qp](2) << " "
+         << _current_elem->subdomain_id() << " " << _current_elem->id() << " " << _current_side
+         << " "
+         << "boundary" << std::endl;
+#endif
+}
+
+void
 NEML2BatchIndexGenerator::executeOnInterface()
 {
   if (!NEML2Utils::shouldCompute(_fe_problem))

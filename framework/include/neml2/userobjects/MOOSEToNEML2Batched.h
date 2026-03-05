@@ -41,11 +41,13 @@ public:
 #ifndef NEML2_ENABLED
   void initialize() override {}
   void executeOnElement() override {}
+  void executeOnBoundary() override {}
   void executeOnInterface() override {}
   void threadJoin(const UserObject &) override {}
 #else
   void initialize() override;
   void executeOnElement() override;
+  void executeOnBoundary() override;
   void executeOnInterface() override;
   void threadJoin(const UserObject &) override;
 
@@ -113,6 +115,24 @@ MOOSEToNEML2Batched<T>::executeOnElement()
   const auto & elem_data = this->elemMOOSEData();
   for (auto i : index_range(elem_data))
     _buffer.push_back(elem_data[i]);
+}
+
+template <typename T>
+void
+MOOSEToNEML2Batched<T>::executeOnBoundary()
+{
+  // Keep boundary gathering consistent with the side-index generator:
+  // sides that have a neighbor are gathered in internal/interface callbacks.
+  if (_current_elem->neighbor_ptr(_current_side))
+    return;
+
+  const auto elem_side = ElemSide(_current_elem->id(), _current_side);
+  if (_visited_elem_sides.insert(elem_side).second)
+  {
+    const auto & elem_data = this->elemSideMOOSEData();
+    for (auto i : index_range(elem_data))
+      _buffer.push_back(elem_data[i]);
+  }
 }
 
 template <typename T>
