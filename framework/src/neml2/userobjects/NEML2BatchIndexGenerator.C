@@ -14,30 +14,6 @@
 
 registerMooseObject("MooseApp", NEML2BatchIndexGenerator);
 
-namespace
-{
-void
-insertUniqueElemSideBatchIndex(std::map<NEML2BatchIndexGenerator::ElemSide, std::size_t> & map,
-                               const NEML2BatchIndexGenerator::ElemSide & elem_side,
-                               std::size_t batch_index,
-                               const char * context)
-{
-  const auto [it, inserted] = map.emplace(elem_side, batch_index);
-  if (!inserted)
-    mooseError("Duplicate side batch index insertion in ",
-               context,
-               " for element side (elem id, side) = (",
-               std::get<0>(elem_side),
-               ", ",
-               std::get<1>(elem_side),
-               "). Existing batch index = ",
-               it->second,
-               ", attempted batch index = ",
-               batch_index,
-               ".");
-}
-}
-
 InputParameters
 NEML2BatchIndexGenerator::validParams()
 {
@@ -119,11 +95,10 @@ NEML2BatchIndexGenerator::executeOnBoundary()
     return;
 
   const auto elem_side = ElemSide(_current_elem->id(), _current_side);
-  if (!isSideBatchIndexExist(elem_side))
-  {
-    insertUniqueElemSideBatchIndex(_elemside_to_batch_index, elem_side, _batch_index, __func__);
+
+  const auto [it, inserted] = _elemside_to_batch_index.emplace(elem_side, _batch_index);
+  if (inserted)
     _batch_index += qPoints().size();
-  }
 
 #ifdef DEBUG
   std::ofstream fout("boundary_GP.txt", std::ios::app);
@@ -145,11 +120,9 @@ NEML2BatchIndexGenerator::executeOnInterface()
     return;
 
   const auto elem_side = ElemSide(_current_elem->id(), _current_side);
-  if (!isSideBatchIndexExist(elem_side))
-  {
-    insertUniqueElemSideBatchIndex(_elemside_to_batch_index, elem_side, _batch_index, __func__);
+  const auto [it, inserted] = _elemside_to_batch_index.emplace(elem_side, _batch_index);
+  if (inserted)
     _batch_index += qPoints().size();
-  }
 
   const auto * neighbor_elem = _current_elem->neighbor_ptr(_current_side);
 
@@ -157,12 +130,10 @@ NEML2BatchIndexGenerator::executeOnInterface()
   {
     const auto neighbor_side = neighbor_elem->which_neighbor_am_i(_current_elem);
     const auto neighbor_elem_side = ElemSide(neighbor_elem->id(), neighbor_side);
-    if (!isSideBatchIndexExist(neighbor_elem_side))
-    {
-      insertUniqueElemSideBatchIndex(
-          _elemside_to_batch_index, neighbor_elem_side, _batch_index, __func__);
+    const auto [neighbor_it, neighbor_inserted] =
+        _elemside_to_batch_index.emplace(neighbor_elem_side, _batch_index);
+    if (neighbor_inserted)
       _batch_index += qPoints().size();
-    }
   }
 
 #ifdef DEBUG
@@ -191,8 +162,7 @@ NEML2BatchIndexGenerator::threadJoin(const UserObject & uo)
     _elem_to_batch_index[elem_id] = _batch_index + batch_index;
 
   for (const auto & [elem_side, batch_index] : m2n._elemside_to_batch_index)
-    insertUniqueElemSideBatchIndex(
-        _elemside_to_batch_index, elem_side, _batch_index + batch_index, __func__);
+    _elemside_to_batch_index[elem_side] = _batch_index + batch_index;
 
   _batch_index += m2n._batch_index;
 }
