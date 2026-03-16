@@ -42,7 +42,8 @@ ComputeLagrangianStrainBase<G>::ComputeLagrangianStrainBase(const InputParameter
     _grad_disp(coupledGradients("displacements")),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _large_kinematics(getParam<bool>("large_kinematics")),
-    _stabilize_strain(getParam<bool>("stabilize_strain")),
+    _stabilize_strain(getParam<bool>("stabilize_strain") /*&& !isBoundaryMaterial()*/
+                      /*volume locking correction*/),
     _eigenstrain_names(getParam<std::vector<MaterialPropertyName>>("eigenstrain_names")),
     _eigenstrains(_eigenstrain_names.size()),
     _eigenstrains_old(_eigenstrain_names.size()),
@@ -65,6 +66,7 @@ ComputeLagrangianStrainBase<G>::ComputeLagrangianStrainBase(const InputParameter
     _homogenization_contributions(_homogenization_gradient_names.size()),
     _rotation_increment(declareProperty<RankTwoTensor>(_base_name + "rotation_increment"))
 {
+
   // Setup eigenstrains
   for (auto i : make_range(_eigenstrain_names.size()))
   {
