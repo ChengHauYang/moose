@@ -95,28 +95,44 @@ BiLinearMixedModeTraction::computeTraction()
   computeEffectiveDisplacementJump();
   computeDamage();
 
-  // Split displacement jump into active and inactive parts
   const RealVectorValue delta = _interface_displacement_jump[_qp];
-  const RealVectorValue delta_active(std::max(delta(0), 0.), delta(1), delta(2));
-  const RealVectorValue delta_inactive(std::min(delta(0), 0.), 0, 0);
 
-  return (1 - _d[_qp]) * _K * delta_active + _K * delta_inactive;
+  // Regularize the normal opening/closure split so the traction transitions
+  // smoothly near delta_n = 0.
+  const Real H = MathUtils::regularizedHeavyside(delta(0), _alpha);
+  const Real delta_n_pos = H * delta(0);
+  const Real delta_n_neg = delta(0) - delta_n_pos;
+
+  const RealVectorValue delta_active(delta_n_pos, delta(1), delta(2));
+  const RealVectorValue delta_inactive(delta_n_neg, 0.0, 0.0);
+
+  return (1.0 - _d[_qp]) * _K * delta_active + _K * delta_inactive;
 }
 
 RankTwoTensor
 BiLinearMixedModeTraction::computeTractionDerivatives()
 {
-  // The displacement jump split depends on the displacement jump, obviously
   const RealVectorValue delta = _interface_displacement_jump[_qp];
+
+  // Use the same regularized split as in computeTraction() so that the
+  // Jacobian stays consistent with the traction law near delta_n = 0.
+  const Real H = MathUtils::regularizedHeavyside(delta(0), _alpha);
+  const Real dH = MathUtils::regularizedHeavysideDerivative(delta(0), _alpha);
+
+  const Real delta_n_pos = H * delta(0);
+  const Real ddelta_n_pos_ddelta_n = H + delta(0) * dH;
+  const Real ddelta_n_neg_ddelta_n = 1.0 - ddelta_n_pos_ddelta_n;
+
+  const RealVectorValue delta_active(delta_n_pos, delta(1), delta(2));
+
   RankTwoTensor ddelta_active_ddelta, ddelta_inactive_ddelta;
-  ddelta_active_ddelta.fillFromInputVector({delta(0) > 0 ? 1. : 0., 1., 1.});
-  ddelta_inactive_ddelta.fillFromInputVector({delta(0) < 0 ? 1. : 0., 0., 0.});
+  ddelta_active_ddelta.fillFromInputVector({ddelta_n_pos_ddelta_n, 1.0, 1.0});
+  ddelta_inactive_ddelta.fillFromInputVector({ddelta_n_neg_ddelta_n, 0.0, 0.0});
 
   RankTwoTensor dtraction_ddelta =
-      (1 - _d[_qp]) * _K * ddelta_active_ddelta + _K * ddelta_inactive_ddelta;
+      (1.0 - _d[_qp]) * _K * ddelta_active_ddelta + _K * ddelta_inactive_ddelta;
 
-  // The damage may also depend on the displacement jump
-  const RealVectorValue delta_active(std::max(delta(0), 0.), delta(1), delta(2));
+  // Chain-rule contribution from damage evolution.
   RankTwoTensor A;
   A.vectorOuterProduct(delta_active, _dd_ddelta);
   dtraction_ddelta -= _K * A;
