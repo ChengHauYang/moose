@@ -98,7 +98,7 @@
     type = SMP
     full = true
     petsc_options_iname = '-snes_type'
-    petsc_options_value = 'test'
+    petsc_options_value = 'newtonls'
   []
 []
 

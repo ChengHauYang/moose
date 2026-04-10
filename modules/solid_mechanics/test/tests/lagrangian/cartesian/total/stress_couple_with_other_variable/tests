@@ -1,0 +1,17 @@
+[Tests]
+  design = 'source/kernels/lagrangian/TotalLagrangianStressDivergence.md'
+  [damage_coupled_example]
+    type = RunApp
+    input = 'stress_couple_damage.i'
+    allow_test_objects = true
+    requirement = 'A material can provide pk1_stress and dPK1/ddamage so the total Lagrangian stress divergence kernel assembles off-diagonal coupling to an additional scalar variable.'
+  []
+  [damage_coupled_jacobian]
+    type = PetscJacobianTester
+    input = 'stress_couple_damage.i'
+    allow_test_objects = true
+    ratio_tol = 1e-5
+    difference_tol = 1e10
+    requirement = 'The additional-coupling Jacobian for dPK1/ddamage is exact when supplied as a RankTwoTensor material property.'
+  []
+[]

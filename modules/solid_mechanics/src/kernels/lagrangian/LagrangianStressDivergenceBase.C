@@ -93,6 +93,7 @@ LagrangianStressDivergenceBase::LagrangianStressDivergenceBase(const InputParame
 
   _n_additional = coupledComponents("additional_coupled_vars");
   _additional_var_nums.resize(_n_additional);
+  _additional_coupled_vars.resize(_n_additional);
 
   const auto & jac_names =
       getParam<std::vector<MaterialPropertyName>>("additional_coupling_jacobians");
