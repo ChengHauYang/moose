@@ -147,6 +147,9 @@ protected:
   /// Interfaces this sub-block action applies to
   const std::vector<BoundaryName> _interface;
 
+  /// Whether the action should add output/derivative retrievers only on the interface boundary
+  const bool _interface_only;
+
   /// Material property initial conditions
   std::map<MaterialPropertyName, MaterialPropertyName> _initialize_output_values;
 

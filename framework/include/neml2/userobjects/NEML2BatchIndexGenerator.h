@@ -54,6 +54,9 @@ protected:
   /// Whether the batch index map is outdated
   bool _outdated;
 
+  /// When true, skip volume-element index generation (only count interface QPs)
+  const bool _interface_only;
+
   /// Highest current batch index
   std::size_t _batch_index;
 

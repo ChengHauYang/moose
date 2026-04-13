@@ -38,6 +38,15 @@ public:
 
   void finalize() override {}
 
+  /// When interface_only = true, all material properties come from interface (boundary) materials,
+  /// not block materials. Skip the block-level coverage check to avoid false errors when the
+  /// requested property (e.g. interface_displacement_jump) is only defined on boundaries.
+  void checkMaterialProperty(const std::string & name, const unsigned int state) override
+  {
+    if (!_interface_only)
+      MaterialPropertyInterface::checkMaterialProperty(name, state);
+  }
+
 #ifndef NEML2_ENABLED
   void initialize() override {}
   void executeOnElement() override {}
@@ -58,6 +67,9 @@ public:
 
 protected:
   using ElemSide = std::tuple<dof_id_type, unsigned int>;
+
+  /// Restrict gathering to interface callbacks only
+  const bool _interface_only;
 
   /// MOOSE data for the current element
   virtual const MooseArray<T> & elemMOOSEData() const = 0;
@@ -89,13 +101,17 @@ MOOSEToNEML2Batched<T>::validParams()
   ExecFlagEnum execute_options = MooseUtils::getDefaultExecFlagEnum();
   execute_options = {EXEC_INITIAL, EXEC_LINEAR, EXEC_NONLINEAR};
   params.set<ExecFlagEnum>("execute_on") = execute_options;
+  params.addParam<bool>("interface_only",
+                        false,
+                        "When true, skip volume-element gathering and only collect face/interface "
+                        "material data.");
 
   return params;
 }
 
 template <typename T>
 MOOSEToNEML2Batched<T>::MOOSEToNEML2Batched(const InputParameters & params)
-  : MOOSEToNEML2(params), DomainUserObject(params)
+  : MOOSEToNEML2(params), DomainUserObject(params), _interface_only(this->getParam<bool>("interface_only"))
 {
 }
 
@@ -112,6 +128,9 @@ template <typename T>
 void
 MOOSEToNEML2Batched<T>::executeOnElement()
 {
+  if (_interface_only)
+    return;
+
   const auto & elem_data = this->elemMOOSEData();
   for (auto i : index_range(elem_data))
     _buffer.push_back(elem_data[i]);
