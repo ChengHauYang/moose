@@ -43,7 +43,6 @@ function configure_neml2()
     -DNEML2_JSON=OFF \
     -DNEML2_CONTRIB_PREFIX="$2/contrib" \
     -Dtorch_ROOT="$(get_variable LIBTORCH_DIR)" \
-    -Dwasp_ROOT="$(get_variable WASP_DIR)" \
     -G "Unix Makefiles" \
     -B "$2" \
     -S "$1" \
