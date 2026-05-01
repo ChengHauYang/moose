@@ -569,7 +569,7 @@ endif
 $(app_EXEC): $(app_LIBS) $(MOOSE_KOKKOS_LIB) $(app_KOKKOS_LIBS) $(app_KOKKOS_TEST_LIB) $(KOKKOS_DEVICE_LINK_OBJECT) $(mesh_library) $(main_object) $(app_test_LIB) $(depend_test_libs) $(ADDITIONAL_EXEC_OBJECTS)
 	@echo "Linking Executable "$@"..."
 	@bash -c '$(libmesh_LIBTOOL) --tag=CXX $(LIBTOOLFLAGS) --mode=link --quiet \
-	  $(libmesh_CXX) $(libmesh_CXXFLAGS) -o $@ $(main_object) $(depend_test_libs_flags) $(applibs) $(KOKKOS_DEVICE_LINK_OBJECT) $(ADDITIONAL_LIBS) $(ADDITIONAL_EXEC_OBJECTS) $(LDFLAGS) $(libmesh_LDFLAGS) $(libmesh_LIBS) $(EXTERNAL_FLAGS) ${SILENCE_SOME_WARNINGS}'
+	  $(libmesh_CXX) $(libmesh_CXXFLAGS) -o $@ $(main_object) $(libmesh_LDFLAGS) $(depend_test_libs_flags) $(applibs) $(KOKKOS_DEVICE_LINK_OBJECT) $(ADDITIONAL_LIBS) $(ADDITIONAL_EXEC_OBJECTS) $(LDFLAGS) $(libmesh_LIBS) $(EXTERNAL_FLAGS) ${SILENCE_SOME_WARNINGS}'
 	@$(codesign)
 
 ###### install stuff #############
