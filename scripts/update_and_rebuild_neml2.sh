@@ -131,7 +131,7 @@ fi
 # Step 1: Update the NEML2 submodule
 if [[ "$SKIP_SUBMODULE_UPDATE" != true ]] && [[ "$FAST" != true ]]; then
   cd "$MOOSE_DIR" || exit
-  git submodule update --init --checkout --recursve "${NEML2_SRC_DIR}"
+  git submodule update --init --checkout --recursive "${NEML2_SRC_DIR}"
   if [[ $? -ne 0 ]] ; then
     echo "Error: Failed to update the NEML2 submodule with command"
     echo "  git submodule update --init --checkout ${NEML2_SRC_DIR}"
