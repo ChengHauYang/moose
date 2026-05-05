@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <string>
 
 #ifdef NEML2_ENABLED

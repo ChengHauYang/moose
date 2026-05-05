@@ -177,7 +177,9 @@ NEML2Action::act()
       const auto sep = _model->settings().history_separator();
       obj_params.set<std::string>("from_moose") = input.name;
       obj_params.set<std::string>("to_neml2") =
-          neml2::history_name(input.name, input.history_order, sep);
+          input.history_order == 0
+              ? input.name
+              : input.name + sep + std::to_string(input.history_order);
       obj_params.set<MooseEnum>("quantity_type").assign(static_cast<int>(input.moose_type));
       obj_params.set<std::vector<SubdomainName>>("block") = _block;
       _problem->addUserObject(obj_type, obj_name, obj_params);
