@@ -115,6 +115,9 @@ protected:
   /// Blocks this sub-block action applies to
   const std::vector<SubdomainName> _block;
 
+  /// Boundaries/interfaces this sub-block action applies to
+  const std::vector<BoundaryName> _boundary;
+
   /// Input variables to skip (i.e., not to set up mappings for)
   std::vector<std::string> _skip_input_variables;
 

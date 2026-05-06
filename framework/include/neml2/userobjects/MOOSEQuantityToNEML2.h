@@ -11,7 +11,8 @@
 
 #include "MOOSEToNEML2.h"
 #include "NEML2Utils.h"
-#include "ElementUserObject.h"
+#include "DomainUserObject.h"
+#include <set>
 
 #include "RankTwoTensor.h"
 #include "SymmetricRankTwoTensor.h"
@@ -20,7 +21,7 @@
  * Gather a MOOSE quantity for insertion into the NEML2 model.
  */
 template <typename T, unsigned int state>
-class MOOSEQuantityToNEML2 : public MOOSEToNEML2, public ElementUserObject
+class MOOSEQuantityToNEML2 : public MOOSEToNEML2, public DomainUserObject
 {
 public:
   static InputParameters validParams();
@@ -34,14 +35,19 @@ public:
   void threadJoin(const UserObject &) override {}
 #else
   void initialize() override;
-  void execute() override;
+  void executeOnElement() override;
+  void executeOnBoundary() override;
+  void executeOnInterface() override;
   void finalize() override {}
   void threadJoin(const UserObject &) override;
 
   neml2::Tensor gatheredData() const override;
 
 protected:
-  T qpData(unsigned int) const;
+  using ElemSide = std::tuple<dof_id_type, unsigned int>;
+
+  void gatherFromCurrentElemSide(bool use_neighbor);
+  T qpData(unsigned int qp, bool use_neighbor = false) const;
 
   /// MOOSE quantity type to read from
   const NEML2Utils::MOOSEIOType _type;
@@ -53,15 +59,22 @@ protected:
   const Function * _func = nullptr;
   const MaterialProperty<T> * _mat_prop = nullptr;
   const MaterialProperty<T> * _mat_prop_old = nullptr;
+  const MaterialProperty<T> * _neighbor_mat_prop = nullptr;
+  const MaterialProperty<T> * _neighbor_mat_prop_old = nullptr;
   const VariableValue * _var = nullptr;
   const VariableValue * _var_old = nullptr;
+  const VariableValue * _neighbor_var = nullptr;
+  const VariableValue * _neighbor_var_old = nullptr;
   ///@}
 
   /// Whether the gathered data should be batched
   bool _batched = false;
 
-  /// Intermediate data buffer, filled during the element loop
+  /// Intermediate data buffer, filled during the element/side loop
   std::vector<T> _buffer;
+
+  /// Track visited element sides so shared interfaces are only gathered once per side orientation
+  std::set<ElemSide> _visited_elem_sides;
 #endif
 };
 

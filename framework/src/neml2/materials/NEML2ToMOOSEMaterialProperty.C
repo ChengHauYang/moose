@@ -91,8 +91,17 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   if (!_execute_neml2_model.outputReady())
     return;
 
-  // look up start index for current element
-  const auto i = _execute_neml2_model.getBatchIndex(_current_elem->id());
+  std::size_t i = 0;
+  if (_bnd)
+  {
+    const auto elem_side = NEML2BatchIndexGenerator::ElemSide(_current_elem->id(), _current_side);
+    if (!_execute_neml2_model.isSideBatchIndexExist(elem_side))
+      return;
+    i = _execute_neml2_model.getSideBatchIndex(elem_side);
+  }
+  else
+    i = _execute_neml2_model.getBatchIndex(_current_elem->id());
+
   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
     if (_value.batch_dim())
       NEML2Utils::copyTensorToMOOSEData(_value.batch_index({neml2::Size(i + _qp)}), _prop[_qp]);
