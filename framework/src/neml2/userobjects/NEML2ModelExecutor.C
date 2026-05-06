@@ -157,7 +157,8 @@ NEML2ModelExecutor::getSideBatchIndex(const NEML2BatchIndexGenerator::ElemSide &
 }
 
 bool
-NEML2ModelExecutor::isSideBatchIndexExist(const NEML2BatchIndexGenerator::ElemSide & elem_side) const
+NEML2ModelExecutor::isSideBatchIndexExist(
+    const NEML2BatchIndexGenerator::ElemSide & elem_side) const
 {
   return _batch_index_generator.isSideBatchIndexExist(elem_side);
 }
