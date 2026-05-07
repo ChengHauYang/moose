@@ -155,9 +155,14 @@ NEML2Action::act()
     printSummary();
   }
 
-  // Whether this action is block/boundary restricted. The two are not mutually
-  // exclusive: when only `interface` is specified (block left empty), the
-  // material is set up for all volume GPs as well as GPs on the interface.
+  // Block and interface restrictions are independent and may both apply.
+  // Behavior matrix for the NEML2->MOOSE material outputs:
+  //   - block unset, interface unset : volume material on all subdomains
+  //   - block unset, interface set   : volume material on all subdomains
+  //                                  + boundary material on the interface
+  //   - block set,   interface unset : volume material restricted to `block`
+  //   - block set,   interface set   : volume material restricted to `block`
+  //                                  + boundary material on the interface
   const bool is_blk = !_block.empty();
   const bool is_interface = !_boundary.empty();
 
@@ -270,16 +275,29 @@ NEML2Action::act()
         obj_params.set<UserObjectName>("neml2_executor") = _executor_name;
         obj_params.set<MaterialPropertyName>("to_moose") = output.name;
         obj_params.set<std::string>("from_neml2") = output.name;
-        if (is_blk)
-          obj_params.set<std::vector<SubdomainName>>("block") = _block;
-        if (is_interface)
-          obj_params.set<std::vector<BoundaryName>>("boundary") = _boundary;
         if (_initialize_output_values.count(output.name))
           obj_params.set<MaterialPropertyName>("moose_material_property_init") =
               _initialize_output_values[output.name];
         if (_export_output_targets.count(output.name))
           obj_params.set<std::vector<OutputName>>("outputs") = _export_output_targets[output.name];
-        _problem->addMaterial(obj_type, obj_name, obj_params);
+
+        // Always add a volume material. If 'block' is set, restrict to those subdomains;
+        // otherwise leave 'block' unset so MOOSE defaults to all subdomains.
+        {
+          auto vol_params = obj_params;
+          if (is_blk)
+            vol_params.set<std::vector<SubdomainName>>("block") = _block;
+          _problem->addMaterial(obj_type, obj_name, vol_params);
+        }
+
+        // Add a separate boundary-restricted material when 'interface' is specified, so the
+        // same NEML2 output property is also available at side QPs on the interface.
+        if (is_interface)
+        {
+          auto bnd_params = obj_params;
+          bnd_params.set<std::vector<BoundaryName>>("boundary") = _boundary;
+          _problem->addMaterial(obj_type, obj_name + "_bnd", bnd_params);
+        }
       }
       else
         paramError("moose_output_types",
@@ -302,16 +320,27 @@ NEML2Action::act()
       auto obj_params = _factory.getValidParams(obj_type);
       obj_params.set<UserObjectName>("neml2_executor") = _executor_name;
       obj_params.set<MaterialPropertyName>("to_moose") = deriv.name;
-       obj_params.set<std::string>("from_neml2") = deriv.y;
-       obj_params.set<std::string>("neml2_input_derivative") = deriv.x;
-       if (is_blk)
-         obj_params.set<std::vector<SubdomainName>>("block") = _block;
-       if (is_interface)
-         obj_params.set<std::vector<BoundaryName>>("boundary") = _boundary;
-       if (_export_output_targets.count(deriv.name))
-
+      obj_params.set<std::string>("from_neml2") = deriv.y;
+      obj_params.set<std::string>("neml2_input_derivative") = deriv.x;
+      if (_export_output_targets.count(deriv.name))
         obj_params.set<std::vector<OutputName>>("outputs") = _export_output_targets[deriv.name];
-      _problem->addMaterial(obj_type, obj_name, obj_params);
+
+      // Always add a volume material. If 'block' is set, restrict to those subdomains;
+      // otherwise leave 'block' unset so MOOSE defaults to all subdomains.
+      {
+        auto vol_params = obj_params;
+        if (is_blk)
+          vol_params.set<std::vector<SubdomainName>>("block") = _block;
+        _problem->addMaterial(obj_type, obj_name, vol_params);
+      }
+
+      // Add a separate boundary-restricted material when 'interface' is specified.
+      if (is_interface)
+      {
+        auto bnd_params = obj_params;
+        bnd_params.set<std::vector<BoundaryName>>("boundary") = _boundary;
+        _problem->addMaterial(obj_type, obj_name + "_bnd", bnd_params);
+      }
     }
 
     // NEML2ToMOOSE parameter derivative retrievers
@@ -329,17 +358,28 @@ NEML2Action::act()
       auto obj_params = _factory.getValidParams(obj_type);
       obj_params.set<UserObjectName>("neml2_executor") = _executor_name;
       obj_params.set<MaterialPropertyName>("to_moose") = param_deriv.name;
-       obj_params.set<std::string>("from_neml2") = param_deriv.y;
-       obj_params.set<std::string>("neml2_parameter_derivative") = param_deriv.x;
-       if (is_blk)
-         obj_params.set<std::vector<SubdomainName>>("block") = _block;
-       if (is_interface)
-         obj_params.set<std::vector<BoundaryName>>("boundary") = _boundary;
-       if (_export_output_targets.count(param_deriv.name))
-
+      obj_params.set<std::string>("from_neml2") = param_deriv.y;
+      obj_params.set<std::string>("neml2_parameter_derivative") = param_deriv.x;
+      if (_export_output_targets.count(param_deriv.name))
         obj_params.set<std::vector<OutputName>>("outputs") =
             _export_output_targets[param_deriv.name];
-      _problem->addMaterial(obj_type, obj_name, obj_params);
+
+      // Always add a volume material. If 'block' is set, restrict to those subdomains;
+      // otherwise leave 'block' unset so MOOSE defaults to all subdomains.
+      {
+        auto vol_params = obj_params;
+        if (is_blk)
+          vol_params.set<std::vector<SubdomainName>>("block") = _block;
+        _problem->addMaterial(obj_type, obj_name, vol_params);
+      }
+
+      // Add a separate boundary-restricted material when 'interface' is specified.
+      if (is_interface)
+      {
+        auto bnd_params = obj_params;
+        bnd_params.set<std::vector<BoundaryName>>("boundary") = _boundary;
+        _problem->addMaterial(obj_type, obj_name + "_bnd", bnd_params);
+      }
     }
   }
 }
