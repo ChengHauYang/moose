@@ -46,8 +46,8 @@ public:
 protected:
   using ElemSide = std::tuple<dof_id_type, unsigned int>;
 
-  void gatherFromCurrentElemSide(bool use_neighbor);
-  T qpData(unsigned int qp, bool use_neighbor = false) const;
+  void gatherFromCurrentElemSide(bool use_neighbor, bool use_face);
+  T qpData(unsigned int qp, bool use_neighbor = false, bool use_face = false) const;
 
   /// MOOSE quantity type to read from
   const NEML2Utils::MOOSEIOType _type;
@@ -59,6 +59,8 @@ protected:
   const Function * _func = nullptr;
   const MaterialProperty<T> * _mat_prop = nullptr;
   const MaterialProperty<T> * _mat_prop_old = nullptr;
+  const MaterialProperty<T> * _face_mat_prop = nullptr;
+  const MaterialProperty<T> * _face_mat_prop_old = nullptr;
   const MaterialProperty<T> * _neighbor_mat_prop = nullptr;
   const MaterialProperty<T> * _neighbor_mat_prop_old = nullptr;
   const VariableValue * _var = nullptr;

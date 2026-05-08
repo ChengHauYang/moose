@@ -74,6 +74,14 @@ MOOSEQuantityToNEML2<T, state>::MOOSEQuantityToNEML2(const InputParameters & par
         _type == NEML2Utils::MOOSEIOType::MATERIAL && state == 1
             ? &this->template getMaterialPropertyOldByName<T>(getParam<std::string>("from_moose"))
             : nullptr),
+    _face_mat_prop(
+        _type == NEML2Utils::MOOSEIOType::MATERIAL && state == 0
+            ? &this->template getFaceMaterialProperty<T>(getParam<std::string>("from_moose"))
+            : nullptr),
+    _face_mat_prop_old(
+        _type == NEML2Utils::MOOSEIOType::MATERIAL && state == 1
+            ? &this->template getFaceMaterialPropertyOld<T>(getParam<std::string>("from_moose"))
+            : nullptr),
     _neighbor_mat_prop(_type == NEML2Utils::MOOSEIOType::MATERIAL && state == 0
                            ? &this->template getNeighborMaterialPropertyByName<T>(
                                  getParam<std::string>("from_moose"))
@@ -135,7 +143,7 @@ MOOSEQuantityToNEML2<T, state>::executeOnBoundary()
   if (_current_elem->neighbor_ptr(_current_side))
     return;
 
-  gatherFromCurrentElemSide(false);
+  gatherFromCurrentElemSide(false, true);
 }
 
 template <typename T, unsigned int state>
@@ -145,12 +153,13 @@ MOOSEQuantityToNEML2<T, state>::executeOnInterface()
   if (!_batched)
     return;
 
-  gatherFromCurrentElemSide(false);
+  gatherFromCurrentElemSide(false, true);
 
-  if (_neighbor_elem)
+  const auto * neighbor_elem = _current_elem->neighbor_ptr(_current_side);
+  if (neighbor_elem)
   {
-    const auto neighbor_side = _neighbor_elem->which_neighbor_am_i(_current_elem);
-    const auto neighbor_elem_side = ElemSide(_neighbor_elem->id(), neighbor_side);
+    const auto neighbor_side = neighbor_elem->which_neighbor_am_i(_current_elem);
+    const auto neighbor_elem_side = ElemSide(neighbor_elem->id(), neighbor_side);
     if (_visited_elem_sides.insert(neighbor_elem_side).second)
       for (unsigned int qp = 0; qp < qRule().n_points(); qp++)
         _buffer.emplace_back(qpData(qp, true));
@@ -171,7 +180,7 @@ MOOSEQuantityToNEML2<T, state>::threadJoin(const UserObject & uo)
 
 template <typename T, unsigned int state>
 void
-MOOSEQuantityToNEML2<T, state>::gatherFromCurrentElemSide(bool use_neighbor)
+MOOSEQuantityToNEML2<T, state>::gatherFromCurrentElemSide(bool use_neighbor, bool use_face)
 {
   const auto elem = use_neighbor && _neighbor_elem ? _neighbor_elem : _current_elem;
   const auto side = use_neighbor && _neighbor_elem
@@ -182,7 +191,7 @@ MOOSEQuantityToNEML2<T, state>::gatherFromCurrentElemSide(bool use_neighbor)
     return;
 
   for (unsigned int qp = 0; qp < qRule().n_points(); qp++)
-    _buffer.emplace_back(qpData(qp, use_neighbor));
+    _buffer.emplace_back(qpData(qp, use_neighbor, use_face));
 }
 
 template <typename T, unsigned int state>
@@ -214,14 +223,19 @@ MOOSEQuantityToNEML2<T, state>::gatheredData() const
 
 template <typename T, unsigned int state>
 T
-MOOSEQuantityToNEML2<T, state>::qpData(unsigned int qp, bool use_neighbor) const
+MOOSEQuantityToNEML2<T, state>::qpData(unsigned int qp, bool use_neighbor, bool use_face) const
 {
   mooseAssert(_batched,
               "qpData should only be called for batched quantities. This should never happen.");
 
   if constexpr (!std::is_same_v<T, Real>)
-    return use_neighbor ? (state == 0 ? (*_neighbor_mat_prop)[qp] : (*_neighbor_mat_prop_old)[qp])
-                        : (state == 0 ? (*_mat_prop)[qp] : (*_mat_prop_old)[qp]);
+  {
+    if (use_neighbor)
+      return state == 0 ? (*_neighbor_mat_prop)[qp] : (*_neighbor_mat_prop_old)[qp];
+    if (use_face)
+      return state == 0 ? (*_face_mat_prop)[qp] : (*_face_mat_prop_old)[qp];
+    return state == 0 ? (*_mat_prop)[qp] : (*_mat_prop_old)[qp];
+  }
   else
     switch (_type)
     {
@@ -235,9 +249,11 @@ MOOSEQuantityToNEML2<T, state>::qpData(unsigned int qp, bool use_neighbor) const
         return use_neighbor ? (state == 0 ? (*_neighbor_var)[qp] : (*_neighbor_var_old)[qp])
                             : (state == 0 ? (*_var)[qp] : (*_var_old)[qp]);
       case NEML2Utils::MOOSEIOType::MATERIAL:
-        return use_neighbor
-                   ? (state == 0 ? (*_neighbor_mat_prop)[qp] : (*_neighbor_mat_prop_old)[qp])
-                   : (state == 0 ? (*_mat_prop)[qp] : (*_mat_prop_old)[qp]);
+        if (use_neighbor)
+          return state == 0 ? (*_neighbor_mat_prop)[qp] : (*_neighbor_mat_prop_old)[qp];
+        if (use_face)
+          return state == 0 ? (*_face_mat_prop)[qp] : (*_face_mat_prop_old)[qp];
+        return state == 0 ? (*_mat_prop)[qp] : (*_mat_prop_old)[qp];
       default:
         mooseError("Invalid MOOSE quantity type. This should never happen.");
     }
