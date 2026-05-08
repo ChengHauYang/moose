@@ -64,6 +64,12 @@ NEML2Action::validParams()
       "block", {}, "List of blocks (subdomains) where the material model is defined");
   params.addParam<std::vector<BoundaryName>>(
       "interface", {}, "List of boundaries where the interface material model is defined");
+  params.addParam<bool>(
+      "interface_only",
+      false,
+      "If true, only create the boundary (interface) material on the boundaries listed in "
+      "'interface' and skip creating any volume material. Requires 'interface' to be set and "
+      "'block' to be unset.");
   return params;
 }
 
@@ -76,7 +82,8 @@ NEML2Action::NEML2Action(const InputParameters & params)
                             ? getParam<std::string>("batch_index_generator_name")
                             : "neml2_index_" + getParam<std::string>("model") + "_" + name()),
     _block(getParam<std::vector<SubdomainName>>("block")),
-    _boundary(getParam<std::vector<BoundaryName>>("interface"))
+    _boundary(getParam<std::vector<BoundaryName>>("interface")),
+    _interface_only(getParam<bool>("interface_only"))
 {
   NEML2Utils::assertNEML2Enabled();
 
@@ -157,14 +164,33 @@ NEML2Action::act()
 
   // Block and interface restrictions are independent and may both apply.
   // Behavior matrix for the NEML2->MOOSE material outputs:
-  //   - block unset, interface unset : volume material on all subdomains
-  //   - block unset, interface set   : volume material on all subdomains
+  //   - block unset, interface unset, interface_only = false : volume material on all subdomains
+  //   - block unset, interface set, interface_only = false : volume material on all subdomains
   //                                  + boundary material on the interface
-  //   - block set,   interface unset : volume material restricted to `block`
-  //   - block set,   interface set   : volume material restricted to `block`
+  //   - block set,   interface unset, interface_only = false : volume material restricted to
+  //   `block`
+  //   - block set,   interface set, interface_only = false : volume material restricted to `block`
   //                                  + boundary material on the interface
+  //   - block set, interface set, interface_only = true : error, block set will be ignored
+  //   - block set, interface unset, interface_only = true : error, block set will be ignored
+  //   - block unset, interface set, interface_only = true : boundary material on the interface only
+  //   - block unset, interface unset, interface_only = true : error, no material will be created
+
+  //   volume
   const bool is_blk = !_block.empty();
   const bool is_interface = !_boundary.empty();
+
+  if (_interface_only)
+  {
+    if (is_blk)
+      paramError("interface_only",
+                 "'interface_only' is true, but 'block' is also set. When 'interface_only' is "
+                 "true, 'block' must be unset.");
+    if (!is_interface)
+      paramError("interface_only",
+                 "'interface_only' is true, but 'interface' is unset. When 'interface_only' is "
+                 "true, 'interface' must list the boundaries on which to create the material.");
+  }
 
   if (_current_task == "add_user_object")
   {
@@ -281,8 +307,10 @@ NEML2Action::act()
         if (_export_output_targets.count(output.name))
           obj_params.set<std::vector<OutputName>>("outputs") = _export_output_targets[output.name];
 
-        // Always add a volume material. If 'block' is set, restrict to those subdomains;
-        // otherwise leave 'block' unset so MOOSE defaults to all subdomains.
+        // Add a volume material unless interface_only is requested. If 'block' is set,
+        // restrict to those subdomains; otherwise leave 'block' unset so MOOSE defaults
+        // to all subdomains.
+        if (!_interface_only)
         {
           auto vol_params = obj_params;
           if (is_blk)
@@ -325,8 +353,10 @@ NEML2Action::act()
       if (_export_output_targets.count(deriv.name))
         obj_params.set<std::vector<OutputName>>("outputs") = _export_output_targets[deriv.name];
 
-      // Always add a volume material. If 'block' is set, restrict to those subdomains;
-      // otherwise leave 'block' unset so MOOSE defaults to all subdomains.
+      // Add a volume material unless interface_only is requested. If 'block' is set,
+      // restrict to those subdomains; otherwise leave 'block' unset so MOOSE defaults
+      // to all subdomains.
+      if (!_interface_only)
       {
         auto vol_params = obj_params;
         if (is_blk)
@@ -364,8 +394,10 @@ NEML2Action::act()
         obj_params.set<std::vector<OutputName>>("outputs") =
             _export_output_targets[param_deriv.name];
 
-      // Always add a volume material. If 'block' is set, restrict to those subdomains;
-      // otherwise leave 'block' unset so MOOSE defaults to all subdomains.
+      // Add a volume material unless interface_only is requested. If 'block' is set,
+      // restrict to those subdomains; otherwise leave 'block' unset so MOOSE defaults
+      // to all subdomains.
+      if (!_interface_only)
       {
         auto vol_params = obj_params;
         if (is_blk)
