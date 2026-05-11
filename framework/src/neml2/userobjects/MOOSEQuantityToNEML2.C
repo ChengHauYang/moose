@@ -35,7 +35,10 @@ MOOSEQuantityToNEML2<T, state>::validParams()
   MooseEnum moose_type("TIME SCALAR FUNCTION VARIABLE MATERIAL", "MATERIAL");
   params.template addParam<MooseEnum>(
       "quantity_type", moose_type, "Type of the MOOSE quantity to read from.");
-
+  params.addParam<bool>("interface_only",
+                        false,
+                        "When true, skip volume-element gathering and only collect face/interface "
+                        "material data.");
   // Since we use the NEML2 model to evaluate the residual AND the Jacobian at the same time, we
   // want to execute this user object only at execute_on = LINEAR (i.e. during residual evaluation).
   // The NONLINEAR exec flag below is for computing Jacobian during automatic scaling.
@@ -54,6 +57,7 @@ MOOSEQuantityToNEML2<T, state>::MOOSEQuantityToNEML2(const InputParameters & par
     ,
     _type(this->template getParam<MooseEnum>("quantity_type")
               .template getEnum<NEML2Utils::MOOSEIOType>()),
+    _interface_only(getParam<bool>("interface_only")),
     _var_scalar(
         _type == NEML2Utils::MOOSEIOType::SCALAR && state == 0
             ? &this->_fe_problem.getScalarVariable(_tid, getParam<std::string>("from_moose")).sln()
@@ -67,11 +71,11 @@ MOOSEQuantityToNEML2<T, state>::MOOSEQuantityToNEML2(const InputParameters & par
               ? &this->_fe_problem.getFunction(getParam<std::string>("from_moose"), _tid)
               : nullptr),
     _mat_prop(
-        _type == NEML2Utils::MOOSEIOType::MATERIAL && state == 0
+        _type == NEML2Utils::MOOSEIOType::MATERIAL && state == 0 && !_interface_only
             ? &this->template getMaterialPropertyByName<T>(getParam<std::string>("from_moose"))
             : nullptr),
     _mat_prop_old(
-        _type == NEML2Utils::MOOSEIOType::MATERIAL && state == 1
+        _type == NEML2Utils::MOOSEIOType::MATERIAL && state == 1 && !_interface_only
             ? &this->template getMaterialPropertyOldByName<T>(getParam<std::string>("from_moose"))
             : nullptr),
     _face_mat_prop(
@@ -82,13 +86,19 @@ MOOSEQuantityToNEML2<T, state>::MOOSEQuantityToNEML2(const InputParameters & par
         _type == NEML2Utils::MOOSEIOType::MATERIAL && state == 1
             ? &this->template getFaceMaterialPropertyOld<T>(getParam<std::string>("from_moose"))
             : nullptr),
-    _neighbor_mat_prop(_type == NEML2Utils::MOOSEIOType::MATERIAL && state == 0
-                           ? &this->template getNeighborMaterialPropertyByName<T>(
-                                 getParam<std::string>("from_moose"))
-                           : nullptr),
+    _neighbor_mat_prop(
+        _type == NEML2Utils::MOOSEIOType::MATERIAL && state == 0
+            ? (_interface_only
+                   ? &this->template getFaceMaterialProperty<T>(getParam<std::string>("from_moose"))
+                   : &this->template getNeighborMaterialPropertyByName<T>(
+                         getParam<std::string>("from_moose")))
+            : nullptr),
     _neighbor_mat_prop_old(_type == NEML2Utils::MOOSEIOType::MATERIAL && state == 1
-                               ? &this->template getNeighborMaterialPropertyByName<T>(
-                                     getParam<std::string>("from_moose"), 1)
+                               ? (_interface_only
+                                      ? &this->template getFaceMaterialPropertyOld<T>(
+                                            getParam<std::string>("from_moose"))
+                                      : &this->template getNeighborMaterialPropertyByName<T>(
+                                            getParam<std::string>("from_moose"), 1))
                                : nullptr),
     _var(_type == NEML2Utils::MOOSEIOType::VARIABLE && state == 0
              ? &this->_fe_problem.getStandardVariable(_tid, getParam<std::string>("from_moose"))
@@ -127,6 +137,9 @@ void
 MOOSEQuantityToNEML2<T, state>::executeOnElement()
 {
   if (!_batched)
+    return;
+
+  if (_interface_only)
     return;
 
   for (unsigned int qp = 0; qp < qRule().n_points(); qp++)

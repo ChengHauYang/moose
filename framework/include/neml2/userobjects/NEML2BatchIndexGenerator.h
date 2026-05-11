@@ -54,6 +54,9 @@ protected:
   /// Whether the batch index map is outdated
   bool _outdated;
 
+  /// Restrict batch indexing to interface callbacks only
+  const bool _interface_only;
+
   /// Highest current batch index
   std::size_t _batch_index;
 

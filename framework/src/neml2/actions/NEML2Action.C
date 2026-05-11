@@ -32,7 +32,8 @@ const std::map<neml2::TensorType, std::string> tensor_type_map = {
     {neml2::TensorType::kR2, "RankTwoTensor"},
     {neml2::TensorType::kSSR4, "SymmetricRankFourTensor"},
     {neml2::TensorType::kR4, "RankFourTensor"},
-    {neml2::TensorType::kRot, "RealVectorValue"}};
+    {neml2::TensorType::kRot, "RealVectorValue"},
+    {neml2::TensorType::kVec, "RealVectorValue"}};
 // NEML2 (output, input) type --> NEML2 derivative type
 const std::map<std::pair<neml2::TensorType, neml2::TensorType>, neml2::TensorType> deriv_type_map =
     {
@@ -43,6 +44,9 @@ const std::map<std::pair<neml2::TensorType, neml2::TensorType>, neml2::TensorTyp
         {{neml2::TensorType::kR2, neml2::TensorType::kR2}, neml2::TensorType::kR4},
         {{neml2::TensorType::kR2, neml2::TensorType::kScalar}, neml2::TensorType::kR2},
         {{neml2::TensorType::kScalar, neml2::TensorType::kR2}, neml2::TensorType::kR2},
+        {{neml2::TensorType::kVec, neml2::TensorType::kVec}, neml2::TensorType::kR2},
+        {{neml2::TensorType::kVec, neml2::TensorType::kScalar}, neml2::TensorType::kVec},
+        {{neml2::TensorType::kScalar, neml2::TensorType::kVec}, neml2::TensorType::kVec},
 };
 #endif
 
@@ -219,6 +223,8 @@ NEML2Action::act()
       obj_params.set<std::string>("to_neml2") =
           neml2::history_name(input.name, input.history_order, sep);
       obj_params.set<MooseEnum>("quantity_type").assign(static_cast<int>(input.moose_type));
+      if (is_interface && input.moose_type == NEML2Utils::MOOSEIOType::MATERIAL)
+        obj_params.set<bool>("interface_only") = _interface_only;
       if (is_blk)
         obj_params.set<std::vector<SubdomainName>>("block") = _block;
       if (is_interface)
@@ -271,6 +277,7 @@ NEML2Action::act()
         params.set<std::vector<SubdomainName>>("block") = _block;
       if (is_interface)
         params.set<std::vector<BoundaryName>>("interface_boundaries") = _boundary;
+      params.set<bool>("interface_only") = _interface_only;
       _problem->addUserObject(type, _idx_generator_name, params);
     }
 

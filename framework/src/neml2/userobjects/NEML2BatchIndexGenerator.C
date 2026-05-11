@@ -26,11 +26,16 @@ NEML2BatchIndexGenerator::validParams()
   execute_options = {EXEC_INITIAL, EXEC_LINEAR, EXEC_NONLINEAR};
   params.set<ExecFlagEnum>("execute_on") = execute_options;
 
+  params.addParam<bool>("interface_only",
+                        false,
+                        "When true, skip volume-element index generation and only assign batch "
+                        "indices for interface quadrature points.");
+
   return params;
 }
 
 NEML2BatchIndexGenerator::NEML2BatchIndexGenerator(const InputParameters & params)
-  : DomainUserObject(params), _outdated(true)
+  : DomainUserObject(params), _outdated(true), _interface_only(getParam<bool>("interface_only"))
 {
 }
 
@@ -63,6 +68,9 @@ NEML2BatchIndexGenerator::executeOnElement()
     return;
 
   if (!_outdated)
+    return;
+
+  if (_interface_only)
     return;
 
   _elem_to_batch_index[_current_elem->id()] = _batch_index;

@@ -28,6 +28,12 @@ public:
 
   MOOSEQuantityToNEML2(const InputParameters & params);
 
+  void checkMaterialProperty(const std::string & name, const unsigned int state_in) override
+  {
+    if (!(_interface_only && _type == NEML2Utils::MOOSEIOType::MATERIAL))
+      MaterialPropertyInterface::checkMaterialProperty(name, state_in);
+  }
+
 #ifndef NEML2_ENABLED
   void initialize() override {}
   void execute() override {}
@@ -51,6 +57,9 @@ protected:
 
   /// MOOSE quantity type to read from
   const NEML2Utils::MOOSEIOType _type;
+
+  /// Restrict material gathering to interface callbacks only
+  const bool _interface_only;
 
   ///@{
   /// candidate MOOSE quantities to read data from

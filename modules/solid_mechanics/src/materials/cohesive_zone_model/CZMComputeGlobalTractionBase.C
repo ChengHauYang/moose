@@ -31,8 +31,10 @@ CZMComputeGlobalTractionBase::CZMComputeGlobalTractionBase(const InputParameters
         getMaterialPropertyByName<RealVectorValue>(_base_name + "interface_traction")),
     _dtraction_djump_global(
         declarePropertyByName<RankTwoTensor>(_base_name + "dtraction_djump_global")),
-    _dinterface_traction_djump(
-        getMaterialPropertyByName<RankTwoTensor>(_base_name + "dinterface_traction_djump")),
+    _dinterface_traction_djump(getMaterialPropertyByName<RankTwoTensor>(
+        hasMaterialPropertyByName<RankTwoTensor>(_base_name + "dinterface_traction_djump")
+            ? _base_name + "dinterface_traction_djump"
+            : _base_name + "dinterface_traction/dinterface_displacement_jump")),
     _czm_total_rotation(getMaterialPropertyByName<RankTwoTensor>(_base_name + "czm_total_rotation"))
 {
 }
