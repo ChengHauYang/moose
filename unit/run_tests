@@ -9,19 +9,24 @@ fi
 # set the cwd to the directory run_tests is in
 cd `dirname $0` > /dev/null
 
-if [ -e ./$APPLICATION_NAME-unit-$METHOD ]
-then
-  ./$APPLICATION_NAME-unit-$METHOD $*
+MAKE_EXE="./$APPLICATION_NAME-unit-$METHOD"
+CMAKE_EXE="../build/unit/moose_unit"
 
-  # This log file is produced for the update_stable script.
-  if [ $? -eq 0 ]
-  then
-    echo "unit" >> ../test_results.log
-  else
-    exit 1
-  fi
+if [ -e "$CMAKE_EXE" ]; then
+  EXECUTABLE="$CMAKE_EXE"
+elif [ -e "$MAKE_EXE" ]; then
+  EXECUTABLE="$MAKE_EXE"
 else
-  echo "Executable missing!"
+  echo "Executable missing! Looked for '$MAKE_EXE' and '$CMAKE_EXE'"
+  exit 1
+fi
+
+$EXECUTABLE $*
+
+if [ $? -eq 0 ]
+then
+  echo "unit" >> ../test_results.log
+else
   exit 1
 fi
 

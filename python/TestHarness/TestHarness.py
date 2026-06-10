@@ -1294,8 +1294,20 @@ class TestHarness:
     def getExecutable(self) -> str:
         """
         Finds the MOOSE executable based on the app name
+
+        Supports two naming conventions:
+        - CMake build: {app_name}  (no suffix) in build/{rel_path}/ or build/{parent}/
+        - Make build:  {app_name}-{method}  (e.g. moose_test-opt) in the source tree
+        CMake is checked first.
         """
         exec_suffix = "Windows" if platform.system() == "Windows" else ""
+
+        # CMake build: check first — no method suffix, lives under build/
+        cmake_exe = self._findCMakeExecutable(exec_suffix)
+        if cmake_exe:
+            return cmake_exe
+
+        # Make build fallback: {app_name}-{method}
         name = f"{self.app_name}-{self.options.method}{exec_suffix}"
 
         # Build list of names for other methods in case an executable exists for
@@ -1349,6 +1361,25 @@ class TestHarness:
         raise FileNotFoundError(
             f"Failed to find MOOSE executable '{name}'{err_message}"
         )
+
+    def _findCMakeExecutable(self, exec_suffix: str = "") -> str:
+        """
+        Look for a CMake-built executable (no method suffix) in the build tree.
+        Returns the path if found, otherwise returns an empty string.
+        """
+        cmake_name = f"{self.app_name}{exec_suffix}"
+        rel_path = os.path.relpath(self._rootdir, self.moose_dir)
+        build_root = os.path.join(self.moose_dir, "build")
+
+        cmake_dirs = [
+            os.path.join(build_root, rel_path),
+            os.path.join(build_root, os.path.dirname(rel_path)),
+        ]
+        for cmake_dir in cmake_dirs:
+            path = os.path.join(cmake_dir, cmake_name)
+            if os.path.isfile(path) and os.access(path, os.X_OK):
+                return path
+        return ""
 
     def initialize(self):
         # Load the scheduler plugins
