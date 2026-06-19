@@ -52,6 +52,7 @@ InputParameters
 NEML2ModelExecutor::validParams()
 {
   auto params = NEML2ModelInterface<GeneralUserObject>::validParams();
+  // add action parameters
   params += NEML2ModelExecutor::actionParams();
   params.addClassDescription("Execute the specified NEML2 model");
 
@@ -66,10 +67,13 @@ NEML2ModelExecutor::validParams()
       "param_gatherers",
       {},
       "List of MOOSE*ToNEML2 user objects gathering MOOSE data as NEML2 model parameters");
+  params.addParam<bool>(
+      "volume_gp_only", false, "Whether to only execute the NEML2 model at volume Gauss points.");
 
   // Since we use the NEML2 model to evaluate the residual AND the Jacobian at the same time, we
-  // want to execute this user object only at execute_on = LINEAR (i.e. during residual evaluation).
-  // The NONLINEAR exec flag below is for computing Jacobian during automatic scaling.
+  // want to execute this user object only at execute_on = LINEAR (i.e. during residual
+  // evaluation). The NONLINEAR exec flag below is for computing Jacobian during automatic
+  // scaling.
   ExecFlagEnum execute_options = MooseUtils::getDefaultExecFlagEnum();
   execute_options = {EXEC_INITIAL, EXEC_LINEAR, EXEC_NONLINEAR, EXEC_TIMESTEP_END};
   params.set<ExecFlagEnum>("execute_on") = execute_options;
@@ -85,7 +89,8 @@ NEML2ModelExecutor::NEML2ModelExecutor(const InputParameters & params)
     _keep_tensors_on_device(getParam<bool>("keep_tensors_on_device")),
     _debug_inputs_on_failure(getParam<bool>("debug_inputs_on_failure")),
     _output_ready(false),
-    _error_message("")
+    _error_message(""),
+    _volume_gp_only(getParam<bool>("volume_gp_only"))
 #endif
 {
 #ifdef NEML2_ENABLED
@@ -198,6 +203,19 @@ std::size_t
 NEML2ModelExecutor::getBatchIndex(dof_id_type elem_id) const
 {
   return _batch_index_generator.getBatchIndex(elem_id);
+}
+
+std::size_t
+NEML2ModelExecutor::getSideBatchIndex(const NEML2BatchIndexGenerator::ElemSide & elem_side) const
+{
+  return _batch_index_generator.getSideBatchIndex(elem_side);
+}
+
+bool
+NEML2ModelExecutor::isSideBatchIndexExist(
+    const NEML2BatchIndexGenerator::ElemSide & elem_side) const
+{
+  return _batch_index_generator.isSideBatchIndexExist(elem_side);
 }
 
 void
