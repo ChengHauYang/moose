@@ -33,11 +33,11 @@ DisjointNeighborBoundaryPairsGenerator::validParams()
       "Boundary name/id pairs to register as disjoint neighbors. Each entry must contain exactly "
       "two boundaries.");
 
-  params.addParam<std::vector<RealVectorValue>>(
-      "translations",
-      {},
-      "Optional translation vectors from the first boundary in each pair to the second. If omitted, "
-      "zero translation is used for every pair.");
+  params.addParam<std::vector<RealVectorValue>>("translations",
+                                                {},
+                                                "Optional translation vectors from the first "
+                                                "boundary in each pair to the second. If omitted, "
+                                                "zero translation is used for every pair.");
 
   return params;
 }
@@ -95,10 +95,18 @@ DisjointNeighborBoundaryPairsGenerator::generate()
                  i,
                  " does not exist on the input mesh.");
 
-    const auto translation = _translations.empty() ? RealVectorValue(0.0, 0.0, 0.0)
-                                                  : _translations[i];
+    const auto translation =
+        _translations.empty() ? RealVectorValue(0.0, 0.0, 0.0) : _translations[i];
     mesh->add_disjoint_neighbor_boundary_pairs(boundary_id_1, boundary_id_2, translation);
   }
+
+  // The file reader may have already deleted remote elements, leaving the mesh non-serial while its
+  // elements are still unpartitioned. In that state the final distributed prepare_for_use() would
+  // try to partition unpartitioned elements on a non-serial mesh, which libMesh forbids. Restore
+  // the serial state (a no-op on a ReplicatedMesh or an already-serial mesh) so the final
+  // preparation can partition, re-run find_neighbors() with the disjoint neighbor pairs registered
+  // above, and then redistribute.
+  mesh->allgather();
 
   mesh->unset_is_prepared();
 
