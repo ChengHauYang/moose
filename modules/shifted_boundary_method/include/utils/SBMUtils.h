@@ -11,6 +11,9 @@
 
 #include "MooseMesh.h"
 #include "MooseTypes.h"
+#include "libmesh/enum_order.h"
+
+#include <functional>
 
 class Function;
 class FunctionInterface;
@@ -24,6 +27,11 @@ namespace SBMUtils
 {
 bool checkWatertightnessFromRawElems(const std::vector<const Elem *> & bd_elements);
 
+/// Compute the fraction of an element's quadrature-weighted measure satisfying a predicate.
+Real activeElementFraction(const Elem & elem,
+                           Order qrule_order,
+                           const std::function<bool(const libMesh::Point &)> & is_active);
+
 /// Build a list of distance functions based on names specified in input.
 std::vector<const Function *>
 buildDistanceFunctions(const std::vector<FunctionName> & function_names,
@@ -36,10 +44,7 @@ buildDistanceFunctions(const std::vector<FunctionName> & function_names,
 RealVectorValue
 distanceVectorFromFunction(const Function * func, const libMesh::Point & pt, Real t);
 
-/// Compute the true boundary surface normal using a distance function.
-/// The query point is first projected onto the true boundary, and the
-/// surface normal of the boundary is then evaluated at the projected
-/// (closest) point.
+/// Compute the true boundary surface normal at the point on the boundary closest to pt.
 RealVectorValue trueNormalFromFunction(const Function * func, const libMesh::Point & pt, Real t);
 
 /// Scan all distance functions and return the closest distance vector.
@@ -51,4 +56,9 @@ RealVectorValue closestDistanceVector(const std::vector<const Function *> & func
 RealVectorValue closestTrueNormalVector(const std::vector<const Function *> & funcs,
                                         const libMesh::Point & pt,
                                         Real t);
+
+/// Computes the union signed distance by taking the minimum of all
+/// signed distance functions. This definition is valid for overlapping
+/// geometries and preserves the correct union boundary.
+Real unionSignedDistance(const std::vector<const Function *> & funcs, Real t, const Point & p);
 }
