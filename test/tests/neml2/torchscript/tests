@@ -9,5 +9,8 @@
     capabilities = 'libtorch & neml2'
     compute_devices = 'cpu cuda'
     min_slots = 2
+    # LibtorchModel (loading a TorchScript module) has no NEML2 v3 equivalent yet; it was deferred
+    # in the v2->v3 migration. Re-enable once a TorchScript/neural-network model path is ported.
+    skip = 'LibtorchModel not yet ported to NEML2 v3'
   []
 []
