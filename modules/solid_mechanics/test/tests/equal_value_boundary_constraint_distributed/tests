@@ -1,0 +1,36 @@
+[Tests]
+  issues = '#617'
+  design = 'source/constraints/EqualValueBoundaryConstraint.md'
+  requirement = 'The system shall produce processor-independent finite-strain results when equal value boundary constraints retain remote elements on a distributed mesh.'
+
+  [one_processor]
+    type = CSVDiff
+    input = finite_strain.i
+    cli_args = 'Outputs/file_base=one_processor'
+    csvdiff = one_processor.csv
+    rel_err = 1e-12
+    min_parallel = 1
+    max_parallel = 1
+    mesh_mode = DISTRIBUTED
+  []
+  [two_processors]
+    type = CSVDiff
+    input = finite_strain.i
+    cli_args = 'Outputs/file_base=two_processors'
+    csvdiff = two_processors.csv
+    rel_err = 1e-12
+    min_parallel = 2
+    max_parallel = 2
+    mesh_mode = DISTRIBUTED
+  []
+  [three_processors]
+    type = CSVDiff
+    input = finite_strain.i
+    cli_args = 'Outputs/file_base=three_processors'
+    csvdiff = three_processors.csv
+    rel_err = 1e-12
+    min_parallel = 3
+    max_parallel = 3
+    mesh_mode = DISTRIBUTED
+  []
+[]
