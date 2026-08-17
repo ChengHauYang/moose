@@ -28,8 +28,9 @@
                   "with adaptivity."
   []
   [distributed_mesh]
-    type = RunApp
-    input = 'distributed_mesh_reproducer/minimal_evbc.i'
+    type = Exodiff
+    input = 'distributed_mesh.i'
+    exodiff = 'distributed_mesh_out.e'
     min_parallel = 3
     max_parallel = 3
     mesh_mode = DISTRIBUTED
