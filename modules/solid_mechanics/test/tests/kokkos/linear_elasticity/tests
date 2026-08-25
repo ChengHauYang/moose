@@ -1,0 +1,40 @@
+[Tests]
+  issues = '#30655'
+  design = 'KokkosIsotropicElasticity.md'
+
+  [plane_strain]
+    type = Exodiff
+    input = 'kokkos_linear_elasticity.i'
+    exodiff = 'kokkos_linear_elasticity_out.e'
+    requirement = 'The Kokkos system shall solve Cartesian isotropic small-strain linear elasticity problems.'
+    capabilities = 'kokkos'
+    compute_devices = 'cpu cuda'
+  []
+
+  [jacobian]
+    type = PetscJacobianTester
+    input = 'kokkos_linear_elasticity.i'
+    cli_args = 'Outputs/exodus=false'
+    requirement = 'The Kokkos isotropic elasticity kernel shall provide a consistent coupled Jacobian.'
+    capabilities = 'kokkos'
+    compute_devices = 'cpu cuda'
+  []
+
+  [material_plane_strain]
+    type = Exodiff
+    input = 'kokkos_material_linear_elasticity.i'
+    exodiff = 'kokkos_linear_elasticity_out.e'
+    requirement = 'The Kokkos stress-divergence kernel shall use stress and tangent material properties to solve Cartesian small-strain elasticity problems.'
+    capabilities = 'kokkos'
+    compute_devices = 'cpu cuda'
+  []
+
+  [material_jacobian]
+    type = PetscJacobianTester
+    input = 'kokkos_material_linear_elasticity.i'
+    cli_args = 'Outputs/exodus=false'
+    requirement = 'The material-based Kokkos stress-divergence kernel shall provide a consistent coupled Jacobian.'
+    capabilities = 'kokkos'
+    compute_devices = 'cpu cuda'
+  []
+[]
