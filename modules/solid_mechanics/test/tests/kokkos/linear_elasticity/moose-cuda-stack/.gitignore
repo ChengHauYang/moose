@@ -1,0 +1,6 @@
+# Defensive: if STACK_DIR is overridden to a path inside this directory
+# (default is ~/moose-cuda-stack, safely outside the repo), the build
+# artefacts below should never end up in git.
+prefix/
+logs/
+libmesh-build/
