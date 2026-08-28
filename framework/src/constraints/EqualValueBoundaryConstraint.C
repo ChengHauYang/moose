@@ -9,8 +9,10 @@
 
 // MOOSE includes
 #include "EqualValueBoundaryConstraint.h"
+#include "DisplacedProblem.h"
 #include "MooseMesh.h"
 
+#include "libmesh/distributed_mesh.h"
 #include "libmesh/null_output_iterator.h"
 #include "libmesh/parallel.h"
 #include "libmesh/parallel_elem.h"
@@ -211,72 +213,75 @@ EqualValueBoundaryConstraint::getPrimaryNodeIDByCoord() const
   return *global_primary_node_ids.begin();
 }
 
-void
-EqualValueBoundaryConstraint::ghostPrimary()
+dof_id_type
+EqualValueBoundaryConstraint::gatherAndGhostPrimaryElem(MooseMesh & mesh,
+                                                        const dof_id_type primary_node_id)
 {
-  const auto & node_to_elem_map = _mesh.nodeToElemMap();
-  auto node_to_elem_pair = node_to_elem_map.find(_primary_node_vector[0]);
-  bool found_elems = (node_to_elem_pair != node_to_elem_map.end());
+  const auto & node_to_elem_map = mesh.nodeToElemMap();
+  auto node_to_elem_pair = node_to_elem_map.find(primary_node_id);
+  bool found_elems = node_to_elem_pair != node_to_elem_map.end();
 
-  // Add elements connected to primary node to Ghosted Elements.
-
-  // On a distributed mesh, these elements might have already been
-  // remoted, in which case we need to gather them back first.
-  if (!_mesh.getMesh().is_serial())
+  // On a distributed mesh, elements connected to the primary node might have already been remoted.
+  if (!mesh.getMesh().is_serial())
   {
 #ifndef NDEBUG
     bool someone_found_elems = found_elems;
-    _mesh.getMesh().comm().max(someone_found_elems);
+    mesh.getMesh().comm().max(someone_found_elems);
     mooseAssert(someone_found_elems, "Missing entry in node to elem map");
 #endif
 
     std::set<Elem *, CompareElemsByLevel> primary_elems_to_ghost;
     std::set<Node *> nodes_to_ghost;
     if (found_elems)
-    {
-      for (dof_id_type id : node_to_elem_pair->second)
-      {
-        Elem * elem = _mesh.queryElemPtr(id);
-        if (elem)
+      for (const auto id : node_to_elem_pair->second)
+        if (auto * const elem = mesh.queryElemPtr(id))
         {
           primary_elems_to_ghost.insert(elem);
-
-          const unsigned int n_nodes = elem->n_nodes();
-          for (unsigned int n = 0; n != n_nodes; ++n)
+          for (const auto n : make_range(elem->n_nodes()))
             nodes_to_ghost.insert(elem->node_ptr(n));
         }
-      }
-    }
 
-    // Send nodes first since elements need them
-    _mesh.getMesh().comm().allgather_packed_range(&_mesh.getMesh(),
-                                                  nodes_to_ghost.begin(),
-                                                  nodes_to_ghost.end(),
-                                                  libMesh::null_output_iterator<Node>());
+    // Send nodes first since elements need them.
+    mesh.getMesh().comm().allgather_packed_range(&mesh.getMesh(),
+                                                 nodes_to_ghost.begin(),
+                                                 nodes_to_ghost.end(),
+                                                 libMesh::null_output_iterator<Node>());
+    mesh.getMesh().comm().allgather_packed_range(&mesh.getMesh(),
+                                                 primary_elems_to_ghost.begin(),
+                                                 primary_elems_to_ghost.end(),
+                                                 libMesh::null_output_iterator<Elem>());
 
-    _mesh.getMesh().comm().allgather_packed_range(&_mesh.getMesh(),
-                                                  primary_elems_to_ghost.begin(),
-                                                  primary_elems_to_ghost.end(),
-                                                  libMesh::null_output_iterator<Elem>());
-
-    // After allgather_packed_range(), rebuild internal connectivity.
-    // This updates ghost nodes/elements across processors and reconstructs node_to_elem_map.
-    _mesh.update();
-
-    // Find elems again now that we know they're there
-    const auto & new_node_to_elem_map = _mesh.nodeToElemMap();
-    node_to_elem_pair = new_node_to_elem_map.find(_primary_node_vector[0]);
-    found_elems = (node_to_elem_pair != new_node_to_elem_map.end());
+    mesh.update();
+    const auto & updated_node_to_elem_map = mesh.nodeToElemMap();
+    node_to_elem_pair = updated_node_to_elem_map.find(primary_node_id);
+    found_elems = node_to_elem_pair != updated_node_to_elem_map.end();
   }
 
-  if (!found_elems)
+  if (!found_elems || node_to_elem_pair->second.empty())
     mooseError("Couldn't find any elements connected to primary node");
 
-  const std::vector<dof_id_type> & elems = node_to_elem_pair->second;
+  const auto primary_elem_id = node_to_elem_pair->second[0];
+  if (auto * const distributed_mesh =
+          dynamic_cast<libMesh::DistributedMesh *>(&mesh.getMesh()))
+    distributed_mesh->add_extra_ghost_elem(mesh.elemPtr(primary_elem_id));
 
-  if (elems.size() == 0)
-    mooseError("Couldn't find any elements connected to primary node");
-  _subproblem.addGhostedElem(elems[0]);
+  return primary_elem_id;
+}
+
+void
+EqualValueBoundaryConstraint::ghostPrimary()
+{
+  const auto primary_node_id = _primary_node_vector[0];
+  const auto primary_elem_id = gatherAndGhostPrimaryElem(_fe_problem.mesh(false), primary_node_id);
+  _subproblem.addGhostedElem(primary_elem_id);
+
+  if (const auto displaced_problem = _fe_problem.getDisplacedProblem())
+  {
+    const auto displaced_primary_elem_id =
+        gatherAndGhostPrimaryElem(displaced_problem->mesh(), primary_node_id);
+    if (displaced_primary_elem_id != primary_elem_id)
+      mooseError("Reference and displaced meshes selected different primary elements");
+  }
 }
 
 Real

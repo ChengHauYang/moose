@@ -54,6 +54,11 @@ private:
   void pickPrimaryNode();
 
   /**
+   * Gather and retain an element connected to the primary node on the provided mesh
+   */
+  dof_id_type gatherAndGhostPrimaryElem(MooseMesh & mesh, dof_id_type primary_node_id);
+
+  /**
    * Ghost elements and nodes connected to the primary node
    */
   void ghostPrimary();
