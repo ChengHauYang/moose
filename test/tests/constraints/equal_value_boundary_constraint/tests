@@ -37,6 +37,31 @@
                   "either a replicated or a distributed mesh, retaining the elements needed by the "
                   "constraint when remote elements are deleted."
   []
+  [generate_evbc_presplit_mesh]
+    type = CheckFiles
+    input = 'evbc_presplit_ghosting.i'
+    cli_args = '--split-mesh 4 --split-file evbc_presplit_ghosting Mesh/parallel_type=replicated'
+    check_files = 'evbc_presplit_ghosting.cpa.gz/4/header.gz
+                   evbc_presplit_ghosting.cpa.gz/4/split-4-0.gz
+                   evbc_presplit_ghosting.cpa.gz/4/split-4-1.gz
+                   evbc_presplit_ghosting.cpa.gz/4/split-4-2.gz
+                   evbc_presplit_ghosting.cpa.gz/4/split-4-3.gz'
+    recover = false
+    requirement = "The system shall generate a four-way pre-split two-dimensional mesh whose constrained "
+                  "boundary spans all four partitions."
+  []
+  [evbc_presplit_ghosting]
+    type = RunApp
+    input = 'evbc_presplit_ghosting.i'
+    cli_args = '--use-split --split-file evbc_presplit_ghosting'
+    prereq = 'generate_evbc_presplit_mesh'
+    mesh_mode = DISTRIBUTED
+    min_parallel = 4
+    max_parallel = 4
+    recover = false
+    requirement = "The system shall enforce an equal value boundary constraint whose primary node is on "
+                  "a distant partition after loading a four-way pre-split distributed mesh."
+  []
   [set_primary_and_coord_error]
     type = RunException
     input = 'equal_value_boundary_constraint_test.i'
