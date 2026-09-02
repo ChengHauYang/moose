@@ -72,6 +72,13 @@ def parse_args():
         action="store_true",
         help="Skip GPU runs (useful when PETSc/Kokkos lacks CUDA support)",
     )
+    parser.add_argument(
+        "--gpu-ksp-env",
+        default="",
+        help="PETSC_OPTIONS value injected into GPU-run env only. Use to enable "
+        "GPU linear solves, e.g. '-use_gpu_aware_mpi 0 -vec_type kokkos -mat_type aijkokkos'. "
+        "CPU runs never see this env var.",
+    )
     parser.add_argument("--csv", type=Path, default=SCRIPT_DIR / "mesh_scaling.csv")
     parser.add_argument("--plot", type=Path, default=SCRIPT_DIR / "mesh_scaling.png")
     parser.add_argument("--title", default="MOOSE Kokkos: CPU vs. GPU Mesh Scaling")
@@ -99,9 +106,11 @@ def parse_args():
 def command(args, device, mesh_size):
     ranks = args.cpu_mpi_ranks if device == "CPU" else args.gpu_mpi_ranks
     threads = args.cpu_threads if device == "CPU" else 1
+    forward_env = ["-x", "PETSC_OPTIONS"] if device == "GPU" and args.gpu_ksp_env else []
     cmd = [
         args.mpiexec,
         *shlex.split(args.mpiexec_extra),
+        *forward_env,
         "-np",
         str(ranks),
         str(args.executable),
@@ -120,6 +129,8 @@ def run_once(args, device, mesh_size):
     env = os.environ.copy()
     env.setdefault("OMP_PROC_BIND", "spread")
     env.setdefault("OMP_PLACES", "cores")
+    if device == "GPU" and args.gpu_ksp_env:
+        env["PETSC_OPTIONS"] = args.gpu_ksp_env
 
     start = time.perf_counter()
     result = subprocess.run(cmd, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

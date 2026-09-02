@@ -36,7 +36,15 @@ for var in $(compgen -e); do
 done
 
 # Deterministic PATH: cuda first, then system, then sbin for ldconfig.
-export PATH=/usr/local/cuda/bin:/usr/bin:/bin:/sbin:/usr/sbin
+# We also prepend $STACK_DIR/prefix/bin so the CUDA-aware OpenMPI wrappers
+# built by build_openmpi.sh win over /usr/bin/mpicc when installed.
+_STACK_BIN=${STACK_DIR:-$HOME/moose-cuda-stack}/prefix/bin
+if [ -x "$_STACK_BIN/mpicc" ]; then
+  export PATH=$_STACK_BIN:/usr/local/cuda/bin:/usr/bin:/bin:/sbin:/usr/sbin
+else
+  export PATH=/usr/local/cuda/bin:/usr/bin:/bin:/sbin:/usr/sbin
+fi
+unset _STACK_BIN
 
 # Anchor points. Derive MOOSE_DIR from this script's location so the tree
 # is portable — env.sh lives at

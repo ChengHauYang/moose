@@ -28,12 +28,21 @@ cd "$PETSC_SRC_DIR"
 # so package makefiles that link with the C driver still resolve gfortran.
 export LDFLAGS="-L/usr/lib/gcc/x86_64-linux-gnu/9 ${LDFLAGS:-}"
 
+# Compiler wrappers: prefer our CUDA-aware OpenMPI in $PREFIX/bin when it
+# exists (Option C rebuild), else fall back to /usr/bin/mpicc (original
+# Aug-26 build path). `command -v` after env.sh has prepended $PREFIX/bin
+# to PATH resolves this automatically.
+MPICC=$(command -v mpicc); MPICXX=$(command -v mpicxx); MPIFC=$(command -v mpif90)
+echo "[build_petsc] mpicc  -> $MPICC"
+echo "[build_petsc] mpicxx -> $MPICXX"
+echo "[build_petsc] mpif90 -> $MPIFC"
+
 python3 ./configure \
   --prefix="$PREFIX" \
   LDFLAGS="$LDFLAGS" \
-  --with-cc=/usr/bin/mpicc \
-  --with-cxx=/usr/bin/mpicxx \
-  --with-fc=/usr/bin/mpif90 \
+  --with-cc="$MPICC" \
+  --with-cxx="$MPICXX" \
+  --with-fc="$MPIFC" \
   --with-64-bit-indices \
   --with-cxx-dialect=C++17 \
   --ignoreCxxBoundCheck=1 \

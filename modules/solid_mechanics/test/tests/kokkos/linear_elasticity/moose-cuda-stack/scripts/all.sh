@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+"$SCRIPT_DIR/build_openmpi.sh"   # Option C: CUDA-aware OpenMPI (skip if PREFIX/bin/mpicc already present)
 "$SCRIPT_DIR/build_petsc.sh"
 "$SCRIPT_DIR/build_libmesh.sh"
 "$SCRIPT_DIR/build_wasp.sh"
