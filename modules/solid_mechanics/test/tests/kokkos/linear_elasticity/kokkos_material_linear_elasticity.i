@@ -74,5 +74,5 @@
 
 [Outputs]
   exodus = true
-  file_base = kokkos_linear_elasticity_out
+  ##file_base = kokkos_linear_elasticity_out
 []
