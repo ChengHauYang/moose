@@ -1,0 +1,18 @@
+[Tests]
+  [pnp]
+    type = CSVDiff
+    input = pnp.i
+    csvdiff = pnp_out.csv
+    requirement = 'The system shall solve the nondimensional transient Galerkin Poisson-Nernst-Planck weak form for oppositely charged species.'
+    design = 'ADTimeDerivative.md ADDiffusion.md ADMatDiffusion.md ConservativeAdvection.md CoupledForce.md'
+    issues = ''
+  []
+  [pnp_dimensional]
+    type = CSVDiff
+    input = pnp_dimensional.i
+    csvdiff = pnp_dimensional_out.csv
+    requirement = 'The system shall solve the dimensional transient Galerkin Poisson-Nernst-Planck weak form for oppositely charged species.'
+    design = 'ADTimeDerivative.md ADMatDiffusion.md ConservativeAdvection.md CoupledForce.md'
+    issues = ''
+  []
+[]
