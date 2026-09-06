@@ -1,5 +1,5 @@
 [Tests]
-  issues = '#33397 #33398'
+  issues = '#33397'
   design = 'InterceptedElementModifier.md PointInPolyhedronCheckUO.md SBMSurfaceMeshBuilder.md'
   [sbm_test]
     requirement = 'The system shall be capable of performing point-in-polyhedron in-out testing to '
@@ -141,6 +141,17 @@
     recover = false
     requirement = 'The system shall assign a dedicated intercepted subdomain ID to elements the '
                   'surface cuts through when mark_intercepted is enabled.'
+  []
+
+  [mark_intercepted_with_lambda]
+    type = 'RunException'
+    input = '2D_mark_intercepted.i'
+    cli_args = 'MeshModifiers/IntercpetedESM/lambda=0.5'
+    expect_err = "This parameter cannot be set when 'mark_intercepted' is true."
+    mesh_mode = REPLICATED
+    recover = false
+    requirement = 'The system shall reject an explicit lambda threshold when intercepted elements '
+                  'are assigned a dedicated subdomain ID.'
   []
 
   [enclosed_surface]
