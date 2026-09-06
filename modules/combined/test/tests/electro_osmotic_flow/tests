@@ -1,0 +1,9 @@
+[Tests]
+  [electro_osmotic_flow]
+    type = RunApp
+    input = electro_osmotic_flow.i
+    requirement = 'The system shall solve a two-dimensional periodic electro-osmotic channel flow and agree with the linear Debye-Huckel solution for potential, oppositely charged species, pressure, and axial velocity.'
+    design = 'ADMatDiffusion.md CoupledForce.md INSADMass.md INSADMomentumViscous.md INSADMomentumPressure.md INSADMomentumCoupledForce.md'
+    issues = ''
+  []
+[]
