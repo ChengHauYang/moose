@@ -1,5 +1,5 @@
 [Tests]
-  design = 'source/actions/ShiftedCohesiveZoneAction.md'
+  design = 'syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md'
   issues = '#33666'
   [manufactured_solution]
     type = Exodiff
@@ -40,6 +40,8 @@
                   'non-interface-fitted triangular mesh using the Salehani-Irani traction law.'
   []
   [rectangle_sczm_czm_reaction_comparison]
+    requirement = 'The system shall reproduce the reaction-force history of an equivalent '
+                  'interface-fitted cohesive zone model within one percent by'
     [shifted]
       type = CheckFiles
       input = 'rectangle_sczm_tri_material.i'
@@ -47,8 +49,8 @@
       check_files = 'rectangle_sczm_comparison.csv'
       mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
       recover = false
-      requirement = 'The system shall compute the reaction-force history for a shifted cohesive '
-                    'zone problem on a non-interface-fitted mesh.'
+      detail = 'computing the reaction-force history for a shifted cohesive zone problem on a '
+               'non-interface-fitted mesh,'
     []
     [fitted]
       type = CheckFiles
@@ -56,8 +58,8 @@
       cli_args = 'Outputs/file_base=rectangle_czm_comparison Outputs/exodus=false'
       check_files = 'rectangle_czm_comparison.csv'
       recover = false
-      requirement = 'The system shall compute the reaction-force history for an equivalent '
-                    'interface-fitted cohesive zone problem.'
+      detail = 'computing the reaction-force history for an equivalent interface-fitted cohesive '
+               'zone problem,'
     []
     [compare]
       type = RunCommand
@@ -69,8 +71,7 @@
       recover = false
       restep = false
       valgrind = none
-      requirement = 'The system shall reproduce the reaction-force history of an equivalent '
-                    'interface-fitted cohesive zone model within one percent.'
+      detail = 'and comparing the two reaction-force histories.'
     []
   []
   [rectangle_sczm_tri_material_jacobian]

@@ -45,8 +45,8 @@ SCZM combines the surrogate interface with the distance and normal information d
 above. Interface kernels enforce the cohesive traction-separation law on the surrogate
 interface. Their weak form uses the distance vector to evaluate the shifted displacement
 jump and the true normal to correct the traction contribution for the geometric mismatch.
-The [`ShiftedCohesiveZoneAction`](source/actions/ShiftedCohesiveZoneAction.md) creates the
-required user objects, materials, and interface kernels for this formulation.
+The [Shifted Cohesive Zone Physics](syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md)
+creates the required user objects, materials, and interface kernels for this formulation.
 
 ## Citing
 

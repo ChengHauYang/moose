@@ -1,5 +1,6 @@
 [Tests]
   design = 'modules/shifted_boundary_method/grain_boundary_case.md'
+  issues = '#33666'
   [grain_boundary_sczm_coarse_lambda1]
     type = 'CSVDiff'
     input = 'grain_boundary_sczm_coarse_lambda1.i'
@@ -21,7 +22,6 @@
     recover = false
     requirement = 'The system shall orient true-interface normals consistently regardless of '
                   'interface-subdomain pair ordering.'
-    issues = '#33397'
   []
   [outside_grains]
     type = Exodiff
@@ -31,7 +31,6 @@
     recover = false
     requirement = 'The system shall retain an element input subdomain when no grain occupancy is '
                   'selected.'
-    issues = '#33397'
   []
   [sparse_grain_ids]
     type = Exodiff
@@ -41,7 +40,6 @@
     recover = false
     requirement = 'The system shall preserve grain names when boundary subdomain IDs are zero-based '
                   'and noncontiguous.'
-    issues = '#33397'
   []
   [invalid_leaf_max_size]
     type = RunException
@@ -50,7 +48,6 @@
     expect_err = 'Range check failed for parameter Mesh/grains/leaf_max_size'
     mesh_mode = REPLICATED
     requirement = 'The system shall reject a nonpositive maximum KD-tree leaf size.'
-    issues = '#33397'
   []
   [grain_boundary_sczm_separate_interfaces]
     type = 'CSVDiff'
@@ -109,6 +106,5 @@
     mesh_mode = REPLICATED
     requirement = 'The system shall reject partially overlapping interface faces when the complete '
                   'interface mesh is nonconformal.'
-    issues = '#33666'
   []
 []
