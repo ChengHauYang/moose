@@ -1,0 +1,10 @@
+[Tests]
+  [rayleigh_benard]
+    type = RunApp
+    input = rayleigh_benard.i
+    cli_args = 'Ra=1e3 nx=8 ny=8 Executioner/num_iterations=100 Executioner/continue_on_max_its=false Outputs/exodus=false Outputs/csv=false'
+    requirement = 'The system shall solve a differentially heated square cavity using the linear segregated incompressible Navier-Stokes and heat-transfer equations with Boussinesq buoyancy.'
+    design = 'WCNSLinearFVFlowPhysics.md WCNSLinearFVFluidHeatTransferPhysics.md LinearFVMomentumBoussinesq.md'
+    issues = ''
+  []
+[]
