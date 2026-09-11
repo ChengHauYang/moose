@@ -54,6 +54,33 @@ cd ../modules/solid_mechanics
 make -j4
 ```
 
+Verify the resulting executable reports Kokkos:
+
+```bash
+./solid_mechanics-opt --show-capabilities \
+  | python3 -c 'import json,sys; print("kokkos.value =", json.load(sys.stdin)["kokkos"]["value"])'
+```
+
+`kokkos.value` should be a Kokkos version string (e.g. `4.7.4`), not `false`. If it is `false`,
+`./configure --with-kokkos=cpu` did not take effect (usually a missing `framework/make clean`).
+
+### Build With Kokkos-CUDA
+
+The conda `moose` env's PETSc does not include CUDA. A separately maintained from-scratch
+stack (PETSc + libmesh + WASP + CUDA-aware OpenMPI) at `<path_to_moose>/kokkos-cuda-stack/`
+provides a CUDA-enabled dependency set. Its `README.md` documents:
+
+- how to build the stack (`kokkos-cuda-stack/scripts/all.sh`) and rebuild only MOOSE against it
+  (`kokkos-cuda-stack/scripts/build_moose.sh`);
+- the runtime environment (`PETSC_DIR`, `PETSC_ARCH=""`, `LIBMESH_DIR`, `WASP_DIR`) needed
+  to run `solid_mechanics-opt` against that stack;
+- the two-part GPU-KSP recipe (`jacobi + cg` in the input plus
+  `PETSC_OPTIONS="-vec_type kokkos -mat_type aijkokkos"` in the environment);
+- how to verify GPU dispatch with `nsys profile` (not `nvidia-smi`).
+
+After building against that stack, `solid_mechanics-opt --show-capabilities` should report
+both `kokkos.value` and `cuda.value` as version strings. Run with `--compute-device=cuda`.
+
 ## Test
 
 Run the complete Solid Mechanics test suite from the module directory:
