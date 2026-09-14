@@ -127,8 +127,8 @@ N = 16
 [Executioner]
   type = Transient
   solve_type = NEWTON
-  petsc_options_iname = '-pc_type'
-  petsc_options_value = 'lu'
+  petsc_options_iname = '-pc_type -ksp_type'
+  petsc_options_value = 'gamg   gmres'
   dt = 1e-3
   dtmin = 1e-3
   num_steps = 5
