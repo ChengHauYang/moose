@@ -367,3 +367,6 @@ binaryoutput
 .codegraph/
 !codegraph.json
 .env
+
+
+modules/solid_mechanics/test/tests/kokkos/plasticity/diag_results
