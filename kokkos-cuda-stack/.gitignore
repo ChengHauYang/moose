@@ -1,0 +1,11 @@
+# Build artifacts of the from-scratch CUDA stack. Tracked content in this
+# subtree is scripts/, README.md, ATTEMPTS.md, SUMMARY.md, and this file.
+prefix/
+src/
+logs/
+libmesh-build/
+neml2-venv/
+
+# One-time transition notes; regenerated on demand.
+RESUME.txt
+RESUME.md
