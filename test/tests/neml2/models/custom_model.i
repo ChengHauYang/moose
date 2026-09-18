@@ -36,7 +36,9 @@
   [error]
     type = NEML2TestModel
     error = true
-    jit = false
+  []
+  [interface_source]
+    type = NEML2TestModel2
   []
 []
 
