@@ -1,0 +1,61 @@
+[Tests]
+  issues = '#30655'
+  design = 'NEML2ModelExecutor.md KokkosQuantityToNEML2.md MOOSEQuantityToNEML2.md'
+
+  [device_variable_gather]
+    type = Exodiff
+    input = 'neml2_action_kokkos_input.i'
+    cli_args = 'Outputs/file_base=neml2_action_cpu_input_out'
+    exodiff = 'neml2_action_cpu_input_out.e'
+    requirement = 'When the NEML2 output backend is Kokkos, the system shall gather a current VARIABLE input directly on the device and produce the same thermo-elastic solution as the host-evaluated CPU NEML2 reference.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu'
+  []
+
+  [cpu_function_gather]
+    type = Exodiff
+    input = 'neml2_action_cpu_input.i'
+    exodiff = 'neml2_action_cpu_input_out.e'
+    requirement = 'The NEML2 host backend shall gather a FUNCTION input on the host and produce the same thermo-elastic solution as the Kokkos device VARIABLE gather.'
+    capabilities = 'libtorch & neml2'
+    compute_devices = 'cpu'
+  []
+
+  [device_vector_variable_gather]
+    type = Exodiff
+    input = 'neml2_action_kokkos_vector_input.i'
+    cli_args = 'Outputs/file_base=neml2_action_cpu_input_out'
+    exodiff = 'neml2_action_cpu_input_out.e'
+    requirement = 'When the NEML2 output backend is Kokkos, the system shall gather a VectorMooseVariable input directly on the device and produce the same thermo-elastic solution as the host-evaluated CPU NEML2 reference.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu'
+  []
+
+  [cpu_old_variable_gather]
+    type = Exodiff
+    input = 'neml2_action_cpu_old_input.i'
+    exodiff = 'neml2_action_cpu_old_input_out.e'
+    requirement = 'The NEML2 host backend shall gather an old VARIABLE input on the host and produce the reference thermo-elastic transient solution.'
+    capabilities = 'libtorch & neml2'
+    compute_devices = 'cpu'
+  []
+
+  [device_old_variable_gather]
+    type = Exodiff
+    input = 'neml2_action_kokkos_old_input.i'
+    cli_args = 'Outputs/file_base=neml2_action_cpu_old_input_out'
+    exodiff = 'neml2_action_cpu_old_input_out.e'
+    requirement = 'When the NEML2 output backend is Kokkos, the system shall gather an old VARIABLE input directly on the device and produce the same thermo-elastic solution as the host-evaluated CPU NEML2 reference.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu'
+  []
+
+  [device_older_variable_gather]
+    type = Exodiff
+    input = 'neml2_action_kokkos_older_input.i'
+    exodiff = 'neml2_action_kokkos_older_input_out.e'
+    requirement = 'When the NEML2 output backend is Kokkos, the system shall gather an older (lag 2) VARIABLE input directly on the device across multiple transient time steps.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu'
+  []
+[]
