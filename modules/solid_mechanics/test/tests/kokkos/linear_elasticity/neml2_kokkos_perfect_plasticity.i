@@ -30,17 +30,8 @@
 []
 
 [UserObjects]
-  [assembly]
-    type = TorchAssembly
-  []
-  [fe]
-    type = TorchFEInterpolation
-    assembly = assembly
-  []
   [neml2_strain]
-    type = TorchSmallStrain
-    assembly = assembly
-    fe = fe
+    type = KokkosSmallStrainToNEML2
     to_neml2 = neml2_strain
     displacements = 'disp_x disp_y disp_z'
   []

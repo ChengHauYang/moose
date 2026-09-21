@@ -43,6 +43,7 @@
     executor_name = neml2
     model = model
     input_kernels = neml2_strain
+    moose_to_neml2_on_gpu = true
     output_backend = kokkos
     derivatives = 'neml2_stress neml2_strain Jacobian_mult'
   []

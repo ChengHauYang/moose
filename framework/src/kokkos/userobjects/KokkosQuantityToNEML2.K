@@ -120,13 +120,15 @@ KokkosQuantityToNEML2<T, state>::initialize()
   }
 
   dof_id_type num_entries = 0;
-  for (const auto elem : make_range(num_elems))
+  for (const auto local_elem_index : make_range(num_elems))
   {
-    _element_batch_offset.hostData()[elem] = num_entries;
-    num_entries += kokkosAssembly().getNumQpsHost(elem);
+    _element_batch_offset.hostData()[local_elem_index] = num_entries;
+    num_entries += kokkosAssembly().getNumQpsHost(local_elem_index);
   }
   _element_batch_offset.copyToDevice();
 
+  // No copyToDevice() is needed for the gather buffer because it is populated
+  // directly on the device during execute().
   if (_buffer.size() != num_entries)
   {
     _buffer.create(num_entries);

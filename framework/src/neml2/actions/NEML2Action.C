@@ -77,6 +77,9 @@ NEML2Action::validParams()
       "output_backend",
       MooseEnum("moose kokkos", "moose"),
       "Backend used by automatically created NEML2 output material properties");
+  params.addParam<bool>("moose_to_neml2_on_gpu",
+                        false,
+                        "Whether to gather compatible MOOSE variable inputs into NEML2 on the device");
   params.addParam<std::string>(
       "batch_index_generator_name",
       "Name of the NEML2BatchIndexGenerator user object. The default name is "
@@ -96,7 +99,8 @@ NEML2Action::NEML2Action(const InputParameters & params)
                             ? getParam<std::string>("batch_index_generator_name")
                             : "neml2_index_" + getParam<std::string>("model") + "_" + name()),
     _block(getParam<std::vector<SubdomainName>>("block")),
-    _skip_input_variables(getParam<std::vector<std::string>>("skip_input_variables"))
+    _skip_input_variables(getParam<std::vector<std::string>>("skip_input_variables")),
+    _moose_to_neml2_on_gpu(getParam<bool>("moose_to_neml2_on_gpu"))
 {
   NEML2Utils::assertNEML2Enabled();
 
@@ -221,10 +225,6 @@ NEML2Action::act()
 
     printSummary();
 
-    // Whether the NEML2 outputs are consumed on the Kokkos execution space; current VARIABLE inputs
-    // are then gathered on the device as well.
-    const bool use_kokkos = getParam<MooseEnum>("output_backend") == "kokkos";
-
     // Create and register a MOOSEToNEML2 gatherer user object, returning its name
     auto addGatherer = [&](const std::string & moose_name,
                            const std::string & neml2_name,
@@ -254,16 +254,16 @@ NEML2Action::act()
 
     // MOOSEToNEML2 input gatherers. The NEML2 target name carries the lag suffix (var~N); the
     // MOOSE source is the un-lagged base name, and old/older values are read with the "Old"/"Older"
-    // gatherer variant. On the Kokkos output backend, VARIABLE inputs with history_order <= 2
-    // (Real and RealVectorValue) are gathered on the device with KokkosQuantityToNEML2 so the field
-    // never round-trips through the host; everything else (host scalars, functions, etc.) keeps the
-    // host gatherer.
+    // gatherer variant. When requested, compatible VARIABLE inputs with history_order <= 2 (Real
+    // and RealVectorValue) are gathered on the device with KokkosQuantityToNEML2 so the field never
+    // round-trips through the host; everything else (host scalars, functions, etc.) keeps the host
+    // gatherer.
     std::vector<UserObjectName> gatherers;
     for (const auto & input : _inputs)
     {
 #ifdef MOOSE_KOKKOS_ENABLED
       const bool kokkos_gatherer =
-          use_kokkos && input.moose_type == NEML2Utils::MOOSEIOType::VARIABLE &&
+          _moose_to_neml2_on_gpu && input.moose_type == NEML2Utils::MOOSEIOType::VARIABLE &&
           input.history_order <= 2 &&
           (input.moose_tensor_type == "Real" || input.moose_tensor_type == "RealVectorValue");
 #else
