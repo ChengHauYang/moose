@@ -1,10 +1,10 @@
-# Step 5 cannot directly use FunctionDirichletBC because it does not support GPU execution;
+# Step 6 cannot directly use FunctionDirichletBC because it does not support GPU execution;
 # instead, using a Control to update a scalar KokkosDirichletBC is currently the standard
 # and most efficient approach for implementing time-dependent boundary conditions in MOOSE's GPU mode.
 
 N = 16
 
-# Step 5: GPU NEML2, GPU Kokkos assembly, and GPU PETSc with host-staged strain input.
+# Step 6: GPU NEML2, GPU Kokkos assembly, and GPU PETSc with host-staged strain input.
 # run_benchmarks.sh selects PETSc AIJKokkos and Kokkos vectors externally.
 [Mesh]
   [generated]

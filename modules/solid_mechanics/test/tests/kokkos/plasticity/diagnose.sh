@@ -1,10 +1,10 @@
 #!/bin/bash
-# Diagnostic runner for the staged step1..step4 NEML2/Kokkos/PETSc benchmarks.
+# Diagnostic runner for the staged step1..step7 NEML2/Kokkos/PETSc benchmarks.
 #
 # Runs each step ONCE on a small mesh with verbose PETSc + MOOSE timing, and
 # prints per-step diagnostics chosen to answer:
 #   1. Did the intended PETSc backends actually take effect?
-#      In particular for Step 4: is the matrix really 'aijkokkos' and the
+#      In particular from Step 5: is the matrix really 'aijkokkos' and the
 #      vector 'kokkos', or did libMesh silently install MATAIJ? '-options_left'
 #      lists any option PETSc never consumed -- the smoking gun.
 #   2. Did the solver converge, and with the same iteration counts across steps?
@@ -46,7 +46,7 @@ if [ ! -x "$EXE" ]; then
 fi
 
 # Preflight: NEML2 [eager=true] embeds a CPython interpreter that must be able
-# to `import torch`. Catch a broken environment here instead of after four
+# to `import torch`. Catch a broken environment here instead of after seven
 # identical crashes.
 if ! python3 -c "import torch" >/dev/null 2>&1; then
   echo "ERROR: python3 cannot 'import torch' even after sourcing:" >&2
@@ -101,8 +101,9 @@ steps=(step1_plasticity_cpu_neml2
        step2_plasticity_gpu_neml2
        step3_plasticity_cpu_neml2_kokkos_cpu_petsc
        step4_plasticity_gpu_neml2_kokkos_cpu_petsc
-       step5_plasticity_full_gpu
-       step6_plasticity_full_gpu_less_D2H)
+       step5_plasticity_full_gpu_torch_strain
+       step6_plasticity_full_gpu_host_staged_strain
+       step7_plasticity_full_gpu_direct_strain)
 
 banner() {
   echo
@@ -150,7 +151,7 @@ diag_from_log() {
                 f {print}' "$log")
   if [ -n "$unused" ]; then
     echo "$unused" | sed 's/^/     /'
-    echo "     >>> These options were IGNORED. For Step 4, seeing -mat_type"
+    echo "     >>> These options were IGNORED. From Step 5, seeing -mat_type"
     echo "     >>> or -vec_type here means libMesh hard-set the type and the"
     echo "     >>> run is effectively still CPU-PETSc."
   else
@@ -218,10 +219,11 @@ run_step() {
   local petsc=$CPU_OPT
   local device_args=()
 
-  if [[ "$step" == step3a_* || "$step" == step3b_* || "$step" == step4_* ]]; then
+  if [[ "$step" == step3_* || "$step" == step4_* || "$step" == step5_* ||
+        "$step" == step6_* || "$step" == step7_* ]]; then
     device_args=(--compute-device=cuda)
   fi
-  if [[ "$step" == step4_* ]]; then
+  if [[ "$step" == step5_* || "$step" == step6_* || "$step" == step7_* ]]; then
     petsc=$GPU_OPT
   fi
 
@@ -248,7 +250,7 @@ run_step() {
   diag_from_log "$prefix.log"
 }
 
-banner "step1..step4 diagnostic runner"
+banner "step1..step7 diagnostic runner"
 env_snapshot
 for s in "${steps[@]}"; do
   run_step "$s"
@@ -266,4 +268,4 @@ echo "  Raw logs   : $RESULTS_DIR/*.log"
 echo
 echo "  Step-5 sanity: this should list aijkokkos + kokkos (NOT aij + standard):"
 echo '    grep -E "^[[:space:]]*(Mat|Vec) Object|^[[:space:]]+type:" \'
-echo "      $RESULTS_DIR/step5_plasticity_full_gpu.log | head -20"
+echo "      $RESULTS_DIR/step5_plasticity_full_gpu_torch_strain.log | head -20"

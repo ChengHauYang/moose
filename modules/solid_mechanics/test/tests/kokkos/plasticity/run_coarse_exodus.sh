@@ -1,5 +1,5 @@
 #!/bin/bash
-# Generate coarse Exodus solutions for correctness checks across all five paths.
+# Generate coarse Exodus solutions for correctness checks across all seven paths.
 # This runner enables output, so do not use its timings as benchmark results.
 set -euo pipefail
 
@@ -11,7 +11,7 @@ source "$MOOSE_DIR/kokkos-cuda-stack/scripts/activate.sh"
 
 # Pin all GPU-backed steps in this correctness run to one physical GPU.  Keep
 # an explicit caller/scheduler selection, otherwise choose the GPU with the most
-# free memory once so step2/3b/4 all use the same device.
+# free memory once so all GPU-backed steps use the same device.
 if [ -z "${CUDA_VISIBLE_DEVICES:-}" ]; then
   CUDA_VISIBLE_DEVICES=$(python3 "$SCRIPT_DIR/select_cuda_device.py" \
     --reason "plasticity coarse Exodus run")
@@ -52,8 +52,9 @@ steps=(
   step2_plasticity_gpu_neml2
   step3_plasticity_cpu_neml2_kokkos_cpu_petsc
   step4_plasticity_gpu_neml2_kokkos_cpu_petsc
-  step5_plasticity_full_gpu
-  step6_plasticity_full_gpu_less_D2H
+  step5_plasticity_full_gpu_torch_strain
+  step6_plasticity_full_gpu_host_staged_strain
+  step7_plasticity_full_gpu_direct_strain
 )
 
 run_step()
@@ -65,10 +66,10 @@ run_step()
   local device_args=()
 
   if [[ "$step" == step3_* || "$step" == step4_* || "$step" == step5_* ||
-        "$step" == step6_* ]]; then
+        "$step" == step6_* || "$step" == step7_* ]]; then
     device_args=(--compute-device=cuda)
   fi
-  if [[ "$step" == step5_* || "$step" == step6_* ]]; then
+  if [[ "$step" == step5_* || "$step" == step6_* || "$step" == step7_* ]]; then
     petsc_args=("${GPU_PETSC_ARGS[@]}")
   fi
 
@@ -106,4 +107,4 @@ done
 echo
 echo "Coarse solutions written to: $OUTPUT_DIR"
 echo "At t=0.005, expect ux_right ~= 0.005 and ux_center ~= 0.0025."
-echo "Open the .e files in ParaView and compare disp_x across all five steps."
+echo "Open the .e files in ParaView and compare disp_x across all seven steps."
