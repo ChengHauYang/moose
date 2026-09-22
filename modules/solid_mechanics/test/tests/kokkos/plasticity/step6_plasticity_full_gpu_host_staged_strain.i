@@ -43,7 +43,6 @@ N = 16
     type = KokkosSmallStrainToNEML2
     to_neml2 = neml2_strain
     displacements = 'disp_x disp_y disp_z'
-    moose_to_neml2_on_gpu = false
   []
 []
 
