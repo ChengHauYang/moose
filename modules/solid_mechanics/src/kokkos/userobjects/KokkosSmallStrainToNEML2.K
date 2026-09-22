@@ -36,6 +36,12 @@ KokkosSmallStrainToNEML2::KokkosSmallStrainToNEML2(const InputParameters & param
 {
   NEML2Utils::assertNEML2Enabled();
 
+  // Declare the current-solution vector-tag dependency so computeKokkosUserObjectsInternal syncs
+  // the current Newton iterate to device and reinits QP gradients before this UO's parallel
+  // dispatch reads them. Without this, execute() reads stale/zero QP gradients and delivers zero
+  // strain to NEML2 (predictor trivially converges, plasticity never triggers).
+  addFEVariableCoupleableVectorTag(_fe_problem.getVectorTagID(Moose::SOLUTION_TAG));
+
   if (_ndisp != _fe_problem.mesh().dimension())
     paramError("displacements",
                "The number of displacement variables must match the mesh dimension.");

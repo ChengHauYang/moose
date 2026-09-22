@@ -49,7 +49,11 @@ KokkosSmallStrainToNEML2::execute(Datum & datum) const
 {
   const auto offset = 6 * _element_batch_offset[datum.elemID()];
 
-  for (const auto qp : make_range(datum.n_qps()))
+  // NOTE: use a plain C for-loop rather than `for (auto qp : make_range(datum.n_qps()))`.
+  // make_range's device-side iteration silently drops multi-write loop bodies under nvcc
+  // in this UO's dispatch path, leaving _buffer at its initialization value and delivering
+  // zero strain to NEML2 (predictor trivially converges, plasticity never triggers).
+  for (unsigned qp = 0; qp < datum.n_qps(); ++qp)
   {
     const auto row = offset + 6 * qp;
     _buffer[row] = _grad_displacements(datum, qp, 0)(0);
