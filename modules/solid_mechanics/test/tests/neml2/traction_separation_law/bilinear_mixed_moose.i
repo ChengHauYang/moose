@@ -66,33 +66,6 @@ boundary = 'Block1_Block2'
   []
 []
 
-[NEML2]
-  eager = true
-  input = 'TSL.i'
-  [interface]
-    model = 'czm'
-    device = 'cpu'
-
-    # Keep the internal damage state (fed to the model as damage~1) on the compute device and
-    # advance it once per converged step, instead of round-tripping it through a MOOSE material.
-    # The stateful MOOSE-material path is not available for a boundary-restricted NEML2 output
-    # read back as an old input on interface sides.
-    manage_state_advance = true
-
-    # derivative d(interface_traction)/d(interface_displacement_jump), alias
-    # expected by CZMComputeGlobalTractionBase
-    derivatives = 'interface_traction interface_displacement_jump dinterface_traction_djump'
-
-    interface = ${boundary}
-    interface_only = true
-
-    # interface_displacement_jump is supplied by the interface material
-    # CZMComputeDisplacementJumpTotalLagrangian, so it must be routed through
-    # interface material data
-    interface_material_inputs = 'interface_displacement_jump'
-  []
-[]
-
 [AuxVariables]
   [react_y]
   []
@@ -104,7 +77,7 @@ boundary = 'Block1_Block2'
     vector_tag = 'ref'
     v = 'disp_y'
     variable = 'react_y'
-    scaled = false
+    remove_variable_scaling = true
   []
 []
 
@@ -156,6 +129,21 @@ boundary = 'Block1_Block2'
     type = ADComputeElasticityTensor
     fill_method = symmetric9
     C_ijkl = '1.684e5 0.176e5 0.176e5 1.684e5 0.176e5 1.684e5 0.754e5 0.754e5 0.754e5'
+  []
+  [czm]
+    type = BiLinearMixedModeTraction
+    boundary = ${boundary}
+    penalty_stiffness = 1e6
+    GI_c = 1e3
+    GII_c = 1e2
+    normal_strength = 1e4
+    shear_strength = 1e3
+    displacements = 'disp_x disp_y'
+    eta = 2.2
+    # viscosity=1e-3 + lag_mode_mixity=true not present on the NEML2 side;
+    # disable both so this MOOSE reference matches the NEML2 TSL model here
+    viscosity = 0
+    lag_mode_mixity = false
   []
 []
 
