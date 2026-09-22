@@ -90,20 +90,6 @@ if [ -x "$MINIFORGE_BIN/python3-config" ]; then
   esac
 fi
 
-# MOOSE binaries link against miniforge base's libpython3.12.so.1.0 (via
-# `python3-config --embed` picking up the miniforge/bin above). That library
-# lives in ../lib next to miniforge/bin but has no RPATH into the binary,
-# so ld.so needs LD_LIBRARY_PATH at runtime. Guarded on the .so existing so
-# a machine without miniforge base is not affected.
-MINIFORGE_LIB="/home/chenghau.yang/miniforge/lib"
-if [ -f "$MINIFORGE_LIB/libpython3.12.so.1.0" ]; then
-  case ":${LD_LIBRARY_PATH:-}:" in
-    *":$MINIFORGE_LIB:"*) ;;
-    *) LD_LIBRARY_PATH="$MINIFORGE_LIB${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" ;;
-  esac
-  export LD_LIBRARY_PATH
-fi
-
 export PATH
 
 : "${MOOSE_JOBS:=8}"

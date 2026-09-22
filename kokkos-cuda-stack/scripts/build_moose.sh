@@ -112,6 +112,18 @@ if [ "${NEML2_SUPPORT:-1}" = "1" ]; then
   fi
   CONFIGURE_ARGS+=(--with-libtorch --with-neml2)
   echo "[build_moose] NEML2 support enabled (venv python3 has neml2 installed)"
+
+  # Bake miniforge/lib into every linked object's DT_RUNPATH so ld.so finds
+  # libpython3.12.so.1.0 at runtime without needing LD_LIBRARY_PATH in the
+  # user's shell (which pollutes /usr/bin/git, ssh, and anything else built
+  # against system openssl). autoconf + libtool propagate LDFLAGS through
+  # every link command, so the exec, libmoose*.so, libsolid_mechanics*.so,
+  # and libmoose_test*.so all pick it up.
+  MINIFORGE_LIB="/home/chenghau.yang/miniforge/lib"
+  if [ -f "$MINIFORGE_LIB/libpython3.12.so.1.0" ]; then
+    export LDFLAGS="-Wl,-rpath,$MINIFORGE_LIB${LDFLAGS:+ $LDFLAGS}"
+    echo "[build_moose] LDFLAGS=$LDFLAGS"
+  fi
 else
   echo "[build_moose] NEML2 support disabled (NEML2_SUPPORT=$NEML2_SUPPORT)"
 fi
