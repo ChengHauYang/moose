@@ -3,20 +3,22 @@
 This directory compares the same three-dimensional perfect-plasticity problem
 as progressively more work is moved to one GPU:
 
-| Step | NEML2 | Assembly | PETSc |
-| --- | --- | --- | --- |
-| 1 | CPU | CPU | CPU |
-| 2 | GPU | CPU | CPU |
-| 3a | CPU | GPU (Kokkos) | CPU |
-| 3b | GPU | GPU (Kokkos) | CPU |
-| 4 | GPU | GPU (Kokkos) | GPU (AIJKokkos) |
+| Step | Strain | NEML2 | Assembly | PETSc |
+| --- | --- | --- | --- | --- |
+| 1 | MOOSE/CPU | CPU | CPU | CPU |
+| 2 | MOOSE/CPU | GPU | CPU | CPU |
+| 3 | Torch/GPU | CPU | GPU (Kokkos) | CPU |
+| 4 | Torch/GPU | GPU | GPU (Kokkos) | CPU |
+| 5 | Torch/GPU | GPU | GPU (Kokkos) | GPU (AIJKokkos) |
+| 6 | Kokkos/GPU, host-staged | GPU | GPU (Kokkos) | GPU (AIJKokkos) |
+| 7 | Kokkos/GPU, direct view | GPU | GPU (Kokkos) | GPU (AIJKokkos) |
 
 Step 2 intentionally copies the NEML2 stress and tangent back to host memory.
-Step 3a evaluates NEML2 on the CPU while Kokkos assembly remains on the GPU, so
-the strain input moves device-to-host and the stress and tangent outputs move
-host-to-device. Step 3b keeps NEML2 and assembly on the GPU. Both Step 3 cases
-leave PETSc on standard CPU vectors and AIJ matrices. Step 4 also moves PETSc
-vectors and matrices to the GPU.
+Steps 3 and 4 move assembly to Kokkos while retaining CPU PETSc; step 3 keeps
+NEML2 on the CPU and step 4 moves it to the GPU. Step 5 also moves PETSc vectors
+and matrices to the GPU but retains the Torch strain path. Steps 6 and 7 use the
+same Kokkos strain kernel. Step 6 copies the strain buffer through host memory,
+while step 7 exposes that buffer directly as a CUDA tensor view.
 
 The runner passes PETSc options on the MOOSE command line because MOOSE rebuilds
 the PETSc options database before each solve.
@@ -59,16 +61,16 @@ Use the coarse-output runner before interpreting benchmark speedups:
 ./run_coarse_exodus.sh
 ```
 
-It runs all five configurations once with `N=8`, forces Exodus and CSV output,
+It runs all seven configurations once with `N=8`, forces Exodus and CSV output,
 and writes separate `.e`, `.csv`, and `.log` files under
 `coarse_exodus_n8/`. This run includes output overhead and is for correctness,
 not timing.
 
-For Steps 3a, 3b, and 4, the script also prints the final `ux_right` and
+For Steps 3 through 7, the script also prints the final `ux_right` and
 `ux_center` point values already defined in those inputs. At `t=0.005`, the
 expected displacement is approximately `ux_right=0.005` and
 `ux_center=0.0025`. Open the Exodus files in ParaView and compare `disp_x`
-between all five steps.
+between all seven steps.
 
 Override the coarse mesh or output location when needed:
 

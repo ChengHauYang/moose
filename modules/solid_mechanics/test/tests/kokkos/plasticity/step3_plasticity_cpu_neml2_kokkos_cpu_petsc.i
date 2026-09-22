@@ -1,6 +1,6 @@
 N = 16
 
-# Step 3a: CPU NEML2, GPU Kokkos assembly, and CPU PETSc.
+# Step 3: CPU NEML2, GPU Kokkos assembly, and CPU PETSc.
 # NEML2 inputs move from the GPU to the CPU, and stress/tangent outputs move back to the GPU.
 [Mesh]
   [generated]
