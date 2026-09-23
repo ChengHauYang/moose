@@ -39,7 +39,8 @@ Ngrain = 3
   [all]
     executor_name = neml2
     model = model
-    device = xpu
+    #device = xpu
+    device = cpu
     input_kernels = neml2_strain
     auto_output = false
     manage_state_advance = true
