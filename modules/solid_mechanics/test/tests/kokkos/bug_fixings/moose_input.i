@@ -1,3 +1,6 @@
+Nelem = 3
+Ngrain = 3
+
 [Mesh]
   #[gmg]
   #  type = DistributedRectilinearMeshGenerator
@@ -32,7 +35,7 @@
 
 [NEML2]
   eager = true
-  input = '/lus/flare/projects/moose_gpu/packages/new-neml2/scaling-dist/perfect_neml2.i'
+  input = 'perfect_neml2.i'
   [all]
     executor_name = neml2
     model = model
