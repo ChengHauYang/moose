@@ -1,15 +1,16 @@
 #!/bin/bash
-# Diagnostic runner for the staged step1..step4 NEML2/Kokkos/PETSc benchmarks.
+# Diagnostic runner for the staged step1..step7 NEML2/Kokkos/PETSc benchmarks.
 #
 # Runs each step ONCE on a small mesh with verbose PETSc + MOOSE timing, and
 # prints per-step diagnostics chosen to answer:
 #   1. Did the intended PETSc backends actually take effect?
-#      In particular for Step 4: is the matrix really 'aijkokkos' and the
+#      In particular from Step 5: is the matrix really 'aijkokkos' and the
 #      vector 'kokkos', or did libMesh silently install MATAIJ? '-options_left'
 #      lists any option PETSc never consumed -- the smoking gun.
 #   2. Did the solver converge, and with the same iteration counts across steps?
-#   3. Where was the time spent (MOOSE PerfGraph + PETSc -log_view)?
-#   4. Were there any errors / fatals we should surface?
+#   3. Did NEML2 actually gather inputs and evaluate the model?
+#   4. Where was the time spent (MOOSE PerfGraph + PETSc -log_view)?
+#   5. Were there any errors / fatals we should surface?
 #
 # Every step's full stdout+stderr is kept under $RESULTS_DIR/<step>.log so we
 # can dig further if any of the summary lines look off. This script does NOT
@@ -46,7 +47,7 @@ if [ ! -x "$EXE" ]; then
 fi
 
 # Preflight: NEML2 [eager=true] embeds a CPython interpreter that must be able
-# to `import torch`. Catch a broken environment here instead of after four
+# to `import torch`. Catch a broken environment here instead of after seven
 # identical crashes.
 if ! python3 -c "import torch" >/dev/null 2>&1; then
   echo "ERROR: python3 cannot 'import torch' even after sourcing:" >&2
@@ -99,9 +100,14 @@ GPU_OPT="-vec_type kokkos   -nl0_mat_type aijkokkos -use_gpu_aware_mpi 0 $COMMON
 
 steps=(step1_plasticity_cpu_neml2
        step2_plasticity_gpu_neml2
-       step3a_plasticity_cpu_neml2_kokkos_cpu_petsc
-       step3b_plasticity_gpu_neml2_kokkos_cpu_petsc
-       step4_plasticity_full_gpu)
+       step3_plasticity_cpu_neml2_kokkos_cpu_petsc
+       step4_plasticity_gpu_neml2_kokkos_cpu_petsc
+       step5_plasticity_full_gpu_torch_strain
+       step6_plasticity_full_gpu_host_staged_strain
+       step7_plasticity_full_gpu_direct_strain)
+
+run_failures=0
+neml2_failures=0
 
 banner() {
   echo
@@ -126,8 +132,54 @@ env_snapshot() {
   fi
 }
 
+neml2_perf_evidence() {
+  local perf_json=$1
+
+  python3 - "$perf_json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+wanted = ("NEML2::fillInputs", "NEML2::solve")
+
+try:
+    data = json.loads(path.read_text())
+    graph = data["time_steps"][-1]["perf_graph_json"]["graph"]
+except (OSError, json.JSONDecodeError, KeyError, IndexError, TypeError) as error:
+    print(f"     ERROR: cannot read PerfGraph JSON: {error}")
+    raise SystemExit(1)
+
+found = {name: {"calls": 0, "time": 0.0} for name in wanted}
+
+def visit(nodes):
+    if not isinstance(nodes, dict):
+        return
+    for name, node in nodes.items():
+        if not isinstance(node, dict):
+            continue
+        if name in found:
+            found[name]["calls"] += int(node.get("num_calls", 0))
+            found[name]["time"] += float(node.get("time", 0.0))
+        visit(node.get("children", {}))
+
+visit(graph)
+for name in wanted:
+    values = found[name]
+    status = "PASS" if values["calls"] > 0 else "FAIL"
+    print(f"     {status}: {name}: calls={values['calls']} self_time={values['time']:.6g}s")
+
+raise SystemExit(0 if found["NEML2::solve"]["calls"] > 0 else 1)
+PY
+}
+
 diag_from_log() {
   local log=$1
+  local perf_json=$2
+
+  echo "  -- NEML2 execution evidence (from PerfGraph JSON):"
+  local neml2_rc=0
+  neml2_perf_evidence "$perf_json" || neml2_rc=$?
 
   echo "  -- PETSc types resolved (from -ksp_view header + type lines):"
   # Print object header + type: line in the order they appear. Loose whitespace
@@ -149,7 +201,7 @@ diag_from_log() {
                 f {print}' "$log")
   if [ -n "$unused" ]; then
     echo "$unused" | sed 's/^/     /'
-    echo "     >>> These options were IGNORED. For Step 4, seeing -mat_type"
+    echo "     >>> These options were IGNORED. From Step 5, seeing -mat_type"
     echo "     >>> or -vec_type here means libMesh hard-set the type and the"
     echo "     >>> run is effectively still CPU-PETSc."
   else
@@ -201,6 +253,10 @@ diag_from_log() {
     echo "     (no PerfGraph found in log)"
   fi
 
+  if [ "$neml2_rc" -ne 0 ]; then
+    neml2_failures=$((neml2_failures + 1))
+  fi
+
   echo "  -- PETSc -log_view Summary of Stages (first 25 lines):"
   local lv
   lv=$(awk '/Summary of Stages/{f=1} f{print; if(++n>=25) exit}' "$log")
@@ -217,10 +273,11 @@ run_step() {
   local petsc=$CPU_OPT
   local device_args=()
 
-  if [[ "$step" == step3a_* || "$step" == step3b_* || "$step" == step4_* ]]; then
+  if [[ "$step" == step3_* || "$step" == step4_* || "$step" == step5_* ||
+        "$step" == step6_* || "$step" == step7_* ]]; then
     device_args=(--compute-device=cuda)
   fi
-  if [[ "$step" == step4_* ]]; then
+  if [[ "$step" == step5_* || "$step" == step6_* || "$step" == step7_* ]]; then
     petsc=$GPU_OPT
   fi
 
@@ -244,10 +301,13 @@ run_step() {
 
   echo "  exit code    : $rc"
   echo "  timing       : $(cat "$prefix.time" 2>/dev/null || echo '?')"
-  diag_from_log "$prefix.log"
+  if [ "$rc" -ne 0 ]; then
+    run_failures=$((run_failures + 1))
+  fi
+  diag_from_log "$prefix.log" "$prefix.perf.json"
 }
 
-banner "step1..step4 diagnostic runner"
+banner "step1..step7 diagnostic runner"
 env_snapshot
 for s in "${steps[@]}"; do
   run_step "$s"
@@ -262,7 +322,13 @@ done
 
 echo
 echo "  Raw logs   : $RESULTS_DIR/*.log"
+echo "  Run failures: $run_failures"
+echo "  Missing NEML2 solve evidence: $neml2_failures"
 echo
-echo "  Step-4 sanity: this should list aijkokkos + kokkos (NOT aij + standard):"
-echo "    grep -E '^[[:space:]]*(Mat|Vec) Object|^[[:space:]]+type:' \\"
-echo "      $RESULTS_DIR/step4_plasticity_full_gpu.log | head -20"
+echo "  Step-5 sanity: this should list aijkokkos + kokkos (NOT aij + standard):"
+echo '    grep -E "^[[:space:]]*(Mat|Vec) Object|^[[:space:]]+type:" \'
+echo "      $RESULTS_DIR/step5_plasticity_full_gpu_torch_strain.log | head -20"
+
+if [ "$run_failures" -ne 0 ] || [ "$neml2_failures" -ne 0 ]; then
+  exit 1
+fi

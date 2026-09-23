@@ -5,6 +5,22 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 MOOSE_DIR=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)
 
+# All per-step invocations redirect stdout+stderr to a log file, so a failing
+# executable would abort the script silently under `set -e`. Track the current
+# log path and dump its tail on ERR so the terminal shows the actual failure.
+CURRENT_LOG=""
+on_error()
+{
+  local rc=$?
+  if [ -n "$CURRENT_LOG" ] && [ -f "$CURRENT_LOG" ]; then
+    echo "----- last 40 lines of $CURRENT_LOG -----" >&2
+    tail -n 40 "$CURRENT_LOG" >&2
+    echo "----- end of $CURRENT_LOG -----" >&2
+  fi
+  exit "$rc"
+}
+trap on_error ERR
+
 # Source the CUDA-Kokkos stack activation so OpenMPI can find its runtime
 # data files. The stack was relocated after build; without OPAL_PREFIX the
 # opal_wrapper falls back to a CWD-relative lookup and MPI_Init fails.
@@ -54,13 +70,21 @@ GPU_PETSC_ARGS=(
   -ksp_view
 )
 
-steps=(
+default_steps=(
   step1_plasticity_cpu_neml2
   step2_plasticity_gpu_neml2
-  step3a_plasticity_cpu_neml2_kokkos_cpu_petsc
-  step3b_plasticity_gpu_neml2_kokkos_cpu_petsc
-  step4_plasticity_full_gpu
+  step3_plasticity_cpu_neml2_kokkos_cpu_petsc
+  step4_plasticity_gpu_neml2_kokkos_cpu_petsc
+  step5_plasticity_full_gpu_torch_strain
+  step6_plasticity_full_gpu_host_staged_strain
+  step7_plasticity_full_gpu_direct_strain
 )
+# STEPS="step6_... step7_..." selects a subset of default_steps to rerun.
+if [ -n "${STEPS:-}" ]; then
+  read -r -a steps <<<"$STEPS"
+else
+  steps=("${default_steps[@]}")
+fi
 
 run_step()
 {
@@ -69,16 +93,18 @@ run_step()
   local petsc_args=("${CPU_PETSC_ARGS[@]}")
   local device_args=()
 
-  if [[ "$step" == step3a_* || "$step" == step3b_* || "$step" == step4_* ]]; then
+  if [[ "$step" == step3_* || "$step" == step4_* || "$step" == step5_* ||
+        "$step" == step6_* || "$step" == step7_* ]]; then
     device_args=(--compute-device=cuda)
   fi
-  if [[ "$step" == step4_* ]]; then
+  if [[ "$step" == step5_* || "$step" == step6_* || "$step" == step7_* ]]; then
     petsc_args=("${GPU_PETSC_ARGS[@]}")
   fi
 
   for rep in $(seq 1 "$REPEATS"); do
     local prefix="$RESULTS_DIR/${step}_rep${rep}"
     echo "Running $step repetition $rep/$REPEATS"
+    CURRENT_LOG="$prefix.log"
     /usr/bin/time -f '%e' -o "$prefix.time" \
       "$EXE" -i "$input" "${device_args[@]}" \
         "N=$MESH_N" \
@@ -96,6 +122,7 @@ run_step()
 
     local profile_prefix="$RESULTS_DIR/${step}_profile"
     echo "Profiling $step once with Nsight Systems"
+    CURRENT_LOG="$profile_prefix.log"
     nsys profile --force-overwrite=true --trace=cuda,nvtx,mpi \
       -o "$profile_prefix" \
       "$EXE" -i "$input" "${device_args[@]}" \

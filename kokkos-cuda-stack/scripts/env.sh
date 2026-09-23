@@ -47,7 +47,19 @@ export LOGS=${STACK_DIR}/logs
 # entries are harmless (the very first build_openmpi run has no $PREFIX/bin).
 # Set BEFORE any external command (e.g. mkdir) is invoked below - the purge
 # loop above cleared PATH, so a bare `mkdir` at this point would not resolve.
-export PATH=$PREFIX/bin:/usr/local/cuda/bin:/usr/bin:/bin:/sbin:/usr/sbin
+#
+# MINIFORGE_BIN is placed AFTER $PREFIX/bin and BEFORE /usr/bin. This is
+# load-bearing for the MOOSE build: MOOSE's ./configure runs
+# `python3-config --embed --libs` and bakes the output into every .la file's
+# dependency_libs. Under /usr/bin that resolves to system Python 3.10's
+# python3-config and returns "-lpython3.10 -lcrypt -ldl", which then travels
+# transitively into libmoose*.so and every downstream binary. At runtime
+# NEML2 also loads libpython3.12 (from miniforge/venv) and the two Python
+# runtimes collide: _PyInterpreterState_GET() returns NULL and the process
+# SIGSEGVs at NEML2::eager::Model::Model. Prepending miniforge/bin makes
+# python3-config return "-lpython3.12 -lpthread -ldl -lutil -lm" and every
+# .la ends up referencing only Python 3.12.
+export PATH=$PREFIX/bin:/home/chenghau.yang/miniforge/bin:/usr/local/cuda/bin:/usr/bin:/bin:/sbin:/usr/sbin
 
 # OPAL_PREFIX: OpenMPI's own override for a relocated install. The
 # mpicc/mpicxx/mpif90 wrappers are symlinks to opal_wrapper, which reads its

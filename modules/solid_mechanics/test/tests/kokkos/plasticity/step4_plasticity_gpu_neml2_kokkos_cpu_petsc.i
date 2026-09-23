@@ -1,10 +1,13 @@
+N = 16
+
+# Step 4: GPU NEML2, GPU Kokkos assembly, and CPU PETSc.
 [Mesh]
   [generated]
     type = GeneratedMeshGenerator
     dim = 3
-    nx = 2
-    ny = 2
-    nz = 2
+    nx = ${N}
+    ny = ${N}
+    nz = ${N}
   []
 []
 
@@ -23,6 +26,7 @@
   [all]
     executor_name = neml2
     model = model
+    device = cuda
     input_kernels = neml2_strain
     auto_output = false
     manage_state_advance = true
@@ -30,8 +34,17 @@
 []
 
 [UserObjects]
+  [assembly]
+    type = TorchAssembly
+  []
+  [fe]
+    type = TorchFEInterpolation
+    assembly = assembly
+  []
   [neml2_strain]
-    type = KokkosSmallStrainToNEML2
+    type = TorchSmallStrain
+    assembly = assembly
+    fe = fe
     to_neml2 = neml2_strain
     displacements = 'disp_x disp_y disp_z'
   []
@@ -85,6 +98,7 @@
     type = KokkosDirichletBC
     variable = disp_x
     boundary = right
+    preset = false
     value = 0
   []
   [disp_y]
@@ -127,13 +141,36 @@
 [Executioner]
   type = Transient
   solve_type = NEWTON
-  dt = 0.001
+  petsc_options_iname = '-pc_type -ksp_type'
+  petsc_options_value = 'gamg   gmres'
+  dt = 1e-3
+  dtmin = 1e-3
   num_steps = 5
   nl_abs_tol = 1e-10
-  residual_and_jacobian_together = false
+  residual_and_jacobian_together = true
+[]
+
+# Diagnostic sample points: verify the KokkosDirichletBC + RealFunctionControl
+# actually applies loading. At t=5e-3 the right boundary should track the
+# loading function (u_x = t), so ux_right ~ 5e-3 and ux_center ~ 2.5e-3.
+# If ux_right stays 0, the control is not reaching the Kokkos BC value and
+# SNES is converging in 0 iterations against a zero-load residual.
+[Postprocessors]
+  [ux_right]
+    type = PointValue
+    variable = disp_x
+    point = '1 0.5 0.5'
+    execute_on = TIMESTEP_END
+  []
+  [ux_center]
+    type = PointValue
+    variable = disp_x
+    point = '0.5 0.5 0.5'
+    execute_on = TIMESTEP_END
+  []
 []
 
 [Outputs]
-  exodus = true
-  file_base = neml2_kokkos_plasticity_out
+  exodus = false
+  csv = true
 []

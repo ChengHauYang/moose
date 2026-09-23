@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarize and plot the five NEML2/Kokkos/PETSc benchmark steps.
+"""Summarize and plot the seven NEML2/Kokkos/PETSc benchmark steps.
 
 This version is robust to GNU time files that contain messages such as
 
@@ -29,14 +29,22 @@ STEPS = [
     ("step1_plasticity_cpu_neml2", "1. CPU NEML2"),
     ("step2_plasticity_gpu_neml2", "2. GPU NEML2"),
     (
-        "step3a_plasticity_cpu_neml2_kokkos_cpu_petsc",
+        "step3_plasticity_cpu_neml2_kokkos_cpu_petsc",
         "3. CPU NEML2 + GPU assembly",
     ),
     (
-        "step3b_plasticity_gpu_neml2_kokkos_cpu_petsc",
+        "step4_plasticity_gpu_neml2_kokkos_cpu_petsc",
         "4. GPU NEML2 + GPU assembly",
     ),
-    ("step4_plasticity_full_gpu", "5. Full GPU"),
+    ("step5_plasticity_full_gpu_torch_strain", "5. Full GPU + Torch strain"),
+    (
+        "step6_plasticity_full_gpu_host_staged_strain",
+        "6. Full GPU + host-staged Kokkos strain",
+    ),
+    (
+        "step7_plasticity_full_gpu_direct_strain",
+        "7. Full GPU + direct Kokkos strain",
+    ),
 ]
 
 

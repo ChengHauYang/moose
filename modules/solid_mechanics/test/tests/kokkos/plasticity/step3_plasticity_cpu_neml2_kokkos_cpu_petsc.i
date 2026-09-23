@@ -1,6 +1,7 @@
 N = 16
 
-# Step 3b: GPU NEML2, GPU Kokkos assembly, and CPU PETSc.
+# Step 3: CPU NEML2, GPU Kokkos assembly, and CPU PETSc.
+# NEML2 inputs move from the GPU to the CPU, and stress/tangent outputs move back to the GPU.
 [Mesh]
   [generated]
     type = GeneratedMeshGenerator
@@ -26,7 +27,7 @@ N = 16
   [all]
     executor_name = neml2
     model = model
-    device = cuda
+    device = cpu
     input_kernels = neml2_strain
     auto_output = false
     manage_state_advance = true
@@ -142,7 +143,7 @@ N = 16
   type = Transient
   solve_type = NEWTON
   petsc_options_iname = '-pc_type -ksp_type'
-  petsc_options_value = 'gamg   gmres'
+  petsc_options_value = 'gamg gmres'
   dt = 1e-3
   dtmin = 1e-3
   num_steps = 5

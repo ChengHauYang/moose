@@ -85,6 +85,26 @@ if [ "${NEML2_SUPPORT:-1}" = "1" ]; then
   export VIRTUAL_ENV="$STACK_DIR/neml2-venv"
   MINIFORGE_BIN="/home/chenghau.yang/miniforge/bin"
   export PATH="$PREFIX/bin:$NEML2_VENV_BIN:$MINIFORGE_BIN:$PATH"
+
+  # Preflight: `python3-config --embed --libs` output gets baked into every .la file's
+  # dependency_libs at configure time. If it returns anything other than -lpython3.12, the
+  # resulting libraries carry a second libpython at runtime -- NEML2 also loads Python 3.12
+  # (from miniforge/venv), the two runtimes collide, and NEML2::eager::Model::Model SIGSEGVs
+  # with _PyInterpreterState_GET() returning NULL. Fail loudly here rather than silently
+  # producing a poisoned build.
+  py_libs=$(python3-config --embed --libs 2>&1)
+  case "$py_libs" in
+    *-lpython3.12*) ;;
+    *)
+      echo "[build_moose] ERROR: python3-config resolves to the wrong Python interpreter." >&2
+      echo "[build_moose]   which python3-config: $(command -v python3-config)" >&2
+      echo "[build_moose]   --embed --libs:       $py_libs" >&2
+      echo "[build_moose]   expected -lpython3.12 (miniforge's Python 3.12)." >&2
+      echo "[build_moose]   Fix: run $SCRIPT_DIR/fix_env.sh, then retry." >&2
+      exit 1
+      ;;
+  esac
+
   if ! "$NEML2_VENV_BIN/python3" -c 'import neml2' 2>/dev/null; then
     echo "[build_moose] ERROR: NEML2_SUPPORT=1 but 'import neml2' fails in $NEML2_VENV_BIN/python3." >&2
     echo "[build_moose]        run: $SCRIPT_DIR/build_neml2.sh   (or export NEML2_SUPPORT=0 to build without NEML2)" >&2
@@ -92,6 +112,18 @@ if [ "${NEML2_SUPPORT:-1}" = "1" ]; then
   fi
   CONFIGURE_ARGS+=(--with-libtorch --with-neml2)
   echo "[build_moose] NEML2 support enabled (venv python3 has neml2 installed)"
+
+  # Bake miniforge/lib into every linked object's DT_RUNPATH so ld.so finds
+  # libpython3.12.so.1.0 at runtime without needing LD_LIBRARY_PATH in the
+  # user's shell (which pollutes /usr/bin/git, ssh, and anything else built
+  # against system openssl). autoconf + libtool propagate LDFLAGS through
+  # every link command, so the exec, libmoose*.so, libsolid_mechanics*.so,
+  # and libmoose_test*.so all pick it up.
+  MINIFORGE_LIB="/home/chenghau.yang/miniforge/lib"
+  if [ -f "$MINIFORGE_LIB/libpython3.12.so.1.0" ]; then
+    export LDFLAGS="-Wl,-rpath,$MINIFORGE_LIB${LDFLAGS:+ $LDFLAGS}"
+    echo "[build_moose] LDFLAGS=$LDFLAGS"
+  fi
 else
   echo "[build_moose] NEML2 support disabled (NEML2_SUPPORT=$NEML2_SUPPORT)"
 fi

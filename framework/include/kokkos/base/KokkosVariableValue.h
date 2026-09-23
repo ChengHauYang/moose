@@ -680,13 +680,24 @@ public:
 
   /**
    * Get the current vector variable value
+   * @param datum The Datum object of the current thread
+   * @param idx The local quadrature point index or DOF index
+   * @returns The vector variable value
+   */
+  KOKKOS_FUNCTION Real3 operator()(Datum & datum, unsigned int idx, unsigned int comp = 0) const;
+
+  /**
+   * Get the current vector variable value
    * @param datum The AssemblyDatum object of the current thread
    * @param idx The local quadrature point index or DOF index
    * @returns The vector variable value
    */
   KOKKOS_FUNCTION Real3 operator()(AssemblyDatum & datum,
                                    unsigned int idx,
-                                   unsigned int comp = 0) const;
+                                   unsigned int comp = 0) const
+  {
+    return operator()(static_cast<Datum &>(datum), idx, comp);
+  }
 
   /**
    * Get the Kokkos variable
@@ -814,7 +825,7 @@ private:
 };
 
 KOKKOS_FUNCTION inline Real3
-VectorVariableValue::operator()(AssemblyDatum & datum, unsigned int idx, unsigned int comp) const
+VectorVariableValue::operator()(Datum & datum, unsigned int idx, unsigned int comp) const
 {
   KOKKOS_ASSERT(_var.initialized());
 

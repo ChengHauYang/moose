@@ -77,6 +77,9 @@ NEML2Action::validParams()
       "output_backend",
       MooseEnum("moose kokkos", "moose"),
       "Backend used by automatically created NEML2 output material properties");
+  params.addParam<bool>("moose_to_neml2_on_gpu",
+                        false,
+                        "Whether to gather compatible MOOSE variable inputs into NEML2 on the device");
   params.addParam<std::string>(
       "batch_index_generator_name",
       "Name of the NEML2BatchIndexGenerator user object. The default name is "
@@ -96,7 +99,8 @@ NEML2Action::NEML2Action(const InputParameters & params)
                             ? getParam<std::string>("batch_index_generator_name")
                             : "neml2_index_" + getParam<std::string>("model") + "_" + name()),
     _block(getParam<std::vector<SubdomainName>>("block")),
-    _skip_input_variables(getParam<std::vector<std::string>>("skip_input_variables"))
+    _skip_input_variables(getParam<std::vector<std::string>>("skip_input_variables")),
+    _moose_to_neml2_on_gpu(getParam<bool>("moose_to_neml2_on_gpu"))
 {
   NEML2Utils::assertNEML2Enabled();
 
@@ -227,30 +231,54 @@ NEML2Action::act()
                            NEML2Utils::MOOSEIOType moose_type,
                            const std::string & moose_tensor_type,
                            const std::string & suffix,
-                           const std::string & type_prefix = "")
+                           const std::string & type_prefix = "",
+                           const bool kokkos = false)
     {
-      auto obj_name = obscureObjectName(moose_name, "moose_to_neml2", suffix, name());
-      auto obj_type = "MOOSE" + type_prefix + moose_tensor_type + "ToNEML2";
+      auto obj_name = obscureObjectName(
+          moose_name, kokkos ? "kokkos_to_neml2" : "moose_to_neml2", suffix, name());
+      auto obj_type = (kokkos ? "Kokkos" : "MOOSE") + type_prefix + moose_tensor_type + "ToNEML2";
       auto obj_params = _factory.getValidParams(obj_type);
       obj_params.set<std::string>("from_moose") = moose_name;
       obj_params.set<std::string>("to_neml2") = neml2_name;
-      obj_params.set<MooseEnum>("quantity_type").assign(static_cast<int>(moose_type));
+      if (!kokkos)
+        obj_params.set<MooseEnum>("quantity_type").assign(static_cast<int>(moose_type));
       obj_params.set<std::vector<SubdomainName>>("block") = _block;
-      _problem->addUserObject(obj_type, obj_name, obj_params);
+#ifdef MOOSE_KOKKOS_ENABLED
+      if (kokkos)
+        _problem->addKokkosUserObject(obj_type, obj_name, obj_params);
+      else
+#endif
+        _problem->addUserObject(obj_type, obj_name, obj_params);
       return obj_name;
     };
 
     // MOOSEToNEML2 input gatherers. The NEML2 target name carries the lag suffix (var~N); the
-    // MOOSE source is the un-lagged base name, and old (lag 1) values are read with the "Old"
-    // gatherer variant.
+    // MOOSE source is the un-lagged base name, and old/older values are read with the "Old"/"Older"
+    // gatherer variant. When requested, compatible VARIABLE inputs with history_order <= 2 (Real
+    // and RealVectorValue) are gathered on the device with KokkosQuantityToNEML2 so the field never
+    // round-trips through the host; everything else (host scalars, functions, etc.) keeps the host
+    // gatherer.
     std::vector<UserObjectName> gatherers;
     for (const auto & input : _inputs)
-      gatherers.push_back(addGatherer(input.name,
-                                      lagName(input.name, input.history_order),
-                                      input.moose_type,
-                                      input.moose_tensor_type,
-                                      std::to_string(input.history_order),
-                                      input.history_order == 1 ? "Old" : ""));
+    {
+#ifdef MOOSE_KOKKOS_ENABLED
+      const bool kokkos_gatherer =
+          _moose_to_neml2_on_gpu && input.moose_type == NEML2Utils::MOOSEIOType::VARIABLE &&
+          input.history_order <= 2 &&
+          (input.moose_tensor_type == "Real" || input.moose_tensor_type == "RealVectorValue");
+#else
+      const bool kokkos_gatherer = false;
+#endif
+      gatherers.push_back(addGatherer(
+          input.name,
+          lagName(input.name, input.history_order),
+          input.moose_type,
+          input.moose_tensor_type,
+          std::to_string(input.history_order),
+          input.history_order == 1 ? "Old"
+                                   : (input.history_order == 2 && kokkos_gatherer ? "Older" : ""),
+          kokkos_gatherer));
+    }
 
     // Additional NEML2Kernels that provide input data
     for (const auto & kernel_name : getParam<std::vector<std::string>>("input_kernels"))
@@ -297,9 +325,9 @@ NEML2Action::act()
     // add the bits that are unique to outputs vs. derivatives.
     const bool use_kokkos = getParam<MooseEnum>("output_backend") == "kokkos";
     auto addRetriever = [&](const std::string & moose_name,
-                             const std::string & neml2_var,
-                             const std::string & moose_tensor_type,
-                             auto && extra)
+                            const std::string & neml2_var,
+                            const std::string & moose_tensor_type,
+                            auto && extra)
     {
       if (use_kokkos && moose_tensor_type != "SymmetricRankTwoTensor" &&
           moose_tensor_type != "SymmetricRankFourTensor")
@@ -312,13 +340,12 @@ NEML2Action::act()
 
       auto obj_name = obscureObjectName(
           moose_name, use_kokkos ? "neml2_to_kokkos" : "neml2_to_moose", "", name());
-      auto obj_type = use_kokkos
-                          ? "NEML2ToKokkos" +
-                                std::string(moose_tensor_type == "SymmetricRankTwoTensor"
-                                                ? "RankTwo"
-                                                : "RankFour") +
-                                "MaterialProperty"
-                          : "NEML2ToMOOSE" + moose_tensor_type + "MaterialProperty";
+      auto obj_type =
+          use_kokkos ? "NEML2ToKokkos" +
+                           std::string(moose_tensor_type == "SymmetricRankTwoTensor" ? "RankTwo"
+                                                                                     : "RankFour") +
+                           "MaterialProperty"
+                     : "NEML2ToMOOSE" + moose_tensor_type + "MaterialProperty";
       auto obj_params = _factory.getValidParams(obj_type);
       obj_params.set<UserObjectName>("neml2_executor") = _executor_name;
       obj_params.set<MaterialPropertyName>("to_moose") = moose_name;
@@ -402,8 +429,10 @@ NEML2Action::inferMOOSEIOType(const std::string & name, bool is_scalar) const
     // note that we can't explicitly check if a material property with the given name exists,
     // because materials are added _after_ user objects (see Moose.C)
   }
+  else if (_problem->hasVariable(name))
+    return NEML2Utils::MOOSEIOType::VARIABLE;
 
-  // non-scalar can only come from material properties
+  // non-scalar or unmatched scalar default to material properties
   return NEML2Utils::MOOSEIOType::MATERIAL;
 }
 

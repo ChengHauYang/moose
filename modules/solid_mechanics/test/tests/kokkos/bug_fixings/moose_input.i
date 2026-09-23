@@ -1,14 +1,26 @@
-N = 16
+Nelem = 3
+Ngrain = 3
 
-# Step 3a: CPU NEML2, GPU Kokkos assembly, and CPU PETSc.
-# NEML2 inputs move from the GPU to the CPU, and stress/tangent outputs move back to the GPU.
 [Mesh]
-  [generated]
+  #[gmg]
+  #  type = DistributedRectilinearMeshGenerator
+  #  dim = 3
+  #  nx = ${fparse Nelem * Ngrain}
+  #  ny = ${fparse Nelem * Ngrain}
+  #  nz = ${fparse Nelem * Ngrain}
+  #  xmin = -1
+  #  ymin = -1
+  #  zmin = -1
+  #[]
+  [gmg]
     type = GeneratedMeshGenerator
     dim = 3
-    nx = ${N}
-    ny = ${N}
-    nz = ${N}
+    nx = ${fparse Nelem * Ngrain}
+    ny = ${fparse Nelem * Ngrain}
+    nz = ${fparse Nelem * Ngrain}
+    xmin = -1
+    ymin = -1
+    zmin = -1
   []
 []
 
@@ -23,14 +35,17 @@ N = 16
 
 [NEML2]
   eager = true
-  input = '../../neml2/plasticity/perfect_neml2.i'
+  input = 'perfect_neml2.i'
   [all]
     executor_name = neml2
     model = model
+    #device = xpu
     device = cpu
     input_kernels = neml2_strain
     auto_output = false
     manage_state_advance = true
+    parameters = 'sy'
+    parameter_types = 'MATERIAL'
   []
 []
 
@@ -73,6 +88,12 @@ N = 16
 []
 
 [Materials]
+  [yield_stress]
+    type = GenericConstantMaterial
+    prop_names = 'sy'
+    prop_values = '5.0'
+  []
+
   [stress]
     type = NEML2ToKokkosRankTwoMaterialProperty
     neml2_executor = neml2
@@ -99,37 +120,60 @@ N = 16
     type = KokkosDirichletBC
     variable = disp_x
     boundary = right
-    preset = false
     value = 0
   []
-  [disp_y]
+  [disp_y_bottom]
     type = KokkosDirichletBC
     variable = disp_y
     boundary = bottom
     value = 0
   []
-  [disp_z]
+  [disp_y_top]
+    type = KokkosDirichletBC
+    variable = disp_y
+    boundary = top
+    value = 0
+    preset = false
+  []
+  [disp_z_back]
     type = KokkosDirichletBC
     variable = disp_z
     boundary = back
     value = 0
   []
+  [disp_z_front]
+    type = KokkosDirichletBC
+    variable = disp_z
+    boundary = front
+    value = 0
+    preset = false
+  []
 []
 
 [Functions]
-  [loading]
+  [loading_pos]
+    type = ParsedFunction
+    expression = t
+  []
+  [loading_neg]
     type = ParsedFunction
     expression = t
   []
 []
 
 [Controls]
-  [loading]
+  [loading_top]
     type = RealFunctionControl
-    parameter = 'BCs/disp_x_right/value'
-    function = loading
+    parameter = 'BCs/disp_y_top/value'
+    function = loading_pos
     execute_on = 'INITIAL TIMESTEP_BEGIN'
   []
+#  [loading_front]
+#    type = RealFunctionControl
+#    parameter = 'BCs/disp_z_front/value'
+#    function = loading_neg
+#    execute_on = 'INITIAL TIMESTEP_BEGIN'
+#  []
 []
 
 [Preconditioning]
@@ -147,31 +191,21 @@ N = 16
   dt = 1e-3
   dtmin = 1e-3
   num_steps = 5
+  nl_rel_tol = 1e-8
   nl_abs_tol = 1e-10
-  residual_and_jacobian_together = true
-[]
 
-# Diagnostic sample points: verify the KokkosDirichletBC + RealFunctionControl
-# actually applies loading. At t=5e-3 the right boundary should track the
-# loading function (u_x = t), so ux_right ~ 5e-3 and ux_center ~ 2.5e-3.
-# If ux_right stays 0, the control is not reaching the Kokkos BC value and
-# SNES is converging in 0 iterations against a zero-load residual.
-[Postprocessors]
-  [ux_right]
-    type = PointValue
-    variable = disp_x
-    point = '1 0.5 0.5'
-    execute_on = TIMESTEP_END
-  []
-  [ux_center]
-    type = PointValue
-    variable = disp_x
-    point = '0.5 0.5 0.5'
-    execute_on = TIMESTEP_END
-  []
+  automatic_scaling = false
+
+  residual_and_jacobian_together = true
+
+  l_tol = 1e-3
 []
 
 [Outputs]
+  file_base = 'results'
   exodus = false
   csv = true
+  [pgraph]
+    type = PerfGraphOutput
+  []
 []

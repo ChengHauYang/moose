@@ -136,6 +136,9 @@ protected:
   /// Input variables to skip (i.e., not to set up mappings for)
   std::vector<std::string> _skip_input_variables;
 
+  /// Whether to gather MOOSE variable inputs into NEML2 on the device
+  const bool _moose_to_neml2_on_gpu;
+
   /// Material property initial conditions
   std::map<MaterialPropertyName, MaterialPropertyName> _initialize_output_values;
 
