@@ -262,22 +262,36 @@ NEML2ModelExecutor::fillInputs()
       }
     }
 
-    // Send input variables to the compute device.
-    for (auto & [var, val] : _in)
-      val = val.to(device());
-
-    // Match flat material parameters to the element-QP batch before updating the model.
-    for (auto & [name, parameter] : _model_params)
+    // Match a flat gathered batch to the active element-QP layout only when its base shape agrees
+    // with the model variable or parameter.
+    auto reshape_flat_batch = [&](const neml2::Tensor & tensor, neml2::TensorShapeRef base_shape)
     {
       if (active_batch_shape)
       {
-        const neml2::Tensor model_parameter = model().get_parameter(name);
         const auto [nelem, nqp] = *active_batch_shape;
-        if (parameter.batch_dim() == 1 && parameter.batch_size(0).concrete() == nelem * nqp &&
-            parameter.base_sizes() == model_parameter.base_sizes())
-          parameter = parameter.batch_reshape({nelem, nqp});
+        if (tensor.batch_dim() == 1 && tensor.batch_size(0).concrete() == nelem * nqp &&
+            tensor.base_sizes() == base_shape)
+          return tensor.batch_reshape({nelem, nqp});
       }
-      parameter = parameter.to(device());
+      return tensor;
+    };
+
+    // Send input variables to the compute device, reshaping flat gathered inputs to match any
+    // element-QP batch inferred from an FE-interpolated input.
+    for (const auto & [name, variable] : model().input_variables())
+    {
+      const auto it = _in.find(name);
+      if (it != _in.end() && it->second.defined())
+        it->second = reshape_flat_batch(it->second, variable->base_sizes());
+    }
+    for (auto & [var, val] : _in)
+      val = val.to(device());
+
+    // Push model parameters to the compute device with the same batch-layout normalization.
+    for (auto & [name, parameter] : _model_params)
+    {
+      const neml2::Tensor model_parameter = model().get_parameter(name);
+      parameter = reshape_flat_batch(parameter, model_parameter.base_sizes()).to(device());
     }
 
     // Update model parameters
