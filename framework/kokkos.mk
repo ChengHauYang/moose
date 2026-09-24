@@ -112,6 +112,7 @@ else ifneq ($(PETSC_HAVE_SYCL),)
   KOKKOS_CXX         = $(SYCL_COMPILER)
   KOKKOS_CXXFLAGS    = -fsycl -fno-sycl-rdc -x c++ $(CXXFLAGS) $(libmesh_CXXFLAGS)
   KOKKOS_CXXFLAGS   += -Wno-deprecated-declarations -Wno-macro-redefined
+  KOKKOS_CXXFLAGS   += -include $(MOOSE_DIR)/framework/include/kokkos/base/KokkosSYCLCompat.h
   KOKKOS_CPPFLAGS    = $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) ${ADDITIONAL_KOKKOS_CPPFLAGS}
   KOKKOS_LDFLAGS     = -fsycl
   ifneq ($(SYCL_ARCH),)
@@ -138,6 +139,14 @@ KOKKOS_CXXFLAGS += -DMOOSE_KOKKOS_SCOPE=1 -DMETAPHYSICL_KOKKOS_COMPILATION=1 -fP
 KOKKOS_LDFLAGS  += $(libmesh_LDFLAGS)
 KOKKOS_INCLUDE   = $(libmesh_INCLUDE)
 KOKKOS_LIBS      = $(libmesh_LIBS)
+
+# The SYCL Kokkos sources query torch's XPU devices (c10::xpu), whose symbols live in libc10_xpu
+# rather than the libtorch/libtorch_cpu/libc10 trio moose.mk already links.
+ifeq ($(KOKKOS_DEVICE),SYCL)
+  ifneq ($(wildcard $(LIBTORCH_DIR)/lib/libc10_xpu.*),)
+    KOKKOS_LIBS += -lc10_xpu
+  endif
+endif
 
 ifeq ($(METHOD),opt)
   KOKKOS_CXXFLAGS += -DNDEBUG
