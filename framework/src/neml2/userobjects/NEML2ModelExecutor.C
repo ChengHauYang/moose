@@ -10,8 +10,10 @@
 #include "NEML2ModelExecutor.h"
 #include "MOOSEToNEML2.h"
 #include "NEML2Utils.h"
-#include <string>
+#include <optional>
 #include <sstream>
+#include <string>
+#include <utility>
 
 #ifdef NEML2_ENABLED
 #include <ATen/ATen.h>
@@ -244,11 +246,39 @@ NEML2ModelExecutor::fillInputs()
         if (val.defined())
           _in[name] = val;
 
-    // Send input variables and parameters to device
+    // Infer the active element-QP batch shape from an input tensor with two batch dimensions.
+    std::optional<std::pair<int64_t, int64_t>> active_batch_shape;
+    for (const auto & [name, variable] : model().input_variables())
+    {
+      const auto it = _in.find(name);
+      if (it == _in.end() || !it->second.defined())
+        continue;
+
+      const auto & tensor = it->second;
+      if (tensor.batch_dim() == 2)
+      {
+        active_batch_shape = {tensor.batch_size(0).concrete(), tensor.batch_size(1).concrete()};
+        break;
+      }
+    }
+
+    // Send input variables to the compute device.
     for (auto & [var, val] : _in)
       val = val.to(device());
-    for (auto & [param, pval] : _model_params)
-      pval = pval.to(device());
+
+    // Match flat material parameters to the element-QP batch before updating the model.
+    for (auto & [name, parameter] : _model_params)
+    {
+      if (active_batch_shape)
+      {
+        const neml2::Tensor model_parameter = model().get_parameter(name);
+        const auto [nelem, nqp] = *active_batch_shape;
+        if (parameter.batch_dim() == 1 && parameter.batch_size(0).concrete() == nelem * nqp &&
+            parameter.base_sizes() == model_parameter.base_sizes())
+          parameter = parameter.batch_reshape({nelem, nqp});
+      }
+      parameter = parameter.to(device());
+    }
 
     // Update model parameters
     model().set_parameters(_model_params);
