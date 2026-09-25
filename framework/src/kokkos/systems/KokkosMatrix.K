@@ -9,6 +9,7 @@
 
 #include "KokkosMatrix.h"
 #include "KokkosFESystem.h"
+#include "MooseUtils.h"
 
 namespace Moose::Kokkos
 {
@@ -16,41 +17,49 @@ namespace Moose::Kokkos
 void
 Matrix::create(libMesh::SparseMatrix<PetscScalar> & matrix, const System & system)
 {
-  auto petsc_matrix = dynamic_cast<libMesh::PetscMatrix<PetscScalar> *>(&matrix);
-
-  mooseAssert(petsc_matrix, "Kokkos matrix error: provided matrix is not a PetscMatrix.");
-
-  PetscMemType mtype;
-  LibmeshPetscCallQ(MatGetCurrentMemType(petsc_matrix->mat(), &mtype));
-  const bool is_host = PetscMemTypeHost(mtype);
-
-#ifndef MOOSE_ENABLE_KOKKOS_GPU
-  if (!is_host)
-    mooseError("PETSc matrices must be on host when Kokkos device capabilities are disabled.");
-#endif
+  if (_is_alloc && _matrix == &matrix)
+    return;
 
   if (_is_alloc)
-    return;
+    destroy();
+
+  auto petsc_matrix = dynamic_cast<libMesh::PetscMatrix<PetscScalar> *>(&matrix);
+  _matrix = &matrix;
+  _petsc_matrix = petsc_matrix ? petsc_matrix->mat() : PETSC_NULLPTR;
+  _is_host = true;
+
+  if (petsc_matrix)
+  {
+    PetscMemType mtype;
+    LibmeshPetscCallQ(MatGetCurrentMemType(_petsc_matrix, &mtype));
+    _is_host = PetscMemTypeHost(mtype);
+
+#ifndef MOOSE_ENABLE_KOKKOS_GPU
+    if (!_is_host)
+      mooseError("PETSc matrices must be on host when Kokkos device capabilities are disabled.");
+#endif
+  }
 
   auto & sparsity = system.getSparsity();
 
-  _matrix = petsc_matrix->mat();
   _nr = sparsity.row_ptr.size() - 1;
   _col_idx = sparsity.col_idx;
   _row_idx = sparsity.row_idx;
   _row_ptr = sparsity.row_ptr;
-  _is_host = is_host;
 
   if (!_is_host)
     _val.createDevice(_col_idx.size());
   else
     _val.create(_col_idx.size());
 
-  std::vector<PetscInt> col_idx(&_col_idx.begin(), &_col_idx.end());
-  std::vector<PetscInt> row_idx(&_row_idx.begin(), &_row_idx.end());
+  if (petsc_matrix)
+  {
+    std::vector<PetscInt> col_idx(&_col_idx.begin(), &_col_idx.end());
+    std::vector<PetscInt> row_idx(&_row_idx.begin(), &_row_idx.end());
 
-  LibmeshPetscCallQ(
-      MatSetPreallocationCOO(_matrix, col_idx.size(), row_idx.data(), col_idx.data()));
+    LibmeshPetscCallQ(
+        MatSetPreallocationCOO(_petsc_matrix, col_idx.size(), row_idx.data(), col_idx.data()));
+  }
 
   _is_alloc = true;
 }
@@ -58,7 +67,8 @@ Matrix::create(libMesh::SparseMatrix<PetscScalar> & matrix, const System & syste
 void
 Matrix::destroy()
 {
-  _matrix = PETSC_NULLPTR;
+  _matrix = nullptr;
+  _petsc_matrix = PETSC_NULLPTR;
   _nr = 0;
 
   _col_idx.destroy();
@@ -76,8 +86,15 @@ Matrix::close()
   if (_is_host)
     _val.copyToHost();
 
-  LibmeshPetscCallQ(
-      MatSetValuesCOO(_matrix, _is_host ? _val.hostData() : _val.deviceData(), ADD_VALUES));
+  if (_petsc_matrix)
+    LibmeshPetscCallQ(
+        MatSetValuesCOO(_petsc_matrix, _is_host ? _val.hostData() : _val.deviceData(), ADD_VALUES));
+  else
+  {
+    for (const auto i : index_range(_row_idx))
+      _matrix->add(_row_idx[i], _col_idx[i], _val.hostData()[i]);
+    _matrix->close();
+  }
 
   ::Kokkos::fence();
 }
