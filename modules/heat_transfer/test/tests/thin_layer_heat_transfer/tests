@@ -9,6 +9,18 @@
     design = 'ThinLayerHeatTransfer.md'
     recover = false
   []
+  [steady_2d_read_in]
+    type = 'RunApp'
+    input = 'steady_2d_read_in.i'
+    min_parallel = 3
+    max_parallel = 3
+    requirement = 'The system shall model steady state heat transfer with an interface between two '
+                  'domains in 2D when reading the mesh from a file and restoring disjoint neighbor '
+                  'boundary pairs.'
+    issues = '#21988'
+    design = 'ThinLayerHeatTransfer.md'
+    recover = false
+  []
   [steady_3d]
     type = 'Exodiff'
     input = 'steady_3d.i'
