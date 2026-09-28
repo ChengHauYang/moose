@@ -34,6 +34,22 @@ public:
   MeshDatum(ContiguousElementID elem, const unsigned int side, const Mesh & mesh);
 
   /**
+   * Constructor for element and side data whose neighbor element is already known
+   * @param elem The contiguous element ID
+   * @param side The element side index, or \p libMesh::invalid_uint for element-only data
+   * @param neighbor The contiguous ID of the neighbor element of \p elem on \p side, or
+   * \p libMesh::DofObject::invalid_id when it is not known. Providing it skips the side topology
+   * lookup of the other constructor, which is only cached for active local elements and is
+   * therefore meaningless for the neighbor element of an already oriented face.
+   * @param mesh The Kokkos mesh
+   */
+  KOKKOS_FUNCTION
+  MeshDatum(ContiguousElementID elem,
+            const unsigned int side,
+            const ContiguousElementID neighbor,
+            const Mesh & mesh);
+
+  /**
    * Get the Kokkos mesh
    * @returns The Kokkos mesh
    */
@@ -142,6 +158,18 @@ KOKKOS_FUNCTION inline MeshDatum::MeshDatum(ContiguousElementID elem,
     _elem(elem != libMesh::DofObject::invalid_id ? _mesh.getElementInfo(elem) : ElementInfo{}),
     _side(side),
     _neighbor(neighborInfo(_elem.id, _side, _mesh))
+{
+}
+
+KOKKOS_FUNCTION inline MeshDatum::MeshDatum(ContiguousElementID elem,
+                                            const unsigned int side,
+                                            const ContiguousElementID neighbor,
+                                            const Mesh & mesh)
+  : _mesh(mesh),
+    _elem(elem != libMesh::DofObject::invalid_id ? _mesh.getElementInfo(elem) : ElementInfo{}),
+    _side(side),
+    _neighbor(neighbor != libMesh::DofObject::invalid_id ? _mesh.getElementInfo(neighbor)
+                                                         : ElementInfo{})
 {
 }
 
@@ -255,6 +283,28 @@ public:
   KOKKOS_FUNCTION
   Datum(const ContiguousElementID elem,
         const unsigned int side,
+        const Assembly & assembly,
+        const Array<FESystem> & systems);
+
+  /**
+   * Constructor for element and side data whose neighbor element is already known.
+   *
+   * This overload avoids a Mesh::getNeighbor() lookup and is intended for cases such as
+   * oriented interface faces where the counterpart element is already known explicitly.
+   * This is important for neighbor-side ghost elements, for which side-neighbor topology
+   * may not be available in the Kokkos mesh.
+   *
+   * @param elem The contiguous element ID of the current thread
+   * @param side The side index of the current thread
+   * @param neighbor The contiguous ID of the neighbor element of \p elem on \p side, or
+   * libMesh::DofObject::invalid_id when it is not known
+   * @param assembly The Kokkos assembly
+   * @param systems The Kokkos systems
+   */
+  KOKKOS_FUNCTION
+  Datum(const ContiguousElementID elem,
+        const unsigned int side,
+        const ContiguousElementID neighbor,
         const Assembly & assembly,
         const Array<FESystem> & systems);
 
@@ -459,6 +509,21 @@ KOKKOS_FUNCTION inline Datum::Datum(const ContiguousElementID elem,
 {
 }
 
+KOKKOS_FUNCTION inline Datum::Datum(const ContiguousElementID elem,
+                                    const unsigned int side,
+                                    const ContiguousElementID neighbor,
+                                    const Assembly & assembly,
+                                    const Array<FESystem> & systems)
+  : MeshDatum(elem, side, neighbor, assembly.kokkosMesh()),
+    _assembly(assembly),
+    _systems(systems),
+    _n_qps(!isSide() ? assembly.getNumQps(_elem) : assembly.getNumFaceQps(_elem, side)),
+    _qp_offset(!isSide() ? assembly.getQpOffset(_elem) : assembly.getQpFaceOffset(_elem, side)),
+    _elem_property_idx(!isSide() ? _elem.id - _mesh.getStartingContiguousElementID(_elem.subdomain)
+                                 : assembly.getElemFacePropertyIndex(_elem, _side))
+{
+}
+
 KOKKOS_FUNCTION inline Datum::Datum(const ContiguousNodeID node,
                                     const Assembly & assembly,
                                     const Array<FESystem> & systems)
@@ -589,9 +654,45 @@ public:
                                                      : assembly.getNumDofs(_elem.type, _jfe))
   {
   }
+
+  /**
+   * Constructor for element and side data whose neighbor element is already known
+   * @param elem The contiguous element ID of the current thread
+   * @param side The side index of the current thread
+   * @param neighbor The contiguous ID of the neighbor element of \p elem on \p side, or
+   * \p libMesh::DofObject::invalid_id when it is not known
+   * @param assembly The Kokkos assembly
+   * @param systems The Kokkos systems
+   * @param ivar The Kokkos variable
+   * @param jvar The coupled variable number
+   * @param comp The variable component
+   * @see Datum for why the neighbor lookup is skipped
+   */
+  KOKKOS_FUNCTION
+  AssemblyDatum(const ContiguousElementID elem,
+                const unsigned int side,
+                const ContiguousElementID neighbor,
+                const Assembly & assembly,
+                const Array<FESystem> & systems,
+                const Variable & ivar,
+                const unsigned int jvar,
+                const unsigned int comp = 0)
+    : Datum(elem, side, neighbor, assembly, systems),
+      _tag(ivar.tag()),
+      _sys(ivar.sys(comp)),
+      _ivar(ivar.var(comp)),
+      _jvar(jvar),
+      _ife(systems[ivar.sys(comp)].getFETypeID(_ivar)),
+      _jfe(systems[ivar.sys(comp)].getFETypeID(_jvar)),
+      _n_idofs(assembly.getNumDofs(_elem.type, _ife)),
+      _n_jdofs(assembly.getNumDofs(_elem.type, _jfe))
+  {
+  }
+
   /**
    * Constructor for node data
    * @param elem The contiguous element ID of the current thread
+   * @param side The side index of the current thread
    * @param assembly The Kokkos assembly
    * @param systems The Kokkos systems
    * @param ivar The Kokkos variable

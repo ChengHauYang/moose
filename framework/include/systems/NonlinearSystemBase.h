@@ -190,8 +190,19 @@ public:
    * @param parameters Boundary condition parameters
    */
   void addKokkosBoundaryCondition(const std::string & bc_name,
-                                  const std::string & name,
-                                  InputParameters & parameters);
+                                   const std::string & name,
+                                   InputParameters & parameters);
+
+  /**
+   * Adds a Kokkos interface kernel
+   * @param interface_kernel_name The type of the interface kernel
+   * @param name The name of the interface kernel
+   * @param parameters Interface kernel parameters
+   */
+  void addKokkosInterfaceKernel(const std::string & interface_kernel_name,
+                                const std::string & name,
+                                InputParameters & parameters);
+
 #endif
 
   /**
@@ -683,6 +694,10 @@ public:
   {
     return _kokkos_integrated_bcs;
   }
+  MooseObjectTagWarehouse<ResidualObject> & getKokkosInterfaceKernelWarehouse()
+  {
+    return _kokkos_interface_kernels;
+  }
   ///@}
 #endif
 
@@ -965,6 +980,7 @@ protected:
   /// Kokkos residual object warhouses
   MooseObjectTagWarehouse<ResidualObject> _kokkos_kernels;
   MooseObjectTagWarehouse<ResidualObject> _kokkos_integrated_bcs;
+  MooseObjectTagWarehouse<ResidualObject> _kokkos_interface_kernels;
   MooseObjectTagWarehouse<ResidualObject> _kokkos_nodal_bcs;
   MooseObjectWarehouse<ResidualObject> _kokkos_preset_nodal_bcs;
   MooseObjectTagWarehouse<ResidualObject> _kokkos_nodal_kernels;
