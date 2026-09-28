@@ -108,6 +108,50 @@ property name requires an explicit `tangent_definition`:
 The AD interface kernel differentiates its residual automatically and does not use `tangent` or
 `tangent_definition`; setting either parameter with AD enabled is an error.
 
+## Kokkos Implementation Status
+
+The [KokkosSCZMInterfaceKernelSmallStrain](KokkosSCZMInterfaceKernelSmallStrain.md)
+implements the traction-jump residual and Jacobian contribution using device material
+properties. It can be instantiated directly with compatible Kokkos property producers.
+The focused tests exercise assembly with a test-only linear traction law.
+
+Set `use_kokkos = true` to create `KokkosSCZMComputeDisplacementJumpSmallStrain`,
+`KokkosCZMComputeGlobalTractionSmallStrain`, and
+`KokkosSCZMInterfaceKernelSmallStrain`. The constitutive traction law remains an explicit
+material; use a compatible Kokkos material such as `KokkosPureElasticTractionSeparation`.
+Kokkos SCZM supports only non-AD small-strain evaluation with shifted evaluation enabled.
+
+### Directional correction
+
+`directional_correction = true` is supported on the Kokkos path and reproduces the host
+residual and Jacobian, including the zero contribution to the two cross blocks. The action
+does not create the bulk material for you. Declare
+[`KokkosSCZMComputeLinearElasticBulkStress`](KokkosSCZMComputeLinearElasticBulkStress.md)
+on the SCZM boundary with the same `displacements` as this block; the action validates that
+declaration and reports an error if no compatible one exists. Use `neighbor_youngs_modulus`
+and `neighbor_poissons_ratio` on that material for a heterogeneous interface.
+
+Because the Kokkos bulk material supplies the compact strain-based isotropic response, the
+following are rejected when `use_kokkos = true` rather than silently ignored:
+
+- `volumetric_locking_correction = true`, either here or inherited from a solid mechanics
+  physics block;
+- a user-set `stress` or `tangent` property;
+- `tangent_definition = pk1_wrt_deformation_gradient`;
+- RZ and RSPHERICAL coordinate systems, which the bulk material rejects because `sym(grad_u)`
+  omits the required hoop strain terms.
+
+`no_shifted = true` is supported on the Kokkos path as a complete switch. The base cohesive
+traction drops its area correction, its Jacobian uses the natural test functions, the paired
+displacement-jump material omits the gradient contribution to the jump and builds the
+reference rotation from the surrogate face normal, and the directional correction is
+suppressed entirely. Setting `directional_correction = true` alongside it is harmless: the
+correction is simply not applied, matching the host.
+
+These outstanding items mean the Kokkos path is not yet full host parity. Volumetric locking
+correction, curvilinear-coordinate constitutive strain, and general tangent semantics are
+still to be implemented.
+
 !syntax parameters /Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction
 
 ## Associated Actions

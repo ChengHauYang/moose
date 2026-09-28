@@ -11,10 +11,22 @@
 
 #include "SideUserObject.h"
 
+#ifdef MOOSE_KOKKOS_ENABLED
+#include "KokkosSurrogateInterfaceMapping.h"
+#endif
+
+#include <memory>
 #include <vector>
 
 class Function;
 class SBMInterfaceManager;
+
+#ifdef MOOSE_KOKKOS_ENABLED
+namespace Moose::Kokkos
+{
+struct InterfaceFaceRecord;
+}
+#endif
 
 class BoundaryShortestDistanceToSurface : public SideUserObject
 {
@@ -34,6 +46,21 @@ public:
   const RealVectorValue & surrogateDistance(const ElemSide & elem_side, unsigned int qp) const;
   /// Provides query interfaces for normal vector
   const RealVectorValue & trueNormal(const ElemSide & elem_side, unsigned int qp) const;
+
+#ifdef MOOSE_KOKKOS_ENABLED
+  /**
+   * Register and allocate a surrogate-interface mapping for a Kokkos interface boundary
+   * restriction. The mapping is populated after this user object finalizes its globally oriented
+   * normals.
+   */
+  const Moose::Kokkos::SurrogateInterfaceMapping & registerKokkosSurrogateInterfaceMapping(
+      const std::set<BoundaryID> & boundary_ids,
+      const Moose::Kokkos::Array<Moose::Kokkos::InterfaceFaceRecord> & faces) const;
+
+  /// Whether registered surrogate-interface mappings have been populated for a boundary
+  /// restriction.
+  bool kokkosSurrogateInterfaceMappingReady(const std::set<BoundaryID> & boundary_ids) const;
+#endif
 
 protected:
   /// Local distance functions when no external distance user object is supplied.
@@ -60,6 +87,16 @@ private:
 
   /// Map from ElemSide to boundary ID index.
   std::map<ElemSide, unsigned int> _elem_side_to_bid;
+
+#ifdef MOOSE_KOKKOS_ENABLED
+  /// Populate registered surrogate-interface mappings after normal orientation has been finalized.
+  void populateSurrogateInterfaceMappings();
+
+  /// Surrogate-interface mapping caches are separated by boundary set; this UO's identity
+  /// supplies the other key.
+  mutable std::map<std::set<BoundaryID>, std::shared_ptr<Moose::Kokkos::SurrogateInterfaceMapping>>
+      _kokkos_surrogate_interface_mappings;
+#endif
 
   /// @brief Whether to suppress warnings about large distances.
   bool _suppress_distance_warning;

@@ -138,6 +138,10 @@ BoundaryShortestDistanceToSurface::initialize()
   _normal_vectors.clear();
   _elem_side_to_bid.clear();
   std::fill(_true_interface_measures.begin(), _true_interface_measures.end(), 0.0);
+#ifdef MOOSE_KOKKOS_ENABLED
+  for (auto & [_, mapping] : _kokkos_surrogate_interface_mappings)
+    mapping->ready = false;
+#endif
 }
 
 void
@@ -220,6 +224,10 @@ BoundaryShortestDistanceToSurface::finalize()
     if (_true_interface_measures[libmesh_map_find(_elem_side_to_bid, elem_side)] < 0.0)
       for (auto & normal : normals)
         normal *= -1.0;
+
+#ifdef MOOSE_KOKKOS_ENABLED
+  populateSurrogateInterfaceMappings();
+#endif
 }
 
 const RealVectorValue &
