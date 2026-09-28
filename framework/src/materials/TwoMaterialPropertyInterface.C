@@ -27,7 +27,22 @@ TwoMaterialPropertyInterface::TwoMaterialPropertyInterface(
     const std::set<SubdomainID> & blocks_ids,
     const std::set<BoundaryID> & boundary_ids)
   : MaterialPropertyInterface(moose_object, blocks_ids, boundary_ids),
-    _neighbor_material_data(_mi_feproblem.getMaterialData(
-        Moose::NEIGHBOR_MATERIAL_DATA, _mi_params.get<THREAD_ID>("_tid"), moose_object))
+    _neighbor_material_data(
+#ifdef MOOSE_KOKKOS_ENABLED
+        _is_kokkos_object
+            ? _mi_feproblem.getKokkosMaterialData(Moose::NEIGHBOR_MATERIAL_DATA, moose_object)
+            :
+#endif
+            _mi_feproblem.getMaterialData(
+                Moose::NEIGHBOR_MATERIAL_DATA, _mi_params.get<THREAD_ID>("_tid"), moose_object))
 {
 }
+
+#ifdef MOOSE_KOKKOS_ENABLED
+TwoMaterialPropertyInterface::TwoMaterialPropertyInterface(
+    const TwoMaterialPropertyInterface & object, const Moose::Kokkos::FunctorCopy & key)
+  : MaterialPropertyInterface(object, key),
+    _neighbor_material_data(object._neighbor_material_data)
+{
+}
+#endif

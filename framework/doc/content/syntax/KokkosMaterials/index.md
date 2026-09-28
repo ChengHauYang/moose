@@ -113,6 +113,66 @@ See the following source codes of `KokkosStatefulTest` for an example of statefu
 !listing test/src/kokkos/materials/KokkosStatefulTest.K id=kokkos-stateful-mat-source language=cpp
          caption=The `KokkosStatefulTest` source file.
 
+## Two-Sided Interface Materials
+
+A material that produces a property from the values on +*both* sides of a finite element interface, such as a cohesive traction law driven by the displacement jump, is created by subclassing `Moose::Kokkos::InterfaceMaterial`, and registered with `registerKokkosInterfaceMaterial()`.
+
+An interface material is restricted to a set of boundaries with `boundary`, which is required, and it cannot be restricted to `block`.
+Interface materials currently support only `constant_on = NONE`; other values are rejected.
+It always requires the coupled variables `variable` and `neighbor_var`, which are the values of the interface quantity on the primary and the neighbor side of a face, respectively.
+
+Both hook methods take the oriented face and the data of both sides at once:
+
+```cpp
+template <typename Derived>
+KOKKOS_FUNCTION void initQpStatefulProperties(const InterfaceFaceRecord & face,
+                                              Datum & elem_datum,
+                                              Datum & neighbor_datum,
+                                              const unsigned int qp,
+                                              const unsigned int neighbor_qp) const;
+
+template <typename Derived>
+KOKKOS_FUNCTION void computeQpProperties(const InterfaceFaceRecord & face,
+                                          Datum & elem_datum,
+                                          Datum & neighbor_datum,
+                                          const unsigned int qp,
+                                          const unsigned int neighbor_qp) const;
+```
+
+`initQpStatefulProperties()` is optional and `computeQpProperties()` is required.
+The datum type is plain `Datum` rather than `AssemblyDatum`, because a material consumes variable values and not the gradient fields that `AssemblyDatum` adds.
+
+The `qp` and `neighbor_qp` indices are the quadrature points of the primary side and of the neighbor side that coincide at the same physical location, so a jump is formed by indexing each side with its own index rather than by matching QP indices.
+Use `_variable_value(elem_datum, qp)` and `_neighbor_variable_value(neighbor_datum, neighbor_qp)` to read the two side values.
+
+A property is written once, using the datum of the primary side only:
+
+```cpp
+_traction(elem_datum, qp) = _stiffness *
+    (_variable_value(elem_datum, qp) - _neighbor_variable_value(neighbor_datum, neighbor_qp));
+```
+
+The interface kernels of the same boundary restriction read that single value when assembling both of their residual rows, so no mirroring onto the neighbor side is required.
+
+Interface faces are oriented once and cached per boundary restriction, and every interface material and interface kernel of the same boundaries shares that ordering, so a given local face index refers to the same face for all of them.
+Only the rank that owns the primary element of a face evaluates that face, which makes it the only writer of the properties of that face.
+Consequently a distributed run needs neighboring element layers, which the material requests automatically through the `ElementSideNeighborLayers` relationship manager.
+
+An interface property may be stateful, in which case the same [stateful material properties](#stateful-material-properties) rules apply.
+Requesting the old state of the property makes it stateful, and `initQpStatefulProperties()` sets its value on the first accepted step.
+On restart or recovery the property is reloaded on the rank that owns the primary element, which is the same rank that owns it in the checkpoint because MOOSE keeps the mesh partitioning unchanged while recovering.
+
+See the following source codes of `KokkosLinearInterfaceMaterial` for an example of a two-sided interface material:
+
+!listing test/include/kokkos/materials/KokkosLinearInterfaceMaterial.h id=kokkos-interface-mat-header
+         caption=The `KokkosLinearInterfaceMaterial` header file.
+
+!listing test/src/kokkos/materials/KokkosLinearInterfaceMaterial.K id=kokkos-interface-mat-source language=cpp
+         caption=The `KokkosLinearInterfaceMaterial` source file.
+
+!listing test/tests/kokkos/interfacekernels/interface_material.i id=kokkos-interface-mat-input language=xml
+         caption=An input file that couples an interface material to an interface kernel.
+
 ## On-Demand Properties
 
 In Kokkos-MOOSE, all material property data are stored for each quadrature point, regardless of whether the material properties are stateful or not.
@@ -163,7 +223,6 @@ You can also leverage on-demand material properties to achieve the same effect.
 The following material types are not supported by Kokkos-MOOSE yet:
 
 - Functor materials
-- Interface materials
 - Discrete materials
 
 !syntax list /Materials objects=True actions=False subsystems=False

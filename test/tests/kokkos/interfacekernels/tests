@@ -1,0 +1,44 @@
+[Tests]
+  issues = '#30655'
+  [penalty_jacobian]
+    type = PetscJacobianTester
+    input = penalty.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    requirement = 'The Kokkos system shall assemble residual contributions on both sides of an interface and all four interface Jacobian blocks.'
+    design = 'syntax/Kokkos/index.md'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+  [interface_material_jacobian]
+    type = PetscJacobianTester
+    input = interface_material.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    requirement = 'The Kokkos system shall evaluate an interface material once per oriented interface face on the primary element owner, and assemble a device-resident material property from both residual rows and all four Jacobian blocks of that face.'
+    design = 'syntax/Kokkos/index.md'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+
+  [stateful]
+    requirement = 'The Kokkos system shall preserve the state of a stateful interface material property over a checkpoint write and a restart by'
+    design = 'syntax/KokkosMaterials/index.md'
+    [write_checkpoint]
+      type = RunApp
+      input = stateful.i
+      detail = 'writing the current and old state of an interface material property into a checkpoint file.'
+      capabilities = kokkos
+      compute_devices = 'cpu cuda xpu'
+    []
+    [restart]
+      type = Exodiff
+      input = stateful_restart.i
+      exodiff = stateful_restart_out.e
+      detail = 'loading that state on restart and continuing the transient, which reproduces the solution of the uninterrupted run because the interface traction of each accepted step accumulates.'
+      capabilities = kokkos
+      compute_devices = 'cpu cuda xpu'
+      prereq = 'stateful/write_checkpoint'
+    []
+  []
+[]

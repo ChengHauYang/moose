@@ -32,6 +32,12 @@ public:
   virtual void act() override;
 
 protected:
+  /**
+   * Checks that a user-declared KokkosSCZMComputeLinearElasticBulkStress material covers this
+   * interface before the Kokkos interface kernels are created.
+   */
+  void validateKokkosBulkStressMaterial() const;
+
   /// Adds the surface distance functions used by the generated distance user object.
   void addSBMDistanceFunctions();
 
@@ -53,9 +59,18 @@ protected:
   /// Returns the generated single-mesh interface manager name.
   UserObjectName interfaceManagerName() const;
 
+  /// Adds Kokkos SCZM interface kernels when requested; otherwise uses the host implementation.
+  void addRequiredCZMInterfaceKernels();
+
+  /// Adds Kokkos SCZM interface materials when requested; otherwise uses the host implementation.
+  void addRequiredCZMInterfaceMaterials();
+
   /// Sets SCZM-specific parameters on each generated interface kernel.
   void customizeCZMInterfaceKernelParameters(InputParameters & params) const override;
 
   /// Sets SCZM-specific parameters on the generated displacement jump material.
   void customizeCZMDisplacementJumpMaterialParameters(InputParameters & params) const override;
+
+  /// Whether the action creates Kokkos SCZM objects.
+  const bool _use_kokkos;
 };
