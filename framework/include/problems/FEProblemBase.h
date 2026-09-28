@@ -1006,8 +1006,12 @@ public:
                                     const std::string & name,
                                     InputParameters & parameters);
   virtual void addKokkosBoundaryCondition(const std::string & bc_name,
-                                          const std::string & name,
-                                          InputParameters & parameters);
+                                           const std::string & name,
+                                           InputParameters & parameters);
+  virtual void addKokkosInterfaceKernel(const std::string & interface_kernel_name,
+                                        const std::string & name,
+                                        InputParameters & parameters);
+
   virtual void addKokkosLinearFVKernel(const std::string & kernel_name,
                                        const std::string & name,
                                        InputParameters & parameters);

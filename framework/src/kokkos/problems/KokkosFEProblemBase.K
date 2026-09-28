@@ -88,6 +88,32 @@ FEProblemBase::addKokkosNodalKernel(const std::string & kernel_name,
 }
 
 void
+FEProblemBase::addKokkosInterfaceKernel(const std::string & interface_kernel_name,
+                                        const std::string & name,
+                                        InputParameters & parameters)
+{
+  parallel_object_only();
+
+  const auto nl_sys_num = determineSolverSystem(parameters.varName("variable", name), true).second;
+  if (!isSolverSystemNonlinear(nl_sys_num))
+    mooseError("You are trying to add an InterfaceKernel to a linear variable/system, which is not "
+               "supported at the moment!");
+
+  setResidualObjectParamsAndLog(interface_kernel_name,
+                                name,
+                                parameters,
+                                nl_sys_num,
+                                "KokkosInterfaceKernel",
+                                _reinit_displaced_neighbor);
+
+  _nl[nl_sys_num]->addKokkosInterfaceKernel(interface_kernel_name, name, parameters);
+
+  _has_kokkos_objects = true;
+  _has_kokkos_residual_objects = true;
+  _has_internal_edge_residual_objects = true;
+}
+
+void
 FEProblemBase::addKokkosBoundaryCondition(const std::string & bc_name,
                                           const std::string & name,
                                           InputParameters & parameters)
