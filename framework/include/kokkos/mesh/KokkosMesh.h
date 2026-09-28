@@ -220,6 +220,16 @@ public:
     return _elem_neighbor(side, elem);
   }
   /**
+   * Get the side index of an element in its neighbor
+   * @param elem The contiguous element ID
+   * @param side The side index
+   * @returns The side index of the element in its neighbor
+   */
+  KOKKOS_FUNCTION unsigned int getNeighborSide(ContiguousElementID elem, unsigned int side) const
+  {
+    return _elem_neighbor_side(side, elem);
+  }
+  /**
    * Get the coordinate-weighted area of an element side
    * @param elem The local contiguous element ID
    * @param side The side index
@@ -532,6 +542,10 @@ private:
    * Neighbor contiguous element IDs of each element
    */
   Array2D<ContiguousElementID> _elem_neighbor;
+  /**
+   * Side indices of each element in its neighbors
+   */
+  Array2D<unsigned int> _elem_neighbor_side;
   /**
    * Starting contiguous element ID of each subdomain
    */

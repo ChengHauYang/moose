@@ -139,6 +139,17 @@ protected:
                                                          const unsigned int i,
                                                          const unsigned int comp = 0) const;
   /**
+   * Accumulate a local interface residual contribution to tagged vectors
+   * @param local_re The local interface residual contribution
+   * @param row_elem The contiguous element ID containing the row DOF
+   * @param i The test function index
+   * @param comp The variable component
+   */
+  KOKKOS_FUNCTION void accumulateTaggedInterfaceResidual(const Real local_re,
+                                                          const ContiguousElementID row_elem,
+                                                          const unsigned int i,
+                                                          const unsigned int comp = 0) const;
+  /**
    * Accumulate or set local nodal residual contribution to tagged vectors
    * @param add Whether to add or set the local residual
    * @param local_re The local nodal residual contribution
@@ -175,6 +186,23 @@ protected:
                                                        const unsigned int j,
                                                        const unsigned int jvar,
                                                        const unsigned int comp = 0) const;
+  /**
+   * Accumulate a local interface Jacobian contribution to tagged matrices
+   * @param local_ke The local interface Jacobian contribution
+   * @param row_elem The contiguous element ID containing the row DOF
+   * @param col_elem The contiguous element ID containing the column DOF
+   * @param i The test function DOF index
+   * @param j The trial function DOF index
+   * @param jvar The variable number for the column
+   * @param comp The row variable component
+   */
+  KOKKOS_FUNCTION void accumulateTaggedInterfaceMatrix(const Real local_ke,
+                                                        const ContiguousElementID row_elem,
+                                                        const ContiguousElementID col_elem,
+                                                        const unsigned int i,
+                                                        const unsigned int j,
+                                                        const unsigned int jvar,
+                                                        const unsigned int comp = 0) const;
   /**
    * Accumulate local elemental Jacobian contribution to tagged matrices using automatic
    * differentiation (AD)
@@ -275,6 +303,15 @@ ResidualObject::accumulateTaggedElementalResidual(const Real local_re,
 }
 
 KOKKOS_FUNCTION inline void
+ResidualObject::accumulateTaggedInterfaceResidual(const Real local_re,
+                                                   const ContiguousElementID row_elem,
+                                                   const unsigned int i,
+                                                   const unsigned int comp) const
+{
+  accumulateTaggedElementalResidual(local_re, row_elem, i, comp);
+}
+
+KOKKOS_FUNCTION inline void
 ResidualObject::accumulateTaggedNodalResidual(const bool add,
                                               const Real local_re,
                                               const ContiguousNodeID node,
@@ -334,16 +371,28 @@ ResidualObject::accumulateTaggedElementalMatrix(const Real local_ke,
                                                 const unsigned int jvar,
                                                 const unsigned int comp) const
 {
+  accumulateTaggedInterfaceMatrix(local_ke, elem, elem, i, j, jvar, comp);
+}
+
+KOKKOS_FUNCTION inline void
+ResidualObject::accumulateTaggedInterfaceMatrix(const Real local_ke,
+                                                 const ContiguousElementID row_elem,
+                                                 const ContiguousElementID col_elem,
+                                                 const unsigned int i,
+                                                 const unsigned int j,
+                                                 const unsigned int jvar,
+                                                 const unsigned int comp) const
+{
   if (!local_ke)
     return;
 
   auto & sys = kokkosSystem(_kokkos_var.sys(comp));
-  auto row = sys.getElemLocalDofIndex(elem, i, _kokkos_var.var(comp));
-  auto col = sys.getElemGlobalDofIndex(elem, j, jvar);
+  const auto row = sys.getElemLocalDofIndex(row_elem, i, _kokkos_var.var(comp));
+  const auto col = sys.getElemGlobalDofIndex(col_elem, j, jvar);
 
   for (unsigned int t = 0; t < _matrix_tags.size(); ++t)
   {
-    auto tag = _matrix_tags[t];
+    const auto tag = _matrix_tags[t];
 
     if (sys.isMatrixTagActive(tag) && !sys.hasNodalBCMatrixTag(row, tag))
       ::Kokkos::atomic_add(&sys.getMatrixValue(row, col, tag), local_ke);

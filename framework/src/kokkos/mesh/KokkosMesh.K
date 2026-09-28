@@ -189,10 +189,12 @@ Mesh::initElement()
 
   _elem_info.create(num_local_plus_one_neighbor_layer_elems);
   _elem_neighbor.create(_mesh.getMaxSidesPerElem(), num_elems);
+  _elem_neighbor_side.create(_mesh.getMaxSidesPerElem(), num_elems);
   _extra_elem_ids.create(num_elems, _mesh.getMesh().n_elem_integers());
   _starting_elem_id.create(num_subdomains);
 
   _elem_neighbor = libMesh::DofObject::invalid_id;
+  _elem_neighbor_side = libMesh::invalid_uint;
   _extra_elem_ids = libMesh::DofObject::invalid_id;
 
   for (const auto subdomain : _mesh.meshSubdomains())
@@ -383,6 +385,7 @@ Mesh::initElementSideGeometry()
             neighbor_eid != libMesh::DofObject::invalid_id,
             "We should have determined a contiguous element ID for our local element neighbors");
         _elem_neighbor(side, eid) = neighbor_eid;
+        _elem_neighbor_side(side, eid) = neighbor->which_neighbor_am_i(elem);
       }
 
       const auto elem_centroid_to_side_centroid = face_centroid - elem_centroid;
@@ -415,6 +418,7 @@ Mesh::initElementSideGeometry()
   }
 
   _elem_neighbor.moveToDevice();
+  _elem_neighbor_side.moveToDevice();
   _side_area.moveToDevice();
   _side_centroid.moveToDevice();
   _side_normal.moveToDevice();
