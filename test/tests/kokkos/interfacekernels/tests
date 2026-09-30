@@ -1,0 +1,13 @@
+[Tests]
+  [penalty_jacobian]
+    type = PetscJacobianTester
+    input = penalty.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    requirement = 'The Kokkos system shall assemble residual contributions on both sides of an interface and all four interface Jacobian blocks.'
+    design = 'syntax/Kokkos/index.md'
+    issues = '#31370'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+[]

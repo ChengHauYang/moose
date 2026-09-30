@@ -9,10 +9,11 @@
 #pragma once
 
 #include "KokkosResidualObject.h"
+#include "KokkosLocalParallelInterface.h"
 
 #include "BoundaryRestrictableRequired.h"
 #include "CoupleableMooseVariableDependencyIntermediateInterface.h"
-#include "MaterialPropertyInterface.h"
+#include "TwoMaterialPropertyInterface.h"
 #include "MooseVariableFE.h"
 
 #include "libmesh/enum_order.h"
@@ -35,7 +36,8 @@ struct InterfaceFaceRecord
 class InterfaceKernelBase : public ResidualObject,
                             public BoundaryRestrictableRequired,
                             public CoupleableMooseVariableDependencyIntermediateInterface,
-                            public MaterialPropertyInterface
+                            public TwoMaterialPropertyInterface,
+                            public LocalParallelInterface
 {
 public:
   static InputParameters validParams();
@@ -48,17 +50,18 @@ public:
 protected:
   KOKKOS_FUNCTION dof_id_type numKokkosInterfaceFaces() const { return _interface_faces.size(); }
 
-  KOKKOS_FUNCTION const InterfaceFaceRecord &
-  kokkosInterfaceFace(const ThreadID tid) const
+  KOKKOS_FUNCTION const InterfaceFaceRecord & kokkosInterfaceFace(const ThreadID tid) const
   {
     return _interface_faces[tid];
   }
 
-  KOKKOS_FUNCTION unsigned int
-  kokkosInterfaceNeighborQp(const InterfaceFaceRecord & face, const unsigned int qp) const
+  KOKKOS_FUNCTION unsigned int kokkosInterfaceNeighborQp(const InterfaceFaceRecord & face,
+                                                         const unsigned int qp) const
   {
     return _neighbor_qp_map[face.qp_map_offset + qp];
   }
+
+  const Array<InterfaceFaceRecord> & kokkosInterfaceFaces() const { return _interface_faces; }
 
   /// Variable providing the neighbor-side rows and values.
   MooseVariableFE<Real> & _neighbor_var;

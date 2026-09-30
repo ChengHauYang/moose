@@ -108,6 +108,8 @@ FEProblemBase::addKokkosInterfaceKernel(const std::string & interface_kernel_nam
 
   _nl[nl_sys_num]->addKokkosInterfaceKernel(interface_kernel_name, name, parameters);
 
+  _mesh.getKokkosMesh()->setNeedsElementSideGeometry();
+
   _has_kokkos_objects = true;
   _has_kokkos_residual_objects = true;
   _has_internal_edge_residual_objects = true;

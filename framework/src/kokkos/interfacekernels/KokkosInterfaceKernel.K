@@ -37,13 +37,46 @@ InterfaceKernel::InterfaceKernel(const InputParameters & parameters)
 void
 InterfaceKernel::computeResidual()
 {
-  mooseError("Kokkos interface residual assembly is not implemented.");
+  _thread.resize(_num_local_residual_threads, numKokkosInterfaceFaces());
+  Policy policy(0, _thread.size());
+
+  if (!_residual_dispatcher)
+    _residual_dispatcher = DispatcherRegistry::build<ResidualLoop>(this, type());
+
+  _residual_dispatcher->parallelFor(policy);
 }
 
 void
 InterfaceKernel::computeJacobian()
 {
-  mooseError("Kokkos interface Jacobian assembly is not implemented.");
+  if (DispatcherRegistry::hasUserMethod<JacobianLoop>(type()))
+  {
+    _thread.resize(_num_local_jacobian_threads, numKokkosInterfaceFaces());
+    Policy policy(0, _thread.size());
+
+    if (!_jacobian_dispatcher)
+      _jacobian_dispatcher = DispatcherRegistry::build<JacobianLoop>(this, type());
+
+    _jacobian_dispatcher->parallelFor(policy);
+  }
+
+  if (DispatcherRegistry::hasUserMethod<OffDiagJacobianLoop>(type()))
+  {
+    const auto & elem_coupling =
+        kokkosSystem(_kokkos_var.sys()).getCoupling(_kokkos_var.var());
+    const auto & neighbor_coupling =
+        kokkosSystem(_kokkos_neighbor_var.sys()).getCoupling(_kokkos_neighbor_var.var());
+    const auto n_couplings = std::max(elem_coupling.size(), neighbor_coupling.size());
+
+    _thread.resize(
+        _num_local_jacobian_threads, 2, n_couplings, numKokkosInterfaceFaces());
+    Policy policy(0, _thread.size());
+
+    if (!_offdiag_jacobian_dispatcher)
+      _offdiag_jacobian_dispatcher = DispatcherRegistry::build<OffDiagJacobianLoop>(this, type());
+
+    _offdiag_jacobian_dispatcher->parallelFor(policy);
+  }
 }
 
 } // namespace Moose::Kokkos

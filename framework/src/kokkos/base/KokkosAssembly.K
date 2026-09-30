@@ -150,6 +150,8 @@ Assembly::initQuadrature()
   }
 
   const auto num_elems = _mesh.nActiveLocalElem();
+  const auto num_elems_with_ghosts =
+      kokkosMesh().getNumLocalAndPossiblyOneNeighborLayerGhostElements();
 
   _n_subdomain_qps.create(num_subdomains);
   _n_subdomain_qps_face.create(num_subdomains);
@@ -157,14 +159,14 @@ Assembly::initQuadrature()
   _n_subdomain_qps_face = 0;
 
   _n_qps.create(num_elems);
-  _n_qps_face.create(_mesh.getMaxSidesPerElem(), num_elems);
+  _n_qps_face.create(_mesh.getMaxSidesPerElem(), num_elems_with_ghosts);
   _n_qps_face = 0;
 
   _qp_offset.create(num_elems);
-  _qp_offset_face.create(_mesh.getMaxSidesPerElem(), num_elems);
+  _qp_offset_face.create(_mesh.getMaxSidesPerElem(), num_elems_with_ghosts);
   _qp_offset_face = libMesh::DofObject::invalid_id;
 
-  _elem_face_property_idx.create(_mesh.getMaxSidesPerElem(), num_elems);
+  _elem_face_property_idx.create(_mesh.getMaxSidesPerElem(), num_elems_with_ghosts);
   _elem_face_property_idx = libMesh::DofObject::invalid_id;
 
   _n_elem_face_properties.create(num_subdomains);
@@ -183,6 +185,10 @@ Assembly::initQuadrature()
       _n_qps_face(side, eid) = n_qps_face[elem->subdomain_id()][elem->type()][side];
   }
 
+  for (const auto & [elem, eid] : kokkosMesh().getGhostElemIdMapping())
+    for (const auto side : elem->side_index_range())
+      _n_qps_face(side, eid) = n_qps_face[elem->subdomain_id()][elem->type()][side];
+
   for (auto boundary : _material_boundaries)
     for (auto elem_id : _mesh.getBoundaryActiveSemiLocalElemIds(boundary))
     {
@@ -199,6 +205,23 @@ Assembly::initQuadrature()
 
         _elem_face_property_idx(side, eid) = _n_elem_face_properties[sid];
         ++_n_elem_face_properties[sid];
+
+        const auto neighbor = elem->neighbor_ptr(side);
+        if (neighbor && neighbor != libMesh::remote_elem)
+        {
+          const auto neighbor_side = neighbor->which_neighbor_am_i(elem);
+          const auto neighbor_sid =
+              kokkosMesh().getContiguousSubdomainID(neighbor->subdomain_id());
+          const auto neighbor_eid = kokkosMesh().getContiguousElementID(neighbor);
+
+          _qp_offset_face(neighbor_side, neighbor_eid) = _n_subdomain_qps_face[neighbor_sid];
+          _n_subdomain_qps_face[neighbor_sid] +=
+              _n_qps_face(neighbor_side, neighbor_eid);
+
+          _elem_face_property_idx(neighbor_side, neighbor_eid) =
+              _n_elem_face_properties[neighbor_sid];
+          ++_n_elem_face_properties[neighbor_sid];
+        }
       }
     }
 

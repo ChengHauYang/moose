@@ -20,7 +20,8 @@ InterfaceKernelBase::validParams()
 {
   auto params = ResidualObject::validParams();
   params += BoundaryRestrictableRequired::validParams();
-  params += MaterialPropertyInterface::validParams();
+  params += TwoMaterialPropertyInterface::validParams();
+  params += LocalParallelInterface::validParams();
 
   params.addRequiredCoupledVar("neighbor_var", "The variable on the other side of the interface.");
   params.registerBase("InterfaceKernel");
@@ -37,12 +38,16 @@ InterfaceKernelBase::InterfaceKernelBase(const InputParameters & parameters)
   : ResidualObject(parameters, Moose::VarFieldType::VAR_FIELD_STANDARD),
     BoundaryRestrictableRequired(this, false),
     CoupleableMooseVariableDependencyIntermediateInterface(this, false),
-    MaterialPropertyInterface(this, Moose::EMPTY_BLOCK_IDS, boundaryIDs()),
+    TwoMaterialPropertyInterface(this, Moose::EMPTY_BLOCK_IDS, boundaryIDs()),
+    LocalParallelInterface(this),
     _neighbor_var(*getVarHelper<MooseVariableFE<Real>>("neighbor_var", 0)),
     _kokkos_neighbor_var(_neighbor_var)
 {
   addMooseVariableDependency(&_var);
   addMooseVariableDependency(&_neighbor_var);
+
+  if (_var.sys().number() != _neighbor_var.sys().number())
+    paramError("neighbor_var", "Kokkos interface variables must belong to the same system.");
 
   _fe_problem.addKokkosMeshInitializationHook(
       std::bind(&InterfaceKernelBase::initializeInterfaceFaces, this));
@@ -52,7 +57,8 @@ InterfaceKernelBase::InterfaceKernelBase(const InterfaceKernelBase & object)
   : ResidualObject(object),
     BoundaryRestrictableRequired(object, FunctorCopy()),
     CoupleableMooseVariableDependencyIntermediateInterface(object, FunctorCopy()),
-    MaterialPropertyInterface(object, FunctorCopy()),
+    TwoMaterialPropertyInterface(object, FunctorCopy()),
+    LocalParallelInterface(object),
     _neighbor_var(object._neighbor_var),
     _kokkos_neighbor_var(object._kokkos_neighbor_var),
     _interface_faces(object._interface_faces),
