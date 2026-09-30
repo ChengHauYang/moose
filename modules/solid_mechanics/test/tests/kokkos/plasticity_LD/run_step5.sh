@@ -18,7 +18,12 @@ fi
 # shellcheck disable=SC1091
 source "$MOOSE_DIR/kokkos-cuda-stack/scripts/activate.sh"
 
-if [ -z "${CUDA_VISIBLE_DEVICES:-}" ]; then
+NP=${NP:-1}
+
+# Single-process runs pin to the least-loaded GPU here. Multi-rank MPI runs leave
+# the device list alone and let gpu_rank_bind.sh give each rank its own GPU (see
+# the launcher below); pinning a single id here would funnel every rank onto it.
+if [ "$NP" -eq 1 ] && [ -z "${CUDA_VISIBLE_DEVICES:-}" ]; then
   CUDA_VISIBLE_DEVICES=$(python3 "$MOOSE_DIR/modules/solid_mechanics/test/tests/kokkos/plasticity/select_cuda_device.py" \
     --reason "plasticity_LD Step 5")
   export CUDA_VISIBLE_DEVICES
@@ -37,10 +42,17 @@ fi
 
 mkdir -p "$RESULTS_DIR"
 
+launcher=()
+if [ "$NP" -gt 1 ]; then
+  # gpu_rank_bind.sh pins each rank to one GPU so Kokkos/PETSc/HYPRE/libtorch
+  # agree on the device (see that script for the cudaErrorIllegalAddress it avoids).
+  launcher=(mpiexec -n "$NP" "$SCRIPT_DIR/gpu_rank_bind.sh")
+fi
+
 prefix="$RESULTS_DIR/step5_plasticity_full_gpu"
 set +e
 /usr/bin/time -f '%e' -o "$prefix.time" \
-  "$EXE" -i "$SCRIPT_DIR/step5_plasticity_full_gpu.i" \
+  "${launcher[@]}" "$EXE" -i "$SCRIPT_DIR/step5_plasticity_full_gpu.i" \
     --compute-device=cuda \
     "N=$MESH_N" \
     "Executioner/dt=$DT" \
