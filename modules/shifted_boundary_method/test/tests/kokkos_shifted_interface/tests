@@ -1,0 +1,26 @@
+[Tests]
+  [shifted_penalty_jacobian]
+    type = PetscJacobianTester
+    input = shifted_penalty.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    requirement = 'The Kokkos shifted-interface base shall cache static shifted geometry on the device and consistently linearize first-order shifted values across all four interface Jacobian blocks.'
+    design = 'syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md'
+    issues = '#31370'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    allow_test_objects = true
+  []
+  [sczm_linear_jacobian]
+    type = PetscJacobianTester
+    input = sczm_linear.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    requirement = 'The Kokkos small-strain shifted cohesive-zone kernel shall consistently assemble diagonal and cross-component traction-jump Jacobian blocks using device material properties.'
+    design = 'syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md'
+    issues = '#31370'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    allow_test_objects = true
+  []
+[]
