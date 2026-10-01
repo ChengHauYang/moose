@@ -83,6 +83,9 @@ Matrix::destroy()
 void
 Matrix::close()
 {
+  // Complete kokkos writes before passing the COO values to PETSc
+  ::Kokkos::fence();
+
   if (_is_host)
     _val.copyToHost();
 
