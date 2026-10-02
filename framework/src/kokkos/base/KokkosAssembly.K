@@ -207,7 +207,13 @@ Assembly::initQuadrature()
         ++_n_elem_face_properties[sid];
 
         const auto neighbor = elem->neighbor_ptr(side);
-        if (neighbor && neighbor != libMesh::remote_elem)
+        // An off-process neighbor is addressable only if this rank holds a copy of it, which
+        // KokkosMesh does only when element-side geometry data has been requested. Without that
+        // request the ghost element ID does not exist, so such a neighbor is left to the rank that
+        // owns it to register its own side.
+        if (neighbor && neighbor != libMesh::remote_elem &&
+            (neighbor->processor_id() == _problem.processor_id() ||
+             kokkosMesh().getGhostElemIdMapping().count(neighbor)))
         {
           const auto neighbor_side = neighbor->which_neighbor_am_i(elem);
           const auto neighbor_sid =
