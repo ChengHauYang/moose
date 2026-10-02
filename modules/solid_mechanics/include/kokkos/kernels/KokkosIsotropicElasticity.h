@@ -48,13 +48,12 @@ private:
 
 template <typename Derived>
 KOKKOS_FUNCTION Moose::Kokkos::Real3
-KokkosIsotropicElasticity::precomputeQpResidual(const unsigned int qp,
-                                                AssemblyDatum & datum) const
+KokkosIsotropicElasticity::precomputeQpResidual(const unsigned int qp, AssemblyDatum & datum) const
 {
   Real3 residual(0);
   Real divergence = 0;
 
-  for (const auto i : make_range(_ndisp))
+  for (unsigned int i = 0; i < _ndisp; ++i)
   {
     const auto grad_disp = _grad_displacements(datum, qp, i);
     divergence += grad_disp(i);
@@ -81,7 +80,7 @@ KokkosIsotropicElasticity::precomputeQpOffDiagJacobian(const unsigned int j,
                                                        const unsigned int qp,
                                                        AssemblyDatum & datum) const
 {
-  for (const auto i : make_range(_ndisp))
+  for (unsigned int i = 0; i < _ndisp; ++i)
     if (_displacement_var_ids[i] == jvar)
       return jacobian(i, _grad_phi(datum, j, qp));
 
@@ -93,7 +92,7 @@ KokkosIsotropicElasticity::jacobian(const unsigned int displacement_component,
                                     const Real3 & grad_phi) const
 {
   Real3 result(0);
-  for (const auto i : make_range(_ndisp))
+  for (unsigned int i = 0; i < _ndisp; ++i)
     result(i) = _mu * ((displacement_component == _component ? grad_phi(i) : 0) +
                        (i == displacement_component ? grad_phi(_component) : 0));
 
