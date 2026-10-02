@@ -16,10 +16,12 @@
 
 #include "FEProblemBase.h"
 #include "DisplacedProblem.h"
+#include "KokkosInterfaceFaceCache.h"
 #include "LinearSystem.h"
 #include "NonlinearSystemBase.h"
 #include "AuxiliarySystem.h"
 #include "MaterialBase.h"
+#include "MooseMesh.h"
 #include "MooseVariableDependencyInterface.h"
 #include "MaterialPropertyInterface.h"
 #include "Coupleable.h"
@@ -46,6 +48,18 @@ const Moose::Kokkos::FESystem &
 FEProblemBase::getKokkosFESystem(const unsigned int sys_num) const
 {
   return _kokkos_fe_systems[sys_num];
+}
+
+const Moose::Kokkos::InterfaceFaceCache *
+FEProblemBase::getKokkosInterfaceFaceCache(const std::set<BoundaryID> & boundary_ids,
+                                           const MooseObject * error_object)
+{
+  auto & cache = _kokkos_interface_face_caches[boundary_ids];
+  if (!cache)
+    cache = std::make_shared<Moose::Kokkos::InterfaceFaceCache>(
+        _mesh, *_mesh.getKokkosMesh(), _kokkos_assembly, boundary_ids, error_object);
+
+  return cache.get();
 }
 
 void

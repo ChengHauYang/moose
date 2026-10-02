@@ -68,6 +68,14 @@ class MaterialData;
 class MooseEnum;
 class MortarInterfaceWarehouse;
 class Assembly;
+
+namespace Moose
+{
+namespace Kokkos
+{
+class InterfaceFaceCache;
+} // namespace Kokkos
+} // namespace Moose
 class JacobianBlock;
 class Control;
 class MultiApp;
@@ -362,6 +370,19 @@ public:
 #ifdef MOOSE_KOKKOS_ENABLED
   Moose::Kokkos::Assembly & kokkosAssembly() { return _kokkos_assembly; }
   const Moose::Kokkos::Assembly & kokkosAssembly() const { return _kokkos_assembly; }
+
+  /**
+   * Get the oriented two-sided Kokkos interface faces of a boundary restriction, building the
+   * cache on first request. Every interface material and interface kernel of the same boundary
+   * restriction handles a shallow reference to the very same face arrays, so that a local face
+   * index identifies the same face for all of them.
+   * @param boundary_ids The boundaries forming the interface
+   * @param error_object The object used to report invalid interface topology
+   * @return The cache, owned by this problem for its entire lifetime
+   */
+  const Moose::Kokkos::InterfaceFaceCache *
+  getKokkosInterfaceFaceCache(const std::set<BoundaryID> & boundary_ids,
+                              const MooseObject * error_object);
 #endif
 
   /**
@@ -3216,6 +3237,9 @@ protected:
 
 #ifdef MOOSE_KOKKOS_ENABLED
   Moose::Kokkos::Assembly _kokkos_assembly;
+  /// Oriented Kokkos interface face caches, one per interface boundary restriction
+  std::map<std::set<BoundaryID>, std::shared_ptr<Moose::Kokkos::InterfaceFaceCache>>
+      _kokkos_interface_face_caches;
 #endif
 
   /// Warehouse to store mesh divisions

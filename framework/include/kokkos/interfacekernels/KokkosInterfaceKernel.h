@@ -10,6 +10,8 @@
 
 #include "KokkosInterfaceKernelBase.h"
 
+#include "KokkosInterfaceDatum.h"
+
 namespace Moose::Kokkos
 {
 
@@ -128,18 +130,10 @@ KOKKOS_FUNCTION void
 InterfaceKernel::operator()(ResidualLoop, const ThreadID tid, const Derived & kernel) const
 {
   const auto & face = kokkosInterfaceFace(_thread(tid, 1));
-  AssemblyDatum elem_datum(face.elem,
-                           face.side,
-                           kokkosAssembly(),
-                           kokkosSystems(),
-                           _kokkos_var,
-                           _kokkos_var.var());
-  AssemblyDatum neighbor_datum(face.neighbor,
-                               face.neighbor_side,
-                               kokkosAssembly(),
-                               kokkosSystems(),
-                               _kokkos_neighbor_var,
-                               _kokkos_neighbor_var.var());
+  auto elem_datum = makePrimaryInterfaceDatum<AssemblyDatum>(
+      face, kokkosAssembly(), kokkosSystems(), _kokkos_var, _kokkos_var.var());
+  auto neighbor_datum = makeNeighborInterfaceDatum<AssemblyDatum>(
+      face, kokkosAssembly(), kokkosSystems(), _kokkos_neighbor_var, _kokkos_neighbor_var.var());
 
   elem_datum.set_local_parallel(_thread(tid, 0), _thread.size(0));
   neighbor_datum.set_local_parallel(_thread(tid, 0), _thread.size(0));
@@ -154,30 +148,14 @@ InterfaceKernel::operator()(JacobianLoop, const ThreadID tid, const Derived & ke
 {
   const auto & face = kokkosInterfaceFace(_thread(tid, 1));
 
-  AssemblyDatum elem_column_datum(face.elem,
-                                  face.side,
-                                  kokkosAssembly(),
-                                  kokkosSystems(),
-                                  _kokkos_var,
-                                  _kokkos_var.var());
-  AssemblyDatum neighbor_row_elem_column_datum(face.neighbor,
-                                                face.neighbor_side,
-                                                kokkosAssembly(),
-                                                kokkosSystems(),
-                                                _kokkos_neighbor_var,
-                                                _kokkos_var.var());
-  AssemblyDatum elem_row_neighbor_column_datum(face.elem,
-                                                face.side,
-                                                kokkosAssembly(),
-                                                kokkosSystems(),
-                                                _kokkos_var,
-                                                _kokkos_neighbor_var.var());
-  AssemblyDatum neighbor_column_datum(face.neighbor,
-                                      face.neighbor_side,
-                                      kokkosAssembly(),
-                                      kokkosSystems(),
-                                      _kokkos_neighbor_var,
-                                      _kokkos_neighbor_var.var());
+  auto elem_column_datum = makePrimaryInterfaceDatum<AssemblyDatum>(
+      face, kokkosAssembly(), kokkosSystems(), _kokkos_var, _kokkos_var.var());
+  auto neighbor_row_elem_column_datum = makeNeighborInterfaceDatum<AssemblyDatum>(
+      face, kokkosAssembly(), kokkosSystems(), _kokkos_neighbor_var, _kokkos_var.var());
+  auto elem_row_neighbor_column_datum = makePrimaryInterfaceDatum<AssemblyDatum>(
+      face, kokkosAssembly(), kokkosSystems(), _kokkos_var, _kokkos_neighbor_var.var());
+  auto neighbor_column_datum = makeNeighborInterfaceDatum<AssemblyDatum>(
+      face, kokkosAssembly(), kokkosSystems(), _kokkos_neighbor_var, _kokkos_neighbor_var.var());
 
   elem_column_datum.set_local_parallel(_thread(tid, 0), _thread.size(0));
   neighbor_row_elem_column_datum.set_local_parallel(_thread(tid, 0), _thread.size(0));
@@ -231,10 +209,10 @@ InterfaceKernel::operator()(OffDiagJacobianLoop, const ThreadID tid, const Deriv
   if (!active_on_elem && !active_on_neighbor)
     return;
 
-  AssemblyDatum elem_datum(
-      face.elem, face.side, kokkosAssembly(), kokkosSystems(), row_var, jvar);
-  AssemblyDatum neighbor_datum(
-      face.neighbor, face.neighbor_side, kokkosAssembly(), kokkosSystems(), row_var, jvar);
+  auto elem_datum = makePrimaryInterfaceDatum<AssemblyDatum>(
+      face, kokkosAssembly(), kokkosSystems(), row_var, jvar);
+  auto neighbor_datum = makeNeighborInterfaceDatum<AssemblyDatum>(
+      face, kokkosAssembly(), kokkosSystems(), row_var, jvar);
 
   elem_datum.set_local_parallel(_thread(tid, 0), _thread.size(0));
   neighbor_datum.set_local_parallel(_thread(tid, 0), _thread.size(0));

@@ -10,7 +10,17 @@
 
 #include "KokkosSCZMInterfaceKernelSmallStrain.h"
 
-/** Test kernel evaluating a linear cohesive traction from the shifted displacement jump. */
+/**
+ * Test-only shifted interface kernel evaluating a linear cohesive traction from the shifted
+ * displacement jump, and reading the dimensional traction and tangent that
+ * `KokkosSCZMInterfaceKernelSmallStrain` expects from a material. The host shifted formulation in
+ * this module has no counterpart of this class, because it reads those two properties from the
+ * production cohesive zone model material. The Kokkos path has no such material yet, so this kernel
+ * pairs with a test material instead. Substituting a linear law whose tangent is known in closed
+ * form lets the consumption of those properties, the distance-based shifted values, the signed area
+ * correction, and the opposing signs of the two residual rows be verified before the Kokkos
+ * constitutive property pipeline exists.
+ */
 class KokkosLinearSCZMInterfaceKernel : public KokkosSCZMInterfaceKernelSmallStrain
 {
 public:

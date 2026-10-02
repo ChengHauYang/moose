@@ -10,6 +10,15 @@
 
 #include "KokkosShiftedInterfaceKernel.h"
 
+/**
+ * Test-only shifted interface kernel applying a linear penalty traction on the shifted displacement
+ * jump. The host shifted formulation in this module has no counterpart of this class, because its
+ * production path assembles the cohesive zone model rather than a penalty law. This kernel exists
+ * so that the generic shifted assembly machinery can be verified on its own, namely the shortest
+ * distance to the surface, the distance-based shifted value and shape helpers, the signed area
+ * correction, and all four same-component Jacobian blocks, against a law whose tangent is known in
+ * closed form and therefore needs no material to supply it.
+ */
 class KokkosShiftedPenaltyInterface : public Moose::Kokkos::ShiftedInterfaceKernel
 {
 public:

@@ -10,6 +10,7 @@
 
 #include "KokkosResidualObject.h"
 #include "KokkosLocalParallelInterface.h"
+#include "KokkosInterfaceFaceCache.h"
 
 #include "BoundaryRestrictableRequired.h"
 #include "CoupleableMooseVariableDependencyIntermediateInterface.h"
@@ -20,17 +21,6 @@
 
 namespace Moose::Kokkos
 {
-
-/** Topology and quadrature correspondence for one oriented interface face. */
-struct InterfaceFaceRecord
-{
-  ContiguousElementID elem;
-  unsigned int side;
-  ContiguousElementID neighbor;
-  unsigned int neighbor_side;
-  dof_id_type qp_map_offset;
-  unsigned int n_qps;
-};
 
 /** Base class for Kokkos two-sided finite element interface kernels. */
 class InterfaceKernelBase : public ResidualObject,
@@ -69,9 +59,13 @@ protected:
   Variable _kokkos_neighbor_var;
 
 private:
-  void initializeInterfaceFaces();
+  void acquireInterfaceFaces();
 
-  /// Object-local topology for only the selected, primary-oriented interface faces.
+  /**
+   * Shallow handles into the face arrays owned by the FEProblemBase interface face cache. They
+   * refer to the same device memory as the interface materials of the same boundaries, so that a
+   * local face index identifies the same face for all of them.
+   */
   Array<InterfaceFaceRecord> _interface_faces;
   /// Neighbor-side quadrature point index for each primary-side quadrature point.
   Array<unsigned int> _neighbor_qp_map;
