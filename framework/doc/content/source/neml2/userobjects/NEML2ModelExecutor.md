@@ -15,6 +15,13 @@ Each NEML2 model +input variable+ is gathered from MOOSE by a `MOOSEToNEML2` use
 
 Each model +output+ and its +derivatives+ with respect to input variables and model parameters can be retireved by a [NEML2ToMOOSEMaterialProperty](NEML2ToMOOSEMaterialProperty.md) material object.
 
+Kokkos FE-interpolated inputs use an element/quadrature-point batch `[nelem, nqp, ...base]`.
+Flat gathered inputs and parameters are reshaped to match this batch when their base shapes agree with the model metadata.
+The cpp-eager runtime evaluates this native layout directly.
+For cpp-AOTI, the model handle broadcasts inputs and parameters to the common batch and collapses only the dynamic batch axes to `[nelem * nqp, ...base]` before evaluation.
+Outputs and input and parameter Jacobians are restored to the native batch layout so Kokkos material properties retain their element mapping and managed state retains its layout.
+Base-only outputs and derivative blocks remain unbatched.
+
 ## NEML2 model execution
 
 The actual execution of the NEML2 model takes place in the `execute()` method. The model execution involves five steps:
