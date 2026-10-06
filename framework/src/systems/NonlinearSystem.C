@@ -405,7 +405,32 @@ NonlinearSystem::computeScalingJacobian()
       else
       {
         std::cerr << "[DEBUG] before MatGetDiagonal (rank " << rank << ")" << std::endl;
-        LibmeshPetscCall(MatGetDiagonal(petsc_matrix.mat(), scaling_vec));
+        // TEMP DEBUG: Aurora GPU page-fault localization
+        PetscBool hypre_on_sycl_device = PETSC_FALSE;
+#ifdef PETSC_HAVE_SYCL
+        PetscBool matrix_is_hypre = PETSC_FALSE;
+        LibmeshPetscCall(PetscObjectTypeCompare(
+            reinterpret_cast<PetscObject>(petsc_matrix.mat()), MATHYPRE, &matrix_is_hypre));
+        if (matrix_is_hypre)
+        {
+          PetscMemType memory_type;
+          LibmeshPetscCall(MatGetCurrentMemType(petsc_matrix.mat(), &memory_type));
+          hypre_on_sycl_device = PetscMemTypeDevice(memory_type);
+        }
+#endif
+        // TEMP DEBUG: Aurora GPU page-fault localization
+        // Extract through a temporary AIJ matrix to bypass HYPRE's device diagonal extraction.
+        if (hypre_on_sycl_device)
+        {
+          Mat aij = nullptr;
+          std::cerr << "[DEBUG] before MatConvert HYPRE->AIJ (rank " << rank << ")" << std::endl;
+          LibmeshPetscCall(MatConvert(petsc_matrix.mat(), MATAIJ, MAT_INITIAL_MATRIX, &aij));
+          std::cerr << "[DEBUG] after MatConvert HYPRE->AIJ (rank " << rank << ")" << std::endl;
+          LibmeshPetscCall(MatGetDiagonal(aij, scaling_vec));
+          LibmeshPetscCall(MatDestroy(&aij));
+        }
+        else
+          LibmeshPetscCall(MatGetDiagonal(petsc_matrix.mat(), scaling_vec));
       }
 
       // TEMP DEBUG: Aurora GPU page-fault localization
