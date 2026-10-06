@@ -172,27 +172,27 @@ public:
   }
 
   std::pair<std::map<std::string, at::Tensor>, neml2::aoti::VariablePairJacobian>
-  jacobian(const std::map<std::string, at::Tensor> & inputs) const override
-  {
-    return _m.jacobian(inputs);
-  }
+  jacobian(const std::map<std::string, at::Tensor> & inputs) const override;
   std::pair<std::map<std::string, at::Tensor>, neml2::aoti::VariablePairJacobian>
-  param_jacobian(const std::map<std::string, at::Tensor> & inputs) const override
-  {
-    return _m.param_jacobian(inputs);
-  }
-  void set_parameter(const std::string & name, const at::Tensor & value) override
-  {
-    _m.set_parameter(name, value);
-  }
+  param_jacobian(const std::map<std::string, at::Tensor> & inputs) const override;
+  void set_parameter(const std::string & name, const at::Tensor & value) override;
   std::map<std::string, at::Tensor>
-  value(const std::map<std::string, at::Tensor> & inputs) const override
-  {
-    return _m.forward(inputs);
-  }
+  value(const std::map<std::string, at::Tensor> & inputs) const override;
   at::Device device() const override { return _m.device(); }
 
 private:
+  /// Broadcast inputs before collapsing their dynamic batch axes for the AOTI IFT runtime.
+  std::map<std::string, at::Tensor>
+  flattenInputs(const std::map<std::string, at::Tensor> & inputs,
+                std::vector<int64_t> & batch_shape) const;
+
+  /// Restore the caller's batch layout, preserving all output and derivative base axes.
+  void restoreOutputs(std::map<std::string, at::Tensor> & outputs,
+                      const std::vector<int64_t> & batch_shape) const;
+  void restoreJacobian(neml2::aoti::VariablePairJacobian & jacobian,
+                       const std::vector<int64_t> & batch_shape,
+                       bool parameters) const;
+
   /// Build the MPI scheduler (round-robin device list over the node's ranks) and load the dispatched
   /// aoti model. `input` is resolved flexibly for a friendlier UX:
   ///   - a directory                -> the artifact root, loaded directly (self-describing);
@@ -223,7 +223,10 @@ private:
     return neml2::aoti::load_model(input, model_name, scheduler);
   }
 
-  neml2::aoti::DispatchedModel _m;
+  // Evaluation expands caller-provided parameters to the input batch before dispatch.
+  mutable neml2::aoti::DispatchedModel _m;
+  /// Caller-provided parameter tensors in their native batch layout.
+  std::map<std::string, at::Tensor> _parameters;
 };
 
 /**

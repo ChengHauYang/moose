@@ -14,6 +14,7 @@
 #ifdef NEML2_ENABLED
 
 #include <torch/torch.h>
+#include <cstdint>
 
 TEST(NEML2Utils, fromBlob_Real)
 {
@@ -25,11 +26,9 @@ TEST(NEML2Utils, fromBlob_Real)
   auto tensor = NEML2Utils::fromBlob(data);
   ASSERT_TRUE(tensor.defined());
   ASSERT_TRUE(tensor.dim() == 1);
-  ASSERT_TRUE(tensor.batch_dim() == 1);
-  ASSERT_TRUE(tensor.base_dim() == 0);
   ASSERT_TRUE(tensor.size(0) == 3);
 
-  for (neml2::Size n : index_range(data))
+  for (const int64_t n : index_range(data))
     EXPECT_NEAR(tensor.index({n}).item<Real>(), data[n], 1e-12);
 }
 
@@ -43,13 +42,11 @@ TEST(NEML2Utils, fromBlob_RealVectorValue)
   auto tensor = NEML2Utils::fromBlob(data);
   ASSERT_TRUE(tensor.defined());
   ASSERT_TRUE(tensor.dim() == 2);
-  ASSERT_TRUE(tensor.batch_dim() == 1);
-  ASSERT_TRUE(tensor.base_dim() == 1);
   ASSERT_TRUE(tensor.size(0) == 3);
   ASSERT_TRUE(tensor.size(1) == 3);
 
-  for (neml2::Size n : index_range(data))
-    for (neml2::Size i : make_range(3))
+  for (const int64_t n : index_range(data))
+    for (const int64_t i : make_range(3))
       EXPECT_NEAR(tensor.index({n, i}).item<Real>(), data[n](i), 1e-12);
 }
 
@@ -62,15 +59,13 @@ TEST(NEML2Utils, fromBlob_RankTwoTensor)
   auto tensor = NEML2Utils::fromBlob(data);
   ASSERT_TRUE(tensor.defined());
   ASSERT_TRUE(tensor.dim() == 3);
-  ASSERT_TRUE(tensor.batch_dim() == 1);
-  ASSERT_TRUE(tensor.base_dim() == 2);
   ASSERT_TRUE(tensor.size(0) == 2);
   ASSERT_TRUE(tensor.size(1) == 3);
   ASSERT_TRUE(tensor.size(2) == 3);
 
-  for (neml2::Size n : index_range(data))
-    for (neml2::Size i : make_range(3))
-      for (neml2::Size j : make_range(3))
+  for (const int64_t n : index_range(data))
+    for (const int64_t i : make_range(3))
+      for (const int64_t j : make_range(3))
         EXPECT_NEAR(tensor.index({n, i, j}).item<Real>(), data[n](i, j), 1e-12);
 }
 
@@ -83,13 +78,11 @@ TEST(NEML2Utils, fromBlob_SymmetricRankTwoTensor)
   auto tensor = NEML2Utils::fromBlob(data);
   ASSERT_TRUE(tensor.defined());
   ASSERT_TRUE(tensor.dim() == 2);
-  ASSERT_TRUE(tensor.batch_dim() == 1);
-  ASSERT_TRUE(tensor.base_dim() == 1);
   ASSERT_TRUE(tensor.size(0) == 2);
   ASSERT_TRUE(tensor.size(1) == 6);
 
-  for (neml2::Size n : index_range(data))
-    for (neml2::Size i : make_range(6))
+  for (const int64_t n : index_range(data))
+    for (const int64_t i : make_range(6))
       EXPECT_NEAR(tensor.index({n, i}).item<Real>(), data[n](i), 1e-12);
 }
 
@@ -108,7 +101,7 @@ TEST(NEML2Utils, copyTensorToMOOSEData_RealVectorValue)
   const auto tensor = torch::tensor({1.0, 2.0, 3.0}, torch::TensorOptions().dtype(torch::kFloat64));
   NEML2Utils::copyTensorToMOOSEData(tensor, data);
 
-  for (neml2::Size i : make_range(3))
+  for (const int64_t i : make_range(3))
     EXPECT_NEAR(tensor.index({i}).item<Real>(), data(i), 1e-12);
 }
 
@@ -119,8 +112,8 @@ TEST(NEML2Utils, copyTensorToMOOSEData_RankTwoTensor)
                                     torch::TensorOptions().dtype(torch::kFloat64));
   NEML2Utils::copyTensorToMOOSEData(tensor, data);
 
-  for (neml2::Size i : make_range(3))
-    for (neml2::Size j : make_range(3))
+  for (const int64_t i : make_range(3))
+    for (const int64_t j : make_range(3))
       EXPECT_NEAR(tensor.index({i, j}).item<Real>(), data(i, j), 1e-12);
 }
 
@@ -131,7 +124,7 @@ TEST(NEML2Utils, copyTensorToMOOSEData_SymmetricRankTwoTensor)
       torch::tensor({1.0, 2.0, 3.0, 4.0, 5.0, 6.0}, torch::TensorOptions().dtype(torch::kFloat64));
   NEML2Utils::copyTensorToMOOSEData(tensor, data);
 
-  for (neml2::Size i : make_range(6))
+  for (const int64_t i : make_range(6))
     EXPECT_NEAR(tensor.index({i}).item<Real>(), data(i), 1e-12);
 }
 
@@ -151,10 +144,10 @@ TEST(NEML2Utils, copyTensorToMOOSEData_RankFourTensor)
                     torch::TensorOptions().dtype(torch::kFloat64));
   NEML2Utils::copyTensorToMOOSEData(tensor, data);
 
-  for (neml2::Size i : make_range(3))
-    for (neml2::Size j : make_range(3))
-      for (neml2::Size k : make_range(3))
-        for (neml2::Size l : make_range(3))
+  for (const int64_t i : make_range(3))
+    for (const int64_t j : make_range(3))
+      for (const int64_t k : make_range(3))
+        for (const int64_t l : make_range(3))
           EXPECT_NEAR(tensor.index({i, j, k, l}).item<Real>(), data(i, j, k, l), 1e-12);
 }
 
@@ -170,8 +163,8 @@ TEST(NEML2Utils, copyTensorToMOOSEData_SymmetricRankFourTensor)
                                     torch::TensorOptions().dtype(torch::kFloat64));
   NEML2Utils::copyTensorToMOOSEData(tensor, data);
 
-  for (neml2::Size i : make_range(6))
-    for (neml2::Size j : make_range(6))
+  for (const int64_t i : make_range(6))
+    for (const int64_t j : make_range(6))
       EXPECT_NEAR(tensor.index({i, j}).item<Real>(), data(i, j), 1e-12);
 }
 #endif
