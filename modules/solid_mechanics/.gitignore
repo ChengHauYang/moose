@@ -1,0 +1,4 @@
+# Generated platform-specific NEML2 AOTI artifacts
+/test/tests/kokkos/plasticity/aoti/
+/test/tests/kokkos/plasticity_LD/aoti/
+/test/tests/kokkos/plasticity_LD/aoti_dense/
