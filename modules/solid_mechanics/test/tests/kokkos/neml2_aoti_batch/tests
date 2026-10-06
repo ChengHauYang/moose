@@ -1,0 +1,57 @@
+[Tests]
+  issues = '#27493'
+  design = 'NEML2ModelExecutor.md NEML2ToKokkosMaterialProperty.md'
+  capabilities = 'libtorch & neml2'
+  compute_devices = cpu
+  # AOTI artifacts contain platform-specific binaries and are compiled on the test machine.
+  [compile_perfect]
+    type = RunCommand
+    command = 'neml2-compile ../../neml2/plasticity/perfect_neml2.i --model model --device cpu --output-dir aoti_perfect -d neml2_stress:neml2_strain'
+    requirement = 'The system shall compile an implicit perfect-plasticity model and its input Jacobian for the CPU AOTI runtime.'
+    max_time = 600
+  []
+  [host]
+    type = Exodiff
+    input = '../../neml2/plasticity/perfect.i'
+    cli_args = 'NEML2/eager=false NEML2/input=aoti_perfect/model Outputs/file_base=perfect_out'
+    exodiff = perfect_out.e
+    gold_dir = '../../neml2/plasticity/gold'
+    prereq = compile_perfect
+    requirement = 'The system shall preserve the host AOTI implicit perfect-plasticity solution over multiple timesteps.'
+  []
+  [kokkos_managed_state]
+    type = Exodiff
+    input = '../linear_elasticity/neml2_kokkos_perfect_plasticity.i'
+    cli_args = 'NEML2/eager=false NEML2/input=aoti_perfect/model Outputs/file_base=perfect_out'
+    exodiff = perfect_out.e
+    gold_dir = '../../neml2/plasticity/gold'
+    prereq = host
+    capabilities = 'kokkos & libtorch & neml2'
+    requirement = 'The system shall evaluate AOTI implicit perfect plasticity with element-QP batched strain and managed tensor and scalar state over multiple timesteps, matching the host solution.'
+  []
+  [kokkos_gathered_state]
+    type = Exodiff
+    input = '../linear_elasticity/neml2_kokkos_perfect_plasticity.i'
+    cli_args = 'NEML2/eager=false NEML2/input=aoti_perfect/model NEML2/all/manage_state_advance=false Outputs/file_base=perfect_out'
+    exodiff = perfect_out.e
+    gold_dir = '../../neml2/plasticity/gold'
+    prereq = kokkos_managed_state
+    capabilities = 'kokkos & libtorch & neml2'
+    requirement = 'The system shall normalize gathered old state to the element-QP batch before evaluating AOTI implicit perfect plasticity over multiple timesteps, matching the host solution.'
+  []
+  [compile_rank_two]
+    type = RunCommand
+    command = 'neml2-compile ../../neml2/crystal_plasticity/exact_kinematics_neml2.i --model model --device cpu --output-dir aoti_rank_two -d neml2_stress:deformation_gradient'
+    requirement = 'The system shall compile an implicit crystal-plasticity model with full rank-two deformation gradients and their input Jacobians for the CPU AOTI runtime.'
+    max_time = 600
+  []
+  [kokkos_rank_two]
+    type = RunApp
+    input = '../plasticity_LD/step3_plasticity_cpu_neml2_kokkos_cpu_petsc.i'
+    cli_args = 'N=2 NEML2/eager=false NEML2/input=aoti_rank_two/model Executioner/petsc_options_iname=-pc_type Executioner/petsc_options_value=lu Outputs/file_base=rank_two_out'
+    prereq = compile_rank_two
+    capabilities = 'kokkos & libtorch & neml2'
+    expect_out = 'Time Step 5'
+    requirement = 'The system shall preserve both base axes of full rank-two deformation gradients and managed plastic deformation gradients when evaluating AOTI implicit crystal plasticity with an element-QP batch over multiple timesteps.'
+  []
+[]
