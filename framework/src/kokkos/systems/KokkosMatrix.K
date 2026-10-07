@@ -10,9 +10,6 @@
 #include "KokkosMatrix.h"
 #include "KokkosFESystem.h"
 
-// TEMP DEBUG: Aurora GPU page-fault localization
-#include <iostream>
-
 namespace Moose::Kokkos
 {
 
@@ -86,28 +83,16 @@ Matrix::destroy()
 void
 Matrix::close()
 {
-  // TEMP DEBUG: Aurora GPU page-fault localization
-  const auto rank = _matrix->comm().rank();
-  std::cerr << "[DEBUG] Matrix::close begin (rank " << rank << ")" << std::endl;
-  std::cerr << "[DEBUG] before pre-PETSc fence (rank " << rank << ")" << std::endl;
   // Complete kokkos writes before passing the COO values to PETSc
   ::Kokkos::fence();
-  // TEMP DEBUG: Aurora GPU page-fault localization
-  std::cerr << "[DEBUG] after pre-PETSc fence (rank " << rank << ")" << std::endl;
 
   if (_is_host)
     _val.copyToHost();
 
-  // TEMP DEBUG: Aurora GPU page-fault localization
-  std::cerr << "[DEBUG] before MatSetValuesCOO (rank " << rank << ")" << std::endl;
   LibmeshPetscCallQ(
       MatSetValuesCOO(_petsc_matrix, _is_host ? _val.hostData() : _val.deviceData(), ADD_VALUES));
-  // TEMP DEBUG: Aurora GPU page-fault localization
-  std::cerr << "[DEBUG] after MatSetValuesCOO (rank " << rank << ")" << std::endl;
 
   ::Kokkos::fence();
-  // TEMP DEBUG: Aurora GPU page-fault localization
-  std::cerr << "[DEBUG] after final fence (rank " << rank << ")" << std::endl;
 }
 
 } // namespace Moose::Kokkos

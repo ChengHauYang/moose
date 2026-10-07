@@ -30,9 +30,6 @@
 #include "libmesh/default_coupling.h"
 #include "libmesh/petsc_solver_exception.h"
 
-// TEMP DEBUG: Aurora GPU page-fault localization
-#include <iostream>
-
 namespace Moose
 {
 void
@@ -372,20 +369,13 @@ NonlinearSystem::computeScalingJacobian()
     // Kokkos kernels can write directly into its Mat.
     auto & jacobian = _nl_implicit_sys.get_system_matrix();
     _fe_problem.computeJacobianSys(_nl_implicit_sys, *_current_solution, jacobian);
-    // TEMP DEBUG: Aurora GPU page-fault localization
-    const auto rank = comm().rank();
-    std::cerr << "[DEBUG] after computeJacobianSys (rank " << rank << ")" << std::endl;
 
     auto & petsc_matrix = cast_ref<PetscMatrix<Number> &>(jacobian);
 
     // Create the Petsc reduction vector with the layout of the matrix so that extracting the
     // reduction values matches the matrix's vector type on device or host.
     Vec scaling_vec = nullptr;
-    // TEMP DEBUG: Aurora GPU page-fault localization
-    std::cerr << "[DEBUG] before MatCreateVecs (rank " << rank << ")" << std::endl;
     LibmeshPetscCall(MatCreateVecs(petsc_matrix.mat(), nullptr, &scaling_vec));
-    // TEMP DEBUG: Aurora GPU page-fault localization
-    std::cerr << "[DEBUG] after MatCreateVecs (rank " << rank << ")" << std::endl;
 
     {
       libMesh::PetscVector<Number> scaling_vector(scaling_vec, this->comm());
@@ -396,16 +386,10 @@ NonlinearSystem::computeScalingJacobian()
       // the same global matrix entry cancel because they have opposite signs. MatGetDiagonal runs
       // on the device for Kokkos matrices, but MatGetRowSumAbs currently synchronizes the matrix
       // data to the host.
-      // TEMP DEBUG: Aurora GPU page-fault localization
       if (_off_diagonals_in_auto_scaling)
-      {
-        std::cerr << "[DEBUG] before MatGetRowSumAbs (rank " << rank << ")" << std::endl;
         LibmeshPetscCall(MatGetRowSumAbs(petsc_matrix.mat(), scaling_vec));
-      }
       else
       {
-        std::cerr << "[DEBUG] before MatGetDiagonal (rank " << rank << ")" << std::endl;
-        // TEMP DEBUG: Aurora GPU page-fault localization
         PetscBool hypre_on_sycl_device = PETSC_FALSE;
 #ifdef PETSC_HAVE_SYCL
         PetscBool matrix_is_hypre = PETSC_FALSE;
@@ -418,14 +402,12 @@ NonlinearSystem::computeScalingJacobian()
           hypre_on_sycl_device = PetscMemTypeDevice(memory_type);
         }
 #endif
-        // TEMP DEBUG: Aurora GPU page-fault localization
-        // Extract through a temporary AIJ matrix to bypass HYPRE's device diagonal extraction.
+        // Extract through an AIJ matrix to bypass HYPRE's device diagonal extraction, which faults
+        // on the SYCL device.
         if (hypre_on_sycl_device)
         {
           Mat aij = nullptr;
-          std::cerr << "[DEBUG] before MatConvert HYPRE->AIJ (rank " << rank << ")" << std::endl;
           LibmeshPetscCall(MatConvert(petsc_matrix.mat(), MATAIJ, MAT_INITIAL_MATRIX, &aij));
-          std::cerr << "[DEBUG] after MatConvert HYPRE->AIJ (rank " << rank << ")" << std::endl;
           LibmeshPetscCall(MatGetDiagonal(aij, scaling_vec));
           LibmeshPetscCall(MatDestroy(&aij));
         }
@@ -433,31 +415,11 @@ NonlinearSystem::computeScalingJacobian()
           LibmeshPetscCall(MatGetDiagonal(petsc_matrix.mat(), scaling_vec));
       }
 
-      // TEMP DEBUG: Aurora GPU page-fault localization
-      // Read-only host access synchronizes PETSc's Kokkos execution space without changing values.
-      const PetscScalar * scaling_values = nullptr;
-      LibmeshPetscCall(VecGetArrayRead(scaling_vec, &scaling_values));
-      LibmeshPetscCall(VecRestoreArrayRead(scaling_vec, &scaling_values));
-      std::cerr << "[DEBUG] after "
-                << (_off_diagonals_in_auto_scaling ? "MatGetRowSumAbs" : "MatGetDiagonal")
-                << " (rank " << rank << ")" << std::endl;
-
-      // TEMP DEBUG: Aurora GPU page-fault localization
-      std::cerr << "[DEBUG] before scaling_matrix assignment (rank " << rank << ")" << std::endl;
       *_scaling_matrix = scaling_vector;
-      // TEMP DEBUG: Aurora GPU page-fault localization
-      std::cerr << "[DEBUG] after scaling_matrix assignment (rank " << rank << ")" << std::endl;
-      std::cerr << "[DEBUG] before scaling_matrix close (rank " << rank << ")" << std::endl;
       _scaling_matrix->close();
-      // TEMP DEBUG: Aurora GPU page-fault localization
-      std::cerr << "[DEBUG] after scaling_matrix close (rank " << rank << ")" << std::endl;
     }
 
-    // TEMP DEBUG: Aurora GPU page-fault localization
-    std::cerr << "[DEBUG] before VecDestroy (rank " << rank << ")" << std::endl;
     LibmeshPetscCall(VecDestroy(&scaling_vec));
-    // TEMP DEBUG: Aurora GPU page-fault localization
-    std::cerr << "[DEBUG] after VecDestroy (rank " << rank << ")" << std::endl;
     return;
   }
 #endif

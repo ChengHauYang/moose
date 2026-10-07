@@ -10,8 +10,6 @@
 #include "NEML2Utils.h"
 
 #include <algorithm>
-// TEMP DEBUG: Aurora GPU page-fault localization
-#include <iostream>
 
 #if defined(NEML2_ENABLED) && defined(MOOSE_ENABLE_KOKKOS_GPU) && defined(KOKKOS_ENABLE_SYCL)
 // c10::xpu device queries, used to match the Kokkos SYCL device to a torch XPU device index.
@@ -177,17 +175,6 @@ NEML2ToKokkosMaterialProperty<rank, full>::computeProperties()
                  " into a Kokkos material property; expected zero, one, or two batch dimensions.");
 
     const auto kokkos_device = kokkosTorchDevice();
-    // TEMP DEBUG: Aurora GPU page-fault localization
-    std::cerr << "[DEBUG] neml2Output().device()=" << neml2Output().device()
-              << ", kokkosTorchDevice()=" << kokkos_device << " (rank " << processor_id() << ")"
-              << std::endl;
-#if defined(MOOSE_ENABLE_KOKKOS_GPU) && defined(KOKKOS_ENABLE_SYCL)
-    // TEMP DEBUG: Aurora GPU page-fault localization
-    for (const auto i : libMesh::make_range(c10::xpu::device_count()))
-      if (c10::xpu::get_raw_device(i) == ExecSpace().sycl_queue().get_device())
-        std::cerr << "[DEBUG] Kokkos SYCL device matches Torch XPU index " << static_cast<int>(i)
-                  << " (rank " << processor_id() << ")" << std::endl;
-#endif
     if (neml2Output().device() != kokkos_device)
       mooseError("Cannot copy NEML2 output on ",
                  neml2Output().device(),
@@ -198,9 +185,6 @@ NEML2ToKokkosMaterialProperty<rank, full>::computeProperties()
                  ".");
 
     const auto output = neml2Output().contiguous();
-    // TEMP DEBUG: Aurora GPU page-fault localization
-    std::cerr << "[DEBUG] output.numel()=" << output.numel() << " (rank " << processor_id() << ")"
-              << std::endl;
     const auto batch_size = static_cast<std::size_t>(output.numel() / num_components);
     const bool broadcast_output = batch_ndim == 0;
     if (_staged_output.size() != static_cast<std::size_t>(output.numel()) ||
@@ -214,14 +198,7 @@ NEML2ToKokkosMaterialProperty<rank, full>::computeProperties()
     const auto output_view =
         ::Kokkos::View<const Real *, MemSpace, ::Kokkos::MemoryTraits<::Kokkos::Unmanaged>>(
             output.template data_ptr<Real>(), output.numel());
-    // TEMP DEBUG: Aurora GPU page-fault localization
-    std::cerr << "[DEBUG] before NEML2->Kokkos deep_copy (rank " << processor_id() << ")"
-              << std::endl;
     ::Kokkos::deep_copy(_staged_output.deviceView(), output_view);
-    // TEMP DEBUG: Aurora GPU page-fault localization
-    ::Kokkos::fence();
-    std::cerr << "[DEBUG] after NEML2->Kokkos deep_copy (rank " << processor_id() << ")"
-              << std::endl;
 #else
     std::copy_n(output.template data_ptr<Real>(), output.numel(), _staged_output.hostData());
 #endif
@@ -260,14 +237,7 @@ NEML2ToKokkosMaterialProperty<rank, full>::computeProperties()
 #ifndef MOOSE_ENABLE_KOKKOS_GPU
   _staged_output.copyToDevice();
 #endif
-  // TEMP DEBUG: Aurora GPU page-fault localization
-  std::cerr << "[DEBUG] before Material::computeProperties (rank " << processor_id() << ")"
-            << std::endl;
   Material::computeProperties();
-  // TEMP DEBUG: Aurora GPU page-fault localization
-  ::Kokkos::fence();
-  std::cerr << "[DEBUG] after Material::computeProperties (rank " << processor_id() << ")"
-            << std::endl;
 #else
   NEML2Utils::assertNEML2Enabled();
 #endif
