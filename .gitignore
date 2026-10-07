@@ -373,3 +373,5 @@ modules/solid_mechanics/test/tests/kokkos/**/results*/
 *.time
 
 .plans
+
+*aoti*
