@@ -389,7 +389,27 @@ NonlinearSystem::computeScalingJacobian()
       if (_off_diagonals_in_auto_scaling)
         LibmeshPetscCall(MatGetRowSumAbs(petsc_matrix.mat(), scaling_vec));
       else
-        LibmeshPetscCall(MatGetDiagonal(petsc_matrix.mat(), scaling_vec));
+      {
+        PetscBool use_hypre_sycl_diagonal_workaround = PETSC_FALSE;
+
+#ifdef PETSC_HAVE_SYCL
+        LibmeshPetscCall(PetscObjectTypeCompare(reinterpret_cast<PetscObject>(petsc_matrix.mat()),
+                                                MATHYPRE,
+                                                &use_hypre_sycl_diagonal_workaround));
+#endif
+
+        // Work around MatGetDiagonal_HYPRE on SYCL builds by extracting the diagonal
+        // through a temporary AIJ matrix instead.
+        if (use_hypre_sycl_diagonal_workaround)
+        {
+          Mat aij = nullptr;
+          LibmeshPetscCall(MatConvert(petsc_matrix.mat(), MATAIJ, MAT_INITIAL_MATRIX, &aij));
+          LibmeshPetscCall(MatGetDiagonal(aij, scaling_vec));
+          LibmeshPetscCall(MatDestroy(&aij));
+        }
+        else
+          LibmeshPetscCall(MatGetDiagonal(petsc_matrix.mat(), scaling_vec));
+      }
 
       *_scaling_matrix = scaling_vector;
       _scaling_matrix->close();
