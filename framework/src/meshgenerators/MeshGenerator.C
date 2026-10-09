@@ -40,8 +40,24 @@ MeshGenerator::validParams()
                         "Whether or not to output the mesh file in the nemesis"
                         "format (only if output = true)");
 
+  MooseEnum parallel_type("DEFAULT REPLICATED DISTRIBUTED", "DEFAULT");
+  params.addParam<MooseEnum>("parallel_type",
+                             parallel_type,
+                             "Distribution of the mesh built by this generator. Overrides the "
+                             "[Mesh] block's parallel_type for this generator only, so individual "
+                             "meshes can be distributed or replicated independently of the primary "
+                             "mesh.\n"
+                             "DEFAULT: follow the [Mesh] block's parallel_type (or "
+                             "--distributed-mesh on the command line)\n"
+                             "REPLICATED: build a replicated mesh, holding the whole mesh on every "
+                             "processor\n"
+                             "DISTRIBUTED: build a distributed mesh\n"
+                             "This applies only to generators that build the mesh themselves; a "
+                             "generator that only transforms another generator's mesh (such as "
+                             "TransformGenerator) keeps that mesh's type");
+
   params.addParamNamesToGroup("show_info output nemesis", "Debugging");
-  params.addParamNamesToGroup("save_with_name", "Advanced");
+  params.addParamNamesToGroup("save_with_name parallel_type", "Advanced");
   params.registerBase("MeshGenerator");
 
   params.addPrivateParam<bool>("_has_generate_data", false);
@@ -60,7 +76,8 @@ MeshGenerator::MeshGenerator(const InputParameters & parameters)
     _mesh(getParam<MooseMesh *>("_moose_mesh") ? getParam<MooseMesh *>("_moose_mesh")
                                                : _app.actionWarehouse().mesh().get()),
     _save_with_name(getParam<std::string>("save_with_name")),
-    _data_only(getParam<bool>(data_only_param))
+    _data_only(getParam<bool>(data_only_param)),
+    _parallel_type(getParam<MooseEnum>("parallel_type").getEnum<MooseMesh::ParallelType>())
 {
   const auto & system = _app.getMeshGeneratorSystem();
   if (isDataOnly())
@@ -319,6 +336,21 @@ std::unique_ptr<MeshBase>
 MeshGenerator::buildMeshBaseObject(unsigned int dim)
 {
   mooseAssert(_mesh, "Need a MooseMesh object");
+
+  // An explicit 'parallel_type' on this generator wins over the [Mesh] block's setting, so that
+  // meshes that must be replicated (for example a surface mesh that every processor queries for a
+  // point-in-solid test) can be kept replicated while the primary mesh is distributed.
+  //
+  // Only the final generator's mesh backs the MooseMesh, so only that generator may reconfigure the
+  // MooseMesh's parallel type. Any other generator builds an auxiliary mesh, and requesting an
+  // explicit type for it must not silently reconfigure the whole simulation.
+  const bool adopt_parallel_type = buildsPrimaryMesh();
+
+  if (_parallel_type == MooseMesh::ParallelType::REPLICATED)
+    return _mesh->buildTypedMesh<ReplicatedMesh>(dim, adopt_parallel_type);
+  if (_parallel_type == MooseMesh::ParallelType::DISTRIBUTED)
+    return _mesh->buildTypedMesh<DistributedMesh>(dim, adopt_parallel_type);
+
   return _mesh->buildMeshBaseObject(dim);
 }
 
@@ -334,6 +366,12 @@ MeshGenerator::buildDistributedMesh(unsigned int dim)
 {
   mooseAssert(_mesh, "Need a MooseMesh object");
   return _mesh->buildTypedMesh<DistributedMesh>(dim);
+}
+
+bool
+MeshGenerator::buildsPrimaryMesh() const
+{
+  return name() == _app.getMeshGeneratorSystem().getFinalMeshGeneratorName();
 }
 
 std::unique_ptr<MeshBase>

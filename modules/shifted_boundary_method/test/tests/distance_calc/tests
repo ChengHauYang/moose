@@ -14,6 +14,17 @@
       detail = 'the distance field in 2D.'
     []
 
+    [2D_distance_refine_distributed_background]
+      type = 'Exodiff'
+      input = '2D_distance_refine.i'
+      cli_args = 'Mesh/parallel_type=DISTRIBUTED Mesh/boundary_mesh/parallel_type=REPLICATED'
+      exodiff = '2D_distance_refine_out.e-s004'
+      mesh_mode = DISTRIBUTED
+      recover = false
+      detail = 'the same distance field in 2D when the background mesh is distributed while the '
+               'surface mesh is kept replicated by a per-generator parallel_type override.'
+    []
+
     [3D_distance_refine]
       type = 'Exodiff'
       input = '3D_distance_refine.i'

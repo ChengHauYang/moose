@@ -13,6 +13,19 @@
                   'occupies the largest area fraction when several grains meet at interior corners.'
   []
 
+  [grain_corner_distributed_background]
+    type = Exodiff
+    input = 'grain_marking.i'
+    cli_args = 'Mesh/parallel_type=DISTRIBUTED Mesh/boundary_mesh/parallel_type=REPLICATED'
+    exodiff = 'grain_marking_out.e'
+    mesh_mode = DISTRIBUTED
+    recover = false
+    requirement = 'The system shall assign the same grain subdomain IDs when the background mesh is '
+                  'distributed while the surface mesh is kept replicated by a per-generator '
+                  'parallel_type override, since the per-subdomain in-out test needs the whole '
+                  'surface on every processor.'
+  []
+
   [mark_intercepted]
     type = Exodiff
     input = 'grain_marking.i'

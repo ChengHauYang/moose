@@ -386,8 +386,8 @@ protected:
   void declareMeshesForSubByName(const std::vector<MeshGeneratorName> & mesh_generator_names);
 
   /**
-   * Build a \p MeshBase object whose underlying type will be determined by the Mesh input file
-   * block
+   * Build a \p MeshBase object whose underlying type will be determined by this generator's
+   * 'parallel_type' parameter, falling back to the Mesh input file block when it is DEFAULT
    * @param dim The logical dimension of the mesh, e.g. 3 for hexes/tets, 2 for quads/tris. If the
    * caller doesn't specify a value for \p dim, then the value in the \p Mesh input file block will
    * be used
@@ -413,6 +413,13 @@ protected:
    */
   [[nodiscard]] std::unique_ptr<DistributedMesh>
   buildDistributedMesh(unsigned int dim = libMesh::invalid_uint);
+
+  /**
+   * Whether this generator's mesh is the one that backs the primary MooseMesh, i.e. whether it is
+   * the final mesh generator. Only then may an explicitly requested mesh type reconfigure the
+   * MooseMesh's parallel type; every other generator builds an auxiliary mesh.
+   */
+  bool buildsPrimaryMesh() const;
 
   /**
    * Construct a "subgenerator", a different MeshGenerator subclass
@@ -528,6 +535,9 @@ private:
 
   /// Whether or not this mesh generator will run in data only mode
   const bool _data_only;
+
+  /// Per-generator override of the mesh distribution; see the 'parallel_type' parameter
+  const MooseMesh::ParallelType _parallel_type;
 };
 
 template <typename T, typename... Args>

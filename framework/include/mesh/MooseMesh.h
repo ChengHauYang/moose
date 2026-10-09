@@ -151,9 +151,16 @@ public:
    * our value is. We will also attach any geometric \p RelationshipManagers that have been
    * requested by our simulation objects to the \p MeshBase object. If the parameter \p dim is not
    * provided, then its value will be taken from the input file mesh block.
+   *
+   * If \p T differs from the parallel type this MooseMesh is configured for, then \p
+   * adopt_parallel_type decides what happens: when true (the default) this MooseMesh adopts \p T
+   * as its own parallel type so that isDistributedMesh() stays consistent with the mesh it wraps.
+   * Pass false when building a mesh that will NOT back this MooseMesh (an auxiliary mesh built by
+   * a MeshGenerator), so the rest of the simulation keeps the parallel type it was configured with.
    */
   template <typename T>
-  std::unique_ptr<T> buildTypedMesh(unsigned int dim = libMesh::invalid_uint);
+  std::unique_ptr<T>
+  buildTypedMesh(unsigned int dim = libMesh::invalid_uint, bool adopt_parallel_type = true);
 
   /**
    * Method to set the mesh_base object. If this method is NOT called prior to calling init(), a
@@ -2261,12 +2268,14 @@ typedef libMesh::StoredRange<MooseMesh::const_bnd_elem_iterator, const BndElemen
 
 template <typename T>
 std::unique_ptr<T>
-MooseMesh::buildTypedMesh(unsigned int dim)
+MooseMesh::buildTypedMesh(unsigned int dim, bool adopt_parallel_type)
 {
   // If the requested mesh type to build doesn't match our current value for _use_distributed_mesh,
   // then we need to make sure to make our state consistent because other objects, like the periodic
-  // boundary condition action, will be querying isDistributedMesh()
-  if (_use_distributed_mesh != std::is_same<T, libMesh::DistributedMesh>::value)
+  // boundary condition action, will be querying isDistributedMesh(). That consistency only matters
+  // when the mesh being built is the one this MooseMesh wraps; an auxiliary mesh (from a
+  // MeshGenerator other than the final one) must leave our parallel type alone.
+  if (adopt_parallel_type && _use_distributed_mesh != std::is_same<T, libMesh::DistributedMesh>::value)
   {
     if (getMeshPtr())
       mooseError("A MooseMesh object is being asked to build a libMesh mesh that is a different "
