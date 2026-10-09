@@ -51,7 +51,11 @@ BoundaryMeshBuilder::initialSetup()
   // A saved mesh produced by a MeshGenerator may be unprepared, leaving
   // mesh_dimension() stale and element neighbor links unset. Prepare it so the
   // dimension check and the neighbor-based watertightness test are reliable.
-  _mesh->prepare_for_use();
+  // MeshGeneratorSystem already requires every generated mesh to come back
+  // prepared, and preparing a distributed mesh a second time re-runs its
+  // ghosting, so only prepare when the mesh is not already prepared.
+  if (!_mesh->is_prepared())
+    _mesh->prepare_for_use();
 
   if (!_mesh->is_replicated())
     mooseError("BoundaryMeshBuilder '",
