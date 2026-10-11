@@ -107,3 +107,23 @@ MESH_N=8 REPEATS=1 PROFILE=0 ./run_benchmarks.sh
 # larger deformation exercising finite kinematics
 DT=5e-3 NUM_STEPS=10 ./run_benchmarks.sh
 ```
+
+## AOTI dispatcher demo
+
+`run_dispatcher_demo.sh` compiles the crystal-plasticity model into an AOTI
+artifact and runs `dispatcher_demo.i` through `DispatchedModel`. The input is a
+standalone copy of step 1 with only the `[NEML2]` block changed, so it defaults
+to CPU and needs no GPU:
+
+```
+./run_dispatcher_demo.sh
+```
+
+To use another backend, edit both `NEML2/all/device` in `dispatcher_demo.i` and
+`--device` in `run_dispatcher_demo.sh` to the same value. `xpu` on an Aurora
+compute node, `cuda` on an NVIDIA node with a CUDA-enabled PyTorch build;
+Aurora login and UAN nodes have no accelerator, so use `cpu` there.
+
+The script compiles with `clang++` rather than the conda `mpicxx` wrapper, which
+TorchInductor cannot use as a plain C++ compiler; override it with
+`AOTI_CXX=/path/to/compiler`.
