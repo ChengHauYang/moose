@@ -5,6 +5,7 @@
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
 //*
 //* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "KokkosLinearInterfaceMaterial.h"
 
@@ -21,6 +22,8 @@ InputParameters
 KokkosLinearInterfaceMaterial::validParams()
 {
   auto params = InterfaceMaterial::validParams();
+  params.makeParamRequired<std::vector<VariableName>>("variable");
+  params.makeParamRequired<std::vector<VariableName>>("neighbor_var");
   params.addRequiredParam<Real>("stiffness", "Traction stiffness of the interface.");
   params.addParam<unsigned int>("expected_interface_faces",
                                 "Expected global number of oriented interface faces.");
@@ -28,7 +31,8 @@ KokkosLinearInterfaceMaterial::validParams()
       "require_ghost_neighbor",
       true,
       "Require a parallel run to evaluate at least one interface face whose neighbor element is a "
-      "one-layer ghost. Only meaningful for a test whose purpose is to cover the ghost path; a mesh "
+      "one-layer ghost. Only meaningful for a test whose purpose is to cover the ghost path; a "
+      "mesh "
       "whose interface is not split across ranks cannot satisfy it.");
   return params;
 }
@@ -93,10 +97,9 @@ KokkosLinearInterfaceMaterial::checkGhostNeighborCoverage()
   libmesh_call_mpi(MPI_Allreduce(
       MPI_IN_PLACE, &n_ghost_neighbors, 1, MPI_UNSIGNED, MPI_SUM, _mesh.comm().get()));
 
-// Fail loudly instead of silently losing the coverage this test exists to provide, which a
-// repartitioning that keeps the interface faces and their neighbors together would cause.
-  if (_mesh.comm().size() > 1 && n_ghost_neighbors == 0 &&
-      getParam<bool>("require_ghost_neighbor"))
+  // Fail loudly instead of silently losing the coverage this test exists to provide, which a
+  // repartitioning that keeps the interface faces and their neighbors together would cause.
+  if (_mesh.comm().size() > 1 && n_ghost_neighbors == 0 && getParam<bool>("require_ghost_neighbor"))
     mooseError("No interface face of this material's boundary restriction was evaluated with a "
                "one-layer ghost neighbor on any rank. This test covers the neighbor-side "
                "interface datum of a ghost element, so it needs a mesh whose interface is split "

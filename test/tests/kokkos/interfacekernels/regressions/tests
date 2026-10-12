@@ -33,4 +33,15 @@
     difference_tol = 1e-7
     requirement = 'The Kokkos system shall assemble a consistent interface material Jacobian when a primary element has multiple sides on the same interface boundary.'
   []
+  [neighbor_material_ghost]
+    type = PetscJacobianTester
+    input = neighbor_material_ghost.i
+    cli_args = '--distributed-mesh'
+    min_parallel = 2
+    max_parallel = 2
+    # Match the finite-difference Jacobian tolerances of the parent interface tests.
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    requirement = 'The Kokkos system shall assemble a consistent interface material Jacobian using neighbor element data, including one-layer ghost neighbors when run on a partitioned mesh.'
+  []
 []
