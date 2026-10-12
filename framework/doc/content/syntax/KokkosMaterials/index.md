@@ -118,6 +118,7 @@ See the following source codes of `KokkosStatefulTest` for an example of statefu
 A material that produces a property from the values on +*both* sides of a finite element interface, such as a cohesive traction law driven by the displacement jump, is created by subclassing `Moose::Kokkos::InterfaceMaterial`, and registered with `registerKokkosInterfaceMaterial()`.
 
 An interface material is restricted to a set of boundaries with `boundary`, which is required, and it cannot be restricted to `block`.
+Interface materials currently support only `constant_on = NONE`; other values are rejected.
 It always requires the coupled variables `variable` and `neighbor_var`, which are the values of the interface quantity on the primary and the neighbor side of a face, respectively.
 
 Both hook methods take the oriented face and the data of both sides at once:

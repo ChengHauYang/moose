@@ -39,6 +39,12 @@ InterfaceMaterial::InterfaceMaterial(const InputParameters & parameters)
   if (!blockIDs().empty())
     paramError("block", "Kokkos interface materials cannot be restricted to blocks.");
 
+  // InterfaceMaterial currently does not implement constant_on semantics; reject
+  // non-NONE to prevent incorrect single-QP evaluation or data races.
+  const auto constant_option = getParam<MooseEnum>("constant_on");
+  if (constant_option.getEnum<PropertyConstantOption>() != PropertyConstantOption::NONE)
+    paramError("constant_on", "Kokkos interface materials currently only support constant_on = NONE.");
+
   _fe_problem.addKokkosMeshInitializationHook(
       std::bind(&InterfaceMaterial::acquireInterfaceFaces, this));
 }
