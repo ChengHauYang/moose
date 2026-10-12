@@ -5,6 +5,7 @@
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
 //*
 //* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #pragma once
 
@@ -66,13 +67,12 @@ protected:
 
 template <typename Derived>
 KOKKOS_FUNCTION Real
-KokkosSCZMInterfaceKernelSmallStrain::computeQpResidual(
-    const Moose::DGResidualType type,
-    const unsigned int i,
-    const unsigned int qp,
-    const unsigned int neighbor_qp,
-    AssemblyDatum & elem_datum,
-    AssemblyDatum & neighbor_datum) const
+KokkosSCZMInterfaceKernelSmallStrain::computeQpResidual(const Moose::DGResidualType type,
+                                                        const unsigned int i,
+                                                        const unsigned int qp,
+                                                        const unsigned int neighbor_qp,
+                                                        AssemblyDatum & elem_datum,
+                                                        AssemblyDatum & neighbor_datum) const
 {
   const auto test = type == Moose::Element ? _test(elem_datum, i, qp)
                                            : _test_neighbor(neighbor_datum, i, neighbor_qp);
@@ -84,14 +84,13 @@ KokkosSCZMInterfaceKernelSmallStrain::computeQpResidual(
 
 template <typename Derived>
 KOKKOS_FUNCTION Real
-KokkosSCZMInterfaceKernelSmallStrain::computeQpJacobian(
-    const Moose::DGJacobianType type,
-    const unsigned int i,
-    const unsigned int j,
-    const unsigned int qp,
-    const unsigned int neighbor_qp,
-    AssemblyDatum & elem_datum,
-    AssemblyDatum & neighbor_datum) const
+KokkosSCZMInterfaceKernelSmallStrain::computeQpJacobian(const Moose::DGJacobianType type,
+                                                        const unsigned int i,
+                                                        const unsigned int j,
+                                                        const unsigned int qp,
+                                                        const unsigned int neighbor_qp,
+                                                        AssemblyDatum & elem_datum,
+                                                        AssemblyDatum & neighbor_datum) const
 {
   return computeDResidualDDisplacement(
       type, i, j, _component, qp, neighbor_qp, elem_datum, neighbor_datum);
@@ -99,15 +98,14 @@ KokkosSCZMInterfaceKernelSmallStrain::computeQpJacobian(
 
 template <typename Derived>
 KOKKOS_FUNCTION Real
-KokkosSCZMInterfaceKernelSmallStrain::computeQpOffDiagJacobian(
-    const Moose::DGJacobianType type,
-    const unsigned int i,
-    const unsigned int j,
-    const unsigned int jvar,
-    const unsigned int qp,
-    const unsigned int neighbor_qp,
-    AssemblyDatum & elem_datum,
-    AssemblyDatum & neighbor_datum) const
+KokkosSCZMInterfaceKernelSmallStrain::computeQpOffDiagJacobian(const Moose::DGJacobianType type,
+                                                               const unsigned int i,
+                                                               const unsigned int j,
+                                                               const unsigned int jvar,
+                                                               const unsigned int qp,
+                                                               const unsigned int neighbor_qp,
+                                                               AssemblyDatum & elem_datum,
+                                                               AssemblyDatum & neighbor_datum) const
 {
   for (unsigned int component_j = 0; component_j < _ndisp; ++component_j)
     if (_disp_vars[component_j] == jvar)
@@ -128,7 +126,7 @@ KokkosSCZMInterfaceKernelSmallStrain::computeDResidualDDisplacement(
     AssemblyDatum & elem_datum,
     AssemblyDatum & neighbor_datum) const
 {
-  const auto distance = shift(elem_datum, qp);
+  const auto distance = surrogateDistanceVector(elem_datum, qp);
   const auto tangent = _dtraction_djump_global(elem_datum, qp)(_component, component_j);
   const auto coefficient = areaCorrection(elem_datum, qp) * tangent;
 
@@ -136,17 +134,17 @@ KokkosSCZMInterfaceKernelSmallStrain::computeDResidualDDisplacement(
   {
     case Moose::ElementElement:
       return _test(elem_datum, i, qp) * coefficient *
-             shiftedShape(_phi, _grad_phi, elem_datum, distance, j, qp);
+             shiftedPhi(_phi, _grad_phi, elem_datum, distance, j, qp);
     case Moose::ElementNeighbor:
       return -_test(elem_datum, i, qp) * coefficient *
-             shiftedShape(
+             shiftedPhi(
                  _phi_neighbor, _grad_phi_neighbor, neighbor_datum, distance, j, neighbor_qp);
     case Moose::NeighborElement:
       return -_test_neighbor(neighbor_datum, i, neighbor_qp) * coefficient *
-             shiftedShape(_phi, _grad_phi, elem_datum, distance, j, qp);
+             shiftedPhi(_phi, _grad_phi, elem_datum, distance, j, qp);
     case Moose::NeighborNeighbor:
       return _test_neighbor(neighbor_datum, i, neighbor_qp) * coefficient *
-             shiftedShape(
+             shiftedPhi(
                  _phi_neighbor, _grad_phi_neighbor, neighbor_datum, distance, j, neighbor_qp);
   }
 

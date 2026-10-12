@@ -15,6 +15,8 @@ InputParameters
 KokkosStatefulInterfaceMaterial::validParams()
 {
   auto params = InterfaceMaterial::validParams();
+  params.makeParamRequired<std::vector<VariableName>>("variable");
+  params.makeParamRequired<std::vector<VariableName>>("neighbor_var");
   params.addRequiredParam<Real>("stiffness", "Traction stiffness of the interface.");
   return params;
 }

@@ -5,6 +5,7 @@
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
 //*
 //* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #pragma once
 
@@ -56,10 +57,10 @@ KokkosShiftedPenaltyInterface::computeQpResidual(const Moose::DGResidualType typ
                                                  AssemblyDatum & elem_datum,
                                                  AssemblyDatum & neighbor_datum) const
 {
-  const auto distance = shift(elem_datum, qp);
-  const auto jump = shiftedValue(_u, _grad_u, elem_datum, distance, qp) -
-                    shiftedValue(
-                        _u_neighbor, _grad_u_neighbor, neighbor_datum, distance, neighbor_qp);
+  const auto distance = surrogateDistanceVector(elem_datum, qp);
+  const auto jump =
+      shiftedValue(_u, _grad_u, elem_datum, distance, qp) -
+      shiftedValue(_u_neighbor, _grad_u_neighbor, neighbor_datum, distance, neighbor_qp);
 
   return (type == Moose::Element ? _test(elem_datum, i, qp)
                                  : -_test_neighbor(neighbor_datum, i, neighbor_qp)) *
@@ -76,7 +77,7 @@ KokkosShiftedPenaltyInterface::computeQpJacobian(const Moose::DGJacobianType typ
                                                  AssemblyDatum & elem_datum,
                                                  AssemblyDatum & neighbor_datum) const
 {
-  const auto distance = shift(elem_datum, qp);
+  const auto distance = surrogateDistanceVector(elem_datum, qp);
   const auto elem_test = _test(elem_datum, i, qp);
   const auto neighbor_test = _test_neighbor(neighbor_datum, i, neighbor_qp);
   const auto coefficient = areaCorrection(elem_datum, qp) * _penalty;
@@ -84,27 +85,18 @@ KokkosShiftedPenaltyInterface::computeQpJacobian(const Moose::DGJacobianType typ
   switch (type)
   {
     case Moose::ElementElement:
-      return elem_test * coefficient *
-             shiftedShape(_phi, _grad_phi, elem_datum, distance, j, qp);
+      return elem_test * coefficient * shiftedPhi(_phi, _grad_phi, elem_datum, distance, j, qp);
     case Moose::ElementNeighbor:
-      return -elem_test * coefficient * shiftedShape(
-                                               _phi_neighbor,
-                                               _grad_phi_neighbor,
-                                               neighbor_datum,
-                                               distance,
-                                               j,
-                                               neighbor_qp);
+      return -elem_test * coefficient *
+             shiftedPhi(
+                 _phi_neighbor, _grad_phi_neighbor, neighbor_datum, distance, j, neighbor_qp);
     case Moose::NeighborElement:
       return -neighbor_test * coefficient *
-             shiftedShape(_phi, _grad_phi, elem_datum, distance, j, qp);
+             shiftedPhi(_phi, _grad_phi, elem_datum, distance, j, qp);
     case Moose::NeighborNeighbor:
-      return neighbor_test * coefficient * shiftedShape(
-                                                   _phi_neighbor,
-                                                   _grad_phi_neighbor,
-                                                   neighbor_datum,
-                                                   distance,
-                                                   j,
-                                                   neighbor_qp);
+      return neighbor_test * coefficient *
+             shiftedPhi(
+                 _phi_neighbor, _grad_phi_neighbor, neighbor_datum, distance, j, neighbor_qp);
   }
 
   return 0;

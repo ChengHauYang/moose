@@ -5,12 +5,13 @@
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
 //*
 //* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #pragma once
 
 #include "KokkosMaterial.h"
 
-/** Provides constant device-resident traction and cohesive tangent properties for testing. */
+/// Provides constant device-resident traction and cohesive tangent properties for testing.
 class KokkosLinearCohesiveZoneMaterial : public Moose::Kokkos::Material
 {
 public:

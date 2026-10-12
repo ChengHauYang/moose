@@ -5,11 +5,11 @@
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
 //*
 //* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "KokkosShiftedInterfaceKernel.h"
 
 #include "BoundaryShortestDistanceToSurface.h"
-#include "MooseMesh.h"
 
 namespace Moose::Kokkos
 {
@@ -19,86 +19,59 @@ ShiftedInterfaceKernel::validParams()
 {
   auto params = InterfaceKernel::validParams();
   params.addRequiredParam<UserObjectName>(
-      "sbm_distance_uo", "UserObject providing the static shifted-interface geometry.");
+      "sbm_distance_uo", "UserObject providing the surrogate-interface mapping data.");
   return params;
 }
 
 ShiftedInterfaceKernel::ShiftedInterfaceKernel(const InputParameters & parameters)
   : InterfaceKernel(parameters),
-    _distance_uo(getUserObject<BoundaryShortestDistanceToSurface>("sbm_distance_uo"))
+    _sbm_distance_uo(getUserObject<BoundaryShortestDistanceToSurface>("sbm_distance_uo"))
 {
+  _fe_problem.addKokkosMeshInitializationHook(
+      std::bind(&ShiftedInterfaceKernel::initializeSurrogateInterfaceMapping, this));
 }
 
 ShiftedInterfaceKernel::ShiftedInterfaceKernel(const ShiftedInterfaceKernel & object)
   : InterfaceKernel(object),
-    _distance_uo(object._distance_uo),
-    _geometry_initialized(object._geometry_initialized),
-    _geometry_offset(object._geometry_offset),
-    _shift(object._shift),
-    _true_normal(object._true_normal)
+    _sbm_distance_uo(object._sbm_distance_uo),
+    _qp_offsets(object._qp_offsets),
+    _surrogate_distance_vectors(object._surrogate_distance_vectors),
+    _true_normals(object._true_normals)
 {
 }
 
 void
 ShiftedInterfaceKernel::computeResidual()
 {
-  initializeShiftedGeometry();
+  ensureSurrogateInterfaceMappingReady();
   InterfaceKernel::computeResidual();
 }
 
 void
 ShiftedInterfaceKernel::computeJacobian()
 {
-  initializeShiftedGeometry();
+  ensureSurrogateInterfaceMappingReady();
   InterfaceKernel::computeJacobian();
 }
 
 void
-ShiftedInterfaceKernel::initializeShiftedGeometry()
+ShiftedInterfaceKernel::initializeSurrogateInterfaceMapping()
 {
-  if (_geometry_initialized)
-    return;
+  const auto & mapping = _sbm_distance_uo.registerKokkosSurrogateInterfaceMapping(
+      boundaryIDs(), kokkosInterfaceFaces());
+  _qp_offsets = mapping.qp_offsets;
+  _surrogate_distance_vectors = mapping.surrogate_distance_vectors;
+  _true_normals = mapping.true_normals;
+}
 
-  const auto & faces = kokkosInterfaceFaces();
-  std::vector<Real3> shift;
-  std::vector<Real3> true_normal;
-  dof_id_type n_qps = 0;
-  for (const auto & face : faces)
-    n_qps += face.n_qps;
-  shift.reserve(n_qps);
-  true_normal.reserve(n_qps);
-
-  const auto & mesh = *this->_mesh.getKokkosMesh();
-  std::map<ContiguousElementID, const Elem *> host_elements;
-  for (const auto boundary : boundaryIDs())
-    for (const auto elem_id : this->_mesh.getBoundaryActiveSemiLocalElemIds(boundary))
-    {
-      const auto * const elem = this->_mesh.elemPtr(elem_id);
-      if (elem->processor_id() == processor_id())
-        host_elements.emplace(mesh.getContiguousElementID(elem), elem);
-    }
-
-  for (const auto & face : faces)
-  {
-    const auto * const elem = libmesh_map_find(host_elements, face.elem);
-    const BoundaryShortestDistanceToSurface::ElemSide elem_side(elem->id(), face.side);
-    for (const auto qp : make_range(face.n_qps))
-    {
-      shift.emplace_back(_distance_uo.surrogateDistance(elem_side, qp));
-      true_normal.emplace_back(_distance_uo.trueNormal(elem_side, qp));
-    }
-  }
-
-  _geometry_offset.create(this->_mesh.getMaxSidesPerElem(),
-                          mesh.getNumLocalAndPossiblyOneNeighborLayerGhostElements());
-  _geometry_offset = libMesh::DofObject::invalid_id;
-  for (const auto & face : faces)
-    _geometry_offset(face.side, face.elem) = face.qp_map_offset;
-  _geometry_offset.copyToDevice();
-
-  _shift = shift;
-  _true_normal = true_normal;
-  _geometry_initialized = true;
+void
+ShiftedInterfaceKernel::ensureSurrogateInterfaceMappingReady() const
+{
+  if (!_sbm_distance_uo.kokkosSurrogateInterfaceMappingReady(boundaryIDs()))
+    mooseError("Surrogate-interface mapping for '",
+               name(),
+               "' is unavailable. Ensure its 'sbm_distance_uo' executes before nonlinear "
+               "assembly.");
 }
 
 } // namespace Moose::Kokkos

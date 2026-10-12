@@ -1,10 +1,11 @@
 //* This file is part of the MOOSE framework
-//* https://www.mooseframework.org
+//* https://mooseframework.inl.gov
 //*
 //* All rights reserved, see COPYRIGHT for full restrictions
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
 //*
 //* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "KokkosInterfaceMaterial.h"
 
@@ -18,9 +19,8 @@ InterfaceMaterial::validParams()
 {
   auto params = Material::validParams();
 
-  params.addRequiredCoupledVar("variable", "The interface variable on the primary side of a face.");
-  params.addRequiredCoupledVar("neighbor_var",
-                               "The interface variable on the neighbor side of a face.");
+  params.addCoupledVar("variable", "The interface variable on the primary side of a face.");
+  params.addCoupledVar("neighbor_var", "The interface variable on the neighbor side of a face.");
   params.addRelationshipManager("ElementSideNeighborLayers",
                                 Moose::RelationshipManagerType::GEOMETRIC |
                                     Moose::RelationshipManagerType::ALGEBRAIC |
@@ -31,8 +31,9 @@ InterfaceMaterial::validParams()
 
 InterfaceMaterial::InterfaceMaterial(const InputParameters & parameters)
   : Material(parameters),
-    _variable_value(*getVarHelper<MooseVariableFE<Real>>("variable", 0)),
-    _neighbor_variable_value(*getVarHelper<MooseVariableFE<Real>>("neighbor_var", 0))
+    _variable_value(isCoupled("variable") ? kokkosCoupledValue("variable") : VariableValue()),
+    _neighbor_variable_value(isCoupled("neighbor_var") ? kokkosCoupledValue("neighbor_var")
+                                                       : VariableValue())
 {
   if (boundaryIDs().empty())
     paramError("boundary", "Kokkos interface materials require a boundary restriction.");
@@ -43,7 +44,8 @@ InterfaceMaterial::InterfaceMaterial(const InputParameters & parameters)
   // non-NONE to prevent incorrect single-QP evaluation or data races.
   const auto constant_option = getParam<MooseEnum>("constant_on");
   if (constant_option.getEnum<PropertyConstantOption>() != PropertyConstantOption::NONE)
-    paramError("constant_on", "Kokkos interface materials currently only support constant_on = NONE.");
+    paramError("constant_on",
+               "Kokkos interface materials currently only support constant_on = NONE.");
 
   _fe_problem.addKokkosMeshInitializationHook(
       std::bind(&InterfaceMaterial::acquireInterfaceFaces, this));

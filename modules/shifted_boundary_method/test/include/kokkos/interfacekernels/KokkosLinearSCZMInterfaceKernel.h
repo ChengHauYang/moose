@@ -5,6 +5,7 @@
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
 //*
 //* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #pragma once
 
@@ -50,18 +51,18 @@ KokkosLinearSCZMInterfaceKernel::computeQpResidual(const Moose::DGResidualType t
                                                    AssemblyDatum & elem_datum,
                                                    AssemblyDatum & neighbor_datum) const
 {
-  const auto distance = shift(elem_datum, qp);
+  const auto distance = surrogateDistanceVector(elem_datum, qp);
   Real traction = 0;
   const auto tangent = _dtraction_djump_global(elem_datum, qp);
 
   for (unsigned int component_j = 0; component_j < _ndisp; ++component_j)
   {
-    const auto elem_value = _displacements(elem_datum, qp, component_j) +
-                            _displacement_gradients(elem_datum, qp, component_j)
-                                .dot_product(distance);
-    const auto neighbor_value = _displacements(neighbor_datum, neighbor_qp, component_j) +
-                                _displacement_gradients(neighbor_datum, neighbor_qp, component_j)
-                                    .dot_product(distance);
+    const auto elem_value =
+        _displacements(elem_datum, qp, component_j) +
+        _displacement_gradients(elem_datum, qp, component_j).dot_product(distance);
+    const auto neighbor_value =
+        _displacements(neighbor_datum, neighbor_qp, component_j) +
+        _displacement_gradients(neighbor_datum, neighbor_qp, component_j).dot_product(distance);
     traction += tangent(_component, component_j) * (neighbor_value - elem_value);
   }
 
