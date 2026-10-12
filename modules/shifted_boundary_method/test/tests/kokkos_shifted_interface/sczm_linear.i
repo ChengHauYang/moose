@@ -40,43 +40,22 @@
   []
 []
 
-[Materials]
-  [jump]
-    type = KokkosSCZMComputeDisplacementJumpSmallStrain
+[Physics/SolidMechanics/ShiftedCohesiveZone]
+  [sczm]
     boundary = interface
     displacements = 'ux uy'
     sbm_distance_uo = distance
+    use_kokkos = true
+    directional_correction = false
   []
+[]
+
+[Materials]
   [local_traction]
     type = KokkosPureElasticTractionSeparation
     boundary = interface
     normal_stiffness = 10
     tangent_stiffness = 8
-  []
-  [global_traction]
-    type = KokkosCZMComputeGlobalTractionSmallStrain
-    boundary = interface
-  []
-[]
-
-[InterfaceKernels]
-  [sczm_x]
-    type = KokkosSCZMInterfaceKernelSmallStrain
-    variable = ux
-    neighbor_var = ux
-    boundary = interface
-    sbm_distance_uo = distance
-    component = 0
-    displacements = 'ux uy'
-  []
-  [sczm_y]
-    type = KokkosSCZMInterfaceKernelSmallStrain
-    variable = uy
-    neighbor_var = uy
-    boundary = interface
-    sbm_distance_uo = distance
-    component = 1
-    displacements = 'ux uy'
   []
 []
 

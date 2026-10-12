@@ -115,11 +115,12 @@ implements the traction-jump residual and Jacobian contribution using device mat
 properties. It can be instantiated directly with compatible Kokkos property producers.
 The focused tests exercise assembly with a test-only linear traction law.
 
-The complete Kokkos SCZM pipeline is under development. This Physics syntax creates
-host objects; it does not yet select Kokkos interface kernels and materials. Production
-Kokkos displacement-jump, rotation, and cohesive traction materials, directional
-correction, and full host-formulation parity remain to be implemented. End-to-end
-execution on an actual GPU has not yet been verified.
+Set `use_kokkos = true` to create `KokkosSCZMComputeDisplacementJumpSmallStrain`,
+`KokkosCZMComputeGlobalTractionSmallStrain`, and
+`KokkosSCZMInterfaceKernelSmallStrain`. The constitutive traction law remains an explicit
+material; use a compatible Kokkos material such as `KokkosPureElasticTractionSeparation`.
+Kokkos SCZM currently supports only non-AD small-strain evaluation with
+`directional_correction = false` and shifted evaluation enabled.
 
 !syntax parameters /Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction
 
