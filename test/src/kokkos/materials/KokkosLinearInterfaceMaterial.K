@@ -22,6 +22,14 @@ KokkosLinearInterfaceMaterial::validParams()
 {
   auto params = InterfaceMaterial::validParams();
   params.addRequiredParam<Real>("stiffness", "Traction stiffness of the interface.");
+  params.addParam<unsigned int>("expected_interface_faces",
+                                "Expected global number of oriented interface faces.");
+  params.addParam<bool>(
+      "require_ghost_neighbor",
+      true,
+      "Require a parallel run to evaluate at least one interface face whose neighbor element is a "
+      "one-layer ghost. Only meaningful for a test whose purpose is to cover the ghost path; a mesh "
+      "whose interface is not split across ranks cannot satisfy it.");
   return params;
 }
 
@@ -41,6 +49,18 @@ void
 KokkosLinearInterfaceMaterial::checkGhostNeighborCoverage()
 {
   const auto * cache = _fe_problem.getKokkosInterfaceFaceCache(boundaryIDs(), this);
+
+  if (isParamValid("expected_interface_faces"))
+  {
+    auto n_faces = cache->n();
+    _mesh.comm().sum(n_faces);
+    if (n_faces != getParam<unsigned int>("expected_interface_faces"))
+      mooseError("Expected ",
+                 getParam<unsigned int>("expected_interface_faces"),
+                 " interface faces, but cached ",
+                 n_faces,
+                 ".");
+  }
 
   const auto & ghost_elem_id_mapping = kokkosMesh().getGhostElemIdMapping();
 
@@ -73,9 +93,10 @@ KokkosLinearInterfaceMaterial::checkGhostNeighborCoverage()
   libmesh_call_mpi(MPI_Allreduce(
       MPI_IN_PLACE, &n_ghost_neighbors, 1, MPI_UNSIGNED, MPI_SUM, _mesh.comm().get()));
 
-  // Fail loudly instead of silently losing the coverage this test exists to provide, which a
-  // repartitioning that keeps the interface faces and their neighbors together would cause.
-  if (_mesh.comm().size() > 1 && n_ghost_neighbors == 0)
+// Fail loudly instead of silently losing the coverage this test exists to provide, which a
+// repartitioning that keeps the interface faces and their neighbors together would cause.
+  if (_mesh.comm().size() > 1 && n_ghost_neighbors == 0 &&
+      getParam<bool>("require_ghost_neighbor"))
     mooseError("No interface face of this material's boundary restriction was evaluated with a "
                "one-layer ghost neighbor on any rank. This test covers the neighbor-side "
                "interface datum of a ghost element, so it needs a mesh whose interface is split "

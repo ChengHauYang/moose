@@ -20,6 +20,8 @@
 #include "libmesh/fe_interface.h"
 #include "libmesh/reference_elem.h"
 
+#include <algorithm>
+
 namespace Moose::Kokkos
 {
 
@@ -198,35 +200,43 @@ Assembly::initQuadrature()
       {
         auto sid = kokkosMesh().getContiguousSubdomainID(elem->subdomain_id());
         auto eid = kokkosMesh().getContiguousElementID(elem);
-        auto side = _mesh.sideWithBoundaryID(elem, boundary);
 
-        _qp_offset_face(side, eid) = _n_subdomain_qps_face[sid];
-        _n_subdomain_qps_face[sid] += _n_qps_face(side, eid);
-
-        _elem_face_property_idx(side, eid) = _n_elem_face_properties[sid];
-        ++_n_elem_face_properties[sid];
-
-        const auto neighbor = elem->neighbor_ptr(side);
-        // An off-process neighbor is addressable only if this rank holds a copy of it, which
-        // KokkosMesh does only when element-side geometry data has been requested. Without that
-        // request the ghost element ID does not exist, so such a neighbor is left to the rank that
-        // owns it to register its own side.
-        if (neighbor && neighbor != libMesh::remote_elem &&
-            (neighbor->processor_id() == _problem.processor_id() ||
-             kokkosMesh().getGhostElemIdMapping().count(neighbor)))
+        // Allocate properties for every side carrying the material boundary.
+        for (const auto side : elem->side_index_range())
         {
-          const auto neighbor_side = neighbor->which_neighbor_am_i(elem);
-          const auto neighbor_sid =
-              kokkosMesh().getContiguousSubdomainID(neighbor->subdomain_id());
-          const auto neighbor_eid = kokkosMesh().getContiguousElementID(neighbor);
+          const auto boundary_ids_on_side = _mesh.getBoundaryIDs(elem, side);
+          if (std::find(boundary_ids_on_side.begin(), boundary_ids_on_side.end(), boundary) ==
+              boundary_ids_on_side.end())
+            continue;
 
-          _qp_offset_face(neighbor_side, neighbor_eid) = _n_subdomain_qps_face[neighbor_sid];
-          _n_subdomain_qps_face[neighbor_sid] +=
-              _n_qps_face(neighbor_side, neighbor_eid);
+          _qp_offset_face(side, eid) = _n_subdomain_qps_face[sid];
+          _n_subdomain_qps_face[sid] += _n_qps_face(side, eid);
 
-          _elem_face_property_idx(neighbor_side, neighbor_eid) =
-              _n_elem_face_properties[neighbor_sid];
-          ++_n_elem_face_properties[neighbor_sid];
+          _elem_face_property_idx(side, eid) = _n_elem_face_properties[sid];
+          ++_n_elem_face_properties[sid];
+
+          const auto neighbor = elem->neighbor_ptr(side);
+          // An off-process neighbor is addressable only if this rank holds a copy of it, which
+          // KokkosMesh does only when element-side geometry data has been requested. Without that
+          // request the ghost element ID does not exist, so such a neighbor is left to the rank that
+          // owns it to register its own side.
+          if (neighbor && neighbor != libMesh::remote_elem &&
+              (neighbor->processor_id() == _problem.processor_id() ||
+               kokkosMesh().getGhostElemIdMapping().count(neighbor)))
+          {
+            const auto neighbor_side = neighbor->which_neighbor_am_i(elem);
+            const auto neighbor_sid =
+                kokkosMesh().getContiguousSubdomainID(neighbor->subdomain_id());
+            const auto neighbor_eid = kokkosMesh().getContiguousElementID(neighbor);
+
+            _qp_offset_face(neighbor_side, neighbor_eid) = _n_subdomain_qps_face[neighbor_sid];
+            _n_subdomain_qps_face[neighbor_sid] +=
+                _n_qps_face(neighbor_side, neighbor_eid);
+
+            _elem_face_property_idx(neighbor_side, neighbor_eid) =
+                _n_elem_face_properties[neighbor_sid];
+            ++_n_elem_face_properties[neighbor_sid];
+          }
         }
       }
     }
