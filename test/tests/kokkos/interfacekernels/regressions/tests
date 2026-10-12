@@ -44,4 +44,10 @@
     difference_tol = 1e-7
     requirement = 'The Kokkos system shall assemble a consistent interface material Jacobian using neighbor element data, including one-layer ghost neighbors when run on a partitioned mesh.'
   []
+  [older_state_observable]
+    type = Exodiff
+    input = older_state_observable.i
+    exodiff = older_state_observable_out.e
+    requirement = 'The Kokkos interface material system shall distinguish old and older accepted property states and shall exclude a deterministically rejected trial from accepted history.'
+  []
 []

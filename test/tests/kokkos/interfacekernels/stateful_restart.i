@@ -64,7 +64,7 @@
 
 [Materials]
   [interface_material]
-    type = KokkosStatefulInterfaceMaterial
+    type = KokkosTractionSeparationLawInterfaceMaterial
     variable = u
     neighbor_var = v
     boundary = interface
