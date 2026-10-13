@@ -22,6 +22,11 @@ KokkosSCZMComputeDisplacementJumpSmallStrain::validParams()
   params.addRequiredParam<UserObjectName>(
       "sbm_distance_uo", "UserObject providing the surrogate-interface mapping data.");
   params.addParam<std::string>("base_name", "Material property base name.");
+  params.addParam<bool>(
+      "no_shifted",
+      false,
+      "Disable shifted terms. When enabled the displacement jump omits the gradient contribution "
+      "and the reference rotation is built from the surrogate face normal.");
   params.addClassDescription(
       "Computes the shifted small-strain cohesive displacement jump with Kokkos.");
   return params;
@@ -31,6 +36,7 @@ KokkosSCZMComputeDisplacementJumpSmallStrain::KokkosSCZMComputeDisplacementJumpS
     const InputParameters & parameters)
   : InterfaceMaterial(parameters),
     _ndisp(coupledComponents("displacements")),
+    _shifted(!getParam<bool>("no_shifted")),
     _sbm_distance_uo(getUserObject<BoundaryShortestDistanceToSurface>("sbm_distance_uo")),
     _displacements(kokkosCoupledValues("displacements")),
     _displacement_gradients(kokkosCoupledGradients("displacements"))
@@ -58,6 +64,7 @@ KokkosSCZMComputeDisplacementJumpSmallStrain::KokkosSCZMComputeDisplacementJumpS
     const KokkosSCZMComputeDisplacementJumpSmallStrain & object)
   : InterfaceMaterial(object),
     _ndisp(object._ndisp),
+    _shifted(object._shifted),
     _sbm_distance_uo(object._sbm_distance_uo),
     _displacements(object._displacements),
     _displacement_gradients(object._displacement_gradients),

@@ -207,12 +207,36 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
   if (_use_kokkos && _use_AD)
     paramError("use_automatic_differentiation",
                "Kokkos SCZM currently supports only non-AD small-strain objects.");
-  if (_use_kokkos && getParam<bool>("no_shifted"))
-    paramError("no_shifted", "Kokkos SCZM currently requires shifted evaluation.");
-  if (_use_kokkos && getParam<bool>("directional_correction"))
-    paramError("directional_correction",
-               "Kokkos SCZM does not yet support directional correction. Set this parameter to "
-               "false.");
+
+  // The Kokkos SCZM directional correction consumes the compact isotropic bulk response of
+  // KokkosSCZMComputeLinearElasticBulkStress. Reject the unsupported options explicitly rather than
+  // silently dropping them, so that a user never believes an option took effect.
+  if (_use_kokkos)
+  {
+    if ((isParamSetByUser("volumetric_locking_correction") &&
+         getParam<bool>("volumetric_locking_correction")) ||
+        getInheritedVolumetricLockingCorrection(_awh))
+      paramError("volumetric_locking_correction",
+                 "The Kokkos SCZM directional correction does not yet support volumetric locking "
+                 "correction. Set this parameter to false and the parameter of any solid mechanics "
+                 "physics block that inherits it.");
+    if (isParamSetByUser("stress"))
+      paramError("stress",
+                 "The Kokkos SCZM directional correction reads its bulk stress from the "
+                 "KokkosSCZMComputeLinearElasticBulkStress material and does not use this "
+                 "parameter. Set the elastic constants on that material instead.");
+    if (isParamSetByUser("tangent"))
+      paramError("tangent",
+                 "The Kokkos SCZM directional correction reads its bulk tangent from the Lame "
+                 "constants of the KokkosSCZMComputeLinearElasticBulkStress material and does not "
+                 "use this parameter. Set the elastic constants on that material instead.");
+    if (isParamSetByUser("tangent_definition") &&
+        getParam<MooseEnum>("tangent_definition") == "pk1_wrt_deformation_gradient")
+      paramError("tangent_definition",
+                 "The Kokkos SCZM directional correction currently supports only a strain-based "
+                 "tangent, which is the behavior provided by "
+                 "KokkosSCZMComputeLinearElasticBulkStress.");
+  }
 
   switch (_strain)
   {
@@ -248,7 +272,17 @@ ShiftedCohesiveZoneAction::act()
   if (_ndisp != _mesh->dimension())
     paramError("displacements", "Number of displacements must match problem dimension.");
 
-  if (_current_task == "add_interface_kernel" && getParam<bool>("directional_correction"))
+  if (_current_task == "add_interface_kernel" && getParam<bool>("directional_correction") &&
+      !getParam<bool>("no_shifted"))
+  {
+    // The Kokkos path is validated separately; the NEML2 checks below validate host material
+    // properties only and do not inspect Kokkos face properties.
+    if (_use_kokkos)
+      validateKokkosBulkStressMaterial();
+  }
+
+  if (_current_task == "add_interface_kernel" && getParam<bool>("directional_correction") &&
+      !_use_kokkos)
   {
     std::vector<MaterialPropertyName> stress_names;
     std::vector<MaterialPropertyName> tangent_names;
@@ -382,6 +416,43 @@ UserObjectName
 ShiftedCohesiveZoneAction::interfaceManagerName() const
 {
   return name() + "_interface_manager";
+}
+
+void
+ShiftedCohesiveZoneAction::validateKokkosBulkStressMaterial() const
+{
+  for (const auto * const material_action : _awh.getActions<AddMaterialAction>())
+  {
+    if (material_action->getMooseObjectType() != "KokkosSCZMComputeLinearElasticBulkStress")
+      continue;
+
+    const auto & params = material_action->getObjectParams();
+    if (!params.isParamValid("boundary") || !params.isParamValid("displacements"))
+      continue;
+    if (!hasOverlap(_boundary, params.get<std::vector<BoundaryName>>("boundary")))
+      continue;
+    if (params.get<std::vector<VariableName>>("displacements") != _displacements)
+      continue;
+    if (params.isParamValid("base_name") && !params.get<std::string>("base_name").empty() &&
+        params.get<std::string>("base_name") != _base_name)
+      continue;
+
+    return;
+  }
+
+  std::string boundaries;
+  for (const auto i : index_range(_boundary))
+    boundaries += (i == 0 ? "'" : "', '") + _boundary[i];
+
+  paramError("directional_correction",
+             "The Kokkos SCZM directional correction requires a user-declared "
+             "KokkosSCZMComputeLinearElasticBulkStress material that covers boundary ",
+             boundaries,
+             "' with the displacements '",
+             Moose::stringify(_displacements),
+             "' and base_name '",
+             _base_name,
+             "'. Add such a [Materials] block, or set 'directional_correction = false'.");
 }
 
 void
