@@ -1,12 +1,12 @@
 [Tests]
+  design = 'syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md'
+  issues = '#31370'
   [shifted_penalty_jacobian]
     type = PetscJacobianTester
     input = shifted_penalty.i
     ratio_tol = 1e-7
     difference_tol = 1e-7
     requirement = 'The Kokkos shifted-interface base shall cache static shifted geometry on the device and consistently linearize first-order shifted values across all four interface Jacobian blocks.'
-    design = 'syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md'
-    issues = '#31370'
     capabilities = kokkos
     compute_devices = 'cpu cuda xpu'
     allow_test_objects = true
@@ -17,10 +17,42 @@
     ratio_tol = 1e-7
     difference_tol = 1e-7
     requirement = 'The ShiftedCohesiveZone Physics shall create Kokkos small-strain shifted cohesive-zone kernels and materials that consistently assemble diagonal and cross-component traction-jump Jacobian blocks using device material properties.'
-    design = 'syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md'
-    issues = '#31370'
     capabilities = kokkos
     compute_devices = 'cpu cuda xpu'
     allow_test_objects = true
+  []
+  [sczm_angled_host_oracle]
+    type = Exodiff
+    input = sczm_angled_host.i
+    exodiff = sczm_angled_host_out.e
+    requirement = 'The host shifted cohesive-zone formulation shall compute the displacement solution on a two-dimensional angled interface without directional correction.'
+  []
+  [sczm_angled_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_angled_kokkos.i
+    exodiff = sczm_angled_kokkos_out.e
+    # Host and Kokkos evaluate identical double-precision discrete equations, so they must agree tightly.
+    abs_zero = 1e-10
+    rel_err = 1e-10
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall produce the same displacement solution as the host formulation on a two-dimensional angled interface without directional correction.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+  [sczm_angled_3d_host_oracle]
+    type = Exodiff
+    input = sczm_angled_3d_host.i
+    exodiff = sczm_angled_3d_host_out.e
+    requirement = 'The host shifted cohesive-zone formulation shall compute the displacement solution on a three-dimensional angled interface without directional correction.'
+  []
+  [sczm_angled_3d_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_angled_3d_kokkos.i
+    exodiff = sczm_angled_3d_kokkos_out.e
+    # Host and Kokkos evaluate identical double-precision discrete equations, so they must agree tightly.
+    abs_zero = 1e-10
+    rel_err = 1e-10
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall produce the same displacement solution as the host formulation on a three-dimensional angled interface without directional correction.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
   []
 []
