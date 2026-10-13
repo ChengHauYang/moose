@@ -1,5 +1,5 @@
 //* This file is part of the MOOSE framework
-//* https://www.mooseframework.org
+//* https://mooseframework.inl.gov
 //*
 //* All rights reserved, see COPYRIGHT for full restrictions
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
@@ -206,7 +206,11 @@ Material::operator()(NeighborInit, const ThreadID tid, const Derived & material)
 {
   auto [elem, side] = kokkosElementSideID(tid);
 
-  Datum datum(elem, side, kokkosAssembly(), kokkosSystems());
+  // For neighbor-side materials, retrieve the pre-recorded counterpart element ID
+  // from the Kokkos mesh (populated during init) rather than performing a runtime
+  // topology lookup that may not be available for ghost elements.
+  const auto neighbor_eid = kokkosMesh().getNeighbor(elem, side);
+  Datum datum(elem, side, neighbor_eid, kokkosAssembly(), kokkosSystems());
 
   const unsigned int num_qps = _constant_option == PropertyConstantOption::NONE ? datum.n_qps() : 1;
 
@@ -250,7 +254,8 @@ Material::operator()(NeighborCompute, const ThreadID tid, const Derived & materi
 {
   auto [elem, side] = kokkosElementSideID(tid);
 
-  Datum datum(elem, side, kokkosAssembly(), kokkosSystems());
+  const auto neighbor_eid = kokkosMesh().getNeighbor(elem, side);
+  Datum datum(elem, side, neighbor_eid, kokkosAssembly(), kokkosSystems());
 
   const unsigned int num_qps = _constant_option == PropertyConstantOption::NONE ? datum.n_qps() : 1;
 
