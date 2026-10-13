@@ -1,6 +1,6 @@
 [Tests]
   design = 'syntax/Kokkos/index.md'
-  issues = '#31370'
+  issues = '#30655'
   capabilities = kokkos
   compute_devices = 'cpu cuda xpu'
 

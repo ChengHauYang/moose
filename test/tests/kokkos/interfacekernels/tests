@@ -1,4 +1,5 @@
 [Tests]
+  issues = '#30655'
   [penalty_jacobian]
     type = PetscJacobianTester
     input = penalty.i
@@ -6,7 +7,6 @@
     difference_tol = 1e-7
     requirement = 'The Kokkos system shall assemble residual contributions on both sides of an interface and all four interface Jacobian blocks.'
     design = 'syntax/Kokkos/index.md'
-    issues = '#31370'
     capabilities = kokkos
     compute_devices = 'cpu cuda xpu'
   []
@@ -17,7 +17,6 @@
     difference_tol = 1e-7
     requirement = 'The Kokkos system shall evaluate an interface material once per oriented interface face on the primary element owner, and assemble a device-resident material property from both residual rows and all four Jacobian blocks of that face.'
     design = 'syntax/Kokkos/index.md'
-    issues = '#31370'
     capabilities = kokkos
     compute_devices = 'cpu cuda xpu'
   []
@@ -25,7 +24,6 @@
   [stateful]
     requirement = 'The Kokkos system shall preserve the state of a stateful interface material property over a checkpoint write and a restart by'
     design = 'syntax/KokkosMaterials/index.md'
-    issues = '#31370'
     [write_checkpoint]
       type = RunApp
       input = stateful.i
