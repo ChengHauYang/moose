@@ -358,5 +358,5 @@ binaryoutput
 !codegraph.json
 
 
-papers
-.plans
+# External arXiv source copy (kept locally for reference)
+papers/NS-PNP/arXiv-2301.05985v3/
