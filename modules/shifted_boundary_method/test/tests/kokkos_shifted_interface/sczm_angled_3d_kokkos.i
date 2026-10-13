@@ -17,12 +17,11 @@ theta_rad = '${fparse theta * pi / 180}'
     top_right = '2 1 1'
     block_id = 1
   []
-  [interface]
-    type = SideSetsBetweenSubdomainsGenerator
+  [break]
+    type = BreakMeshByBlockGenerator
     input = right_block
-    primary_block = 0
-    paired_block = 1
-    new_boundary = interface
+    split_interface = true
+    add_interface_on_two_sides = true
   []
 []
 
@@ -52,20 +51,29 @@ theta_rad = '${fparse theta * pi / 180}'
 
 [Physics/SolidMechanics/ShiftedCohesiveZone]
   [sczm]
-    boundary = interface
+    boundary = 'Block0_Block1'
     displacements = 'ux uy uz'
     sbm_distance_uo = distance
     use_kokkos = true
-    directional_correction = false
+    directional_correction = true
   []
 []
 
 [Materials]
   [local_traction]
     type = KokkosPureElasticTractionSeparation
-    boundary = interface
+    boundary = 'Block0_Block1'
     normal_stiffness = 10
     tangent_stiffness = 8
+  []
+  # Bulk response consumed by the Kokkos directional correction. These constants match the host
+  # ComputeIsotropicElasticityTensor of the paired host input.
+  [bulk_stress]
+    type = KokkosSCZMComputeLinearElasticBulkStress
+    boundary = 'Block0_Block1'
+    displacements = 'ux uy uz'
+    youngs_modulus = 1
+    poissons_ratio = 0.3
   []
 []
 
@@ -73,7 +81,7 @@ theta_rad = '${fparse theta * pi / 180}'
   [distance]
     type = BoundaryShortestDistanceToSurface
     surfaces = true_interface
-    boundary = interface
+    boundary = 'Block0_Block1'
     execute_on = INITIAL
   []
 []

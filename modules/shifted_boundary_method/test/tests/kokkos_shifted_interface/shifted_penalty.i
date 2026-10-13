@@ -13,12 +13,11 @@
     top_right = '2 1 0'
     block_id = 1
   []
-  [interface]
-    type = SideSetsBetweenSubdomainsGenerator
+  [break]
+    type = BreakMeshByBlockGenerator
     input = right_block
-    primary_block = 0
-    paired_block = 1
-    new_boundary = interface
+    split_interface = true
+    add_interface_on_two_sides = true
   []
 []
 
@@ -49,7 +48,7 @@
     type = KokkosShiftedPenaltyInterface
     variable = u
     neighbor_var = v
-    boundary = interface
+    boundary = 'Block0_Block1'
     sbm_distance_uo = distance
     penalty = 10
   []
@@ -59,7 +58,7 @@
   [distance]
     type = BoundaryShortestDistanceToSurface
     surfaces = true_interface
-    boundary = interface
+    boundary = 'Block0_Block1'
     execute_on = INITIAL
   []
 []
