@@ -1,0 +1,169 @@
+\documentclass[3p,times]{elsarticle}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{amsmath,amsbsy}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{listings}
+
+\biboptions{sort&compress}
+
+% Hyperref should be the last package.
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    linkcolor={magenta},
+    citecolor={blue},
+    urlcolor={blue!80!black},
+    breaklinks=true,
+    plainpages=true
+}
+
+\allowdisplaybreaks
+
+\graphicspath{{Figures/}{inputs/}}
+\DeclareGraphicsExtensions{.pdf,.png,.jpg}
+
+% Line numbers for review. Enable before submitting.
+% \usepackage[modulo]{lineno}
+% \linenumbers
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{NS--PNP Simulations on MOOSE}
+
+\begin{abstract}
+\end{abstract}
+
+\end{frontmatter}
+
+\section{Navier--Stokes--Poisson--Nernst--Planck formulation}
+
+Let $\Omega \subset \mathbb{R}^d$ be the spatial domain and let $(a,b)_\Omega=\int_\Omega ab\,\mathrm{d}\Omega$. For species $s=1,\ldots,N$, $c^s$ is its molar concentration, $z^s$ is its valence, $D^s$ is its diffusivity, and $\phi$ is the electric potential. The incompressible fluid has velocity $\boldsymbol{u}$, pressure $p$, density $\rho$, and dynamic viscosity $\eta$. For constant electric permittivity $\varepsilon$, Faraday constant $F$, gas constant $R$, and temperature $T$, the dimensional NS--PNP equations are \citep{kim2024direct}
+\begin{align}
+  \rho\left[\frac{\partial\boldsymbol{u}}{\partial t}+(\boldsymbol{u}\cdot\nabla)\boldsymbol{u}\right]+\nabla p-\eta\nabla^2\boldsymbol{u}+\rho_e\nabla\phi&=\boldsymbol{0},
+  \label{eq:nspnp_dim_momentum}\\
+  \nabla\cdot\boldsymbol{u}&=0,
+  \label{eq:nspnp_dim_continuity}\\
+  -\nabla\cdot(\varepsilon\nabla\phi)-F\sum_{s=1}^{N}z^s c^s&=0,
+  \label{eq:nspnp_dim_poisson}\\
+  \frac{\partial c^s}{\partial t}+\nabla\cdot(c^s\boldsymbol{u})-\nabla\cdot\left(D^s\nabla c^s+D^s\frac{z^sF}{RT}c^s\nabla\phi\right)&=0,
+  \label{eq:nspnp_dim_np}
+\end{align}
+where $\rho_e=F\sum_{s=1}^{N}z^s c^s$ is the free charge density and the electric field is $\boldsymbol{E}=-\nabla\phi$. The term $\nabla\cdot(c^s\boldsymbol{u})$ transports ions with the fluid, while the electric body force $\rho_e\boldsymbol{E}=-\rho_e\nabla\phi$ couples the ion concentrations and potential back to the momentum equation. These two terms make the coupling bidirectional. Prescribing $\boldsymbol{u}$ without solving Eqs.~\eqref{eq:nspnp_dim_momentum}--\eqref{eq:nspnp_dim_continuity} gives PNP with imposed advection, not a fully coupled NS--PNP model.
+
+The current dimensional MOOSE input sets $\boldsymbol{u}=\boldsymbol{0}$ and therefore solves the pure-PNP subset
+\begin{align}
+  -\nabla\cdot(\varepsilon\nabla\phi)-F\sum_{s=1}^{N}z^s c^s &=0,
+  \label{eq:pnp_dim_poisson_strong}\\
+  \frac{\partial c^s}{\partial t}-\nabla\cdot\left(D^s\nabla c^s+D^s\frac{z^sF}{RT}c^s\nabla\phi\right)&=0.
+  \label{eq:pnp_dim_np_strong}
+\end{align}
+Here $c^s$, $\phi$, $D^s$, and $\varepsilon$ have units $\mathrm{mol\,m^{-3}}$, $\mathrm{V}$, $\mathrm{m^2\,s^{-1}}$, and $\mathrm{F\,m^{-1}}$, respectively. Let $V=H^1(\Omega)$, with essential boundary conditions incorporated into the trial and test spaces. The dimensional MOOSE residual is: find $\phi,c^s\in V$ such that, for every $w^\phi,w^s\in V$,
+\begin{align}
+  R_\phi(w^\phi)={}&\underbrace{\left(\nabla w^\phi,\varepsilon\nabla\phi\right)_\Omega}_{\texttt{ADMatDiffusion},\ \texttt{diffusivity}=\varepsilon}+\sum_{s=1}^{N}\underbrace{\left(w^\phi,-Fz^s c^s\right)_\Omega}_{\texttt{ADCoupledForce},\ \texttt{coef}=Fz^s}=0,
+  \label{eq:pnp_dim_poisson_moose}\\
+  R_s(w^s)={}&\underbrace{\left(w^s,\dot{c}^s\right)_\Omega}_{\texttt{ADTimeDerivative}}+\underbrace{\left(\nabla w^s,D^s\nabla c^s\right)_\Omega}_{\texttt{ADMatDiffusion},\ \texttt{diffusivity}=D^s}\nonumber\\
+  &+\underbrace{\left(\nabla w^s,D^s\frac{z^sF}{RT}c^s\nabla\phi\right)_\Omega}_{\texttt{ADConservativeAdvection},\ \texttt{velocity\_scalar\_coef}=-D^sz^sF/(RT)}=0.
+  \label{eq:pnp_dim_species_moose}
+\end{align}
+The following representative blocks from \texttt{pnp\_dimensional.i} show the one-to-one mapping for the positive species; the negative species repeats these blocks with $z^s=-1$.
+\begin{lstlisting}[basicstyle=\ttfamily\small,columns=fullflexible]
+[positive_time]
+  type = ADTimeDerivative
+  variable = c_positive
+[]
+[positive_diffusion]
+  type = ADMatDiffusion
+  variable = c_positive
+  diffusivity = ${positive_diffusivity}
+[]
+[positive_migration]
+  type = ADConservativeAdvection
+  variable = c_positive
+  velocity_as_variable_gradient = potential
+  velocity_scalar_coef = '${fparse -positive_mobility}'
+[]
+[potential_diffusion]
+  type = ADMatDiffusion
+  variable = potential
+  diffusivity = ${permittivity}
+[]
+[positive_charge]
+  type = ADCoupledForce
+  variable = potential
+  v = c_positive
+  coef = ${faraday}
+[]
+\end{lstlisting}
+
+For scales $L_{\mathrm{ch}}$, $I_b$, $D$, and $V_T=RT/F$, define $\boldsymbol{x}=\boldsymbol{x}^*/L_{\mathrm{ch}}$, $t=t^*D/L_{\mathrm{ch}}^2$, $c^s=c^{s,*}/I_b$, and $\phi=\phi^*/V_T$. For equal species diffusivities $D^s=D$, the nondimensional pure-PNP equations become
+\begin{align}
+  -2\Lambda^2\nabla^2\phi-\sum_{s=1}^{N}z^s c^s &=0,
+  \label{eq:pnp_nd_poisson_strong}\\
+  \frac{\partial c^s}{\partial t}-\nabla\cdot\left(\nabla c^s+z^s c^s\nabla\phi\right)&=0,
+  \label{eq:pnp_nd_np_strong}
+\end{align}
+where $\Lambda=\lambda_D/L_{\mathrm{ch}}$ and $\lambda_D=\sqrt{\varepsilon RT/(2F^2I_b)}$. For the full NS--PNP system, additionally define $\boldsymbol{u}=\boldsymbol{u}^*L_{\mathrm{ch}}/D$ and $p=p^*L_{\mathrm{ch}}^2/(\eta D)$. The nondimensional extension used by \citet{kim2024direct} is
+\begin{align}
+  \frac{1}{\mathrm{Sc}}\left[\frac{\partial\boldsymbol{u}}{\partial t}+(\boldsymbol{u}\cdot\nabla)\boldsymbol{u}\right]+\nabla p-\nabla^2\boldsymbol{u}+\frac{\kappa}{2\Lambda^2}\left(\sum_{s=1}^{N}z^s c^s\right)\nabla\phi&=\boldsymbol{0},
+  \label{eq:nspnp_nd_momentum}\\
+  \nabla\cdot\boldsymbol{u}&=0,
+  \label{eq:nspnp_nd_continuity}\\
+  -2\Lambda^2\nabla^2\phi-\sum_{s=1}^{N}z^s c^s&=0,
+  \label{eq:nspnp_nd_poisson}\\
+  \frac{\partial c^s}{\partial t}+\nabla\cdot(c^s\boldsymbol{u})-\nabla\cdot\left(\nabla c^s+z^s c^s\nabla\phi\right)&=0,
+  \label{eq:nspnp_nd_np}
+\end{align}
+where $\mathrm{Sc}=\eta/(\rho D)$ is the Schmidt number and $\kappa=\varepsilon(RT/F)^2/(\eta D)$ is the electrohydrodynamic coupling constant. Setting $\boldsymbol{u}=\boldsymbol{0}$ removes the ionic advection term and recovers Eqs.~\eqref{eq:pnp_nd_poisson_strong}--\eqref{eq:pnp_nd_np_strong}. The corresponding pure-PNP MOOSE residual is
+\begin{align}
+  R_\phi(w^\phi)={}&\underbrace{\left(\nabla w^\phi,2\Lambda^2\nabla\phi\right)_\Omega}_{\texttt{ADMatDiffusion},\ \texttt{diffusivity}=2\Lambda^2}+\sum_{s=1}^{N}\underbrace{\left(w^\phi,-z^s c^s\right)_\Omega}_{\texttt{ADCoupledForce},\ \texttt{coef}=z^s}=0,
+  \label{eq:pnp_nd_poisson_moose}\\
+  R_s(w^s)={}&\underbrace{\left(w^s,\dot{c}^s\right)_\Omega}_{\texttt{ADTimeDerivative}}+\underbrace{\left(\nabla w^s,\nabla c^s\right)_\Omega}_{\texttt{ADDiffusion}}+\underbrace{\left(\nabla w^s,z^s c^s\nabla\phi\right)_\Omega}_{\texttt{ADConservativeAdvection},\ \texttt{velocity\_scalar\_coef}=-z^s}=0.
+  \label{eq:pnp_nd_species_moose}
+\end{align}
+The nondimensional input differs only in these coefficients:
+\begin{lstlisting}[basicstyle=\ttfamily\small,columns=fullflexible]
+permittivity = '${fparse 2 * lambda^2}'
+[positive_diffusion]
+  type = ADDiffusion
+  variable = c_positive
+[]
+[positive_migration]
+  type = ADConservativeAdvection
+  variable = c_positive
+  velocity_as_variable_gradient = potential
+  velocity_scalar_coef = -1
+[]
+[potential_diffusion]
+  type = ADMatDiffusion
+  variable = potential
+  diffusivity = ${permittivity}
+[]
+[positive_charge]
+  type = ADCoupledForce
+  variable = potential
+  v = c_positive
+  coef = 1
+[]
+\end{lstlisting}
+
+The kernel signs are common to both forms. \texttt{ADConservativeAdvection} contributes $-(\nabla w^s,\boldsymbol{v}_{\mathrm{kernel}}c^s)_\Omega$, so its negative velocity coefficient gives the positive migration term. \texttt{ADCoupledForce} contributes $(w^\phi,-\texttt{coef}\,c^s)_\Omega$. The dot is supplied by MOOSE's BDF2 integrator. It uses backward Euler on the first step; for the constant subsequent step size used by both inputs,
+\begin{equation}
+  \dot{c}^{s,k+1}=\frac{3c^{s,k+1}-4c^{s,k}+c^{s,k-1}}{2\Delta t}.
+\end{equation}
+Neither input adds a flux boundary-condition object. The resulting natural conditions are $\boldsymbol{n}\cdot\varepsilon\nabla\phi=0$ and $\boldsymbol{n}\cdot[D^s\nabla c^s+D^sz^sF c^s\nabla\phi/(RT)]=0$ in dimensional form, with their nondimensional counterparts obtained from Eqs.~\eqref{eq:pnp_nd_poisson_strong}--\eqref{eq:pnp_nd_np_strong}. Both inputs fix $\phi=0$ on the left boundary to remove the constant-potential null space.
+
+\bibliographystyle{elsarticle-num-names}
+\bibliography{bibtex}
+
+\end{document}
