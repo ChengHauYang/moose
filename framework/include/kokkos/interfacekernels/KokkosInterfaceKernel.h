@@ -369,20 +369,4 @@ InterfaceKernel::computeOffDiagJacobianInternal(const Derived & kernel,
 
 } // namespace Moose::Kokkos
 
-#define registerKokkosInterfaceKernel(app, classname)                                              \
-  registerMooseObject(app, classname);                                                             \
-  static char registerKokkosInterfaceKernel##classname()                                           \
-  {                                                                                                \
-    using namespace Moose::Kokkos;                                                                 \
-    DispatcherRegistry::addDispatcher<classname::ResidualLoop, classname>(#classname);             \
-    DispatcherRegistry::addDispatcher<classname::JacobianLoop, classname>(#classname);             \
-    DispatcherRegistry::addDispatcher<classname::OffDiagJacobianLoop, classname>(#classname);      \
-    DispatcherRegistry::hasUserMethod<classname::JacobianLoop>(#classname,                         \
-                                                               hasUserJacobianHook<classname>());  \
-    DispatcherRegistry::hasUserMethod<classname::OffDiagJacobianLoop>(                             \
-        #classname, hasUserOffDiagJacobianHook<classname>());                                      \
-    return 0;                                                                                      \
-  }                                                                                                \
-  [[maybe_unused]] static char combineNames(kokkos_dispatcher_interface_kernel_##classname,        \
-                                            __COUNTER__) =                                         \
-      registerKokkosInterfaceKernel##classname()
+#define registerKokkosInterfaceKernel(app, classname) registerKokkosResidualObject(app, classname)
