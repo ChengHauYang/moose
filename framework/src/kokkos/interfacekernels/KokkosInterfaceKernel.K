@@ -63,13 +63,12 @@ InterfaceKernel::computeJacobian()
   if (DispatcherRegistry::hasUserMethod<OffDiagJacobianLoop>(type()))
   {
     const auto & elem_coupling =
-        kokkosSystem(_kokkos_var.sys()).getCoupling(_kokkos_var.var());
+        kokkosSystem(_kokkos_var.sys()).getFieldCoupling(_kokkos_var.var());
     const auto & neighbor_coupling =
-        kokkosSystem(_kokkos_neighbor_var.sys()).getCoupling(_kokkos_neighbor_var.var());
+        kokkosSystem(_kokkos_neighbor_var.sys()).getFieldCoupling(_kokkos_neighbor_var.var());
     const auto n_couplings = std::max(elem_coupling.size(), neighbor_coupling.size());
 
-    _thread.resize(
-        _num_local_jacobian_threads, 2, n_couplings, numKokkosInterfaceFaces());
+    _thread.resize(_num_local_jacobian_threads, 2, n_couplings, numKokkosInterfaceFaces());
     Policy policy(0, _thread.size());
 
     if (!_offdiag_jacobian_dispatcher)
