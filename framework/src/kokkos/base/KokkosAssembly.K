@@ -185,8 +185,13 @@ Assembly::initQuadrature()
   }
 
   for (const auto & [elem, eid] : kokkosMesh().getGhostElemIdMapping())
+  {
+    const auto sid = kokkosMesh().getContiguousSubdomainID(elem->subdomain_id());
+    const auto elem_type_id = kokkosMesh().getElementTypeID(elem);
+
     for (const auto side : elem->side_index_range())
-      _n_qps_face(side, eid) = n_qps_face[elem->subdomain_id()][elem->type()][side];
+      _n_qps_face(side, eid) = _q_points_face(sid, elem_type_id)[side].size();
+  }
 
   for (auto boundary : _material_boundaries)
     for (auto elem_id : _mesh.getBoundaryActiveSemiLocalElemIds(boundary))
@@ -218,8 +223,8 @@ Assembly::initQuadrature()
           const auto neighbor = elem->neighbor_ptr(side);
           // An off-process neighbor is addressable only if this rank holds a copy of it, which
           // KokkosMesh does only when element-side geometry data has been requested. Without that
-          // request the ghost element ID does not exist, so such a neighbor is left to the rank that
-          // owns it to register its own side.
+          // request the ghost element ID does not exist, so such a neighbor is left to the rank
+          // that owns it to register its own side.
           if (neighbor && neighbor != libMesh::remote_elem &&
               (neighbor->processor_id() == _problem.processor_id() ||
                kokkosMesh().getGhostElemIdMapping().count(neighbor)))
