@@ -12,6 +12,17 @@ Licensed under the BSD 2-Clause License.
 
 These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+## 0. Local Harness Map
+
+For Cheng-Hau's private macOS Apple Silicon workflow, use:
+
+- Inspect state: `./scripts/mac/doctor_mac.sh`
+- Full first-time setup/build/test: `./scripts/mac/compile_script_mac.sh`
+- Incremental build: `./scripts/mac/build_mac.sh <framework|solid_mechanics|shifted_boundary_method|all>`
+- Targeted tests: `./scripts/mac/test_mac.sh <framework-kokkos|sczm|neml2|neml2-aoti|all>`
+
+Do not treat missing generated files such as `framework_config.h`, configured Makefiles, object files, or module binaries as a broken checkout. Fresh checkouts are expected to lack them. On macOS, run `./scripts/mac/doctor_mac.sh` before inventing build commands or asking how to configure MOOSE.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
@@ -97,6 +108,7 @@ that request requires.
 
 ## 6. Tool Use
 
+For Cheng-Hau's macOS Apple Silicon workflow, use the Local Harness Map at the top of this file before asking about Conda or inventing build commands.
 - Prefer builtin tools over bash commands whenever possible in the vein of
   reducing permission prompting.
 - Before building or performing verification, including running tests or
