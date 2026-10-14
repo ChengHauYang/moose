@@ -27,6 +27,8 @@ struct InterfaceFaceRecord
   unsigned int side;
   ContiguousElementID neighbor;
   unsigned int neighbor_side;
+  dof_id_type elem_id;
+  dof_id_type neighbor_id;
   dof_id_type qp_map_offset;
   unsigned int n_qps;
 };

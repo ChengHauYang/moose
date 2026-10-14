@@ -32,12 +32,6 @@ public:
   virtual void act() override;
 
 protected:
-  /**
-   * Checks that a user-declared KokkosSCZMComputeLinearElasticBulkStress material covers this
-   * interface before the Kokkos interface kernels are created.
-   */
-  void validateKokkosBulkStressMaterial() const;
-
   /// Adds the surface distance functions used by the generated distance user object.
   void addSBMDistanceFunctions();
 

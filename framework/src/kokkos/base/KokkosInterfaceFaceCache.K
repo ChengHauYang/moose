@@ -131,8 +131,14 @@ InterfaceFaceCache::InterfaceFaceCache(const ::MooseMesh & mesh,
           neighbor_qp_map.push_back(matched_qp);
         }
 
-        interface_faces.push_back(
-            {elem_side.first, elem_side.second, neighbor_id, neighbor_side, qp_map_offset, n_qps});
+        interface_faces.push_back({elem_side.first,
+                                   elem_side.second,
+                                   neighbor_id,
+                                   neighbor_side,
+                                   elem->id(),
+                                   neighbor->id(),
+                                   qp_map_offset,
+                                   n_qps});
       }
     }
 

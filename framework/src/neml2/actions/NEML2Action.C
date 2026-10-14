@@ -412,7 +412,7 @@ NEML2Action::act()
       auto obj_name = obscureObjectName(
           moose_name, use_kokkos ? "neml2_to_kokkos" : "neml2_to_moose", "", name());
       auto obj_type = use_kokkos
-                          ? "NEML2ToKokkos" +
+                          ? "NEML2ToKokkos" + std::string(_interface_only ? "Side" : "") +
                                 std::string(moose_tensor_type == "SymmetricRankTwoTensor"
                                                 ? "RankTwo"
                                                 : "RankFour") +
@@ -433,7 +433,20 @@ NEML2Action::act()
       extra(obj_params);
 #ifdef MOOSE_KOKKOS_ENABLED
       if (use_kokkos)
+      {
         _problem->addKokkosMaterial(obj_type, obj_name, obj_params);
+        if (_interface_only)
+        {
+          const auto neighbor_type = "NEML2ToKokkosNeighbor" +
+                                     std::string(moose_tensor_type == "SymmetricRankTwoTensor"
+                                                     ? "RankTwo"
+                                                     : "RankFour") +
+                                     "MaterialProperty";
+          auto neighbor_params = _factory.getValidParams(neighbor_type);
+          neighbor_params.applyParameters(obj_params);
+          _problem->addKokkosMaterial(neighbor_type, obj_name + "_neighbor", neighbor_params);
+        }
+      }
       else
 #endif
         _problem->addMaterial(obj_type, obj_name, obj_params);
