@@ -53,13 +53,13 @@ public:
 
   template <typename Derived>
   KOKKOS_FUNCTION Real computeQpOffDiagJacobian(const Moose::DGJacobianType /* type */,
-                                                 const unsigned int /* i */,
-                                                 const unsigned int /* j */,
-                                                 const unsigned int /* jvar */,
-                                                 const unsigned int /* qp */,
-                                                 const unsigned int /* neighbor_qp */,
-                                                 AssemblyDatum & /* elem_datum */,
-                                                 AssemblyDatum & /* neighbor_datum */) const
+                                                const unsigned int /* i */,
+                                                const unsigned int /* j */,
+                                                const unsigned int /* jvar */,
+                                                const unsigned int /* qp */,
+                                                const unsigned int /* neighbor_qp */,
+                                                AssemblyDatum & /* elem_datum */,
+                                                AssemblyDatum & /* neighbor_datum */) const
   {
     ::Kokkos::abort("Derived Kokkos interface kernels must define computeQpOffDiagJacobian().");
     return 0;
@@ -162,26 +162,14 @@ InterfaceKernel::operator()(JacobianLoop, const ThreadID tid, const Derived & ke
   elem_row_neighbor_column_datum.set_local_parallel(_thread(tid, 0), _thread.size(0));
   neighbor_column_datum.set_local_parallel(_thread(tid, 0), _thread.size(0));
 
-  computeJacobianInternal(kernel,
-                          face,
-                          elem_column_datum,
-                          neighbor_row_elem_column_datum,
-                          Moose::ElementElement);
-  computeJacobianInternal(kernel,
-                          face,
-                          elem_row_neighbor_column_datum,
-                          neighbor_column_datum,
-                          Moose::ElementNeighbor);
-  computeJacobianInternal(kernel,
-                          face,
-                          elem_column_datum,
-                          neighbor_row_elem_column_datum,
-                          Moose::NeighborElement);
-  computeJacobianInternal(kernel,
-                          face,
-                          elem_row_neighbor_column_datum,
-                          neighbor_column_datum,
-                          Moose::NeighborNeighbor);
+  computeJacobianInternal(
+      kernel, face, elem_column_datum, neighbor_row_elem_column_datum, Moose::ElementElement);
+  computeJacobianInternal(
+      kernel, face, elem_row_neighbor_column_datum, neighbor_column_datum, Moose::ElementNeighbor);
+  computeJacobianInternal(
+      kernel, face, elem_column_datum, neighbor_row_elem_column_datum, Moose::NeighborElement);
+  computeJacobianInternal(
+      kernel, face, elem_row_neighbor_column_datum, neighbor_column_datum, Moose::NeighborNeighbor);
 }
 
 template <typename Derived>
@@ -190,7 +178,7 @@ InterfaceKernel::operator()(OffDiagJacobianLoop, const ThreadID tid, const Deriv
 {
   const bool row_is_neighbor = _thread(tid, 1);
   const auto & row_var = row_is_neighbor ? _kokkos_neighbor_var : _kokkos_var;
-  const auto & coupling = kokkosSystem(row_var.sys()).getCoupling(row_var.var());
+  const auto & coupling = kokkosSystem(row_var.sys()).getFieldCoupling(row_var.var());
   const auto coupling_index = _thread(tid, 2);
   if (coupling_index >= coupling.size())
     return;
@@ -273,13 +261,9 @@ InterfaceKernel::computeResidualInternal(const Derived & kernel,
     {
       const auto neighbor_qp = kokkosInterfaceNeighborQp(face, qp);
       for (unsigned int i = ib; i < ie; ++i)
-        local_re[i - ib] += elem_datum.JxW(qp) * kernel.template computeQpResidual<Derived>(
-                                                             type,
-                                                             i,
-                                                             qp,
-                                                             neighbor_qp,
-                                                             elem_datum,
-                                                             neighbor_datum);
+        local_re[i - ib] +=
+            elem_datum.JxW(qp) * kernel.template computeQpResidual<Derived>(
+                                     type, i, qp, neighbor_qp, elem_datum, neighbor_datum);
     }
 
     for (unsigned int i = ib; i < ie; ++i)
@@ -296,8 +280,7 @@ InterfaceKernel::computeJacobianInternal(const Derived & kernel,
                                          const Moose::DGJacobianType type) const
 {
   const bool row_is_neighbor = type == Moose::NeighborElement || type == Moose::NeighborNeighbor;
-  const bool column_is_neighbor =
-      type == Moose::ElementNeighbor || type == Moose::NeighborNeighbor;
+  const bool column_is_neighbor = type == Moose::ElementNeighbor || type == Moose::NeighborNeighbor;
   auto & row_datum = row_is_neighbor ? neighbor_datum : elem_datum;
   auto & column_datum = column_is_neighbor ? neighbor_datum : elem_datum;
   const auto row_elem = row_is_neighbor ? face.neighbor : face.elem;
@@ -324,14 +307,9 @@ InterfaceKernel::computeJacobianInternal(const Derived & kernel,
       {
         const auto neighbor_qp = kokkosInterfaceNeighborQp(face, qp);
         for (unsigned int i = ib; i < ie; ++i)
-          local_ke[i - ib] += elem_datum.JxW(qp) * kernel.template computeQpJacobian<Derived>(
-                                                               type,
-                                                               i,
-                                                               j,
-                                                               qp,
-                                                               neighbor_qp,
-                                                               elem_datum,
-                                                               neighbor_datum);
+          local_ke[i - ib] +=
+              elem_datum.JxW(qp) * kernel.template computeQpJacobian<Derived>(
+                                       type, i, j, qp, neighbor_qp, elem_datum, neighbor_datum);
       }
 
       for (unsigned int i = ib; i < ie; ++i)
@@ -350,8 +328,7 @@ InterfaceKernel::computeOffDiagJacobianInternal(const Derived & kernel,
                                                 const Moose::DGJacobianType type) const
 {
   const bool row_is_neighbor = type == Moose::NeighborElement || type == Moose::NeighborNeighbor;
-  const bool column_is_neighbor =
-      type == Moose::ElementNeighbor || type == Moose::NeighborNeighbor;
+  const bool column_is_neighbor = type == Moose::ElementNeighbor || type == Moose::NeighborNeighbor;
   auto & row_datum = row_is_neighbor ? neighbor_datum : elem_datum;
   auto & column_datum = column_is_neighbor ? neighbor_datum : elem_datum;
   const auto row_elem = row_is_neighbor ? face.neighbor : face.elem;
@@ -378,15 +355,9 @@ InterfaceKernel::computeOffDiagJacobianInternal(const Derived & kernel,
         const auto neighbor_qp = kokkosInterfaceNeighborQp(face, qp);
         for (unsigned int i = ib; i < ie; ++i)
           local_ke[i - ib] +=
-              elem_datum.JxW(qp) * kernel.template computeQpOffDiagJacobian<Derived>(
-                                           type,
-                                           i,
-                                           j,
-                                           row_datum.jvar(),
-                                           qp,
-                                           neighbor_qp,
-                                           elem_datum,
-                                           neighbor_datum);
+              elem_datum.JxW(qp) *
+              kernel.template computeQpOffDiagJacobian<Derived>(
+                  type, i, j, row_datum.jvar(), qp, neighbor_qp, elem_datum, neighbor_datum);
       }
 
       for (unsigned int i = ib; i < ie; ++i)
@@ -406,12 +377,12 @@ InterfaceKernel::computeOffDiagJacobianInternal(const Derived & kernel,
     DispatcherRegistry::addDispatcher<classname::ResidualLoop, classname>(#classname);             \
     DispatcherRegistry::addDispatcher<classname::JacobianLoop, classname>(#classname);             \
     DispatcherRegistry::addDispatcher<classname::OffDiagJacobianLoop, classname>(#classname);      \
-    DispatcherRegistry::hasUserMethod<classname::JacobianLoop>(                                    \
-        #classname, hasUserJacobianHook<classname>());                                             \
+    DispatcherRegistry::hasUserMethod<classname::JacobianLoop>(#classname,                         \
+                                                               hasUserJacobianHook<classname>());  \
     DispatcherRegistry::hasUserMethod<classname::OffDiagJacobianLoop>(                             \
         #classname, hasUserOffDiagJacobianHook<classname>());                                      \
     return 0;                                                                                      \
   }                                                                                                \
   [[maybe_unused]] static char combineNames(kokkos_dispatcher_interface_kernel_##classname,        \
-                                             __COUNTER__) =                                         \
+                                            __COUNTER__) =                                         \
       registerKokkosInterfaceKernel##classname()
