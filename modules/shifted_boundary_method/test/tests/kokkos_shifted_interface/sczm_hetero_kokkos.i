@@ -49,26 +49,51 @@ theta_rad = '${fparse theta * pi / 180}'
     sbm_distance_uo = distance
     use_kokkos = true
     directional_correction = true
+    stress = neml2_stress
+    tangent = tangent
   []
 []
 
 [Materials]
+  [strain]
+    type = ComputeSmallStrain
+    displacements = 'ux uy'
+  []
+  [neml2_strain]
+    type = RankTwoTensorToSymmetricRankTwoTensor
+    from = mechanical_strain
+    to = neml2_strain
+  []
   [local_traction]
     type = KokkosPureElasticTractionSeparation
     boundary = 'Block0_Block1'
     normal_stiffness = 10
     tangent_stiffness = 8
   []
-  # Heterogeneous bulk response. These constants match the block-restricted host materials of the
-  # paired host input, primary side (block 0) and neighbor side (block 1).
-  [bulk_stress]
-    type = KokkosSCZMComputeLinearElasticBulkStress
-    boundary = 'Block0_Block1'
-    displacements = 'ux uy'
-    youngs_modulus = 1
-    poissons_ratio = 0.30
-    neighbor_youngs_modulus = 3
-    neighbor_poissons_ratio = 0.20
+[]
+
+[NEML2]
+  eager = true
+  input = sczm_neml2_elasticity.i
+  device = cpu
+  input_types = MATERIAL
+  inputs = neml2_strain
+  derivatives = 'neml2_stress neml2_strain tangent'
+  [primary_elasticity]
+    # inherit input from sczm_neml2_elasticity.i
+    model = model
+    output_backend = kokkos
+    interface = Block0_Block1
+    interface_only = true
+    interface_output_side = primary
+  []
+  [neighbor_elasticity]
+    model = model
+    input = sczm_neml2_elasticity_neighbor.i
+    output_backend = kokkos
+    interface = Block0_Block1
+    interface_only = true
+    interface_output_side = neighbor
   []
 []
 

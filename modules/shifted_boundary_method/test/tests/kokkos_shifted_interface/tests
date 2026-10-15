@@ -17,7 +17,7 @@
     ratio_tol = 1e-7
     difference_tol = 1e-7
     requirement = 'The ShiftedCohesiveZone Physics shall create Kokkos small-strain shifted cohesive-zone kernels and materials that consistently assemble diagonal and cross-component traction-jump Jacobian blocks including the directional correction Jacobian, using device material properties.'
-    capabilities = kokkos
+    capabilities = 'kokkos & libtorch & neml2'
     compute_devices = 'cpu cuda xpu'
   []
   [sczm_angled_host]
@@ -35,7 +35,7 @@
     abs_zero = 1e-8
     rel_err = 1e-8
     requirement = 'The Kokkos shifted cohesive-zone formulation shall produce the same displacement solution as the host formulation on a two-dimensional angled interface including the directional correction.'
-    capabilities = kokkos
+    capabilities = 'kokkos & libtorch & neml2'
     compute_devices = 'cpu cuda xpu'
     # Recovery is disabled for the Kokkos interface comparisons because it does not rebuild the
     # interface neighbor state. The disjoint neighbor information is not currently saved to Exodus
@@ -92,7 +92,7 @@
     abs_zero = 1e-8
     rel_err = 1e-8
     requirement = 'The Kokkos shifted cohesive-zone formulation shall produce the same displacement solution as the host formulation on a three-dimensional angled interface including the directional correction.'
-    capabilities = kokkos
+    capabilities = 'kokkos & libtorch & neml2'
     compute_devices = 'cpu cuda xpu'
     # See sczm_angled_kokkos_matches_host for why recovery is disabled.
     recover = false
@@ -112,7 +112,7 @@
     abs_zero = 1e-8
     rel_err = 1e-8
     requirement = 'The Kokkos shifted cohesive-zone formulation shall consume the primary bulk stress and Lame constants for the element block and the neighbor ones for the neighbor block, producing the same displacement solution as the host formulation on a heterogeneous angled interface.'
-    capabilities = kokkos
+    capabilities = 'kokkos & libtorch & neml2'
     compute_devices = 'cpu cuda xpu'
     # See sczm_angled_kokkos_matches_host for why recovery is disabled.
     recover = false
@@ -127,53 +127,22 @@
     # assembled Jacobian against finite differences of that residual therefore fails if primary and
     # neighbor properties are swapped in either residual row or in either diagonal block, or if a
     # correction term is added to either cross block.
-    requirement = 'The Kokkos SCZM directional correction shall assemble Jacobian entries that are the exact derivative of its residual for both interface sides with independently configured bulk properties, and shall contribute no correction to the cross blocks.'
-    capabilities = kokkos
+    requirement = 'The Kokkos SCZM directional correction shall assemble Jacobian entries that are the exact derivative of its residual for both interface sides with independently configured bulk properties supplied through NEML2, where the NEML2 batch index is keyed by the primary quadrature point and the neighbor-side property is written to the corresponding neighbor storage quadrature point, and shall contribute no correction to the cross blocks.'
+    capabilities = 'kokkos & libtorch & neml2'
     compute_devices = 'cpu cuda xpu'
   []
 
-  [sczm_rz_bulk_stress]
-    type = CSVDiff
-    input = sczm_rz_bulk_stress.i
-    csvdiff = sczm_rz_bulk_stress_out.csv
-    requirement = 'The Kokkos SCZM bulk stress material shall evaluate the exact linear-elastic Cauchy stress tensor in the axisymmetric RZ coordinate system, including the hoop strain on both physical sides of the interface.'
-    capabilities = kokkos
-    compute_devices = 'cpu cuda xpu'
-    allow_test_objects = true
-  []
-  [sczm_rspherical_bulk_stress]
-    type = CSVDiff
-    input = sczm_rspherical_bulk_stress.i
-    csvdiff = sczm_rspherical_bulk_stress_out.csv
-    requirement = 'The Kokkos SCZM bulk stress material shall evaluate the exact linear-elastic Cauchy stress tensor in the spherically symmetric RSPHERICAL coordinate system, including both tangential strain components on both physical sides of the interface.'
-    capabilities = kokkos
-    compute_devices = 'cpu cuda xpu'
-    allow_test_objects = true
-  []
-  [sczm_axis_limit]
-    type = CSVDiff
-    input = sczm_axis_limit.i
-    csvdiff = sczm_axis_limit_out.csv
-    requirement = 'The Kokkos SCZM bulk stress material shall evaluate bulk stress at the coordinate axis limit r = 0 without performing division by zero and producing finite stress values.'
-    capabilities = kokkos
-    compute_devices = 'cpu cuda xpu'
-    allow_test_objects = true
-  []
 
   # Unsupported combinations must be rejected explicitly. Each of these would otherwise be silently
   # dropped, leaving the user to believe an option took effect.
   [kokkos_directional_correction_rejections]
-    requirement = 'The Kokkos SCZM directional correction shall reject unsupported input combinations with an explicit error '
-    capabilities = kokkos
+    requirement = 'The Kokkos SCZM directional correction shall reject unsupported input combinations with an explicit error.'
+    design = 'syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md'
+    issues = '#33666 #30655'
+    capabilities = 'kokkos & libtorch & neml2'
     compute_devices = 'cpu cuda xpu'
     recover = false
 
-    [missing_bulk_material]
-      type = RunException
-      input = sczm_kokkos_no_bulk_material.i
-      expect_err = 'requires a user-declared KokkosSCZMComputeLinearElasticBulkStress material'
-      detail = 'if the directional correction is enabled without a bulk stress material on the interface.'
-    []
 
     [volumetric_locking_correction]
       type = RunException
@@ -183,76 +152,29 @@
       detail = 'if volumetric locking correction is requested, which is not yet implemented for Kokkos.'
     []
 
-    [user_set_stress]
-      type = RunException
-      input = sczm_hetero_kokkos.i
-      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stress=stress'
-      expect_err = 'reads its bulk stress from the KokkosSCZMComputeLinearElasticBulkStress material and does not use this parameter'
-      detail = 'if a user-set stress property is supplied, which the Kokkos bulk material replaces.'
-    []
-
-    [user_set_tangent]
-      type = RunException
-      input = sczm_hetero_kokkos.i
-      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/tangent=Jacobian_mult'
-      expect_err = 'reads its bulk tangent from the Lame constants of the KokkosSCZMComputeLinearElasticBulkStress material and does not use this parameter'
-      detail = 'if a user-set tangent property is supplied, which the Kokkos bulk material replaces.'
-    []
-
     [unsupported_tangent_definition]
       type = RunException
       input = sczm_hetero_kokkos.i
       cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/tangent_definition=pk1_wrt_deformation_gradient'
       expect_err = 'currently supports only a strain-based tangent'
-      detail = 'if a deformation-gradient tangent definition is requested, which the compact isotropic producer does not provide.'
+      detail = 'if a deformation-gradient tangent definition is requested, which the strain-based Kokkos directional correction does not support.'
     []
 
-    [rs_spherical_displacement_count]
+    [non_cartesian_coordinates]
       type = RunException
       input = sczm_hetero_kokkos.i
       cli_args = 'Mesh/coord_type=RSPHERICAL'
-      expect_err = 'One displacement variable \(r\) is required for RSPHERICAL coordinate systems\.'
-      detail = 'in RSPHERICAL with more than one displacement variable.'
+      expect_err = 'currently supports only Cartesian coordinate systems'
+      detail = 'if a non-Cartesian coordinate system is requested, whose out-of-plane kinematics are not yet verified for NEML2.'
     []
 
-    [mismatched_displacement_count]
+    [neml2_output_backend_not_kokkos]
       type = RunException
       input = sczm_hetero_kokkos.i
-      cli_args = 'Materials/bulk_stress/displacements=ux'
-      expect_err = 'Number of displacements must match problem dimension.'
-      detail = 'if the bulk stress material is given fewer displacement variables than the mesh dimension.'
+      cli_args = 'NEML2/primary_elasticity/output_backend=moose'
+      expect_err = "Set 'output_backend = kokkos' or set 'directional_correction = false'"
+      detail = 'if the NEML2 block providing the stress or tangent property to a Kokkos directional correction does not set output_backend = kokkos.'
     []
 
-    [nonpositive_primary_youngs_modulus]
-      type = RunException
-      input = sczm_hetero_kokkos.i
-      cli_args = 'Materials/bulk_stress/youngs_modulus=-1'
-      expect_err = 'youngs_modulus: Must be positive'
-      detail = 'if the primary side Young''s modulus is not positive.'
-    []
-
-    [out_of_range_primary_poissons_ratio]
-      type = RunException
-      input = sczm_hetero_kokkos.i
-      cli_args = 'Materials/bulk_stress/poissons_ratio=0.6'
-      expect_err = 'poissons_ratio: Must satisfy -1 < nu < 0.5'
-      detail = 'if the primary side Poisson''s ratio is outside the physical range.'
-    []
-
-    [nonpositive_neighbor_youngs_modulus]
-      type = RunException
-      input = sczm_hetero_kokkos.i
-      cli_args = 'Materials/bulk_stress/neighbor_youngs_modulus=-2'
-      expect_err = 'neighbor_youngs_modulus: Must be positive'
-      detail = 'if the neighbor side Young''s modulus is not positive.'
-    []
-
-    [out_of_range_neighbor_poissons_ratio]
-      type = RunException
-      input = sczm_hetero_kokkos.i
-      cli_args = 'Materials/bulk_stress/neighbor_poissons_ratio=-2'
-      expect_err = 'neighbor_poissons_ratio: Must satisfy -1 < nu < 0.5'
-      detail = 'if the neighbor side Poisson''s ratio is outside the physical range.'
-    []
   []
 []

@@ -44,20 +44,20 @@ public:
     auto jump_local = _interface_displacement_jump(elem_datum, qp);
     auto property_rotation = _czm_total_rotation(elem_datum, qp);
 
-    for (const auto i : make_range(_ndisp))
+    for (unsigned int i = 0; i < _ndisp; ++i)
       jump_global(i) =
           _displacements(neighbor_datum, neighbor_qp, i) - _displacements(elem_datum, qp, i);
 
     if (_shifted)
-      for (const auto i : make_range(_ndisp))
+      for (unsigned int i = 0; i < _ndisp; ++i)
         jump_global(i) += (_displacement_gradients(neighbor_datum, neighbor_qp, i) -
                            _displacement_gradients(elem_datum, qp, i))
                               .dot_product(distance);
 
-    for (const auto i : make_range(_ndisp))
+    for (unsigned int i = 0; i < _ndisp; ++i)
     {
       jump_local(i) = 0;
-      for (const auto j : make_range(_ndisp))
+      for (unsigned int j = 0; j < _ndisp; ++j)
       {
         property_rotation(i, j) = rotation(i, j);
         jump_local(i) += rotation(j, i) * jump_global(j);

@@ -91,29 +91,6 @@ protected:
     return surrogate_normal - true_normal.dot_product(surrogate_normal) * true_normal;
   }
 
-  /**
-   * The isotropic linear elastic tangent component
-   * C(a,b,c,d) = lambda * delta(a,b) * delta(c,d)
-   *            + mu * (delta(a,c) * delta(b,d) + delta(a,d) * delta(b,c)).
-   *
-   * Returned directly so that no rank-four tensor is allocated in device code.
-   */
-  static KOKKOS_FUNCTION Real isotropicElasticComponent(const Real lambda,
-                                                        const Real mu,
-                                                        unsigned int a,
-                                                        unsigned int b,
-                                                        unsigned int c,
-                                                        unsigned int d)
-  {
-    const Real dab = (a == b) ? 1.0 : 0.0;
-    const Real dcd = (c == d) ? 1.0 : 0.0;
-    const Real dac = (a == c) ? 1.0 : 0.0;
-    const Real dbd = (b == d) ? 1.0 : 0.0;
-    const Real dad = (a == d) ? 1.0 : 0.0;
-    const Real dbc = (b == c) ? 1.0 : 0.0;
-    return lambda * dab * dcd + mu * (dac * dbd + dad * dbc);
-  }
-
   const unsigned int _component;
   const unsigned int _ndisp;
   const bool _shifted;
@@ -121,14 +98,12 @@ protected:
   Moose::Kokkos::Array<unsigned int> _disp_vars;
   const Moose::Kokkos::MaterialProperty<Real, 1> _traction_global;
   const Moose::Kokkos::MaterialProperty<Real, 2> _dtraction_djump_global;
-  /// Primary side Cauchy stress, dimensions {3, 3}
-  Moose::Kokkos::MaterialProperty<Real, 2> _sczm_bulk_stress;
-  /// Neighbor side Cauchy stress, dimensions {3, 3}
-  Moose::Kokkos::MaterialProperty<Real, 2> _sczm_bulk_stress_neighbor;
-  /// Primary side (lambda, mu), dimensions {2}
-  Moose::Kokkos::MaterialProperty<Real, 1> _sczm_bulk_lame;
-  /// Neighbor side (lambda, mu), dimensions {2}
-  Moose::Kokkos::MaterialProperty<Real, 1> _sczm_bulk_lame_neighbor;
+  /// Primary-side Cauchy stress and its strain tangent.
+  Moose::Kokkos::MaterialProperty<Real, 2> _stress;
+  Moose::Kokkos::MaterialProperty<Real, 4> _tangent;
+  /// Neighbor-side Cauchy stress and its strain tangent.
+  Moose::Kokkos::MaterialProperty<Real, 2> _stress_neighbor;
+  Moose::Kokkos::MaterialProperty<Real, 4> _tangent_neighbor;
 };
 
 template <typename Derived>
@@ -158,13 +133,14 @@ KokkosSCZMInterfaceKernelSmallStrain::computeQpResidual(const Moose::DGResidualT
 
   // Reproduces the directional branch of the host computeQpResidual. The correction is
   // deliberately not scaled by areaCorrection(); that factor applies only to the base cohesive
-  // traction term. Both stress properties are stored at the primary face quadrature point address.
+  // traction term.
   const auto normal_tangent = normalTangent(elem_datum, qp);
-  const auto stress = type == Moose::Element ? _sczm_bulk_stress(elem_datum, qp)
-                                             : _sczm_bulk_stress_neighbor(elem_datum, qp);
+  const auto stress = type == Moose::Element ? _stress(elem_datum, qp)
+                                             : _stress_neighbor(neighbor_datum, neighbor_qp);
 
   Real directional = 0.0;
-  for (const auto j : make_range(3))
+  const unsigned int dim = this->kokkosAssembly().getDimension();
+  for (unsigned int j = 0; j < dim; ++j)
     directional += stress(_component, j) * normal_tangent(j);
 
   return type == Moose::Element ? residual - test * directional : residual + test * directional;
@@ -294,48 +270,38 @@ KokkosSCZMInterfaceKernelSmallStrain::computeDirectionalCorrectionJacobian(
   // enters the base cohesive traction Jacobian through computeDResidualDDisplacement, so applying
   // shiftedPhi() here would double-count it.
   const auto normal_tangent = normalTangent(elem_datum, qp);
+  const unsigned int dim = this->kokkosAssembly().getDimension();
 
   Real test;
   Moose::Kokkos::Real3 grad_phi;
-  Real lambda;
-  Real mu;
+  Real origin_part = 0.0;
+  Real symmetric_part = 0.0;
   if (type == Moose::ElementElement)
   {
     test = _test(elem_datum, i, qp);
     grad_phi = _grad_phi(elem_datum, j, qp);
-    const auto lame = _sczm_bulk_lame(elem_datum, qp);
-    lambda = lame(0);
-    mu = lame(1);
+    const auto tangent = _tangent(elem_datum, qp);
+    for (unsigned int jj = 0; jj < dim; ++jj)
+      for (unsigned int ll = 0; ll < dim; ++ll)
+      {
+        origin_part += normal_tangent(jj) * tangent(_component, jj, component_j, ll) * grad_phi(ll);
+        symmetric_part +=
+            normal_tangent(jj) * tangent(_component, jj, ll, component_j) * grad_phi(ll);
+      }
   }
   else
   {
     test = _test_neighbor(neighbor_datum, i, neighbor_qp);
     grad_phi = _grad_phi_neighbor(neighbor_datum, j, neighbor_qp);
-    // The neighbor Lame pair is stored at the primary face quadrature point address alongside the
-    // primary pair, because the interface material is the single writer of an oriented face.
-    const auto lame = _sczm_bulk_lame_neighbor(elem_datum, qp);
-    lambda = lame(0);
-    mu = lame(1);
+    const auto tangent = _tangent_neighbor(neighbor_datum, neighbor_qp);
+    for (unsigned int jj = 0; jj < dim; ++jj)
+      for (unsigned int ll = 0; ll < dim; ++ll)
+      {
+        origin_part += normal_tangent(jj) * tangent(_component, jj, component_j, ll) * grad_phi(ll);
+        symmetric_part +=
+            normal_tangent(jj) * tangent(_component, jj, ll, component_j) * grad_phi(ll);
+      }
   }
-
-  // origin_part    = test * sum_j nt(j) * sum_l C(ivar,j,k,l) * gp(l)
-  // symmetric_part = test * sum_j nt(j) * sum_l C(ivar,j,l,k) * gp(l)
-  // The first tangent index is the residual displacement component, not the test node index; the
-  // test node enters only through the scalar test factor. Both contractions are evaluated even
-  // though isotropic major symmetry makes them equal, which preserves the host tangent-definition
-  // structure against a future non-isotropic extension.
-  Real origin_part = 0.0;
-  Real symmetric_part = 0.0;
-  for (const auto jj : make_range(3))
-    for (const auto ll : make_range(3))
-    {
-      origin_part += normal_tangent(jj) *
-                     isotropicElasticComponent(lambda, mu, _component, jj, component_j, ll) *
-                     grad_phi(ll);
-      symmetric_part += normal_tangent(jj) *
-                        isotropicElasticComponent(lambda, mu, _component, jj, ll, component_j) *
-                        grad_phi(ll);
-    }
 
   const auto correction_jacobian = 0.5 * (origin_part + symmetric_part) * test;
 
