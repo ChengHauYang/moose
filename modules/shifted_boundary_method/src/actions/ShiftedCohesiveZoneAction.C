@@ -25,18 +25,21 @@ bool
 getInheritedVolumetricLockingCorrection(ActionWarehouse & awh)
 {
   const auto quasi_static_physics = awh.getActions<QuasiStaticSolidMechanicsPhysicsBase>();
-  if (quasi_static_physics.empty())
-    return false;
-
   for (const auto * const physics : quasi_static_physics)
-  {
-    const bool has_locking_param = physics->isParamSetByUser("volumetric_locking_correction");
-    if (!has_locking_param)
-      continue;
-
-    if (physics->getParam<bool>("volumetric_locking_correction"))
+    if (physics->isParamSetByUser("volumetric_locking_correction") &&
+        physics->getParam<bool>("volumetric_locking_correction"))
       return true;
-  }
+
+  return false;
+}
+
+bool
+hasInheritedVolumetricLockingCorrectionSetting(ActionWarehouse & awh)
+{
+  const auto quasi_static_physics = awh.getActions<QuasiStaticSolidMechanicsPhysicsBase>();
+  for (const auto * const physics : quasi_static_physics)
+    if (physics->isParamSetByUser("volumetric_locking_correction"))
+      return true;
 
   return false;
 }
@@ -200,13 +203,6 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
   // Keep guards for Kokkos SCZM modes whose kinematics or tangent contract are not yet supported.
   if (_use_kokkos)
   {
-    if ((isParamSetByUser("volumetric_locking_correction") &&
-         getParam<bool>("volumetric_locking_correction")) ||
-        getInheritedVolumetricLockingCorrection(_awh))
-      paramError("volumetric_locking_correction",
-                 "The Kokkos SCZM directional correction does not yet support volumetric locking "
-                 "correction. Set this parameter to false and the parameter of any solid mechanics "
-                 "physics block that inherits it.");
     if (isParamSetByUser("tangent_definition") &&
         getParam<MooseEnum>("tangent_definition") == "pk1_wrt_deformation_gradient")
       paramError("tangent_definition",
@@ -526,7 +522,8 @@ ShiftedCohesiveZoneAction::customizeCZMInterfaceKernelParameters(InputParameters
     {
       params.set<bool>("volumetric_locking_correction") =
           getParam<bool>("volumetric_locking_correction");
-      if (getParam<bool>("volumetric_locking_correction") != inherited_correction)
+      if (hasInheritedVolumetricLockingCorrectionSetting(_awh) &&
+          getParam<bool>("volumetric_locking_correction") != inherited_correction)
         mooseWarning(
             "ShiftedCohesiveZoneAction: 'volumetric_locking_correction' value in "
             "ShiftedCohesiveZone block is different from that in the physics block(s). Make sure "

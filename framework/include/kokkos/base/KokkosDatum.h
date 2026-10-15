@@ -300,13 +300,16 @@ public:
    * libMesh::DofObject::invalid_id when it is not known
    * @param assembly The Kokkos assembly
    * @param systems The Kokkos systems
+   * @param compute_physical_map Whether to compute physical map data rather than read it from the
+   *                             assembly cache
    */
   KOKKOS_FUNCTION
   Datum(const ContiguousElementID elem,
         const unsigned int side,
         const ContiguousElementID neighbor,
         const Assembly & assembly,
-        const Array<FESystem> & systems);
+        const Array<FESystem> & systems,
+        const bool compute_physical_map = false);
 
   /**
    * Constructor for node data
@@ -464,6 +467,9 @@ protected:
    */
   const dof_id_type _elem_property_idx = libMesh::DofObject::invalid_id;
 
+  /// Whether physical transformation data are computed instead of read from the assembly cache.
+  const bool _compute_physical_map = false;
+
 private:
   /**
    * Compute and cache the physical transformation data
@@ -513,14 +519,16 @@ KOKKOS_FUNCTION inline Datum::Datum(const ContiguousElementID elem,
                                     const unsigned int side,
                                     const ContiguousElementID neighbor,
                                     const Assembly & assembly,
-                                    const Array<FESystem> & systems)
+                                    const Array<FESystem> & systems,
+                                    const bool compute_physical_map)
   : MeshDatum(elem, side, neighbor, assembly.kokkosMesh()),
     _assembly(assembly),
     _systems(systems),
     _n_qps(!isSide() ? assembly.getNumQps(_elem) : assembly.getNumFaceQps(_elem, side)),
     _qp_offset(!isSide() ? assembly.getQpOffset(_elem) : assembly.getQpFaceOffset(_elem, side)),
     _elem_property_idx(!isSide() ? _elem.id - _mesh.getStartingContiguousElementID(_elem.subdomain)
-                                 : assembly.getElemFacePropertyIndex(_elem, _side))
+                                 : assembly.getElemFacePropertyIndex(_elem, _side)),
+    _compute_physical_map(compute_physical_map)
 {
 }
 
@@ -606,14 +614,16 @@ Datum::reinitTransform(const unsigned int qp)
   if (_cached_qp == qp)
     return;
 
-  if (!isSide())
+  if (!isSide() && !_compute_physical_map)
   {
     _J = _assembly.getJacobian(_elem, qp);
     _JxW = _assembly.getJxW(_elem, qp);
     _xyz = _assembly.getQPoint(_elem, qp);
   }
-  else
+  else if (isSide())
     _assembly.computePhysicalMap(_elem, _side, qp, &_J, &_JxW, &_xyz, &_normal);
+  else
+    _assembly.computePhysicalMap(_elem, qp, &_J, &_JxW, &_xyz);
 
   _cached_qp = qp;
 }
@@ -713,6 +723,32 @@ public:
       _jvar(jvar),
       _ife(systems[ivar.sys(comp)].getFETypeID(_ivar)),
       _jfe(systems[ivar.sys(comp)].getFETypeID(_jvar))
+  {
+  }
+
+  /**
+   * Construct an assembly datum for a different side of an element while preserving this datum's
+   * row and trial variable metadata. This is used when an interface kernel needs volume trial
+   * shape functions for a face assembly column.
+   * @param compute_physical_map Whether to compute physical map data rather than read it from the
+   *                             assembly cache
+   */
+  KOKKOS_FUNCTION
+  AssemblyDatum(const AssemblyDatum & datum,
+                const ContiguousElementID elem,
+                const unsigned int side,
+                const ContiguousElementID neighbor,
+                const bool compute_physical_map = false)
+    : Datum(elem, side, neighbor, datum._assembly, datum._systems, compute_physical_map),
+      _tag(datum._tag),
+      _sys(datum._sys),
+      _ivar(datum._ivar),
+      _jvar(datum._jvar),
+      _ife(datum._ife),
+      _jfe(datum._jfe),
+      _n_idofs(datum._assembly.getNumDofs(_elem.type, _ife)),
+      _n_jdofs(datum._n_jdofs),
+      _do_derivatives(datum._do_derivatives)
   {
   }
 
