@@ -91,6 +91,12 @@ NEML2Action::validParams()
                         "If true, only create the interface material on the boundaries listed in "
                         "'interface' and skip "
                         "creating any volume material. Requires 'interface' to be set.");
+  params.addParam<MooseEnum>(
+      "interface_output_side",
+      MooseEnum("both primary neighbor", "both"),
+      "For Kokkos interface-only output, publish each NEML2 output to both sides, only the "
+      "primary side, or only the neighbor side. Use primary/neighbor with distinct executors to "
+      "avoid duplicate writers to a material-property storage.");
   // Block materials need no hint: the same material is reinit'd as BLOCK/FACE/NEIGHBOR data and the
   // gatherer reads the store for where it is. A true InterfaceMaterial instead lives in the
   // separate INTERFACE_MATERIAL_DATA store, which the native block/face/neighbor selection never
@@ -192,6 +198,23 @@ NEML2Action::NEML2Action(const InputParameters & params)
                                 batch_sizes,
                                 &mpi_comm,
                                 std::vector<std::string>(load_files.begin(), load_files.end()));
+#endif
+}
+
+bool
+NEML2Action::producesMaterialProperty(const MaterialPropertyName & property_name) const
+{
+#ifdef NEML2_ENABLED
+  if (getParam<bool>("auto_output") && contains(_model->output_names(), property_name))
+    return true;
+
+  const auto & derivatives = getParam<std::vector<std::vector<std::string>>>("derivatives");
+  return std::any_of(derivatives.begin(),
+                     derivatives.end(),
+                     [&](const auto & derivative)
+                     { return derivative.size() == 3 && derivative[2] == property_name; });
+#else
+  return false;
 #endif
 }
 
@@ -335,14 +358,15 @@ NEML2Action::act()
       for (const auto & [output_name, initial_value] : _initialize_output_values)
       {
         const auto output_shapes = shapeMap(_model->output_names(), _model->output_base_shapes());
-        const auto moose_tensor_type = shapeToMooseType(libmesh_map_find(output_shapes, output_name));
-        mooseAssert(!moose_tensor_type.empty(), "Initialized output has an unsupported tensor type");
-        state_initializers.push_back(
-            addGatherer(initial_value,
-                        lagName(output_name, 1),
-                        NEML2Utils::MOOSEIOType::MATERIAL,
-                        moose_tensor_type,
-                        "state_initializer"));
+        const auto moose_tensor_type =
+            shapeToMooseType(libmesh_map_find(output_shapes, output_name));
+        mooseAssert(!moose_tensor_type.empty(),
+                    "Initialized output has an unsupported tensor type");
+        state_initializers.push_back(addGatherer(initial_value,
+                                                 lagName(output_name, 1),
+                                                 NEML2Utils::MOOSEIOType::MATERIAL,
+                                                 moose_tensor_type,
+                                                 "state_initializer"));
       }
 
     // Additional NEML2Kernels that provide input data
@@ -392,13 +416,20 @@ NEML2Action::act()
 
   if (_current_task == "add_material")
   {
-    // Create and register a NEML2 output material property retriever; `extra` lets each caller
-    // add the bits that are unique to outputs vs. derivatives.
+    if (_outputs.empty() && _derivs.empty() && _param_derivs.empty())
+    {
+      setupOutputMappings(*_model);
+      setupDerivativeMappings(*_model);
+      setupParameterDerivativeMappings(*_model);
+    }
+
     const bool use_kokkos = getParam<MooseEnum>("output_backend") == "kokkos";
+    const auto interface_output_side = getParam<MooseEnum>("interface_output_side");
     auto addRetriever = [&](const std::string & moose_name,
-                             const std::string & neml2_var,
-                             const std::string & moose_tensor_type,
-                             auto && extra)
+                            const std::string & neml2_var,
+                            const std::string & moose_tensor_type,
+                            const std::string & input_derivative = "",
+                            const std::string & parameter_derivative = "")
     {
       if (use_kokkos && moose_tensor_type != "SymmetricRankTwoTensor" &&
           moose_tensor_type != "SymmetricRankFourTensor")
@@ -411,13 +442,12 @@ NEML2Action::act()
 
       auto obj_name = obscureObjectName(
           moose_name, use_kokkos ? "neml2_to_kokkos" : "neml2_to_moose", "", name());
-      auto obj_type = use_kokkos
-                          ? "NEML2ToKokkos" +
-                                std::string(moose_tensor_type == "SymmetricRankTwoTensor"
-                                                ? "RankTwo"
-                                                : "RankFour") +
-                                "MaterialProperty"
-                          : "NEML2ToMOOSE" + moose_tensor_type + "MaterialProperty";
+      auto obj_type =
+          use_kokkos ? "NEML2ToKokkos" + std::string(_interface_only ? "Side" : "") +
+                           std::string(moose_tensor_type == "SymmetricRankTwoTensor" ? "RankTwo"
+                                                                                     : "RankFour") +
+                           "MaterialProperty"
+                     : "NEML2ToMOOSE" + moose_tensor_type + "MaterialProperty";
       auto obj_params = _factory.getValidParams(obj_type);
       obj_params.set<UserObjectName>("neml2_executor") = _executor_name;
       obj_params.set<MaterialPropertyName>("to_moose") = moose_name;
@@ -430,10 +460,36 @@ NEML2Action::act()
         obj_params.set<std::vector<SubdomainName>>("block") = _block;
       if (_export_output_targets.count(moose_name))
         obj_params.set<std::vector<OutputName>>("outputs") = _export_output_targets[moose_name];
-      extra(obj_params);
+      if (input_derivative.empty() && parameter_derivative.empty() &&
+          _initialize_output_values.count(moose_name))
+        obj_params.set<MaterialPropertyName>("moose_material_property_init") =
+            _initialize_output_values[moose_name];
+      if (!input_derivative.empty())
+        obj_params.set<std::string>("neml2_input_derivative") = input_derivative;
+      if (!parameter_derivative.empty())
+        obj_params.set<std::string>("neml2_parameter_derivative") = parameter_derivative;
 #ifdef MOOSE_KOKKOS_ENABLED
       if (use_kokkos)
-        _problem->addKokkosMaterial(obj_type, obj_name, obj_params);
+      {
+        if (_interface_only)
+        {
+          if (interface_output_side != "neighbor")
+            _problem->addKokkosMaterial(obj_type, obj_name, obj_params);
+          if (interface_output_side == "primary")
+            return;
+          const auto neighbor_type =
+              "NEML2ToKokkosNeighbor" +
+              std::string(moose_tensor_type == "SymmetricRankTwoTensor" ? "RankTwo" : "RankFour") +
+              "MaterialProperty";
+          auto neighbor_params = _factory.getValidParams(neighbor_type);
+          neighbor_params.applyParameters(obj_params);
+          neighbor_params.set<Moose::MaterialDataType>("_material_data_type") =
+              Moose::NEIGHBOR_MATERIAL_DATA;
+          _problem->addKokkosMaterial(neighbor_type, obj_name + "_neighbor", neighbor_params);
+        }
+        else
+          _problem->addKokkosMaterial(obj_type, obj_name, obj_params);
+      }
       else
 #endif
         _problem->addMaterial(obj_type, obj_name, obj_params);
@@ -446,32 +502,16 @@ NEML2Action::act()
         paramError("moose_output_types",
                    "Unsupported type corresponding to the moose output ",
                    output.name);
-      addRetriever(output.name,
-                   output.name,
-                   output.moose_tensor_type,
-                   [&](InputParameters & p)
-                   {
-                     if (_initialize_output_values.count(output.name))
-                       p.set<MaterialPropertyName>("moose_material_property_init") =
-                           _initialize_output_values[output.name];
-                   });
+      addRetriever(output.name, output.name, output.moose_tensor_type);
     }
 
     // NEML2ToMOOSE derivative retrievers
     for (const auto & deriv : _derivs)
-      addRetriever(deriv.name,
-                   deriv.y,
-                   deriv.moose_tensor_type,
-                   [&](InputParameters & p)
-                   { p.set<std::string>("neml2_input_derivative") = deriv.x; });
+      addRetriever(deriv.name, deriv.y, deriv.moose_tensor_type, deriv.x);
 
     // NEML2ToMOOSE parameter-derivative retrievers
     for (const auto & deriv : _param_derivs)
-      addRetriever(deriv.name,
-                   deriv.y,
-                   deriv.moose_tensor_type,
-                   [&](InputParameters & p)
-                   { p.set<std::string>("neml2_parameter_derivative") = deriv.x; });
+      addRetriever(deriv.name, deriv.y, deriv.moose_tensor_type, "", deriv.x);
   }
 }
 

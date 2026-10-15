@@ -1,10 +1,11 @@
 //* This file is part of the MOOSE framework
-//* https://www.mooseframework.org
+//* https://mooseframework.inl.gov
 //*
 //* All rights reserved, see COPYRIGHT for full restrictions
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
 //*
 //* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #pragma once
 
@@ -27,6 +28,10 @@ struct InterfaceFaceRecord
   unsigned int side;
   ContiguousElementID neighbor;
   unsigned int neighbor_side;
+  dof_id_type elem_id;
+  dof_id_type neighbor_id;
+  /// Index into face-indexed host/device maps that share this cache's oriented-face ordering.
+  dof_id_type face_index;
   dof_id_type qp_map_offset;
   unsigned int n_qps;
 };

@@ -330,23 +330,16 @@ NEML2ModelExecutor::execute()
 
   fillInputs();
 
-  if (_t_step > 0)
   {
-    // Compute the (comparatively expensive) input Jacobian only when MOOSE is assembling the
-    // Jacobian -- currentlyComputingJacobian() is set for a Jacobian evaluation, the automatic-
-    // scaling Jacobian, and a combined residual-and-Jacobian evaluation. A pure residual evaluation
-    // (line search, damping, JFNK residuals) takes the value-only path. (We cannot key off the
-    // residual flag: the tagged residual path never sets currentlyComputingResidual().) Consumers
-    // reading the input derivative at EXEC_TIMESTEP_END therefore see the last Jacobian's value.
-    // Parameter derivatives are handled separately in solve()/extractOutputs(): because they are
-    // typically consumed as outputs (e.g. inverse-optimization sensitivities), they are evaluated
-    // on every pass so they are always current.
+    // Compute input derivatives whenever a consumer retrieves one. Kokkos residual-and-Jacobian
+    // assembly can execute this user object only on EXEC_LINEAR, before the Jacobian pass, so a
+    // derivative retriever must receive a current tangent from that evaluation. Models without a
+    // derivative consumer remain on the value-only path.
     //
     // Also recompute when the retained input derivative is no longer valid for the current batch
     // (e.g. after a mesh change resized the batch); otherwise a residual sweep would reuse a stale,
     // wrongly-sized derivative tensor and a retriever would index out of range.
-    const bool compute_derivative = _fe_problem.currentlyComputingJacobian() || !_derivative_valid;
-
+    const bool compute_derivative = !_retrieved_derivatives.empty() || !_derivative_valid;
     auto success = solve(compute_derivative);
     if (success)
     {

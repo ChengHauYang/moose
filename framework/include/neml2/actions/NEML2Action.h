@@ -35,6 +35,9 @@ public:
 
   virtual void addRelationshipManagers(Moose::RelationshipManagerType input_rm_type) override;
 
+  /// Whether this action automatically creates the specified material property.
+  bool producesMaterialProperty(const MaterialPropertyName & property_name) const;
+
 protected:
   const NEML2ActionCommon & getCommonAction() const;
 

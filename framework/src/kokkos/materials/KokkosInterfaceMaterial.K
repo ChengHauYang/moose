@@ -91,6 +91,8 @@ InterfaceMaterial::acquireInterfaceFaces()
   const auto * const cache = _fe_problem.getKokkosInterfaceFaceCache(boundaryIDs(), this);
   _interface_faces = cache->faces();
   _neighbor_qp_map = cache->neighborQpMap();
+  _init_dispatcher.reset();
+  _compute_dispatcher.reset();
 }
 
 } // namespace Moose::Kokkos

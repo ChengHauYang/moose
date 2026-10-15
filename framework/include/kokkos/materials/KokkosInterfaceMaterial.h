@@ -84,6 +84,8 @@ public:
    */
   void computeProperties() override;
 
+  bool isBoundaryMaterial() const override { return true; }
+
   /**
    * Default methods to prevent compile errors even when these methods were not defined in the
    * derived class
