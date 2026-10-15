@@ -30,11 +30,11 @@ public:
     auto traction = _interface_traction(elem_datum, qp);
     auto tangent = _dinterface_traction_djump(elem_datum, qp);
 
-    for (const auto i : make_range(_ndisp))
+    for (unsigned int i = 0; i < _ndisp; ++i)
     {
       const auto stiffness = i == 0 ? _normal_stiffness : _tangent_stiffness;
       traction(i) = stiffness * jump(i);
-      for (const auto j : make_range(_ndisp))
+      for (unsigned int j = 0; j < _ndisp; ++j)
         tangent(i, j) = i == j ? stiffness : 0;
     }
   }
