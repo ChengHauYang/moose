@@ -15,6 +15,12 @@
 
 /**
  * Copies a symmetric or full rank-two or rank-four NEML2 output into a Kokkos material property.
+ *
+ * The Kokkos material-property rank is part of the MaterialProperty<Real, rank> type, so it must
+ * be fixed at compile time for device code. The interface and neighbor template parameters likewise
+ * select the appropriate material dispatcher and property storage at compile time. The public
+ * aliases below provide factory-registerable names for these specializations without duplicating
+ * their implementation.
  */
 template <unsigned int rank, bool full = false, bool interface = false, bool neighbor = false>
 class NEML2ToKokkosMaterialProperty
