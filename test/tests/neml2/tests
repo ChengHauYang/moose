@@ -79,6 +79,34 @@
     capabilities = 'libtorch & neml2'
     valgrind = none
   []
+  [kokkos_interface_retriever]
+    requirement = 'The framework shall retrieve symmetric NEML2 output and input derivatives into Kokkos interface material properties on the requested primary and neighbor output sides.'
+    design = 'NEML2Action.md'
+    issues = '#26450'
+    [both]
+      detail = 'write and retrieve both sides while converting Mandel stress and tangent components.'
+      type = RunApp
+      input = 'kokkos_interface_retriever.i'
+      capabilities = 'kokkos & libtorch & neml2'
+      valgrind = none
+    []
+    [primary]
+      detail = 'write and retrieve the primary side only.'
+      type = RunApp
+      input = 'kokkos_interface_retriever.i'
+      cli_args = 'NEML2/elasticity/interface_output_side=primary Materials/neighbor_oracle/type=KokkosNEML2PrimaryInterfaceRetrieverOracle Materials/neighbor_oracle/expected_normal_stress=2 Materials/neighbor_oracle/expected_transverse_stress=4 Materials/neighbor_oracle/expected_shear_stress=6'
+      capabilities = 'kokkos & libtorch & neml2'
+      valgrind = none
+    []
+    [neighbor]
+      detail = 'write and retrieve the neighbor side only.'
+      type = RunApp
+      input = 'kokkos_interface_retriever.i'
+      cli_args = 'NEML2/elasticity/interface_output_side=neighbor Materials/primary_oracle/type=KokkosNEML2NeighborInterfaceRetrieverOracle Materials/primary_oracle/expected_normal_stress=8 Materials/primary_oracle/expected_transverse_stress=10 Materials/primary_oracle/expected_shear_stress=12'
+      capabilities = 'kokkos & libtorch & neml2'
+      valgrind = none
+    []
+  []
   [no_neml2]
     requirement = 'The framework shall throw an error upon instantiation of NEML2 interface objects if NEML2 is not available.'
     type = RunException
