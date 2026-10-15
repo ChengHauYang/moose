@@ -16,8 +16,6 @@
   [break]
     type = BreakMeshByBlockGenerator
     input = right_block
-    split_interface = true
-    add_interface_on_two_sides = true
   []
 []
 
