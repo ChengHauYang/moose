@@ -147,7 +147,6 @@ Assembly::initQuadrature()
     }
   }
 
-  const auto num_elems = _mesh.nActiveLocalElem();
   const auto num_elems_with_ghosts =
       kokkosMesh().getNumLocalAndPossiblyOneNeighborLayerGhostElements();
 
@@ -156,11 +155,13 @@ Assembly::initQuadrature()
   _n_subdomain_qps = 0;
   _n_subdomain_qps_face = 0;
 
-  _n_qps.create(num_elems);
+  _n_qps.create(num_elems_with_ghosts);
+  _n_qps = 0;
   _n_qps_face.create(_mesh.getMaxSidesPerElem(), num_elems_with_ghosts);
   _n_qps_face = 0;
 
-  _qp_offset.create(num_elems);
+  _qp_offset.create(num_elems_with_ghosts);
+  _qp_offset = libMesh::DofObject::invalid_id;
   _qp_offset_face.create(_mesh.getMaxSidesPerElem(), num_elems_with_ghosts);
   _qp_offset_face = libMesh::DofObject::invalid_id;
 
@@ -188,6 +189,10 @@ Assembly::initQuadrature()
   {
     const auto sid = kokkosMesh().getContiguousSubdomainID(elem->subdomain_id());
     const auto elem_type_id = kokkosMesh().getElementTypeID(elem);
+
+    // Ghost volume geometry is computed directly in a device kernel, but its quadrature count is
+    // needed to average trial gradients for interface Jacobian columns.
+    _n_qps[eid] = _q_points(sid, elem_type_id).size();
 
     for (const auto side : elem->side_index_range())
       _n_qps_face(side, eid) = _q_points_face(sid, elem_type_id)[side].size();

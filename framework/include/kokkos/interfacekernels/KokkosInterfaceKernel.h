@@ -1,10 +1,11 @@
 //* This file is part of the MOOSE framework
-//* https://www.mooseframework.org
+//* https://mooseframework.inl.gov
 //*
 //* All rights reserved, see COPYRIGHT for full restrictions
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
 //*
 //* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #pragma once
 
@@ -63,6 +64,48 @@ public:
   {
     ::Kokkos::abort("Derived Kokkos interface kernels must define computeQpOffDiagJacobian().");
     return 0;
+  }
+
+  /**
+   * Optional per-trial-column preparation hook. The default preserves the existing QP-only
+   * interface assembly contract. A derived kernel can return element-local trial-gradient data
+   * which is then passed to every face-QP Jacobian evaluation for the column.
+   */
+  template <typename Derived>
+  KOKKOS_FUNCTION Real3 prepareJacobianColumn(const Moose::DGJacobianType,
+                                              const unsigned int,
+                                              AssemblyDatum &) const
+  {
+    return Real3(0);
+  }
+
+  template <typename Derived>
+  KOKKOS_FUNCTION Real computeQpJacobianWithColumn(const Moose::DGJacobianType type,
+                                                   const unsigned int i,
+                                                   const unsigned int j,
+                                                   const unsigned int qp,
+                                                   const unsigned int neighbor_qp,
+                                                   AssemblyDatum & elem_datum,
+                                                   AssemblyDatum & neighbor_datum,
+                                                   const Real3 &) const
+  {
+    return static_cast<const Derived &>(*this).template computeQpJacobian<Derived>(
+        type, i, j, qp, neighbor_qp, elem_datum, neighbor_datum);
+  }
+
+  template <typename Derived>
+  KOKKOS_FUNCTION Real computeQpOffDiagJacobianWithColumn(const Moose::DGJacobianType type,
+                                                          const unsigned int i,
+                                                          const unsigned int j,
+                                                          const unsigned int jvar,
+                                                          const unsigned int qp,
+                                                          const unsigned int neighbor_qp,
+                                                          AssemblyDatum & elem_datum,
+                                                          AssemblyDatum & neighbor_datum,
+                                                          const Real3 &) const
+  {
+    return static_cast<const Derived &>(*this).template computeQpOffDiagJacobian<Derived>(
+        type, i, j, jvar, qp, neighbor_qp, elem_datum, neighbor_datum);
   }
 
   template <typename Derived>
@@ -292,6 +335,14 @@ InterfaceKernel::computeJacobianInternal(const Derived & kernel,
   for (unsigned int j = row_datum.local_thread_id(); j < column_datum.n_jdofs();
        j += row_datum.num_local_threads())
   {
+    const auto counterpart = column_is_neighbor ? face.elem : face.neighbor;
+    // The column element can be a one-layer ghost on distributed meshes. Its volume geometry is
+    // not guaranteed to be present in the assembly cache, so construct it directly from the mesh.
+    AssemblyDatum volume_column_datum(
+        column_datum, col_elem, libMesh::invalid_uint, counterpart, true);
+    const auto column_data =
+        kernel.template prepareJacobianColumn<Derived>(type, j, volume_column_datum);
+
     unsigned int num_batches = row_datum.n_idofs() / MAX_CACHED_DOF;
     if (row_datum.n_idofs() % MAX_CACHED_DOF)
       ++num_batches;
@@ -308,8 +359,9 @@ InterfaceKernel::computeJacobianInternal(const Derived & kernel,
         const auto neighbor_qp = kokkosInterfaceNeighborQp(face, qp);
         for (unsigned int i = ib; i < ie; ++i)
           local_ke[i - ib] +=
-              elem_datum.JxW(qp) * kernel.template computeQpJacobian<Derived>(
-                                       type, i, j, qp, neighbor_qp, elem_datum, neighbor_datum);
+              elem_datum.JxW(qp) *
+              kernel.template computeQpJacobianWithColumn<Derived>(
+                  type, i, j, qp, neighbor_qp, elem_datum, neighbor_datum, column_data);
       }
 
       for (unsigned int i = ib; i < ie; ++i)
@@ -339,6 +391,14 @@ InterfaceKernel::computeOffDiagJacobianInternal(const Derived & kernel,
   for (unsigned int j = row_datum.local_thread_id(); j < column_datum.n_jdofs();
        j += row_datum.num_local_threads())
   {
+    const auto counterpart = column_is_neighbor ? face.elem : face.neighbor;
+    // The column element can be a one-layer ghost on distributed meshes. Its volume geometry is
+    // not guaranteed to be present in the assembly cache, so construct it directly from the mesh.
+    AssemblyDatum volume_column_datum(
+        column_datum, col_elem, libMesh::invalid_uint, counterpart, true);
+    const auto column_data =
+        kernel.template prepareJacobianColumn<Derived>(type, j, volume_column_datum);
+
     unsigned int num_batches = row_datum.n_idofs() / MAX_CACHED_DOF;
     if (row_datum.n_idofs() % MAX_CACHED_DOF)
       ++num_batches;
@@ -356,8 +416,15 @@ InterfaceKernel::computeOffDiagJacobianInternal(const Derived & kernel,
         for (unsigned int i = ib; i < ie; ++i)
           local_ke[i - ib] +=
               elem_datum.JxW(qp) *
-              kernel.template computeQpOffDiagJacobian<Derived>(
-                  type, i, j, row_datum.jvar(), qp, neighbor_qp, elem_datum, neighbor_datum);
+              kernel.template computeQpOffDiagJacobianWithColumn<Derived>(type,
+                                                                          i,
+                                                                          j,
+                                                                          row_datum.jvar(),
+                                                                          qp,
+                                                                          neighbor_qp,
+                                                                          elem_datum,
+                                                                          neighbor_datum,
+                                                                          column_data);
       }
 
       for (unsigned int i = ib; i < ie; ++i)

@@ -48,6 +48,32 @@ public:
                                                 AssemblyDatum & elem_datum,
                                                 AssemblyDatum & neighbor_datum) const;
 
+  template <typename Derived>
+  KOKKOS_FUNCTION Moose::Kokkos::Real3 prepareJacobianColumn(
+      Moose::DGJacobianType type, unsigned int j, AssemblyDatum & volume_column_datum) const;
+
+  template <typename Derived>
+  KOKKOS_FUNCTION Real computeQpJacobianWithColumn(Moose::DGJacobianType type,
+                                                   unsigned int i,
+                                                   unsigned int j,
+                                                   unsigned int qp,
+                                                   unsigned int neighbor_qp,
+                                                   AssemblyDatum & elem_datum,
+                                                   AssemblyDatum & neighbor_datum,
+                                                   const Moose::Kokkos::Real3 & avg_grad_phi) const;
+
+  template <typename Derived>
+  KOKKOS_FUNCTION Real
+  computeQpOffDiagJacobianWithColumn(Moose::DGJacobianType type,
+                                     unsigned int i,
+                                     unsigned int j,
+                                     unsigned int jvar,
+                                     unsigned int qp,
+                                     unsigned int neighbor_qp,
+                                     AssemblyDatum & elem_datum,
+                                     AssemblyDatum & neighbor_datum,
+                                     const Moose::Kokkos::Real3 & avg_grad_phi) const;
+
 protected:
   KOKKOS_FUNCTION Real computeDResidualDDisplacement(Moose::DGJacobianType type,
                                                      unsigned int i,
@@ -71,14 +97,16 @@ protected:
    * @param j The trial node index selecting the natural trial gradient
    * @param component_j The trial displacement component, which is the fourth tangent index
    */
-  KOKKOS_FUNCTION Real computeDirectionalCorrectionJacobian(Moose::DGJacobianType type,
-                                                            unsigned int i,
-                                                            unsigned int j,
-                                                            unsigned int component_j,
-                                                            unsigned int qp,
-                                                            unsigned int neighbor_qp,
-                                                            AssemblyDatum & elem_datum,
-                                                            AssemblyDatum & neighbor_datum) const;
+  KOKKOS_FUNCTION Real
+  computeDirectionalCorrectionJacobian(Moose::DGJacobianType type,
+                                       unsigned int i,
+                                       unsigned int j,
+                                       unsigned int component_j,
+                                       unsigned int qp,
+                                       unsigned int neighbor_qp,
+                                       AssemblyDatum & elem_datum,
+                                       AssemblyDatum & neighbor_datum,
+                                       const Moose::Kokkos::Real3 & avg_grad_phi) const;
 
   /**
    * The component of the true normal lying in the surrogate face plane:
@@ -95,6 +123,7 @@ protected:
   const unsigned int _ndisp;
   const bool _shifted;
   const bool _directional_correction;
+  const bool _volumetric_locking_correction;
   Moose::Kokkos::Array<unsigned int> _disp_vars;
   const Moose::Kokkos::MaterialProperty<Real, 1> _traction_global;
   const Moose::Kokkos::MaterialProperty<Real, 2> _dtraction_djump_global;
@@ -159,9 +188,64 @@ KokkosSCZMInterfaceKernelSmallStrain::computeQpJacobian(const Moose::DGJacobianT
   auto jacobian = computeDResidualDDisplacement(
       type, i, j, _component, qp, neighbor_qp, elem_datum, neighbor_datum);
 
+  return jacobian;
+}
+
+template <typename Derived>
+KOKKOS_FUNCTION Moose::Kokkos::Real3
+KokkosSCZMInterfaceKernelSmallStrain::prepareJacobianColumn(
+    const Moose::DGJacobianType type,
+    const unsigned int j,
+    AssemblyDatum & volume_column_datum) const
+{
+  if (!_shifted || !_directional_correction || !_volumetric_locking_correction ||
+      type == Moose::ElementNeighbor || type == Moose::NeighborElement)
+    return Moose::Kokkos::Real3(0);
+
+  bool is_displacement = false;
+  for (unsigned int component = 0; component < _ndisp; ++component)
+    is_displacement = is_displacement || _disp_vars[component] == volume_column_datum.jvar();
+  if (!is_displacement)
+    return Moose::Kokkos::Real3(0);
+
+  // Solution-dependent F-bar averages can be evaluated once per element and reused.
+  // avg_grad_phi[j] depends on the Jacobian trial column, so reduce it in the element Jacobian
+  // loop. This element-local device reduction requires no host-device communication.
+  Moose::Kokkos::Real3 avg_grad_phi(0);
+  Real volume = 0.0;
+  for (unsigned int volume_qp = 0; volume_qp < volume_column_datum.n_qps(); ++volume_qp)
+  {
+    const Real weight = volume_column_datum.JxW(volume_qp);
+    volume += weight;
+    avg_grad_phi += weight * (type == Moose::NeighborNeighbor
+                                  ? _grad_phi_neighbor(volume_column_datum, j, volume_qp)
+                                  : _grad_phi(volume_column_datum, j, volume_qp));
+  }
+
+  const Real inverse_volume = 1.0 / volume;
+  for (unsigned int component = 0; component < 3; ++component)
+    avg_grad_phi(component) *= inverse_volume;
+  return avg_grad_phi;
+}
+
+template <typename Derived>
+KOKKOS_FUNCTION Real
+KokkosSCZMInterfaceKernelSmallStrain::computeQpJacobianWithColumn(
+    const Moose::DGJacobianType type,
+    const unsigned int i,
+    const unsigned int j,
+    const unsigned int qp,
+    const unsigned int neighbor_qp,
+    AssemblyDatum & elem_datum,
+    AssemblyDatum & neighbor_datum,
+    const Moose::Kokkos::Real3 & avg_grad_phi) const
+{
+  auto jacobian = computeDResidualDDisplacement(
+      type, i, j, _component, qp, neighbor_qp, elem_datum, neighbor_datum);
+
   if (_shifted && _directional_correction)
     jacobian += computeDirectionalCorrectionJacobian(
-        type, i, j, _component, qp, neighbor_qp, elem_datum, neighbor_datum);
+        type, i, j, _component, qp, neighbor_qp, elem_datum, neighbor_datum, avg_grad_phi);
 
   return jacobian;
 }
@@ -184,9 +268,34 @@ KokkosSCZMInterfaceKernelSmallStrain::computeQpOffDiagJacobian(const Moose::DGJa
       auto jacobian = computeDResidualDDisplacement(
           type, i, j, component_j, qp, neighbor_qp, elem_datum, neighbor_datum);
 
+      return jacobian;
+    }
+
+  return 0;
+}
+
+template <typename Derived>
+KOKKOS_FUNCTION Real
+KokkosSCZMInterfaceKernelSmallStrain::computeQpOffDiagJacobianWithColumn(
+    const Moose::DGJacobianType type,
+    const unsigned int i,
+    const unsigned int j,
+    const unsigned int jvar,
+    const unsigned int qp,
+    const unsigned int neighbor_qp,
+    AssemblyDatum & elem_datum,
+    AssemblyDatum & neighbor_datum,
+    const Moose::Kokkos::Real3 & avg_grad_phi) const
+{
+  for (unsigned int component_j = 0; component_j < _ndisp; ++component_j)
+    if (_disp_vars[component_j] == jvar)
+    {
+      auto jacobian = computeDResidualDDisplacement(
+          type, i, j, component_j, qp, neighbor_qp, elem_datum, neighbor_datum);
+
       if (_shifted && _directional_correction)
         jacobian += computeDirectionalCorrectionJacobian(
-            type, i, j, component_j, qp, neighbor_qp, elem_datum, neighbor_datum);
+            type, i, j, component_j, qp, neighbor_qp, elem_datum, neighbor_datum, avg_grad_phi);
 
       return jacobian;
     }
@@ -260,7 +369,8 @@ KokkosSCZMInterfaceKernelSmallStrain::computeDirectionalCorrectionJacobian(
     const unsigned int qp,
     const unsigned int neighbor_qp,
     AssemblyDatum & elem_datum,
-    AssemblyDatum & neighbor_datum) const
+    AssemblyDatum & neighbor_datum,
+    const Moose::Kokkos::Real3 & avg_grad_phi) const
 {
   // The host applies no correction to the cross blocks.
   if (type == Moose::ElementNeighbor || type == Moose::NeighborElement)
@@ -303,7 +413,28 @@ KokkosSCZMInterfaceKernelSmallStrain::computeDirectionalCorrectionJacobian(
       }
   }
 
-  const auto correction_jacobian = 0.5 * (origin_part + symmetric_part) * test;
+  Real correction_jacobian = 0.5 * (origin_part + symmetric_part) * test;
+
+  if (_volumetric_locking_correction)
+  {
+    const Real volumetric_increment = (avg_grad_phi(component_j) - grad_phi(component_j)) / 3.0;
+    Real tangent_normal_trace = 0.0;
+    if (type == Moose::ElementElement)
+    {
+      const auto tangent = _tangent(elem_datum, qp);
+      for (unsigned int m = 0; m < dim; ++m)
+        for (unsigned int jj = 0; jj < dim; ++jj)
+          tangent_normal_trace += tangent(_component, jj, m, m) * normal_tangent(jj);
+    }
+    else
+    {
+      const auto tangent = _tangent_neighbor(neighbor_datum, neighbor_qp);
+      for (unsigned int m = 0; m < dim; ++m)
+        for (unsigned int jj = 0; jj < dim; ++jj)
+          tangent_normal_trace += tangent(_component, jj, m, m) * normal_tangent(jj);
+    }
+    correction_jacobian += tangent_normal_trace * test * volumetric_increment;
+  }
 
   return type == Moose::ElementElement ? -correction_jacobian : correction_jacobian;
 }
