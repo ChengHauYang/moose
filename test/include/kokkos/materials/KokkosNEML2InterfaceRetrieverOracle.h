@@ -31,8 +31,8 @@ public:
   KOKKOS_FUNCTION void computeQpProperties(const Moose::Kokkos::InterfaceFaceRecord &,
                                            Datum & elem_datum,
                                            Datum & neighbor_datum,
-                                           unsigned int qp,
-                                           unsigned int neighbor_qp) const;
+                                           const unsigned int qp,
+                                           const unsigned int neighbor_qp) const;
 
 private:
   const Real _expected_normal_stress;
@@ -60,6 +60,8 @@ KokkosNEML2InterfaceRetrieverOracle<neighbor>::computeQpProperties(
   const auto storage_qp = neighbor ? neighbor_qp : qp;
   const auto stress = _stress(datum, storage_qp);
   const auto tangent = _tangent(datum, storage_qp);
+  // The controlled linear-elastic values are exactly representable, so 1e-24 permits a 1e-12
+  // component error while detecting any incorrect side, QP, or Mandel-component mapping.
   constexpr Real tolerance_squared = 1e-24;
   const auto normal_error = stress(0, 0) - _expected_normal_stress;
   const auto transverse_error = stress(1, 1) - _expected_transverse_stress;

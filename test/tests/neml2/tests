@@ -81,8 +81,8 @@
   []
   [kokkos_interface_retriever]
     requirement = 'The framework shall retrieve symmetric NEML2 output and input derivatives into Kokkos interface material properties on the requested primary and neighbor output sides.'
-    design = 'NEML2Action.md'
-    issues = '#26450'
+    design = 'NEML2Action.md NEML2ToKokkosMaterialProperty.md'
+    issues = '#31596'
     [both]
       detail = 'write and retrieve both sides while converting Mandel stress and tangent components.'
       type = RunApp
