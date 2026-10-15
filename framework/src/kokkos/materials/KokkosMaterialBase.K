@@ -1,5 +1,5 @@
 //* This file is part of the MOOSE framework
-//* https://www.mooseframework.org
+//* https://mooseframework.inl.gov
 //*
 //* All rights reserved, see COPYRIGHT for full restrictions
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
@@ -118,11 +118,27 @@ MaterialBase::initializeMaterialRestrictable()
       for (auto elem_id : _mesh.getBoundaryActiveSemiLocalElemIds(boundary))
       {
         const auto elem = _mesh.elemPtr(elem_id);
+        const auto side = _mesh.sideWithBoundaryID(elem, boundary);
 
-        if (elem->processor_id() == processor_id() &&
-            restricted_blocks.find(elem->subdomain_id()) != restricted_blocks.end())
-          element_side_ids.insert({_mesh.getKokkosMesh()->getContiguousElementID(elem),
-                                   _mesh.sideWithBoundaryID(elem, boundary)});
+        if (elem->processor_id() != processor_id())
+          continue;
+
+        if (materialDataType() == Moose::NEIGHBOR_MATERIAL_DATA)
+        {
+          const auto neighbor = elem->neighbor_ptr(side);
+          ContiguousElementID neighbor_eid = libMesh::DofObject::invalid_id;
+          if (neighbor && neighbor != libMesh::remote_elem)
+            neighbor_eid = _mesh.getKokkosMesh()->getContiguousElementID(neighbor);
+          if (neighbor_eid != libMesh::DofObject::invalid_id)
+          {
+            const bool neighbor_in_blocks =
+                restricted_blocks.find(neighbor->subdomain_id()) != restricted_blocks.end();
+            if (neighbor_in_blocks)
+              element_side_ids.insert({neighbor_eid, neighbor->which_neighbor_am_i(elem)});
+          }
+        }
+        else if (restricted_blocks.find(elem->subdomain_id()) != restricted_blocks.end())
+          element_side_ids.insert({_mesh.getKokkosMesh()->getContiguousElementID(elem), side});
       }
 
     _element_side_ids = element_side_ids;

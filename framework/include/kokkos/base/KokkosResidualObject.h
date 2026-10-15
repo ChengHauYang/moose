@@ -146,6 +146,19 @@ protected:
                                                          const unsigned int i,
                                                          const unsigned int comp = 0) const;
   /**
+   * Accumulate a local interface residual contribution to tagged vectors
+   * @param local_re The local interface residual contribution
+   * @param row_elem The contiguous element ID containing the row DOF
+   * @param i The test function index
+   * @param row_var The variable containing the row DOF
+   * @param comp The variable component
+   */
+  KOKKOS_FUNCTION void accumulateTaggedInterfaceResidual(const Real local_re,
+                                                         const ContiguousElementID row_elem,
+                                                         const unsigned int i,
+                                                         const Variable & row_var,
+                                                         const unsigned int comp = 0) const;
+  /**
    * Accumulate or set local nodal residual contribution to tagged vectors
    * @param add Whether to add or set the local residual
    * @param local_re The local nodal residual contribution
@@ -180,6 +193,25 @@ protected:
                                                        const ContiguousElementID elem,
                                                        const unsigned int i,
                                                        const unsigned int j,
+                                                       const unsigned int jvar,
+                                                       const unsigned int comp = 0) const;
+  /**
+   * Accumulate a local interface Jacobian contribution to tagged matrices
+   * @param local_ke The local interface Jacobian contribution
+   * @param row_elem The contiguous element ID containing the row DOF
+   * @param col_elem The contiguous element ID containing the column DOF
+   * @param i The test function DOF index
+   * @param j The trial function DOF index
+   * @param row_var The variable containing the row DOF
+   * @param jvar The variable number for the column
+   * @param comp The row variable component
+   */
+  KOKKOS_FUNCTION void accumulateTaggedInterfaceMatrix(const Real local_ke,
+                                                       const ContiguousElementID row_elem,
+                                                       const ContiguousElementID col_elem,
+                                                       const unsigned int i,
+                                                       const unsigned int j,
+                                                       const Variable & row_var,
                                                        const unsigned int jvar,
                                                        const unsigned int comp = 0) const;
   /**
@@ -284,6 +316,30 @@ ResidualObject::accumulateTaggedElementalResidual(const Real local_re,
 }
 
 KOKKOS_FUNCTION inline void
+ResidualObject::accumulateTaggedInterfaceResidual(const Real local_re,
+                                                  const ContiguousElementID row_elem,
+                                                  const unsigned int i,
+                                                  const Variable & row_var,
+                                                  const unsigned int comp) const
+{
+  if (!local_re)
+    return;
+
+  auto & sys = kokkosSystem(row_var.sys(comp));
+  const auto var = row_var.var(comp);
+  const auto dof = sys.getElemLocalDofIndex(row_elem, i, var);
+  const auto scaled_local_re = local_re * sys.getVariableScalingFactor(var);
+
+  for (unsigned int t = 0; t < _vector_tags.size(); ++t)
+  {
+    const auto tag = _vector_tags[t];
+
+    if (sys.isResidualTagActive(tag))
+      ::Kokkos::atomic_add(&sys.getVectorDofValue(dof, tag), scaled_local_re);
+  }
+}
+
+KOKKOS_FUNCTION inline void
 ResidualObject::accumulateTaggedNodalResidual(const bool add,
                                               const Real local_re,
                                               const ContiguousNodeID node,
@@ -343,19 +399,32 @@ ResidualObject::accumulateTaggedElementalMatrix(const Real local_ke,
                                                 const unsigned int jvar,
                                                 const unsigned int comp) const
 {
+  accumulateTaggedInterfaceMatrix(local_ke, elem, elem, i, j, _kokkos_var, jvar, comp);
+}
+
+KOKKOS_FUNCTION inline void
+ResidualObject::accumulateTaggedInterfaceMatrix(const Real local_ke,
+                                                const ContiguousElementID row_elem,
+                                                const ContiguousElementID col_elem,
+                                                const unsigned int i,
+                                                const unsigned int j,
+                                                const Variable & row_var,
+                                                const unsigned int jvar,
+                                                const unsigned int comp) const
+{
   if (!local_ke)
     return;
 
-  auto & sys = kokkosSystem(_kokkos_var.sys(comp));
-  const auto ivar = _kokkos_var.var(comp);
-  auto row = sys.getElemLocalDofIndex(elem, i, ivar);
-  auto col = sys.isScalarVariable(jvar) ? sys.getScalarGlobalDofIndex(j, jvar)
-                                        : sys.getElemGlobalDofIndex(elem, j, jvar);
+  auto & sys = kokkosSystem(row_var.sys(comp));
+  const auto ivar = row_var.var(comp);
+  const auto row = sys.getElemLocalDofIndex(row_elem, i, ivar);
+  const auto col = sys.isScalarVariable(jvar) ? sys.getScalarGlobalDofIndex(j, jvar)
+                                              : sys.getElemGlobalDofIndex(col_elem, j, jvar);
   const auto scaled_local_ke = local_ke * sys.getVariableScalingFactor(ivar);
 
   for (unsigned int t = 0; t < _matrix_tags.size(); ++t)
   {
-    auto tag = _matrix_tags[t];
+    const auto tag = _matrix_tags[t];
 
     if (sys.isMatrixTagActive(tag) && !sys.hasNodalBCMatrixTag(row, tag))
       ::Kokkos::atomic_add(&sys.getMatrixValue(row, col, tag), scaled_local_ke);
