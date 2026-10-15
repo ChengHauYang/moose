@@ -60,15 +60,6 @@ theta_rad = '${fparse theta * pi / 180}'
     normal_stiffness = 10
     tangent_stiffness = 8
   []
-  # Bulk response consumed by the Kokkos directional correction. These constants match the host
-  # ComputeIsotropicElasticityTensor of the paired host input.
-  [bulk_stress]
-    type = KokkosSCZMComputeLinearElasticBulkStress
-    boundary = 'Block0_Block1'
-    displacements = 'ux uy'
-    youngs_modulus = 1
-    poissons_ratio = 0.3
-  []
 []
 
 [UserObjects]

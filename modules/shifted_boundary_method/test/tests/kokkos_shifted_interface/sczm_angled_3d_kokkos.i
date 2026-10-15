@@ -56,24 +56,41 @@ theta_rad = '${fparse theta * pi / 180}'
     sbm_distance_uo = distance
     use_kokkos = true
     directional_correction = true
+    stress = neml2_stress
+    tangent = tangent
   []
 []
 
 [Materials]
+  [strain]
+    type = ComputeSmallStrain
+    displacements = 'ux uy uz'
+  []
+  [neml2_strain]
+    type = RankTwoTensorToSymmetricRankTwoTensor
+    from = mechanical_strain
+    to = neml2_strain
+  []
   [local_traction]
     type = KokkosPureElasticTractionSeparation
     boundary = 'Block0_Block1'
     normal_stiffness = 10
     tangent_stiffness = 8
   []
-  # Bulk response consumed by the Kokkos directional correction. These constants match the host
-  # ComputeIsotropicElasticityTensor of the paired host input.
-  [bulk_stress]
-    type = KokkosSCZMComputeLinearElasticBulkStress
-    boundary = 'Block0_Block1'
-    displacements = 'ux uy uz'
-    youngs_modulus = 1
-    poissons_ratio = 0.3
+[]
+
+[NEML2]
+  eager = true
+  input = sczm_neml2_elasticity.i
+  device = cpu
+  input_types = MATERIAL
+  inputs = neml2_strain
+  derivatives = 'neml2_stress neml2_strain tangent'
+  [elasticity]
+    model = model
+    output_backend = kokkos
+    interface = Block0_Block1
+    interface_only = true
   []
 []
 

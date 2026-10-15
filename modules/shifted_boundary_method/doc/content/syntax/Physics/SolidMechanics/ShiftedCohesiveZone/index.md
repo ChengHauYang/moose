@@ -124,22 +124,24 @@ Kokkos SCZM supports only non-AD small-strain evaluation with shifted evaluation
 ### Directional correction
 
 `directional_correction = true` is supported on the Kokkos path and reproduces the host
-residual and Jacobian, including the zero contribution to the two cross blocks. The action
-does not create the bulk material for you. Declare
-[`KokkosSCZMComputeLinearElasticBulkStress`](KokkosSCZMComputeLinearElasticBulkStress.md)
-on the SCZM boundary with the same `displacements` as this block; the action validates that
-declaration and reports an error if no compatible one exists. Use `neighbor_youngs_modulus`
-and `neighbor_poissons_ratio` on that material for a heterogeneous interface.
+residual and Jacobian, including the zero contribution to the two cross blocks. As on the
+host path, the correction reads the `stress` and `tangent` material properties (see
+"Non-AD tangent definition" above); the action no longer creates or requires a dedicated
+bulk-stress material.
 
-Because the Kokkos bulk material supplies the compact strain-based isotropic response, the
-following are rejected when `use_kokkos = true` rather than silently ignored:
+When a `[NEML2]` block produces `stress` or `tangent` for a Kokkos directional correction, it
+must set `output_backend = kokkos` and an `interface` that overlaps the SCZM `boundary`; the
+action validates this and reports an error on the offending NEML2 block parameter otherwise.
+For a heterogeneous interface, use two `[NEML2]` sub-blocks producing the same property name
+with `interface_output_side = primary` and `interface_output_side = neighbor` respectively.
+
+The following are rejected when `use_kokkos = true` rather than silently ignored:
 
 - `volumetric_locking_correction = true`, either here or inherited from a solid mechanics
   physics block;
-- a user-set `stress` or `tangent` property;
 - `tangent_definition = pk1_wrt_deformation_gradient`;
-- RZ and RSPHERICAL coordinate systems, which the bulk material rejects because `sym(grad_u)`
-  omits the required hoop strain terms.
+- any non-Cartesian coordinate system, whose out-of-plane kinematics are not yet verified for
+  NEML2.
 
 `no_shifted = true` is supported on the Kokkos path as a complete switch. The base cohesive
 traction drops its area correction, its Jacobian uses the natural test functions, the paired
@@ -149,8 +151,7 @@ suppressed entirely. Setting `directional_correction = true` alongside it is har
 correction is simply not applied, matching the host.
 
 These outstanding items mean the Kokkos path is not yet full host parity. Volumetric locking
-correction, curvilinear-coordinate constitutive strain, and general tangent semantics are
-still to be implemented.
+correction and general tangent semantics are still to be implemented.
 
 !syntax parameters /Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction
 

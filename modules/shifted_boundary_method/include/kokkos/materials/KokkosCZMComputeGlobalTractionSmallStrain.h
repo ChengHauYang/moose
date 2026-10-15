@@ -32,17 +32,17 @@ public:
     auto global_traction = _traction_global(elem_datum, qp);
     auto global_tangent = _dtraction_djump_global(elem_datum, qp);
 
-    for (const auto i : make_range(_ndisp))
+    for (unsigned int i = 0; i < _ndisp; ++i)
     {
       global_traction(i) = 0;
-      for (const auto j : make_range(_ndisp))
+      for (unsigned int j = 0; j < _ndisp; ++j)
         global_traction(i) += rotation(i, j) * local_traction(j);
 
-      for (const auto j : make_range(_ndisp))
+      for (unsigned int j = 0; j < _ndisp; ++j)
       {
         global_tangent(i, j) = 0;
-        for (const auto k : make_range(_ndisp))
-          for (const auto l : make_range(_ndisp))
+        for (unsigned int k = 0; k < _ndisp; ++k)
+          for (unsigned int l = 0; l < _ndisp; ++l)
             global_tangent(i, j) += rotation(i, k) * local_tangent(k, l) * rotation(j, l);
       }
     }

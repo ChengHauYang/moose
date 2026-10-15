@@ -22,20 +22,14 @@ The number of displacement variables must match the mesh dimension.
 
 With `directional_correction = true` (the default) this kernel reproduces the residual
 and Jacobian of the host `SCZMInterfaceKernelSmallStrainTempl<false>`. The bulk response
-is read from four interface-face properties that
-[`KokkosSCZMComputeLinearElasticBulkStress`](KokkosSCZMComputeLinearElasticBulkStress.md)
-writes at the primary face quadrature point address, because a Kokkos interface material
-is the single writer of an oriented face:
-
-| Property | Type | Dimensions | Meaning |
-|---|---|---|---|
-| `sczm_bulk_stress` | `MaterialProperty<Real, 2>` | `{3, 3}` | primary side Cauchy stress |
-| `sczm_bulk_stress_neighbor` | `MaterialProperty<Real, 2>` | `{3, 3}` | neighbor side Cauchy stress |
-| `sczm_bulk_lame` | `MaterialProperty<Real, 1>` | `{2}` | primary side `(lambda, mu)` |
-| `sczm_bulk_lame_neighbor` | `MaterialProperty<Real, 1>` | `{2}` | neighbor side `(lambda, mu)` |
-
-`base_name` prefixes these names as well. They are retrieved only when the correction is
-enabled, so a run with `directional_correction = false` does not declare the material.
+is read from the `stress` and `tangent` Kokkos material properties named by the `stress`
+and `tangent` parameters, `base_name`-prefixed; the primary side is read from the element
+storage and the neighbor side from the neighbor storage of the same property name. A
+heterogeneous interface is represented by producing these properties independently on the
+primary and neighbor sides, for example with two `[NEML2]` blocks using
+`interface_output_side = primary` and `interface_output_side = neighbor`. They are
+retrieved only when the correction is enabled, so a run with `directional_correction =
+false` does not require them.
 
 The correction adds `-test * sum_j stress_primary(i,j) * n_tangent(j)` to the element
 residual row and `+test_neighbor * sum_j stress_neighbor(i,j) * n_tangent(j)` to the
@@ -57,16 +51,15 @@ Setting `no_shifted = true` makes this object a complete switch that reproduces 
 behavior. The base cohesive traction then drops the `areaCorrection()` factor and its
 Jacobian uses the natural test functions rather than `shiftedPhi()`. Following the host,
 `no_shifted` suppresses the directional correction entirely, so `directional_correction`
-has no effect while it is enabled and the four bulk properties are not retrieved. The
-paired displacement-jump material applies the matching change: it omits the
+has no effect while it is enabled and the `stress`/`tangent` properties are not retrieved.
+The paired displacement-jump material applies the matching change: it omits the
 `grad_u dot distance` contribution to the jump and builds the reference rotation from the
 surrogate face normal instead of the true normal.
 
 ## Limitations
 
-Volumetric locking correction, curvilinear-coordinate constitutive strain (RZ and
-RSPHERICAL), and general user-supplied `stress`, `tangent`, and `tangent_definition`
-semantics are not implemented. The [ShiftedCohesiveZone
+Volumetric locking correction, non-Cartesian coordinate systems, and a deformation-gradient
+`tangent_definition` are not implemented. The [ShiftedCohesiveZone
 action](ShiftedCohesiveZoneAction.md) rejects each of these explicitly rather than silently
 ignoring it. Do not read this kernel as full host parity while those items remain
 outstanding.

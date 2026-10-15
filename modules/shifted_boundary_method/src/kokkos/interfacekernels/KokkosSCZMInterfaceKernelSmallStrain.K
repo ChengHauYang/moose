@@ -30,11 +30,10 @@ KokkosSCZMInterfaceKernelSmallStrain::validParams()
       false,
       "Disable shifted terms. When enabled the base traction omits the area correction and the "
       "directional correction, and the traction-jump Jacobian uses the natural test functions.");
-  params.addParam<bool>(
-      "directional_correction",
-      true,
-      "Add the directional correction terms. When enabled, the bulk stress and Lame constants are "
-      "read from the face properties written by KokkosSCZMComputeLinearElasticBulkStress.");
+  params.addParam<bool>("directional_correction", true, "Add the directional correction terms.");
+  params.addParam<MaterialPropertyName>("stress", "stress", "Cauchy stress material property.");
+  params.addParam<MaterialPropertyName>(
+      "tangent", "Jacobian_mult", "Cauchy-stress derivative with respect to small strain.");
   params.addClassDescription(
       "Kokkos shifted cohesive-zone interface kernel for small-strain displacements.");
   return params;
@@ -70,20 +69,18 @@ KokkosSCZMInterfaceKernelSmallStrain::KokkosSCZMInterfaceKernelSmallStrain(
     _disp_vars[i] = coupled("displacements", i);
   _disp_vars.copyToDevice();
 
-  // The correction bulk properties come from the user-declared
-  // KokkosSCZMComputeLinearElasticBulkStress material, so they are retrieved only when the
-  // correction is actually applied. Following the host, no_shifted suppresses the correction
-  // entirely. Missing declarations are reported here by getKokkosMaterialPropertyByName.
   if (_shifted && _directional_correction)
   {
     const auto prefix = isParamValid("base_name") && !getParam<std::string>("base_name").empty()
                             ? getParam<std::string>("base_name") + "_"
                             : "";
-    _sczm_bulk_stress = getKokkosMaterialPropertyByName<Real, 2>(prefix + "sczm_bulk_stress");
-    _sczm_bulk_stress_neighbor =
-        getKokkosMaterialPropertyByName<Real, 2>(prefix + "sczm_bulk_stress_neighbor");
-    _sczm_bulk_lame = getKokkosMaterialPropertyByName<Real, 1>(prefix + "sczm_bulk_lame");
-    _sczm_bulk_lame_neighbor =
-        getKokkosMaterialPropertyByName<Real, 1>(prefix + "sczm_bulk_lame_neighbor");
+    _stress =
+        getKokkosMaterialPropertyByName<Real, 2>(prefix + getParam<MaterialPropertyName>("stress"));
+    _stress_neighbor = getKokkosNeighborMaterialPropertyByName<Real, 2>(
+        prefix + getParam<MaterialPropertyName>("stress"));
+    _tangent = getKokkosMaterialPropertyByName<Real, 4>(prefix +
+                                                        getParam<MaterialPropertyName>("tangent"));
+    _tangent_neighbor = getKokkosNeighborMaterialPropertyByName<Real, 4>(
+        prefix + getParam<MaterialPropertyName>("tangent"));
   }
 }
