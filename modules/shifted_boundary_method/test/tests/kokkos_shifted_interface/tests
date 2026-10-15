@@ -131,6 +131,73 @@
     capabilities = 'kokkos & libtorch & neml2'
     compute_devices = 'cpu cuda xpu'
   []
+  [sczm_angled_kokkos_volumetric_locking]
+    type = Exodiff
+    input = sczm_angled_kokkos.i
+    cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volumetric_locking_correction=true'
+    exodiff = sczm_angled_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    recover = false
+    requirement = 'The Kokkos SCZM directional correction shall accept Cartesian two-dimensional volumetric locking correction and preserve the converged solution while applying its bulk-element trial-gradient average to the diagonal directional Jacobian blocks.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_hetero_host_volumetric_locking]
+    type = Exodiff
+    input = sczm_hetero_host.i
+    cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volumetric_locking_correction=true Outputs/file_base=sczm_hetero_host_volumetric_locking_out'
+    exodiff = sczm_hetero_host_volumetric_locking_out.e
+    recover = false
+    requirement = 'The host shifted cohesive-zone formulation shall compute a corrected heterogeneous angled-interface solution with independently configured primary and neighbor elastic responses.'
+  []
+  [sczm_hetero_kokkos_volumetric_locking_matches_host]
+    type = Exodiff
+    input = sczm_hetero_kokkos.i
+    cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volumetric_locking_correction=true Outputs/file_base=sczm_hetero_kokkos_volumetric_locking_out'
+    exodiff = sczm_hetero_kokkos_volumetric_locking_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    recover = false
+    requirement = 'The Kokkos SCZM volumetric-locking correction shall use the primary and neighbor side''s own volume-averaged trial gradients and row-side tangents, reproducing the host solution on a heterogeneous angled interface.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_volumetric_locking_sensitivity]
+    requirement = 'The Kokkos SCZM volumetric-locking correction shall change the stabilized diagonal Jacobian blocks, producing a different first linear-iteration residual from the correction-off matrix.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    max_parallel = 1
+    recover = false
+    [off]
+      type = RunApp
+      input = sczm_angled_kokkos.i
+      max_parallel = 1
+      cli_args = 'Executioner/petsc_options=-ksp_monitor Outputs/exodus=false'
+      expect_out = '1 KSP Residual norm 1.508085642598e-02'
+      detail = 'with the correction disabled,'
+    []
+    [on]
+      type = RunApp
+      input = sczm_angled_kokkos.i
+      max_parallel = 1
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volumetric_locking_correction=true Executioner/petsc_options=-ksp_monitor Outputs/exodus=false'
+      expect_out = '1 KSP Residual norm 1.619133203872e-02'
+      detail = 'and with the correction enabled.'
+    []
+  []
+  [sczm_angled_3d_kokkos_volumetric_locking]
+    type = Exodiff
+    input = sczm_angled_3d_kokkos.i
+    cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volumetric_locking_correction=true'
+    exodiff = sczm_angled_3d_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    recover = false
+    requirement = 'The Kokkos SCZM directional correction shall accept Cartesian three-dimensional volumetric locking correction and preserve the converged solution while applying each side''s own bulk-element trial-gradient average to its diagonal directional Jacobian block.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
 
 
   # Unsupported combinations must be rejected explicitly. Each of these would otherwise be silently
@@ -143,14 +210,6 @@
     compute_devices = 'cpu cuda xpu'
     recover = false
 
-
-    [volumetric_locking_correction]
-      type = RunException
-      input = sczm_hetero_kokkos.i
-      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volumetric_locking_correction=true'
-      expect_err = 'does not yet support volumetric locking correction'
-      detail = 'if volumetric locking correction is requested, which is not yet implemented for Kokkos.'
-    []
 
     [unsupported_tangent_definition]
       type = RunException

@@ -31,6 +31,11 @@ KokkosSCZMInterfaceKernelSmallStrain::validParams()
       "Disable shifted terms. When enabled the base traction omits the area correction and the "
       "directional correction, and the traction-jump Jacobian uses the natural test functions.");
   params.addParam<bool>("directional_correction", true, "Add the directional correction terms.");
+  params.addParam<bool>(
+      "volumetric_locking_correction",
+      false,
+      "Apply the bulk-consistent volumetric locking correction to the directional "
+      "Jacobian blocks.");
   params.addParam<MaterialPropertyName>("stress", "stress", "Cauchy stress material property.");
   params.addParam<MaterialPropertyName>(
       "tangent", "Jacobian_mult", "Cauchy-stress derivative with respect to small strain.");
@@ -46,6 +51,7 @@ KokkosSCZMInterfaceKernelSmallStrain::KokkosSCZMInterfaceKernelSmallStrain(
     _ndisp(coupledComponents("displacements")),
     _shifted(!getParam<bool>("no_shifted")),
     _directional_correction(getParam<bool>("directional_correction")),
+    _volumetric_locking_correction(getParam<bool>("volumetric_locking_correction")),
     _traction_global(getKokkosMaterialPropertyByName<Real, 1>(
         (isParamValid("base_name") && !getParam<std::string>("base_name").empty()
              ? getParam<std::string>("base_name") + "_"
