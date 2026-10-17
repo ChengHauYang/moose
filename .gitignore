@@ -375,3 +375,7 @@ modules/solid_mechanics/test/tests/kokkos/**/results*/
 .plans
 
 *aoti*
+
+.plans/
+scripts/check_test_build.sh
+.idea
