@@ -151,6 +151,18 @@ NEML2BatchIndexGenerator::getBatchIndexMap() const
   return _elem_to_batch_index;
 }
 
+NEML2BatchIndexGenerator::StateBatchIndexMap
+NEML2BatchIndexGenerator::getStateBatchIndexMap() const
+{
+  if (_interface_only)
+    return _elemside_to_batch_index;
+
+  StateBatchIndexMap indices;
+  for (const auto & [elem_id, offset] : _elem_to_batch_index)
+    indices.emplace(ElemSide(elem_id, libMesh::invalid_uint), offset);
+  return indices;
+}
+
 std::size_t
 NEML2BatchIndexGenerator::getBatchIndex(dof_id_type elem_id) const
 {

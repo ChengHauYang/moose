@@ -651,9 +651,16 @@ NEML2Action::setupOutputMappings(const NEML2ModelHandle & model)
     return;
 
   const auto out_shapes = shapeMap(model.output_names(), model.output_base_shapes());
+  const auto & selected_outputs = getParam<std::vector<std::string>>("output_variables");
+  for (const auto & oname : selected_outputs)
+    if (!contains(model.output_names(), oname))
+      paramError("output_variables", "Variable '", oname, "' is not a model output.");
 
   for (const auto & oname : model.output_names())
   {
+    if (!selected_outputs.empty() && !contains(selected_outputs, oname))
+      continue;
+
     const auto mtype = shapeToMooseType(out_shapes.at(oname));
     if (mtype.empty())
       mooseError(
