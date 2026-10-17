@@ -71,10 +71,16 @@ using NEML2ToKokkosFullRankTwoMaterialProperty = NEML2ToKokkosMaterialProperty<2
 using NEML2ToKokkosFullRankFourMaterialProperty = NEML2ToKokkosMaterialProperty<4, true>;
 using NEML2ToKokkosSideRankTwoMaterialProperty = NEML2ToKokkosMaterialProperty<2, false, true>;
 using NEML2ToKokkosSideRankFourMaterialProperty = NEML2ToKokkosMaterialProperty<4, false, true>;
+using NEML2ToKokkosSideFullRankTwoMaterialProperty = NEML2ToKokkosMaterialProperty<2, true, true>;
+using NEML2ToKokkosSideFullRankFourMaterialProperty = NEML2ToKokkosMaterialProperty<4, true, true>;
 using NEML2ToKokkosNeighborRankTwoMaterialProperty =
     NEML2ToKokkosMaterialProperty<2, false, true, true>;
 using NEML2ToKokkosNeighborRankFourMaterialProperty =
     NEML2ToKokkosMaterialProperty<4, false, true, true>;
+using NEML2ToKokkosNeighborFullRankTwoMaterialProperty =
+    NEML2ToKokkosMaterialProperty<2, true, true, true>;
+using NEML2ToKokkosNeighborFullRankFourMaterialProperty =
+    NEML2ToKokkosMaterialProperty<4, true, true, true>;
 
 template <unsigned int rank, bool full, bool interface, bool neighbor>
 KOKKOS_FUNCTION unsigned int
