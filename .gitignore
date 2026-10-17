@@ -367,3 +367,16 @@ binaryoutput
 .codegraph/
 !codegraph.json
 .env
+
+modules/solid_mechanics/test/tests/kokkos/**/diag_results*/
+modules/solid_mechanics/test/tests/kokkos/**/results*/
+*.time
+
+.plans
+
+*aoti*
+
+.plans/
+scripts/check_test_build.sh
+.idea
+.idea/
