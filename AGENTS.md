@@ -12,6 +12,33 @@ Licensed under the BSD 2-Clause License.
 
 These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+## Verification Cadence (Read First)
+
+- Do not build or test after every edit; verify one coherent, reviewable change slice at a time.
+- During implementation, prefer source inspection, CodeGraph, and diff review. When the slice is
+  ready, format changed C++ files, run the narrowest relevant build, and run the smallest focused test.
+- Run broad suites, MPI/distributed variants, and docs only for the change's blast radius, at a
+  milestone, or before final handoff. Do not repeat unchanged checks or build for docs/comments/plans
+  unless generated code or test discovery is affected; never claim runtime behavior without verification.
+
+## 0. Local Harness Map
+
+For Cheng-Hau's private macOS Apple Silicon workflow, use the single entry point
+`./scripts/mac/moose.sh`:
+
+- Inspect state: `./scripts/mac/moose.sh doctor`
+- Dashboard and progress: `./scripts/mac/moose.sh dummy`
+- Initialize dependencies and configuration: `./scripts/mac/moose.sh init`
+- Incremental compile: `./scripts/mac/moose.sh compile <framework|solid_mechanics|shifted_boundary_method|unit|neml2|all>`
+- Run an input: `./scripts/mac/moose.sh run <framework|solid_mechanics|shifted_boundary_method> <input.i> [options...]`
+- Test without compiling: `./scripts/mac/moose.sh test [scope|module] [pattern] [options...]`
+- Run C++ GoogleTest unit tests: `./scripts/mac/moose.sh unit [target] [pattern] [options...]`
+- Compile and test: `./scripts/mac/moose.sh verify <scope|module|unit> [options...]`
+- Full initialization, compile, and test: `./scripts/mac/moose.sh all`
+- Install the pre-commit hook, once per clone: `./scripts/mac/moose.sh precheck`
+
+Do not treat missing generated files such as `framework_config.h`, configured Makefiles, object files, or module binaries as a broken checkout. Fresh checkouts are expected to lack them. On macOS, run `./scripts/mac/moose.sh doctor` before inventing build commands or asking how to configure MOOSE.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
@@ -101,6 +128,7 @@ that request requires.
 
 ## 6. Tool Use
 
+For Cheng-Hau's macOS Apple Silicon workflow, use the Local Harness Map at the top of this file before asking about Conda or inventing build commands.
 - Prefer builtin tools over bash commands whenever possible in the vein of
   reducing permission prompting.
 - Before building or performing verification, including running tests or
