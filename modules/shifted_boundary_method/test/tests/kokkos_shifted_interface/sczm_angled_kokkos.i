@@ -49,6 +49,7 @@ theta_rad = '${fparse theta * pi / 180}'
     directional_correction = true
     stress = neml2_stress
     tangent = tangent
+    tangent_definition = stress_wrt_strain
   []
 []
 

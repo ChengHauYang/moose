@@ -72,8 +72,12 @@ registerKokkosMaterial("MooseApp", NEML2ToKokkosFullRankTwoMaterialProperty);
 registerKokkosMaterial("MooseApp", NEML2ToKokkosFullRankFourMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideRankTwoMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideRankFourMaterialProperty);
+registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideFullRankTwoMaterialProperty);
+registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideFullRankFourMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosNeighborRankTwoMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosNeighborRankFourMaterialProperty);
+registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosNeighborFullRankTwoMaterialProperty);
+registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosNeighborFullRankFourMaterialProperty);
 
 template <unsigned int rank, bool full, bool interface, bool neighbor>
 InputParameters
