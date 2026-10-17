@@ -20,6 +20,31 @@
     capabilities = 'kokkos & libtorch & neml2'
     compute_devices = 'cpu cuda xpu'
   []
+  [sczm_stateful_serial]
+    type = Exodiff
+    input = sczm_stateful_kokkos.i
+    exodiff = sczm_stateful_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    recover = false
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall execute a stateful NEML2 radial-return loading and unloading trajectory in serial while advancing history only after converged timesteps.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_stateful_distributed]
+    type = Exodiff
+    input = sczm_stateful_kokkos.i
+    exodiff = sczm_stateful_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    min_parallel = 2
+    max_parallel = 2
+    mesh_mode = distributed
+    recover = false
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall preserve stateful NEML2 loading and unloading results when interface elements and their ghost-side neighbors are distributed across MPI ranks.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
   [sczm_pk1_host_jacobian]
     type = PetscJacobianTester
     input = sczm_pk1_host.i
