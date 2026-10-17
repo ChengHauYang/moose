@@ -33,7 +33,8 @@ public:
 
   void meshChanged() override;
 
-  using ElemSide = std::tuple<dof_id_type, unsigned int>;
+  using ElemSide = std::pair<dof_id_type, unsigned int>;
+  using StateBatchIndexMap = std::map<ElemSide, std::size_t>;
 
   /// Get the current batch index (in almost all cases this is the total batch size)
   std::size_t getBatchIndex() const { return _batch_index; }
@@ -43,6 +44,12 @@ public:
 
   /// Get the element-to-batch-index map
   const std::map<dof_id_type, std::size_t> & getBatchIndexMap() const;
+
+  /// Get the element-side-to-batch-index map
+  const StateBatchIndexMap & getSideBatchIndexMap() const { return _elemside_to_batch_index; }
+
+  /// Get the state ownership map for the active batch layout
+  StateBatchIndexMap getStateBatchIndexMap() const;
 
   /// Get the batch index for the given element side
   std::size_t getSideBatchIndex(const ElemSide & elem_side) const;
@@ -70,7 +77,7 @@ protected:
   std::map<dof_id_type, std::size_t> _elem_to_batch_index;
 
   /// Map from element sides to batch indices
-  std::map<ElemSide, std::size_t> _elemside_to_batch_index;
+  StateBatchIndexMap _elemside_to_batch_index;
 
   /// cache the index for the current element
   mutable std::pair<dof_id_type, std::size_t> _elem_to_batch_index_cache;

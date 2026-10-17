@@ -140,22 +140,23 @@ protected:
   std::map<std::string, at::Tensor> _out;
 
   /// Stateful variables from the last accepted step
-  std::map<std::string, at::Tensor> _state_vars;
+  std::map<std::string, at::Tensor> & _state_vars;
 
   /// Trial state saved at timestep end, pending acceptance on the next timestep
-  std::map<std::string, at::Tensor> _pending_state_vars;
+  std::map<std::string, at::Tensor> & _pending_state_vars;
 
-  /// Element-to-batch-index map associated with the committed state tensors
-  std::map<dof_id_type, std::size_t> _state_batch_indices;
+  /// Element-side-to-batch-index map associated with the committed state tensors. Volume batches
+  /// use invalid_uint as the side so both batch layouts have one restartable key type.
+  NEML2BatchIndexGenerator::StateBatchIndexMap & _state_batch_indices;
 
-  /// Element-to-batch-index map associated with the pending state tensors
-  std::map<dof_id_type, std::size_t> _pending_state_batch_indices;
+  /// Element-side-to-batch-index map associated with the pending state tensors
+  NEML2BatchIndexGenerator::StateBatchIndexMap & _pending_state_batch_indices;
 
   /// Timestep that produced the pending state
-  int _pending_state_t_step;
+  int & _pending_state_t_step;
 
   /// Whether the state tensors contain a committed batch
-  bool _state_committed;
+  bool & _state_committed;
 
   /// Whether committed state must be remapped to a regenerated batch index map
   bool _state_remap_pending;
