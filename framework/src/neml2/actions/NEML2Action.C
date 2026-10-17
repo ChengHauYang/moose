@@ -432,22 +432,26 @@ NEML2Action::act()
                             const std::string & parameter_derivative = "")
     {
       if (use_kokkos && moose_tensor_type != "SymmetricRankTwoTensor" &&
-          moose_tensor_type != "SymmetricRankFourTensor")
+          moose_tensor_type != "SymmetricRankFourTensor" && moose_tensor_type != "RankTwoTensor" &&
+          moose_tensor_type != "RankFourTensor")
         paramError("output_backend",
                    "The Kokkos output backend does not support NEML2 output '",
                    moose_name,
                    "' mapped to ",
                    moose_tensor_type,
-                   ". Only symmetric rank-two and rank-four outputs are supported.");
+                   ". Only rank-two and rank-four outputs are supported.");
 
+      const bool full_tensor =
+          moose_tensor_type == "RankTwoTensor" || moose_tensor_type == "RankFourTensor";
+      const bool rank_two =
+          moose_tensor_type == "SymmetricRankTwoTensor" || moose_tensor_type == "RankTwoTensor";
       auto obj_name = obscureObjectName(
           moose_name, use_kokkos ? "neml2_to_kokkos" : "neml2_to_moose", "", name());
-      auto obj_type =
-          use_kokkos ? "NEML2ToKokkos" + std::string(_interface_only ? "Side" : "") +
-                           std::string(moose_tensor_type == "SymmetricRankTwoTensor" ? "RankTwo"
-                                                                                     : "RankFour") +
-                           "MaterialProperty"
-                     : "NEML2ToMOOSE" + moose_tensor_type + "MaterialProperty";
+      auto obj_type = use_kokkos
+                          ? "NEML2ToKokkos" + std::string(_interface_only ? "Side" : "") +
+                                std::string(full_tensor ? "Full" : "") +
+                                std::string(rank_two ? "RankTwo" : "RankFour") + "MaterialProperty"
+                          : "NEML2ToMOOSE" + moose_tensor_type + "MaterialProperty";
       auto obj_params = _factory.getValidParams(obj_type);
       obj_params.set<UserObjectName>("neml2_executor") = _executor_name;
       obj_params.set<MaterialPropertyName>("to_moose") = moose_name;
@@ -478,9 +482,8 @@ NEML2Action::act()
           if (interface_output_side == "primary")
             return;
           const auto neighbor_type =
-              "NEML2ToKokkosNeighbor" +
-              std::string(moose_tensor_type == "SymmetricRankTwoTensor" ? "RankTwo" : "RankFour") +
-              "MaterialProperty";
+              "NEML2ToKokkosNeighbor" + std::string(full_tensor ? "Full" : "") +
+              std::string(rank_two ? "RankTwo" : "RankFour") + "MaterialProperty";
           auto neighbor_params = _factory.getValidParams(neighbor_type);
           neighbor_params.applyParameters(obj_params);
           neighbor_params.set<Moose::MaterialDataType>("_material_data_type") =

@@ -36,9 +36,16 @@ KokkosSCZMInterfaceKernelSmallStrain::validParams()
       false,
       "Apply the bulk-consistent volumetric locking correction to the directional "
       "Jacobian blocks.");
-  params.addParam<MaterialPropertyName>("stress", "stress", "Cauchy stress material property.");
+  params.addParam<MaterialPropertyName>("stress", "stress", "Stress material property.");
   params.addParam<MaterialPropertyName>(
-      "tangent", "Jacobian_mult", "Cauchy-stress derivative with respect to small strain.");
+      "tangent", "Jacobian_mult", "Constitutive tangent material property.");
+  params.addParam<MooseEnum>(
+      "tangent_definition",
+      MooseEnum("auto stress_wrt_strain pk1_wrt_deformation_gradient", "auto"),
+      "Mathematical definition of the tangent material property. 'auto' recognizes the standard "
+      "Jacobian_mult property as d(stress)/d(strain) and pk1_jacobian as d(PK1)/d(F). Select "
+      "'stress_wrt_strain' or 'pk1_wrt_deformation_gradient' explicitly for a custom tangent "
+      "property; use the latter only when the property is known to be d(PK1)/d(F).");
   params.addClassDescription(
       "Kokkos shifted cohesive-zone interface kernel for small-strain displacements.");
   return params;
@@ -52,6 +59,7 @@ KokkosSCZMInterfaceKernelSmallStrain::KokkosSCZMInterfaceKernelSmallStrain(
     _shifted(!getParam<bool>("no_shifted")),
     _directional_correction(getParam<bool>("directional_correction")),
     _volumetric_locking_correction(getParam<bool>("volumetric_locking_correction")),
+    _tangent_is_dpk1_df(false),
     _traction_global(getKokkosMaterialPropertyByName<Real, 1>(
         (isParamValid("base_name") && !getParam<std::string>("base_name").empty()
              ? getParam<std::string>("base_name") + "_"
@@ -74,6 +82,24 @@ KokkosSCZMInterfaceKernelSmallStrain::KokkosSCZMInterfaceKernelSmallStrain(
   for (unsigned int i = 0; i < _ndisp; ++i)
     _disp_vars[i] = coupled("displacements", i);
   _disp_vars.copyToDevice();
+
+  const auto & tangent_name = getParam<MaterialPropertyName>("tangent");
+  const auto & tangent_definition = getParam<MooseEnum>("tangent_definition");
+  if (tangent_definition == "auto")
+  {
+    if (tangent_name == "Jacobian_mult")
+      _tangent_is_dpk1_df = false;
+    else if (tangent_name == "pk1_jacobian")
+      _tangent_is_dpk1_df = true;
+    else
+      paramError("tangent_definition",
+                 "Cannot infer the mathematical definition of custom tangent property '",
+                 tangent_name,
+                 "'. Set 'tangent_definition' to 'stress_wrt_strain' or "
+                 "'pk1_wrt_deformation_gradient'.");
+  }
+  else
+    _tangent_is_dpk1_df = tangent_definition == "pk1_wrt_deformation_gradient";
 
   if (_shifted && _directional_correction)
   {

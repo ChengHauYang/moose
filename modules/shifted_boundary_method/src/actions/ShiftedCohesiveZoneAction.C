@@ -200,17 +200,6 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
     paramError("use_automatic_differentiation",
                "Kokkos SCZM currently supports only non-AD small-strain objects.");
 
-  // Keep guards for Kokkos SCZM modes whose kinematics or tangent contract are not yet supported.
-  if (_use_kokkos)
-  {
-    if (isParamSetByUser("tangent_definition") &&
-        getParam<MooseEnum>("tangent_definition") == "pk1_wrt_deformation_gradient")
-      paramError("tangent_definition",
-                 "The Kokkos SCZM directional correction currently supports only a strain-based "
-                 "tangent, which is the behavior provided by "
-                 "a small-strain tangent.");
-  }
-
   switch (_strain)
   {
     case Strain::Small:

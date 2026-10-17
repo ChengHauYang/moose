@@ -124,13 +124,14 @@ protected:
   const bool _shifted;
   const bool _directional_correction;
   const bool _volumetric_locking_correction;
+  bool _tangent_is_dpk1_df;
   Moose::Kokkos::Array<unsigned int> _disp_vars;
   const Moose::Kokkos::MaterialProperty<Real, 1> _traction_global;
   const Moose::Kokkos::MaterialProperty<Real, 2> _dtraction_djump_global;
-  /// Primary-side Cauchy stress and its strain tangent.
+  /// Primary-side stress and its configured constitutive tangent.
   Moose::Kokkos::MaterialProperty<Real, 2> _stress;
   Moose::Kokkos::MaterialProperty<Real, 4> _tangent;
-  /// Neighbor-side Cauchy stress and its strain tangent.
+  /// Neighbor-side stress and its configured constitutive tangent.
   Moose::Kokkos::MaterialProperty<Real, 2> _stress_neighbor;
   Moose::Kokkos::MaterialProperty<Real, 4> _tangent_neighbor;
 };
@@ -413,7 +414,8 @@ KokkosSCZMInterfaceKernelSmallStrain::computeDirectionalCorrectionJacobian(
       }
   }
 
-  Real correction_jacobian = 0.5 * (origin_part + symmetric_part) * test;
+  Real correction_jacobian =
+      (_tangent_is_dpk1_df ? origin_part : 0.5 * (origin_part + symmetric_part)) * test;
 
   if (_volumetric_locking_correction)
   {

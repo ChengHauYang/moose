@@ -132,16 +132,13 @@ bulk-stress material.
 When a `[NEML2]` block produces `stress` or `tangent` for a Kokkos directional correction, it
 must set `output_backend = kokkos` and an `interface` that overlaps the SCZM `boundary`; the
 action validates this and reports an error on the offending NEML2 block parameter otherwise.
-For a heterogeneous interface, use two `[NEML2]` sub-blocks producing the same property name
-with `interface_output_side = primary` and `interface_output_side = neighbor` respectively.
+Both symmetric stress-strain tangents and full $\partial\mathbf{P}/\partial\mathbf{F}$ tangents
+are transferred without changing their tensor layout. For a heterogeneous interface, use two
+`[NEML2]` sub-blocks producing the same property name with `interface_output_side = primary` and
+`interface_output_side = neighbor` respectively.
 
-The following are rejected when `use_kokkos = true` rather than silently ignored:
-
-- `volumetric_locking_correction = true`, either here or inherited from a solid mechanics
-  physics block;
-- `tangent_definition = pk1_wrt_deformation_gradient`;
-- any non-Cartesian coordinate system, whose out-of-plane kinematics are not yet verified for
-  NEML2.
+Non-Cartesian coordinate systems are rejected when `use_kokkos = true` because their
+out-of-plane kinematics are not yet verified for NEML2.
 
 `no_shifted = true` is supported on the Kokkos path as a complete switch. The base cohesive
 traction drops its area correction, its Jacobian uses the natural test functions, the paired

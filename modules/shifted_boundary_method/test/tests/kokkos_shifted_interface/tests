@@ -20,6 +20,23 @@
     capabilities = 'kokkos & libtorch & neml2'
     compute_devices = 'cpu cuda xpu'
   []
+  [sczm_pk1_host_jacobian]
+    type = PetscJacobianTester
+    input = sczm_pk1_host.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The host shifted cohesive-zone formulation shall consistently linearize its directional correction when stress is first Piola-Kirchhoff stress and the full nonsymmetric constitutive tangent is its derivative with respect to deformation gradient.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_pk1_kokkos_jacobian]
+    type = PetscJacobianTester
+    input = sczm_pk1_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall transfer full nonsymmetric NEML2 stress and deformation-gradient tangent properties on both interface sides and use the d(PK1)/d(F) directional-correction contraction.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu'
+  []
   [sczm_angled_host]
     type = Exodiff
     input = sczm_angled_host.i
@@ -209,15 +226,6 @@
     capabilities = 'kokkos & libtorch & neml2'
     compute_devices = 'cpu cuda xpu'
     recover = false
-
-
-    [unsupported_tangent_definition]
-      type = RunException
-      input = sczm_hetero_kokkos.i
-      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/tangent_definition=pk1_wrt_deformation_gradient'
-      expect_err = 'currently supports only a strain-based tangent'
-      detail = 'if a deformation-gradient tangent definition is requested, which the strain-based Kokkos directional correction does not support.'
-    []
 
     [non_cartesian_coordinates]
       type = RunException
