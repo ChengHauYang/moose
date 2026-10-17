@@ -5,6 +5,7 @@
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
 //*
 //* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "TestNEML2ModelExecutor.h"
 
@@ -56,15 +57,16 @@ TestNEML2ModelExecutor::remapState()
 
   const auto old_states = _state_vars;
   const auto old_indices = _state_batch_indices;
-  const auto new_indices = _batch_index_generator.getBatchIndexMap();
+  const auto new_indices = _batch_index_generator.getStateBatchIndexMap();
   NEML2ModelExecutor::remapState();
 
-  std::map<std::size_t, dof_id_type> old_offsets;
-  std::map<std::size_t, dof_id_type> new_offsets;
-  for (const auto & [elem_id, offset] : old_indices)
-    old_offsets[offset] = elem_id;
-  for (const auto & [elem_id, offset] : new_indices)
-    new_offsets[offset] = elem_id;
+  using StateKey = NEML2BatchIndexGenerator::ElemSide;
+  std::map<std::size_t, StateKey> old_offsets;
+  std::map<std::size_t, StateKey> new_offsets;
+  for (const auto & [key, offset] : old_indices)
+    old_offsets[offset] = key;
+  for (const auto & [key, offset] : new_indices)
+    new_offsets[offset] = key;
 
   const auto batchSize =
       [](const auto & offsets, const std::size_t offset, const std::size_t total_batch_size)
@@ -91,9 +93,9 @@ TestNEML2ModelExecutor::remapState()
       continue;
     }
 
-    for (const auto & [elem_id, new_offset] : new_indices)
+    for (const auto & [key, new_offset] : new_indices)
     {
-      const auto old_it = old_indices.find(elem_id);
+      const auto old_it = old_indices.find(key);
       const auto new_qp = batchSize(new_offsets, new_offset, state.size(0));
       const auto new_slice = state.narrow(0, new_offset, new_qp);
       if (old_it == old_indices.end())
@@ -101,8 +103,11 @@ TestNEML2ModelExecutor::remapState()
         if (torch::count_nonzero(new_slice).item<int64_t>() != 0)
           mooseError("NEML2 remapping did not zero-initialize state variable '",
                      name,
-                     "' for new element ",
-                     elem_id);
+                     "' for new element side (",
+                     key.first,
+                     ", ",
+                     key.second,
+                     ")");
         ++initialized;
         continue;
       }
@@ -111,8 +116,11 @@ TestNEML2ModelExecutor::remapState()
       if (!torch::equal(new_slice, old_state.narrow(0, old_it->second, old_qp)))
         mooseError("NEML2 remapping changed state variable '",
                    name,
-                   "' for retained element ",
-                   elem_id);
+                   "' for retained element side (",
+                   key.first,
+                   ", ",
+                   key.second,
+                   ")");
       ++retained;
     }
   }
