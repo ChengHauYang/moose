@@ -283,6 +283,8 @@ protected:
   KOKKOS_FUNCTION void computeJacobianInternal(AssemblyDatum & datum, function body) const;
 
 private:
+  friend class ADInterfaceKernel;
+
   /**
    * Tags this object operates on
    */
