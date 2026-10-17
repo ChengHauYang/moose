@@ -12,6 +12,27 @@ Licensed under the BSD 2-Clause License.
 
 These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+## Verification Cadence (Read First)
+
+- Do not build or test after every edit; verify one coherent, reviewable change slice at a time.
+- During implementation, prefer source inspection, CodeGraph, and diff review. When the slice is
+  ready, format changed C++ files, run the narrowest relevant build, and run the smallest focused test.
+- Run broad suites, MPI/distributed variants, and docs only for the change's blast radius, at a
+  milestone, or before final handoff. Do not repeat unchanged checks or build for docs/comments/plans
+  unless generated code or test discovery is affected; never claim runtime behavior without verification.
+
+## 0. Local Harness Map
+
+For Cheng-Hau's private macOS Apple Silicon workflow, use:
+
+- Inspect state: `./scripts/mac/doctor_mac.sh`
+- Full first-time setup/build/test: `./scripts/mac/compile_script_mac.sh`
+- Incremental build: `./scripts/mac/build_mac.sh <framework|solid_mechanics|shifted_boundary_method|all>`
+- Targeted tests: `./scripts/mac/test_mac.sh <framework-kokkos|sczm|neml2|neml2-aoti|all>`
+- Install the pre-commit hook, once per clone: `./scripts/mac/init_precheck.sh`
+
+Do not treat missing generated files such as `framework_config.h`, configured Makefiles, object files, or module binaries as a broken checkout. Fresh checkouts are expected to lack them. On macOS, run `./scripts/mac/doctor_mac.sh` before inventing build commands or asking how to configure MOOSE.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
@@ -101,6 +122,7 @@ that request requires.
 
 ## 6. Tool Use
 
+For Cheng-Hau's macOS Apple Silicon workflow, use the Local Harness Map at the top of this file before asking about Conda or inventing build commands.
 - Prefer builtin tools over bash commands whenever possible in the vein of
   reducing permission prompting.
 - Before building or performing verification, including running tests or
