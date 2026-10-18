@@ -20,6 +20,15 @@
     capabilities = 'kokkos & libtorch & neml2'
     compute_devices = 'cpu cuda xpu'
   []
+  [sczm_ad_elastic_jacobian]
+    type = PetscJacobianTester
+    input = sczm_ad_elastic.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    requirement = 'The ShiftedCohesiveZone Physics shall assemble the cohesive-only shifted Kokkos AD residual and all primary and neighbor displacement Jacobian blocks from AD interface material properties.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
   [sczm_stateful_serial]
     type = Exodiff
     input = sczm_stateful_kokkos.i

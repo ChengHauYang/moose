@@ -196,24 +196,24 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
                "This parameter applies only to the non-AD SCZM interface kernel. The AD kernel "
                "differentiates the residual automatically.");
 
-  if (_use_kokkos && _use_AD)
-    paramError("use_automatic_differentiation",
-               "Kokkos SCZM currently supports only non-AD small-strain objects.");
-
   switch (_strain)
   {
     case Strain::Small:
     {
-      _czm_kernel_name = _use_kokkos ? "KokkosSCZMInterfaceKernelSmallStrain"
+      _czm_kernel_name = _use_kokkos ? (_use_AD ? "KokkosADSCZMInterfaceKernelSmallStrain"
+                                                : "KokkosSCZMInterfaceKernelSmallStrain")
                                      : (_use_AD ? "ADSCZMInterfaceKernelSmallStrain"
                                                 : "SCZMInterfaceKernelSmallStrain");
       // For SCZM, we just need to evaulate the displacement jump correctly on the true interface.
       // After that, the local and global traction calculations remain the same as standard CZM.
-      _disp_jump_provider_name = _use_kokkos ? "KokkosSCZMComputeDisplacementJumpSmallStrain"
-                                             : (_use_AD ? "ADSCZMComputeDisplacementJumpSmallStrain"
-                                                        : "SCZMComputeDisplacementJumpSmallStrain");
+      _disp_jump_provider_name = _use_kokkos
+                                     ? (_use_AD ? "KokkosADSCZMComputeDisplacementJumpSmallStrain"
+                                                : "KokkosSCZMComputeDisplacementJumpSmallStrain")
+                                     : (_use_AD ? "ADSCZMComputeDisplacementJumpSmallStrain"
+                                                : "SCZMComputeDisplacementJumpSmallStrain");
       _equilibrium_traction_calculator_name =
-          _use_kokkos ? "KokkosCZMComputeGlobalTractionSmallStrain"
+          _use_kokkos ? (_use_AD ? "KokkosADCZMComputeGlobalTractionSmallStrain"
+                                 : "KokkosCZMComputeGlobalTractionSmallStrain")
                       : (_use_AD ? "ADCZMComputeGlobalTractionSmallStrain"
                                  : "CZMComputeGlobalTractionSmallStrain");
       break;
@@ -470,6 +470,11 @@ ShiftedCohesiveZoneAction::addRequiredCZMInterfaceMaterials()
   auto params = _factory.getValidParams(_disp_jump_provider_name);
   params.set<std::vector<BoundaryName>>("boundary") = _boundary;
   params.set<std::vector<VariableName>>("displacements") = _displacements;
+  if (_use_AD)
+  {
+    params.set<std::vector<VariableName>>("variable") = {_displacements[0]};
+    params.set<std::vector<VariableName>>("neighbor_var") = {_displacements[0]};
+  }
   params.set<std::string>("base_name") = _base_name;
   customizeCZMDisplacementJumpMaterialParameters(params);
   _problem->addKokkosMaterial(
