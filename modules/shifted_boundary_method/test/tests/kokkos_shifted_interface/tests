@@ -62,6 +62,41 @@
     capabilities = 'kokkos & libtorch & neml2'
     compute_devices = 'cpu'
   []
+  [sczm_pk2_kokkos_jacobian]
+    type = PetscJacobianTester
+    input = sczm_pk2_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The ShiftedCohesiveZone Physics shall convert distinct primary- and neighbor-side full PK2 stress and deformation-gradient tangent properties to PK1 properties and consistently assemble all displacement couplings of the three-dimensional Kokkos directional correction.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    allow_test_objects = true
+  []
+  [sczm_pk2_action_modes]
+    requirement = 'The ShiftedCohesiveZone Physics PK2 input contract shall create converters only when the active directional correction consumes them and shall diagnose an unsupported active host conversion.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    recover = false
+    [directional_correction_inactive]
+      type = RunApp
+      input = sczm_pk2_action_modes.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/directional_correction=false'
+      detail = 'It shall run without conversion when directional correction is disabled,'
+    []
+    [shifted_terms_inactive]
+      type = RunApp
+      input = sczm_pk2_action_modes.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/no_shifted=true Problem/solve=false'
+      detail = 'initialize without conversion when all shifted terms are disabled,'
+    []
+    [host_active]
+      type = RunException
+      input = sczm_pk2_action_modes.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/use_kokkos=false'
+      expect_err = 'Automatic PK2-to-PK1 conversion for directional correction is not yet supported on the CPU path'
+      detail = 'and reject active conversion on the host backend.'
+    []
+  []
   [sczm_angled_host]
     type = Exodiff
     input = sczm_angled_host.i
