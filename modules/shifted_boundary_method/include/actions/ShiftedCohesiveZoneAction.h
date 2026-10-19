@@ -59,6 +59,12 @@ protected:
   /// Adds Kokkos SCZM interface materials when requested; otherwise uses the host implementation.
   void addRequiredCZMInterfaceMaterials();
 
+  /// Adds the Kokkos PK2-to-PK1 converter pair required by directional correction.
+  void addPK2ToPK1InterfaceConverters();
+
+  /// Whether the Action must convert its PK2 input before configuring the kernel.
+  bool needsPK2ToPK1Conversion() const;
+
   /// Sets SCZM-specific parameters on each generated interface kernel.
   void customizeCZMInterfaceKernelParameters(InputParameters & params) const override;
 

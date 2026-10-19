@@ -134,11 +134,13 @@ ShiftedCohesiveZoneAction::validParams()
                                         "strain SCZM.");
   params.addParam<MooseEnum>(
       "tangent_definition",
-      MooseEnum("auto stress_wrt_strain pk1_wrt_deformation_gradient", "auto"),
+      MooseEnum("auto stress_wrt_strain pk1_wrt_deformation_gradient pk2_wrt_deformation_gradient",
+                "auto"),
       "Mathematical definition of the tangent material property. 'auto' recognizes the standard "
       "Jacobian_mult property as d(stress)/d(strain) and pk1_jacobian as d(PK1)/d(F). Select "
       "'stress_wrt_strain' or 'pk1_wrt_deformation_gradient' explicitly for a custom tangent "
-      "property; use the latter only when the property is known to be d(PK1)/d(F).");
+      "property; select 'pk2_wrt_deformation_gradient' to convert PK2 input for Kokkos directional "
+      "correction.");
   params.addParam<bool>(
       "volumetric_locking_correction",
       false,
@@ -315,7 +317,11 @@ ShiftedCohesiveZoneAction::act()
   else if (_current_task == "add_interface_kernel")
     addRequiredCZMInterfaceKernels();
   else if (_current_task == "add_master_action_material")
+  {
+    if (needsPK2ToPK1Conversion())
+      addPK2ToPK1InterfaceConverters();
     addRequiredCZMInterfaceMaterials();
+  }
 
   // optional, add required outputs
   actOutputGeneration();
@@ -411,6 +417,47 @@ ShiftedCohesiveZoneAction::addSBMDistanceUserObjects()
       "BoundaryShortestDistanceToSurface", sbmDistanceUserObjectName(), distance_params);
 }
 
+bool
+ShiftedCohesiveZoneAction::needsPK2ToPK1Conversion() const
+{
+  return getParam<bool>("directional_correction") && !getParam<bool>("no_shifted") &&
+         getParam<MooseEnum>("tangent_definition") == "pk2_wrt_deformation_gradient";
+}
+
+void
+ShiftedCohesiveZoneAction::addPK2ToPK1InterfaceConverters()
+{
+  if (!_use_kokkos)
+    paramError("use_kokkos",
+               "Automatic PK2-to-PK1 conversion for directional correction is not yet supported "
+               "on the CPU path.");
+
+#ifdef MOOSE_KOKKOS_ENABLED
+  // For large-deformation models, NEML2 provides PK2 stress and dPK2/dF on both sides
+  // of the interface. Convert them to PK1 stress and dPK1/dF for the SCZM directional correction.
+  const auto pk1_stress = _name + "_pk1_stress";
+  const auto pk1_jacobian = _name + "_pk1_jacobian";
+  const auto add_converter =
+      [this, &pk1_stress, &pk1_jacobian](const std::string & type, const std::string & suffix)
+  {
+    auto params = _factory.getValidParams(type);
+    params.set<std::vector<BoundaryName>>("boundary") = _boundary;
+    params.set<std::vector<VariableName>>("displacements") = _displacements;
+    params.set<MaterialPropertyName>("custom_pk2_stress") =
+        getParam<MaterialPropertyName>("stress");
+    params.set<MaterialPropertyName>("custom_pk2_jacobian") =
+        getParam<MaterialPropertyName>("tangent");
+    params.set<MaterialPropertyName>("pk1_stress") = pk1_stress;
+    params.set<MaterialPropertyName>("dpk1_d_grad_u") = pk1_jacobian;
+    _problem->addKokkosMaterial(type, _name + "_pk2_to_pk1_" + suffix, params);
+  };
+  add_converter("KokkosInterfaceComputeLagrangianStressCustomPK2", "primary");
+  add_converter("KokkosNeighborComputeLagrangianStressCustomPK2", "neighbor");
+#else
+  mooseError("Kokkos SCZM was requested, but this MOOSE build does not enable Kokkos.");
+#endif
+}
+
 void
 ShiftedCohesiveZoneAction::addRequiredCZMInterfaceKernels()
 {
@@ -433,6 +480,12 @@ ShiftedCohesiveZoneAction::addRequiredCZMInterfaceKernels()
     params.set<std::vector<BoundaryName>>("boundary") = _boundary;
     params.set<std::string>("base_name") = _base_name;
     customizeCZMInterfaceKernelParameters(params);
+    if (needsPK2ToPK1Conversion())
+    {
+      params.set<MaterialPropertyName>("stress") = _name + "_pk1_stress";
+      params.set<MaterialPropertyName>("tangent") = _name + "_pk1_jacobian";
+      params.set<MooseEnum>("tangent_definition") = "pk1_wrt_deformation_gradient";
+    }
 
     std::string save_in_side;
     std::vector<AuxVariableName> save_in_var_names;
@@ -497,12 +550,15 @@ ShiftedCohesiveZoneAction::customizeCZMInterfaceKernelParameters(InputParameters
     params.set<bool>("no_shifted") = getParam<bool>("no_shifted");
   if (params.isParamValid("directional_correction"))
     params.set<bool>("directional_correction") = getParam<bool>("directional_correction");
-  if (params.isParamValid("stress"))
-    params.set<MaterialPropertyName>("stress") = getParam<MaterialPropertyName>("stress");
-  if (params.isParamValid("tangent"))
-    params.set<MaterialPropertyName>("tangent") = getParam<MaterialPropertyName>("tangent");
-  if (isParamSetByUser("tangent_definition") && params.isParamValid("tangent_definition"))
-    params.set<MooseEnum>("tangent_definition") = getParam<MooseEnum>("tangent_definition");
+  if (getParam<bool>("directional_correction") && !getParam<bool>("no_shifted"))
+  {
+    if (params.isParamValid("stress"))
+      params.set<MaterialPropertyName>("stress") = getParam<MaterialPropertyName>("stress");
+    if (params.isParamValid("tangent"))
+      params.set<MaterialPropertyName>("tangent") = getParam<MaterialPropertyName>("tangent");
+    if (isParamSetByUser("tangent_definition") && params.isParamValid("tangent_definition"))
+      params.set<MooseEnum>("tangent_definition") = getParam<MooseEnum>("tangent_definition");
+  }
 
   if (params.isParamValid("volumetric_locking_correction"))
   {
