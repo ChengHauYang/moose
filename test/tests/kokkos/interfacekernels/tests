@@ -21,6 +21,16 @@
     compute_devices = 'cpu cuda xpu'
   []
 
+  [interface_user_object]
+    type = CSVDiff
+    input = interface_user_object.i
+    csvdiff = interface_user_object_out.csv
+    requirement = 'The Kokkos system shall dispatch a user object once per oriented interface face and provide primary and mapped neighbor quadrature-point data to its device hook.'
+    design = 'syntax/Kokkos/index.md'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+
   [two_sided_address_values]
     type = Exodiff
     input = two_sided_address.i
