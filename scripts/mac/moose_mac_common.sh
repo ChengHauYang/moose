@@ -147,6 +147,139 @@ moose_mac_effective_neml2_backend()
     echo "local"
 }
 
+moose_mac_default_build_jobs()
+{
+    # Pick a compile parallelism suited to Apple Silicon rather than a fixed
+    # number. Bound by performance-core count (efficiency cores are slow for
+    # heavy C++ template work and only add stragglers) and by RAM, because
+    # MOOSE unity translation units that pull in libtorch/NEML2/Kokkos headers
+    # can peak around 2-3 GB each. The RAM cap divides by 3 GB/job.
+    local pcores mem_gb ram_cap jobs
+    pcores="$(sysctl -n hw.perflevel0.logicalcpu 2>/dev/null || true)"
+    [[ -n "$pcores" && "$pcores" -gt 0 ]] || pcores="$(sysctl -n hw.ncpu 2>/dev/null || echo 4)"
+    mem_gb=$(( $(sysctl -n hw.memsize 2>/dev/null || echo 8589934592) / 1073741824 ))
+    ram_cap=$(( mem_gb / 3 ))
+    (( ram_cap < 1 )) && ram_cap=1
+
+    jobs="$pcores"
+    (( jobs > ram_cap )) && jobs="$ram_cap"
+    (( jobs < 2 )) && jobs=2
+    echo "$jobs"
+}
+
+# Echo a usable ccache binary, or nothing when ccache is unavailable or not
+# opted into. This is called from command substitutions, so it must not rely on
+# exporting anything; cache sizing is set by moose_mac_ccache_prepare in the
+# shell that runs the build.
+#
+# ccache is OPT-IN (MOOSE_MAC_CCACHE=on), not on-by-default, because it provides
+# no benefit on this MOOSE/libMesh/WASP stack and measurably slows builds:
+#   1. Direct mode is disabled on every compile ("Include file Snippet.bison
+#      does not exist, disabling direct mode"): WASP's bison-generated headers
+#      reference intermediate files that are absent from the installed tree, so
+#      ccache cannot resolve the include set and falls back to preprocessor mode.
+#      Direct mode is the only mode in which the time_macros sloppiness below
+#      takes effect.
+#   2. In preprocessor-mode fallback ccache hashes the fully preprocessed text,
+#      which still contains libMesh's __TIME__ expansion (the compile clock time
+#      baked into libmesh_common.h's report_error macro at ~150 sites per TU).
+#      That changes every second, so even two identical back-to-back compiles
+#      both miss (measured: 0 hits, 2 misses).
+# Net effect with ccache on: ~1 s/TU of extra preprocessing (~10%) for a
+# guaranteed miss. The plumbing is kept so the cache works immediately if the
+# upstream direct-mode blocker is ever resolved, but it stays off unless asked.
+moose_mac_ccache_bin()
+{
+    case "${MOOSE_MAC_CCACHE:-off}" in
+        1|on|true|yes|enabled) ;;
+        *) return 0 ;;
+    esac
+
+    local bin=""
+    if [[ -n "${CCACHE_BIN:-}" && -x "${CCACHE_BIN:-}" ]]; then
+        bin="$CCACHE_BIN"
+    else
+        bin="$(command -v ccache 2>/dev/null || true)"
+    fi
+    [[ -n "$bin" ]] || return 0
+    echo "$bin"
+}
+
+# Prepare ccache environment in the current shell before a build. Must be called
+# directly (not in $(...)), since it exports variables the build needs.
+#
+# CCACHE_SLOPPINESS must include time_macros: libMesh's libmesh_common.h bakes
+# __DATE__/__TIME__ into its error-report macro, which is pulled into virtually
+# every MOOSE translation unit. Without time_macros every object hashes
+# differently on every build and ccache never hits. The only effect of ignoring
+# them is that a cached object reports the date/time of its first compile in
+# libMesh error messages, which does not affect behavior.
+#
+# CCACHE_MAXSIZE defaults generously: MOOSE unity objects are large and ccache's
+# 5G default evicts them between branch switches, defeating the point.
+moose_mac_ccache_prepare()
+{
+    [[ -n "$(moose_mac_ccache_bin)" ]] || return 0
+
+    export CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-25G}"
+
+    if [[ -z "${CCACHE_SLOPPINESS:-}" ]]; then
+        export CCACHE_SLOPPINESS="time_macros"
+    elif [[ ",${CCACHE_SLOPPINESS}," != *",time_macros,"* ]]; then
+        export CCACHE_SLOPPINESS="${CCACHE_SLOPPINESS},time_macros"
+    fi
+}
+
+# Populate MOOSE_MAC_MAKE_CCACHE_ARGS with make command-line overrides that make
+# the libmesh/MOOSE compile rules route through ccache while keeping the MPI
+# wrapper. build.mk defines libmesh_CXX with ?= and libmesh_UNDERLYING_CXX with
+# :=; command-line assignments win over both, so no Makefile edits are needed.
+moose_mac_set_ccache_make_args()
+{
+    MOOSE_MAC_MAKE_CCACHE_ARGS=()
+
+    local ccache
+    ccache="$(moose_mac_ccache_bin)"
+    [[ -n "$ccache" ]] || return 0
+
+    moose_mac_ccache_prepare
+
+    local cfg base_cxx base_cc underlying
+    cfg="$LIBMESH_DIR/bin/libmesh-config"
+    [[ -x "$cfg" ]] || cfg="$LIBMESH_DIR/contrib/bin/libmesh-config"
+    [[ -x "$cfg" ]] || return 0
+
+    base_cxx="$(METHOD="${METHOD:-opt}" "$cfg" --cxx 2>/dev/null || true)"
+    base_cc="$(METHOD="${METHOD:-opt}" "$cfg" --cc 2>/dev/null || true)"
+    [[ -n "$base_cxx" ]] || return 0
+
+    # Resolve the real underlying compiler so pycapabilities (which uses
+    # libmesh_UNDERLYING_CXX directly, not through ccache) keeps compiling.
+    underlying="$( ("$base_cxx" -show 2>/dev/null || echo "$base_cxx") | awk '{print $1}')"
+
+    MOOSE_MAC_MAKE_CCACHE_ARGS=(
+        "libmesh_CXX=$ccache $base_cxx"
+        "libmesh_CC=$ccache $base_cc"
+    )
+    [[ -n "$underlying" ]] && MOOSE_MAC_MAKE_CCACHE_ARGS+=("libmesh_UNDERLYING_CXX=$underlying")
+}
+
+# Sum of ccache hits (direct + preprocessed). Echoes an integer, 0 if no ccache.
+moose_mac_ccache_hits()
+{
+    local bin; bin="$(moose_mac_ccache_bin)"; [[ -n "$bin" ]] || { echo 0; return 0; }
+    "$bin" --print-stats 2>/dev/null | awk '
+        $1=="direct_cache_hit" || $1=="preprocessed_cache_hit" { s += $2 }
+        END { print s+0 }'
+}
+
+# ccache misses. Echoes an integer, 0 if no ccache.
+moose_mac_ccache_misses()
+{
+    local bin; bin="$(moose_mac_ccache_bin)"; [[ -n "$bin" ]] || { echo 0; return 0; }
+    "$bin" --print-stats 2>/dev/null | awk '$1=="cache_miss" { print $2+0; found=1 } END { if (!found) print 0 }'
+}
+
 moose_mac_env_exports()
 {
     export PATH="$CONDA_PREFIX/bin:$PATH"
@@ -154,7 +287,7 @@ moose_mac_env_exports()
     export WASP_DIR="$CONDA_PREFIX"
     export METHOD="${METHOD:-opt}"
     export JOBS="${JOBS:-8}"
-    export BUILD_JOBS="${BUILD_JOBS:-5}"
+    export BUILD_JOBS="${BUILD_JOBS:-$(moose_mac_default_build_jobs)}"
 
     local local_site
     local_site="$(moose_mac_local_neml2_site)"
@@ -678,6 +811,20 @@ moose_mac_build_neml2()
 
     moose_mac_env_exports
 
+    # Route NEML2's clang compiles through ccache when available. The launcher is
+    # baked into the CMake cache at configure time, so later incremental fast-cxx
+    # rebuilds (cmake --build) benefit too.
+    local ccache_launcher=()
+    local ccache_bin
+    ccache_bin="$(moose_mac_ccache_bin)"
+    if [[ -n "$ccache_bin" ]]; then
+        moose_mac_ccache_prepare
+        ccache_launcher=(
+            "-DCMAKE_C_COMPILER_LAUNCHER=$ccache_bin"
+            "-DCMAKE_CXX_COMPILER_LAUNCHER=$ccache_bin"
+        )
+    fi
+
     NEML2_JOBS="${NEML2_JOBS:-${BUILD_JOBS:-$JOBS}}" \
     ./scripts/update_and_rebuild_neml2.sh \
         --skip-submodule-update \
@@ -686,6 +833,7 @@ moose_mac_build_neml2()
         -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
         -DMPI_C_COMPILER="$CONDA_PREFIX/bin/mpicc" \
         -DMPI_CXX_COMPILER="$CONDA_PREFIX/bin/mpicxx" \
+        ${ccache_launcher[@]+"${ccache_launcher[@]}"} \
         --config-settings=build-dir=build/moose-apple
 
     moose_mac_record_local_neml2_state
@@ -836,6 +984,12 @@ moose_mac_libtorch_enabled()
 moose_mac_module_dir()
 {
     case "$1" in
+        framework-core|framework_core)
+            # Builds only the framework library (libmoose) via framework/Makefile,
+            # which includes build.mk + moose.mk but not app.mk, so the moose_test
+            # application and its test library are skipped.
+            echo "$MOOSE_DIR/framework"
+            ;;
         framework|test)
             echo "$MOOSE_DIR/test"
             ;;
@@ -873,6 +1027,10 @@ moose_mac_module_exe()
     local method="${METHOD:-opt}"
 
     case "$1" in
+        framework-core|framework_core)
+            # No executable: this target produces only the framework library.
+            echo ""
+            ;;
         framework|test)
             echo "$MOOSE_DIR/test/moose_test-$method"
             ;;
@@ -980,6 +1138,40 @@ moose_mac_clean_target_binaries()
     esac
 }
 
+# Echo the source/header trees whose contents are compiled into a target's
+# executable. Used by moose_mac_target_status to detect edits made since the
+# last build. These are the target's own trees only; an edit to the framework
+# shows up on the framework/test entry, not on a module entry that merely links
+# libmoose.
+moose_mac_target_source_roots()
+{
+    case "$1" in
+        framework|test)
+            echo "$MOOSE_DIR/framework/src $MOOSE_DIR/framework/include" \
+                 "$MOOSE_DIR/test/src $MOOSE_DIR/test/include"
+            ;;
+        solid_mechanics)
+            echo "$MOOSE_DIR/modules/solid_mechanics/src" \
+                 "$MOOSE_DIR/modules/solid_mechanics/include"
+            ;;
+        shifted_boundary_method|sbm)
+            echo "$MOOSE_DIR/modules/shifted_boundary_method/src" \
+                 "$MOOSE_DIR/modules/shifted_boundary_method/include"
+            ;;
+        unit|framework_unit)
+            echo "$MOOSE_DIR/unit/src $MOOSE_DIR/unit/include"
+            ;;
+        *_unit)
+            local mod="${1%_unit}"
+            echo "$MOOSE_DIR/modules/$mod/unit/src" \
+                 "$MOOSE_DIR/modules/$mod/unit/include"
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
+
 moose_mac_target_status()
 {
     local target="$1"
@@ -1043,6 +1235,27 @@ moose_mac_target_status()
             is_neml2_consumer=1
             ;;
     esac
+
+    # Source freshness: has any source or header in this target's own trees been
+    # modified since the executable was last linked? This is an mtime heuristic,
+    # not make's full dependency graph, so it reliably catches edits to this
+    # target's code but does not chase transitive framework edits onto module
+    # entries. find -quit stops at the first newer file, so it is cheap.
+    local src_roots existing_roots=() root newer
+    src_roots="$(moose_mac_target_source_roots "$target")"
+    for root in $src_roots; do
+        [[ -d "$root" ]] && existing_roots+=("$root")
+    done
+    if [[ ${#existing_roots[@]} -gt 0 ]]; then
+        newer="$(find "${existing_roots[@]}" \
+            \( -name '*.C' -o -name '*.h' -o -name '*.K' \) \
+            -newer "$exe" -print -quit 2>/dev/null)"
+        if [[ -n "$newer" ]]; then
+            TARGET_STATUS="STALE"
+            TARGET_STALE_REASON="Source files changed since last build (e.g. ${newer#"$MOOSE_DIR"/}); recompile needed"
+            return 0
+        fi
+    fi
 
     # Check NEML2 configuration vs target
     if ! moose_mac_neml2_enabled; then
@@ -1291,11 +1504,22 @@ moose_mac_make_target()
         moose_mac_clean_target_binaries "$target"
     fi
 
+    local ccache_bin
+    ccache_bin="$(moose_mac_ccache_bin)"
+    moose_mac_set_ccache_make_args
+
+    local prof_hits_before=0 prof_misses_before=0
+    if [[ "${MOOSE_MAC_PROFILE:-0}" == "1" && -n "$ccache_bin" ]]; then
+        prof_hits_before="$(moose_mac_ccache_hits)"
+        prof_misses_before="$(moose_mac_ccache_misses)"
+    fi
+
     if [[ "${MOOSE_MAC_RAW:-0}" == "1" ]]; then
         moose_mac_section "Building $target (raw mode)"
         echo "Directory: $module_dir"
         cd "$module_dir"
-        make -j"$BUILD_JOBS" METHOD="$METHOD"
+        make -j"$BUILD_JOBS" METHOD="$METHOD" \
+            ${MOOSE_MAC_MAKE_CCACHE_ARGS[@]+"${MOOSE_MAC_MAKE_CCACHE_ARGS[@]}"}
         if [[ -n "$exe" && -x "$exe" ]]; then
             moose_mac_write_target_receipt "$target" "$exe"
         fi
@@ -1318,7 +1542,7 @@ moose_mac_make_target()
 
     moose_mac_section "Building $target"
     echo "Directory : $module_dir"
-    echo "Command   : make -j$BUILD_JOBS METHOD=$METHOD"
+    echo "Command   : make -j$BUILD_JOBS METHOD=$METHOD$([[ -n "$ccache_bin" ]] && echo ' (ccache)')"
     echo "Log file  : $log_file"
 
     local start_time end_time elapsed status
@@ -1327,7 +1551,9 @@ moose_mac_make_target()
     cd "$module_dir"
 
     set +e
-    make -j"$BUILD_JOBS" METHOD="$METHOD" >"$log_file" 2>&1
+    make -j"$BUILD_JOBS" METHOD="$METHOD" \
+        ${MOOSE_MAC_MAKE_CCACHE_ARGS[@]+"${MOOSE_MAC_MAKE_CCACHE_ARGS[@]}"} \
+        >"$log_file" 2>&1
     status=$?
     set -e
 
@@ -1348,6 +1574,35 @@ moose_mac_make_target()
         fi
         echo "LOG       : $log_file"
         echo "==================================="
+
+        if [[ "${MOOSE_MAC_PROFILE:-0}" == "1" ]]; then
+            local cxx_count link_count
+            cxx_count="$(grep -cE 'Compiling (C\+\+|Kokkos C\+\+)' "$log_file" 2>/dev/null || echo 0)"
+            link_count="$(grep -cE 'Linking (Library|Executable|Kokkos)' "$log_file" 2>/dev/null || echo 0)"
+            echo
+            echo "---------- BUILD PROFILE ----------"
+            echo "WALL TIME         : ${elapsed}s"
+            echo "C++ TUs COMPILED  : $cxx_count"
+            echo "LINK STEPS        : $link_count"
+            echo "PARALLEL JOBS     : $BUILD_JOBS"
+            if [[ -n "$ccache_bin" ]]; then
+                local hits_after misses_after dh dm total pct
+                hits_after="$(moose_mac_ccache_hits)"
+                misses_after="$(moose_mac_ccache_misses)"
+                dh=$(( hits_after - prof_hits_before ))
+                dm=$(( misses_after - prof_misses_before ))
+                total=$(( dh + dm ))
+                if (( total > 0 )); then
+                    pct=$(( dh * 100 / total ))
+                    echo "CCACHE            : $dh hit / $dm miss (${pct}% hit) [$ccache_bin]"
+                else
+                    echo "CCACHE            : enabled, nothing recompiled this run [$ccache_bin]"
+                fi
+            else
+                echo "CCACHE            : off (opt in with MOOSE_MAC_CCACHE=on; see note below)"
+            fi
+            echo "-----------------------------------"
+        fi
         return 0
     fi
 
