@@ -23,12 +23,15 @@ KokkosQuantityToNEML2::validParams()
   InputParameters params = Moose::Kokkos::ElementUserObject::validParams();
   params += MOOSEToNEML2::validParams();
   params.addClassDescription(
-      "Gather a current-state full rank-two Kokkos material property into a device buffer for "
-      "direct (zero-copy on CUDA) insertion into a NEML2 input tensor. "
+      "Gather a current-state rank-two Kokkos material property into a device buffer for direct "
+      "(zero-copy on CUDA) insertion into a NEML2 input tensor. Full tensors use row-major "
+      "components; symmetric tensors use six-component Mandel packing. "
       "NEML2BatchIndexGenerator (execution_order_group = -1) supplies batch row destinations; "
       "this gatherer runs in group 0.");
   params.addRequiredParam<MaterialPropertyName>(
       "from_moose", "Name of the rank-two Kokkos material property to gather");
+  params.addParam<bool>(
+      "symmetric", false, "Gather the property using six-component Mandel packing.");
   params.addRequiredParam<UserObjectName>(
       "batch_index_generator", "The NEML2BatchIndexGenerator that supplies bulk batch offsets");
   ExecFlagEnum execute_options = MooseUtils::getDefaultExecFlagEnum();
@@ -41,7 +44,9 @@ KokkosQuantityToNEML2::KokkosQuantityToNEML2(const InputParameters & parameters)
   : Moose::Kokkos::ElementUserObject(parameters),
     MOOSEToNEML2(parameters),
     _batch_index_generator(getUserObject<NEML2BatchIndexGenerator>("batch_index_generator")),
-    _mat_prop(getKokkosMaterialProperty<Real, 2>(getParam<MaterialPropertyName>("from_moose")))
+    _mat_prop(getKokkosMaterialProperty<Real, 2>(getParam<MaterialPropertyName>("from_moose"))),
+    _symmetric(getParam<bool>("symmetric")),
+    _num_components(_symmetric ? 6 : 9)
 {
 }
 
@@ -50,6 +55,8 @@ KokkosQuantityToNEML2::KokkosQuantityToNEML2(const KokkosQuantityToNEML2 & objec
     MOOSEToNEML2(object),
     _batch_index_generator(object._batch_index_generator),
     _mat_prop(object._mat_prop),
+    _symmetric(object._symmetric),
+    _num_components(object._num_components),
     _elem_batch_indices(object._elem_batch_indices),
     _buffer(object._buffer),
     _last_map_generation(object._last_map_generation)
@@ -69,7 +76,7 @@ KokkosQuantityToNEML2::initialize()
   if (gen != _last_map_generation)
   {
     const auto total_batch = _batch_index_generator.getBatchIndex();
-    _buffer.create(total_batch * 9);
+    _buffer.create(total_batch * _num_components);
     _elem_batch_indices = _batch_index_generator.kokkosElementBatchIndices();
     _last_map_generation = gen;
     _user_object_dispatcher.reset();
@@ -95,9 +102,10 @@ KokkosQuantityToNEML2::finalize()
   // On CPU Kokkos, deviceData() is host memory; on CUDA it is GPU memory.
   // The at::Device must match so NEML2 evaluates on the correct device.
   const at::Device torch_device(_app.getLibtorchDevice());
-  _gathered_tensor = at::from_blob(_buffer.deviceData(),
-                                   {static_cast<int64_t>(total_batch), 3, 3},
-                                   at::TensorOptions().dtype(at::kDouble).device(torch_device));
+  const auto shape = _symmetric ? std::vector<int64_t>{static_cast<int64_t>(total_batch), 6}
+                                : std::vector<int64_t>{static_cast<int64_t>(total_batch), 3, 3};
+  _gathered_tensor = at::from_blob(
+      _buffer.deviceData(), shape, at::TensorOptions().dtype(at::kDouble).device(torch_device));
 #endif
 }
 

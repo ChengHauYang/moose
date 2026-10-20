@@ -60,7 +60,8 @@ The `input_backend` parameter selects the gatherer backend. Its default `moose` 
 `kokkos` value creates [KokkosQuantityToNEML2](../userobjects/KokkosQuantityToNEML2.md) for bulk
 inputs and [KokkosInterfaceQuantityToNEML2](../userobjects/KokkosInterfaceQuantityToNEML2.md) for
 `interface_only` inputs.
-Kokkos input gathering currently supports only current-state `RankTwoTensor` material properties;
+Kokkos input gathering supports current-state full `RankTwoTensor` material properties and bulk
+current-state `SymmetricRankTwoTensor` material properties, which use six-component Mandel packing;
 variables, history inputs, model parameters, input kernels, and true interface-material properties
 are rejected during Action setup. This selection is independent of `output_backend`.
 
