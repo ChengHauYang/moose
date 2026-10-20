@@ -52,7 +52,7 @@ cd "$PETSC_SRC_DIR"
 # need libgfortran.so which lives in /usr/lib/gcc/x86_64-linux-gnu/9/ on this box
 # (only libgfortran.so.5 is on the default search path). Bake it into LDFLAGS
 # so package makefiles that link with the C driver still resolve gfortran.
-export LDFLAGS="-L/usr/lib/gcc/x86_64-linux-gnu/9 ${LDFLAGS:-}"
+export LDFLAGS="-L${FORTRAN_LIB_DIR:-/usr/lib/gcc/x86_64-linux-gnu/9} ${LDFLAGS:-}"
 
 # Sanity: refuse to build against system MPI. We want the CUDA-aware wrappers
 # from $PREFIX/bin so PETSc's Kokkos backend can use GPU-aware MPI without
@@ -81,11 +81,11 @@ python3 ./configure \
   --with-x=0 \
   --with-ssl=0 \
   --with-cuda=1 \
-  --with-cuda-arch=86 \
-  --with-cudac=/usr/local/cuda/bin/nvcc \
-  --with-cuda-dir=/usr/local/cuda \
-  --with-blas-lib=/usr/lib/x86_64-linux-gnu/libblas.so \
-  --with-lapack-lib=/usr/lib/x86_64-linux-gnu/liblapack.so \
+  --with-cuda-arch="${CUDA_ARCH:-86}" \
+  --with-cudac="$CUDA_DIR/bin/nvcc" \
+  --with-cuda-dir="$CUDA_DIR" \
+  --with-blas-lib="${BLAS_LIB:-/usr/lib/x86_64-linux-gnu/libblas.so}" \
+  --with-lapack-lib="${LAPACK_LIB:-/usr/lib/x86_64-linux-gnu/liblapack.so}" \
   --download-hpddm=1 \
   --download-hypre=1 \
   --download-metis=1 \
