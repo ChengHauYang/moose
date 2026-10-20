@@ -62,7 +62,7 @@ theta_rad = '${fparse theta * pi / 180}'
 
 [Materials]
   [deformation_gradient]
-    type = ComputeLagrangianStrain
+    type = KokkosComputeDeformationGradient
     displacements = 'ux uy uz'
   []
   [local_traction]
@@ -82,6 +82,7 @@ theta_rad = '${fparse theta * pi / 180}'
   derivatives = 'pk2_stress deformation_gradient dpk2_dF'
   [primary]
     model = model
+    input_backend = kokkos
     output_backend = kokkos
     interface = Block0_Block1
     interface_only = true
@@ -90,6 +91,7 @@ theta_rad = '${fparse theta * pi / 180}'
   [neighbor]
     model = model
     input = sczm_pk2_neighbor_neml2.i
+    input_backend = kokkos
     output_backend = kokkos
     interface = Block0_Block1
     interface_only = true
