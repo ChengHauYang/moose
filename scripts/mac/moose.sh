@@ -68,7 +68,8 @@ Environment overrides:
   MOOSE_CONDA_ENV   Conda environment (default: moose)
   MOOSE_NEML2_SRC   NEML2 source mode: auto (default), local, committed, or conda
   METHOD            Build method (default: opt)
-  BUILD_JOBS        Parallel compile jobs (default: auto from P-cores and RAM)
+  BUILD_JOBS        Parallel compile jobs (default: half of P-cores minus one,
+                    capped by half of RAM capacity)
   JOBS              Parallel test jobs (default: 8)
   MOOSE_MAC_CCACHE  Set to 'on' to opt into ccache (off by default: it yields no
                     hits on this libMesh/WASP stack and adds ~10% per TU)

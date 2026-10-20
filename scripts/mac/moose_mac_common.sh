@@ -149,21 +149,21 @@ moose_mac_effective_neml2_backend()
 
 moose_mac_default_build_jobs()
 {
-    # Pick a compile parallelism suited to Apple Silicon rather than a fixed
-    # number. Bound by performance-core count (efficiency cores are slow for
-    # heavy C++ template work and only add stragglers) and by RAM, because
-    # MOOSE unity translation units that pull in libtorch/NEML2/Kokkos headers
-    # can peak around 2-3 GB each. The RAM cap divides by 3 GB/job.
-    local pcores mem_gb ram_cap jobs
+    # Budget for two independent builds and leave one performance core per
+    # build unclaimed for the OS and other work. MOOSE unity translation units
+    # that pull in libtorch/NEML2/Kokkos headers can peak around 2-3 GB each,
+    # so the RAM cap allows 6 GB/job across two builds.
+    local pcores mem_gb core_cap ram_cap jobs
     pcores="$(sysctl -n hw.perflevel0.logicalcpu 2>/dev/null || true)"
     [[ -n "$pcores" && "$pcores" -gt 0 ]] || pcores="$(sysctl -n hw.ncpu 2>/dev/null || echo 4)"
     mem_gb=$(( $(sysctl -n hw.memsize 2>/dev/null || echo 8589934592) / 1073741824 ))
-    ram_cap=$(( mem_gb / 3 ))
+    core_cap=$(( pcores / 2 - 1 ))
+    ram_cap=$(( mem_gb / 6 ))
+    (( core_cap < 1 )) && core_cap=1
     (( ram_cap < 1 )) && ram_cap=1
 
-    jobs="$pcores"
+    jobs="$core_cap"
     (( jobs > ram_cap )) && jobs="$ram_cap"
-    (( jobs < 2 )) && jobs=2
     echo "$jobs"
 }
 
