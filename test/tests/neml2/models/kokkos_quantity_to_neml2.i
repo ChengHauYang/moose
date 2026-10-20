@@ -9,4 +9,9 @@
     F = F
     t = t
   []
+  [weighted_model]
+    type = R2WeightedSumModel
+    F = F
+    t = t
+  []
 []
