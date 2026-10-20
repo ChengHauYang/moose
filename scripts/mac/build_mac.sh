@@ -12,6 +12,9 @@ for arg in "$@"; do
         --raw)
             RAW_FLAG=1
             ;;
+        --profile)
+            export MOOSE_MAC_PROFILE=1
+            ;;
         --use-conda-neml2)
             export MOOSE_NEML2_SRC=conda
             ;;
