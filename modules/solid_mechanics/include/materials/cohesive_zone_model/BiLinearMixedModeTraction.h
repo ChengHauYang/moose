@@ -112,4 +112,5 @@ private:
   RealVectorValue _ddelta_m_ddelta;
   RealVectorValue _dd_ddelta;
   // @}
+  bool _use_legacy = false;
 };

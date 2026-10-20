@@ -40,7 +40,13 @@ BiLinearMixedModeTraction::validParams()
       false,
       "Whether to use old displacement jumps to compute the effective displacement jump.");
   params.addParam<Real>("alpha", 1e-10, "Regularization parameter for the Macaulay bracket.");
-  params.addParamNamesToGroup("lag_mode_mixity lag_displacement_jump alpha", "Advanced");
+
+  params.addParam<bool>(
+      "use_legacy",
+      false,
+      "Whether to use the legacy implementation of the BiLinearMixedModeTraction material.");
+
+  params.addParamNamesToGroup("lag_mode_mixity lag_displacement_jump alpha use_legacy", "Advanced");
 
   return params;
 }
@@ -67,7 +73,8 @@ BiLinearMixedModeTraction::BiLinearMixedModeTraction(const InputParameters & par
     _criterion(getParam<MooseEnum>("mixed_mode_criterion").getEnum<MixedModeCriterion>()),
     _lag_mode_mixity(getParam<bool>("lag_mode_mixity")),
     _lag_disp_jump(getParam<bool>("lag_displacement_jump")),
-    _alpha(getParam<Real>("alpha"))
+    _alpha(getParam<Real>("alpha")),
+    _use_legacy(getParam<bool>("use_legacy"))
 {
 }
 
@@ -137,13 +144,23 @@ BiLinearMixedModeTraction::computeModeMixity()
 
     if (!_lag_mode_mixity)
     {
-      if (delta_s > 0)
-        // delta_s is nonnegative; only exact zero needs special handling to avoid 0/0.
+      if (_use_legacy)
+      {
+        // Legacy implementation of the mode mixity ratio derivative
         _dbeta_ddelta = RealVectorValue(-delta_s / delta(0) / delta(0),
                                         delta(1) / delta_s / delta(0),
                                         delta(2) / delta_s / delta(0));
+      }
       else
-        _dbeta_ddelta = RealVectorValue(0, 0, 0);
+      {
+        if (delta_s > 0)
+          // delta_s is nonnegative; only exact zero needs special handling to avoid 0/0.
+          _dbeta_ddelta = RealVectorValue(-delta_s / delta(0) / delta(0),
+                                          delta(1) / delta_s / delta(0),
+                                          delta(2) / delta_s / delta(0));
+        else
+          _dbeta_ddelta = RealVectorValue(0, 0, 0);
+      }
     }
   }
   else
@@ -172,9 +189,13 @@ BiLinearMixedModeTraction::computeCriticalDisplacementJump()
         delta_normal0 * delta_shear0 * std::sqrt(1 + _beta[_qp] * _beta[_qp]) / delta_mixed;
     if (!_lag_mode_mixity)
     {
-      const Real ddelta_init_dbeta =
-          _delta_init[_qp] * _beta[_qp] *
-          (1 / (1 + _beta[_qp] * _beta[_qp]) - Utility::pow<2>(delta_normal0 / delta_mixed));
+      const Real ddelta_init_dbeta = _use_legacy
+                                         ? _delta_init[_qp] * _beta[_qp] *
+                                               (1 / (1 + _beta[_qp] * _beta[_qp]) -
+                                                Utility::pow<2>(_delta_init[_qp] / delta_mixed))
+                                         : _delta_init[_qp] * _beta[_qp] *
+                                               (1 / (1 + _beta[_qp] * _beta[_qp]) -
+                                                Utility::pow<2>(delta_normal0 / delta_mixed));
       _ddelta_init_ddelta = ddelta_init_dbeta * _dbeta_ddelta;
     }
   }
@@ -186,7 +207,9 @@ BiLinearMixedModeTraction::computeFinalDisplacementJump()
   const RealVectorValue delta =
       _lag_mode_mixity ? _interface_displacement_jump_old[_qp] : _interface_displacement_jump[_qp];
 
-  _delta_final[_qp] = 2 * _GII_c[_qp] / _S[_qp];
+  _delta_final[_qp] =
+      _use_legacy ? std::sqrt(2) * 2 * _GII_c[_qp] / _S[_qp] : 2 * _GII_c[_qp] / _S[_qp];
+
   _ddelta_final_ddelta = RealVectorValue(0, 0, 0);
   if (delta(0) > 0)
   {
@@ -201,11 +224,17 @@ BiLinearMixedModeTraction::computeFinalDisplacementJump()
       {
         const Real ddelta_final_ddelta_init = -_delta_final[_qp] / _delta_init[_qp];
         const Real ddelta_final_dbeta =
-            MooseUtils::absoluteFuzzyEqual(_beta[_qp], 0.0)
-                ? 0.0
-                : 2 / _K / _delta_init[_qp] * (_GII_c[_qp] - _GI_c[_qp]) * _eta *
+            _use_legacy
+                ? 2 / _K / _delta_init[_qp] * (_GII_c[_qp] - _GI_c[_qp]) * _eta *
                       std::pow(_beta[_qp] * _beta[_qp] / (1 + _beta[_qp] * _beta[_qp]), _eta - 1) *
-                      2 * _beta[_qp] / Utility::pow<2>(1 + _beta[_qp] * _beta[_qp]);
+                      2 * _beta[_qp] *
+                      (1 - Utility::pow<2>(_beta[_qp] / (1 + _beta[_qp] * _beta[_qp])))
+                : (MooseUtils::absoluteFuzzyEqual(_beta[_qp], 0.0)
+                       ? 0.0
+                       : 2 / _K / _delta_init[_qp] * (_GII_c[_qp] - _GI_c[_qp]) * _eta *
+                             std::pow(_beta[_qp] * _beta[_qp] / (1 + _beta[_qp] * _beta[_qp]),
+                                      _eta - 1) *
+                             2 * _beta[_qp] / Utility::pow<2>(1 + _beta[_qp] * _beta[_qp]));
         _ddelta_final_ddelta =
             ddelta_final_ddelta_init * _ddelta_init_ddelta + ddelta_final_dbeta * _dbeta_ddelta;
       }
@@ -220,11 +249,17 @@ BiLinearMixedModeTraction::computeFinalDisplacementJump()
       {
         const Real ddelta_final_ddelta_init = -_delta_final[_qp] / _delta_init[_qp];
         const Real ddelta_final_dbeta =
-            _delta_final[_qp] * 2 * _beta[_qp] / (1 + _beta[_qp] * _beta[_qp]) -
-            (2 + 2 * _beta[_qp] * _beta[_qp]) / _K / _delta_init[_qp] *
-                std::pow(Gc_mixed, -1 / _eta - 1) *
-                std::pow(_beta[_qp] * _beta[_qp] / _GII_c[_qp], _eta - 1) * 2 * _beta[_qp] /
-                _GII_c[_qp];
+            _use_legacy ? _delta_final[_qp] * 2 * _beta[_qp] / (1 + _beta[_qp] * _beta[_qp]) -
+                              (2 + 2 * _beta[_qp] * _beta[_qp]) / _K / _delta_init[_qp] *
+                                  std::pow(Gc_mixed, -1 / _eta - 1) *
+                                  (std::pow(1 / _GI_c[_qp], _eta - 1) +
+                                   std::pow(_beta[_qp] * _beta[_qp] / _GII_c[_qp], _eta - 1) * 2 *
+                                       _beta[_qp] / _GII_c[_qp])
+                        : _delta_final[_qp] * 2 * _beta[_qp] / (1 + _beta[_qp] * _beta[_qp]) -
+                              (2 + 2 * _beta[_qp] * _beta[_qp]) / _K / _delta_init[_qp] *
+                                  std::pow(Gc_mixed, -1 / _eta - 1) *
+                                  std::pow(_beta[_qp] * _beta[_qp] / _GII_c[_qp], _eta - 1) * 2 *
+                                  _beta[_qp] / _GII_c[_qp];
         _ddelta_final_ddelta =
             ddelta_final_ddelta_init * _ddelta_init_ddelta + ddelta_final_dbeta * _dbeta_ddelta;
       }
@@ -245,7 +280,8 @@ BiLinearMixedModeTraction::computeEffectiveDisplacementJump()
   if (!_lag_disp_jump && !MooseUtils::absoluteFuzzyEqual(_delta_m[_qp], 0))
   {
     const Real ddelta_normal_pos_ddelta_normal =
-        MathUtils::regularizedHeavysideDerivative(delta(0), _alpha) * delta(0) +
+        MathUtils::regularizedHeavysideDerivative(delta(0), _use_legacy ? 1e-6 : _alpha) *
+            delta(0) +
         MathUtils::regularizedHeavyside(delta(0), _alpha);
     _ddelta_m_ddelta =
         RealVectorValue(delta_normal_pos * ddelta_normal_pos_ddelta_normal, delta(1), delta(2));
