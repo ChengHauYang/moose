@@ -6,9 +6,9 @@
 # Primary side (block 0): KokkosConstantRankTwoMaterial with diagonal 1e-3.
 # Neighbor side (block 1): KokkosConstantRankTwoMaterial with diagonal 2e-3.
 #
-# KokkosInterfaceQuantityToNEML2 gathers both sides into a single device buffer.
-# KokkosInterfaceGatheringOracle reads gatheredData() and verifies each batch row has
-# the expected diagonal.  It returns the number of checked rows as a postprocessor;
+# NEML2Action creates KokkosInterfaceQuantityToNEML2, which gathers both sides into a
+# single device buffer. KokkosInterfaceGatheringOracle reads gatheredData() and verifies each
+# batch row has the expected diagonal. It returns the number of checked rows as a postprocessor;
 # the gold CSV asserts it equals 2 * n_qps_per_face (one QP per side per face, here 2).
 [Mesh]
   [mesh]
@@ -56,29 +56,26 @@
   []
 []
 
-[UserObjects]
-  [batch_index_generator]
-    type = NEML2BatchIndexGenerator
-    interface_boundaries = Block0_Block1
+[NEML2]
+  input = models/kokkos_quantity_to_neml2.i
+  load = models/kokkos_r2_scale.py
+  eager = true
+  device = cpu
+  input_types = MATERIAL
+  inputs = F
+  [weighted]
+    model = weighted_model
+    interface = Block0_Block1
     interface_only = true
-    execute_on = 'initial linear nonlinear'
-  []
-  [F_gatherer]
-    type = KokkosInterfaceQuantityToNEML2
-    boundary = Block0_Block1
-    primary_from_moose = F
-    neighbor_from_moose = F
-    to_neml2 = F
-    batch_index_generator = batch_index_generator
-    execute_on = 'initial linear nonlinear'
+    input_backend = kokkos
   []
 []
 
 [Postprocessors]
   [checked_rows]
     type = KokkosInterfaceGatheringOracle
-    gatherer = F_gatherer
-    batch_index_generator = batch_index_generator
+    gatherer = __moose_to_neml2_F_0_weighted__
+    batch_index_generator = neml2_index_weighted_model_weighted
     expected_diag_primary = 1e-3
     expected_diag_neighbor = 2e-3
     execute_on = timestep_end

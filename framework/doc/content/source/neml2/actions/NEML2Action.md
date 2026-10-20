@@ -20,12 +20,12 @@ Four types of objects are constructed by this action:
 
 Currently supported objects are summarized below.
 
-| Type            | MOOSE object(s)                                                 |
-| :-------------- | :-------------------------------------------------------------- |
-| Gatherer        | [MOOSEQuantityToNEML2](MOOSEQuantityToNEML2.md)                 |
-| Retriever       | [NEML2ToMOOSEMaterialProperty](NEML2ToMOOSEMaterialProperty.md) |
-| Index generator | [NEML2BatchIndexGenerator](NEML2BatchIndexGenerator.md)         |
-| Executor        | [NEML2ModelExecutor](NEML2ModelExecutor.md)                     |
+| Type            | MOOSE object(s)                                                                                                                      |
+| :-------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
+| Gatherer        | [MOOSEQuantityToNEML2](../userobjects/MOOSEQuantityToNEML2.md), [KokkosQuantityToNEML2](../userobjects/KokkosQuantityToNEML2.md), [KokkosInterfaceQuantityToNEML2](../userobjects/KokkosInterfaceQuantityToNEML2.md) |
+| Retriever       | [NEML2ToMOOSEMaterialProperty](../materials/NEML2ToMOOSEMaterialProperty.md), [NEML2ToKokkosMaterialProperty](../materials/NEML2ToKokkosMaterialProperty.md) |
+| Index generator | [NEML2BatchIndexGenerator](NEML2BatchIndexGenerator.md)                                                                              |
+| Executor        | [NEML2ModelExecutor](NEML2ModelExecutor.md)                                                                                          |
 
 Multiple gatherers and retrievers may be created by this action, but each instance of the action creates one and only one index generator and executor.  Each step performed by this action is explained in one of the following sections, in the order of execution.
 
@@ -55,7 +55,17 @@ These maps are used later to create objects for transferring data between MOOSE 
 
 This step involves the creation of `MOOSEToNEML2` gatherers for NEML2 input variables and model parameters. The first two maps mentioned in the previous section are used. The maps are looped through to create objects one-by-one.
 
-Note that the correct type of object is selected/created relying on NEML2 model introspection. For example, if a NEML2 input variable is of type `SR2`, we can infer that the corresponding MOOSE data structure should be `SymmetricRankTwoTensor`.
+The `input_backend` parameter selects the gatherer backend. Its default `moose` value uses
+[MOOSEQuantityToNEML2](../userobjects/MOOSEQuantityToNEML2.md) for bulk and interface inputs. The
+`kokkos` value creates [KokkosQuantityToNEML2](../userobjects/KokkosQuantityToNEML2.md) for bulk
+inputs and [KokkosInterfaceQuantityToNEML2](../userobjects/KokkosInterfaceQuantityToNEML2.md) for
+`interface_only` inputs.
+Kokkos input gathering currently supports only current-state `RankTwoTensor` material properties;
+variables, history inputs, model parameters, input kernels, and true interface-material properties
+are rejected during Action setup. This selection is independent of `output_backend`.
+
+The NEML2 input shape determines the MOOSE tensor type. For example, an NEML2 input variable of
+type `SR2` maps to `SymmetricRankTwoTensor`.
 
 ## Creating the NEML2 index generator and model executor
 

@@ -77,6 +77,11 @@ NEML2Action::validParams()
       "output_backend",
       MooseEnum("moose kokkos", "moose"),
       "Backend used by automatically created NEML2 output material properties");
+  params.addParam<MooseEnum>(
+      "input_backend",
+      MooseEnum("moose kokkos", "moose"),
+      "Backend used by automatically created NEML2 input gatherers. The Kokkos backend supports "
+      "only current-state full rank-two MATERIAL inputs.");
   params.addParam<std::string>(
       "batch_index_generator_name",
       "Name of the NEML2BatchIndexGenerator user object. The default name is "
@@ -310,6 +315,41 @@ NEML2Action::act()
 
     printSummary();
 
+    const bool use_kokkos_inputs = getParam<MooseEnum>("input_backend") == "kokkos";
+    if (use_kokkos_inputs)
+    {
+#ifndef MOOSE_KOKKOS_ENABLED
+      paramError("input_backend",
+                 "The Kokkos input backend is unavailable because MOOSE was built "
+                 "without Kokkos support.");
+#else
+      if (!_interface_material_inputs.empty())
+        paramError("input_backend",
+                   "The Kokkos input backend does not support true interface material data. "
+                   "Use block material properties on the interface sides instead.");
+      if (!getParam<std::vector<std::string>>("input_kernels").empty())
+        paramError("input_backend",
+                   "The Kokkos input backend does not support input_kernels in its first "
+                   "current-state material-property implementation.");
+#endif
+    }
+
+    // Kokkos gatherers resolve the generator in their constructor, unlike the host gatherers.
+    // Build it first only for the Kokkos path; preserve the established host construction order.
+    if (use_kokkos_inputs)
+    {
+      const auto type = "NEML2BatchIndexGenerator";
+      auto params = _factory.getValidParams(type);
+      params.applyParameters(parameters());
+      if (is_blk)
+        params.set<std::vector<SubdomainName>>("block") = _block;
+      if (is_interface)
+        params.set<std::vector<BoundaryName>>("interface_boundaries") = _interface;
+      params.set<bool>("interface_only") = _interface_only;
+      params.set<int>("execution_order_group") = -1;
+      _problem->addUserObject(type, _idx_generator_name, params);
+    }
+
     // Create and register a MOOSEToNEML2 gatherer user object, returning its name
     auto addGatherer = [&](const std::string & moose_name,
                            const std::string & neml2_name,
@@ -319,6 +359,45 @@ NEML2Action::act()
                            const std::string & type_prefix = "")
     {
       auto obj_name = obscureObjectName(moose_name, "moose_to_neml2", suffix, name());
+      if (use_kokkos_inputs)
+      {
+#ifndef MOOSE_KOKKOS_ENABLED
+        mooseError("Unreachable: Kokkos input backend was rejected during setup.");
+#else
+        if (moose_type != NEML2Utils::MOOSEIOType::MATERIAL ||
+            moose_tensor_type != "RankTwoTensor" || type_prefix != "" || suffix != "0")
+          paramError("input_backend",
+                     "The Kokkos input backend supports only current-state full rank-two MATERIAL "
+                     "inputs. Input '",
+                     moose_name,
+                     "' is mapped as ",
+                     NEML2Utils::stringify(moose_type),
+                     " ",
+                     moose_tensor_type,
+                     ".");
+
+        const auto obj_type =
+            _interface_only ? "KokkosInterfaceQuantityToNEML2" : "KokkosQuantityToNEML2";
+        auto obj_params = _factory.getValidParams(obj_type);
+        obj_params.set<std::string>("to_neml2") = neml2_name;
+        obj_params.set<UserObjectName>("batch_index_generator") = _idx_generator_name;
+        if (_interface_only)
+        {
+          obj_params.set<std::vector<BoundaryName>>("boundary") = _interface;
+          obj_params.set<MaterialPropertyName>("primary_from_moose") = moose_name;
+          obj_params.set<MaterialPropertyName>("neighbor_from_moose") = moose_name;
+        }
+        else
+        {
+          if (is_blk)
+            obj_params.set<std::vector<SubdomainName>>("block") = _block;
+          obj_params.set<MaterialPropertyName>("from_moose") = moose_name;
+        }
+        _problem->addUserObject(obj_type, obj_name, obj_params);
+        return obj_name;
+#endif
+      }
+
       auto obj_type = "MOOSE" + type_prefix + moose_tensor_type + "ToNEML2";
       auto obj_params = _factory.getValidParams(obj_type);
       obj_params.set<std::string>("from_moose") = moose_name;
@@ -388,7 +467,9 @@ NEML2Action::act()
       param_gatherers.push_back(addGatherer(
           param.moose_name, param.neml2_name, param.moose_type, param.moose_tensor_type, "param"));
 
-    // The index generator UO
+    // Host gatherers do not resolve the generator until execution, so preserve their established
+    // construction order. The Kokkos path created it before constructing its gatherers.
+    if (!use_kokkos_inputs)
     {
       auto type = "NEML2BatchIndexGenerator";
       auto params = _factory.getValidParams(type);

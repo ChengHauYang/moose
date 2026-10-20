@@ -12,8 +12,9 @@ Simple NEML2 R2 models for KokkosQuantityToNEML2 tests.
 
 R2ScaleModel: G = 2 * F (full rank-two input and output).
 R2TraceModel: t = trace(F) = F_xx + F_yy + F_zz (scalar output).
+R2WeightedSumModel: t = sum((3*i+j+1)*F_ij), sensitive to all tensor components.
 
-Both models carry a float64 parameter/buffer so the EagerModel dtype resolves
+The models carry a float64 parameter/buffer so the EagerModel dtype resolves
 to float64 and accepts MOOSE's double-precision input tensors without casting.
 """
 
@@ -92,3 +93,29 @@ def _identity_r2(raw):
     out[..., 1, 1] = 1.0
     out[..., 2, 2] = 1.0
     return out
+
+
+@register_neml2_object("R2WeightedSumModel")
+class R2WeightedSumModel(Model):
+    """Contract every component with distinct row-major weights."""
+
+    hit = HitSchema(
+        input("F", R2, "Input full rank-two tensor"),
+        output("t", Scalar, "Weighted sum of all nine components"),
+    )
+
+    def __init__(self):
+        """Store weights in float64 to match the MOOSE tensor dtype."""
+        super().__init__()
+        # Distinct increasing weights make any permutation of the fixture's
+        # distinct increasing components reduce the contraction.
+        self.register_buffer(
+            "weights", torch.arange(1, 10, dtype=torch.float64).reshape(3, 3)
+        )
+
+    def forward(self, F: R2, v: ChainRuleDict | None = None):
+        """Evaluate the contraction and optionally propagate its derivatives."""
+        t = _neml2.Scalar((self.weights * F.data).sum(dim=(-2, -1)))
+        if v is None:
+            return t
+        return self.apply_chain_rule(v, "t", {"F": R2(self.weights.expand_as(F.data))})
