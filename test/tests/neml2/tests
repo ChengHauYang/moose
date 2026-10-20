@@ -88,6 +88,16 @@
     capabilities = 'kokkos & libtorch & neml2'
     valgrind = none
   []
+  [kokkos_quantity_to_neml2_bulk]
+    type = CSVDiff
+    input = kokkos_quantity_to_neml2_bulk.i
+    csvdiff = kokkos_quantity_to_neml2_bulk_out.csv
+    requirement = 'The framework shall gather a full rank-two Kokkos material property from bulk elements into a contiguous NEML2 input tensor with batch row destinations assigned by NEML2BatchIndexGenerator, producing the correct model output when retrieved as a MOOSE material property.'
+    design = 'NEML2Action.md'
+    issues = '#31596'
+    capabilities = 'kokkos & libtorch & neml2'
+    valgrind = none
+  []
   [kokkos_interface_retriever]
     requirement = 'The framework shall retrieve symmetric NEML2 output and input derivatives into Kokkos interface material properties on the requested primary and neighbor output sides.'
     design = 'NEML2Action.md NEML2ToKokkosMaterialProperty.md'
