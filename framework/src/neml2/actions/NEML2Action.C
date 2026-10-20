@@ -364,17 +364,20 @@ NEML2Action::act()
 #ifndef MOOSE_KOKKOS_ENABLED
         mooseError("Unreachable: Kokkos input backend was rejected during setup.");
 #else
+        const auto symmetric = moose_tensor_type == "SymmetricRankTwoTensor";
         if (moose_type != NEML2Utils::MOOSEIOType::MATERIAL ||
-            moose_tensor_type != "RankTwoTensor" || type_prefix != "" || suffix != "0")
-          paramError("input_backend",
-                     "The Kokkos input backend supports only current-state full rank-two MATERIAL "
-                     "inputs. Input '",
-                     moose_name,
-                     "' is mapped as ",
-                     NEML2Utils::stringify(moose_type),
-                     " ",
-                     moose_tensor_type,
-                     ".");
+            (moose_tensor_type != "RankTwoTensor" && !symmetric) || type_prefix != "" ||
+            suffix != "0" || (_interface_only && symmetric))
+          paramError(
+              "input_backend",
+              "The Kokkos input backend supports only current-state full rank-two MATERIAL inputs "
+              "and symmetric rank-two bulk MATERIAL inputs. Input '",
+              moose_name,
+              "' is mapped as ",
+              NEML2Utils::stringify(moose_type),
+              " ",
+              moose_tensor_type,
+              ".");
 
         const auto obj_type =
             _interface_only ? "KokkosInterfaceQuantityToNEML2" : "KokkosQuantityToNEML2";
@@ -392,6 +395,7 @@ NEML2Action::act()
           if (is_blk)
             obj_params.set<std::vector<SubdomainName>>("block") = _block;
           obj_params.set<MaterialPropertyName>("from_moose") = moose_name;
+          obj_params.set<bool>("symmetric") = symmetric;
         }
         _problem->addUserObject(obj_type, obj_name, obj_params);
         return obj_name;
