@@ -21,10 +21,13 @@ Commands:
   doctor                         Inspect the environment, NEML2 hashes, and build state
   init [neml2-flag]              Install dependencies and configure when needed;
                                  builds repo-isolated NEML2 without modifying Conda
-  compile [target] [-j N] [--raw] [neml2-flag]
+  compile [target] [-j N] [--raw] [--profile] [neml2-flag]
                                  Auto-sync repo-isolated NEML2 if branch changed, then
-                                 compile framework, solid_mechanics (default),
-                                 shifted_boundary_method, unit, neml2, or all
+                                 compile framework-core (library only), framework,
+                                 solid_mechanics (default), shifted_boundary_method,
+                                 unit, neml2, or all.
+                                 --profile prints a build profile (TUs, link steps,
+                                 wall time, ccache hit/miss).
   build [target] [-j N] [--raw]  Alias for compile
   run <target> <input.i> [...]   Run an input file with the selected executable
   test [scope|mod] [pattern] [...]
@@ -65,8 +68,11 @@ Environment overrides:
   MOOSE_CONDA_ENV   Conda environment (default: moose)
   MOOSE_NEML2_SRC   NEML2 source mode: auto (default), local, committed, or conda
   METHOD            Build method (default: opt)
-  BUILD_JOBS        Parallel compile jobs (default: 5)
+  BUILD_JOBS        Parallel compile jobs (default: auto from P-cores and RAM)
   JOBS              Parallel test jobs (default: 8)
+  MOOSE_MAC_CCACHE  Set to 'on' to opt into ccache (off by default: it yields no
+                    hits on this libMesh/WASP stack and adds ~10% per TU)
+  CCACHE_BIN        Explicit ccache binary to use when ccache is opted in
 EOF
 }
 
@@ -127,6 +133,7 @@ compile_target()
 {
     local target="solid_mechanics"
     local raw_flag=()
+    local profile_flag=()
 
     parse_jobs BUILD_JOBS "$@"
 
@@ -135,16 +142,20 @@ compile_target()
             --raw)
                 raw_flag=(--raw)
                 ;;
-            framework|solid_mechanics|shifted_boundary_method|sbm|all|unit|framework_unit|*_unit|neml2)
+            --profile)
+                profile_flag=(--profile)
+                ;;
+            framework-core|framework_core|framework|solid_mechanics|shifted_boundary_method|sbm|all|unit|framework_unit|*_unit|neml2)
                 target="$arg"
                 ;;
             *)
-                moose_mac_die "Unknown compile option '$arg'. Use: framework, solid_mechanics, shifted_boundary_method, unit, neml2, all, or --raw"
+                moose_mac_die "Unknown compile option '$arg'. Use: framework-core, framework, solid_mechanics, shifted_boundary_method, unit, neml2, all, --raw, or --profile"
                 ;;
         esac
     done
 
-    "$SCRIPT_DIR/build_mac.sh" "$target" ${raw_flag[@]+"${raw_flag[@]}"}
+    "$SCRIPT_DIR/build_mac.sh" "$target" \
+        ${raw_flag[@]+"${raw_flag[@]}"} ${profile_flag[@]+"${profile_flag[@]}"}
 }
 
 run_input()
