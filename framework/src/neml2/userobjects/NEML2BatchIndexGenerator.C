@@ -9,6 +9,12 @@
 
 #include "NEML2BatchIndexGenerator.h"
 
+#include <algorithm>
+
+#ifdef MOOSE_KOKKOS_ENABLED
+#include "FEProblemBase.h"
+#endif
+
 registerMooseObject("MooseApp", NEML2BatchIndexGenerator);
 
 InputParameters
@@ -30,12 +36,28 @@ NEML2BatchIndexGenerator::validParams()
   execute_options = {EXEC_INITIAL, EXEC_LINEAR, EXEC_NONLINEAR};
   params.set<ExecFlagEnum>("execute_on") = execute_options;
 
+  // Must run before Kokkos gatherers (group 0) so device mirrors are ready before any kernel reads
+  // them. NEML2Action sets this explicitly too; the default here protects manually declared
+  // objects.
+  params.set<int>("execution_order_group") = -1;
+
   return params;
 }
 
 NEML2BatchIndexGenerator::NEML2BatchIndexGenerator(const InputParameters & params)
   : DomainUserObject(params), _interface_only(getParam<bool>("interface_only")), _outdated(true)
 {
+#ifdef MOOSE_KOKKOS_ENABLED
+  if (!_interface_bnd_ids.empty())
+  {
+    _fe_problem.mesh().getKokkosMesh()->setNeedsElementSideGeometry();
+    _fe_problem.addKokkosMeshInitializationHook(
+        [this]()
+        {
+          _interface_face_cache = _fe_problem.getKokkosInterfaceFaceCache(_interface_bnd_ids, this);
+        });
+  }
+#endif
 }
 
 void
@@ -142,6 +164,13 @@ NEML2BatchIndexGenerator::threadJoin(const UserObject & uo)
 void
 NEML2BatchIndexGenerator::finalize()
 {
+  if (!_outdated)
+    return;
+
+#ifdef MOOSE_KOKKOS_ENABLED
+  updateKokkosMirrors();
+#endif
+
   _outdated = false;
 }
 
