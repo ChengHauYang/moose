@@ -398,6 +398,8 @@ NEML2Action::act()
       if (is_interface)
         params.set<std::vector<BoundaryName>>("interface_boundaries") = _interface;
       params.set<bool>("interface_only") = _interface_only;
+      // Must precede Kokkos gatherers and the executor (group 0) so device mirrors are ready.
+      params.set<int>("execution_order_group") = -1;
       _problem->addUserObject(type, _idx_generator_name, params);
     }
 

@@ -79,6 +79,15 @@
     capabilities = 'libtorch & neml2'
     valgrind = none
   []
+  [kokkos_batch_index_map]
+    type = CSVDiff
+    input = kokkos_batch_index_map.i
+    csvdiff = kokkos_batch_index_map_out.csv
+    requirement = 'The framework shall publish generator-defined NEML2 interface batch indices in face-indexed Kokkos storage before Kokkos user objects execute.'
+    design = 'NEML2Action.md'
+    capabilities = 'kokkos & libtorch & neml2'
+    valgrind = none
+  []
   [kokkos_interface_retriever]
     requirement = 'The framework shall retrieve symmetric NEML2 output and input derivatives into Kokkos interface material properties on the requested primary and neighbor output sides.'
     design = 'NEML2Action.md NEML2ToKokkosMaterialProperty.md'
