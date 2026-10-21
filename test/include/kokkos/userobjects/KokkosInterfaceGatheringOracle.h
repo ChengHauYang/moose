@@ -17,11 +17,16 @@
 #include "KokkosInterfaceQuantityToNEML2.h"
 #include "NEML2BatchIndexGenerator.h"
 
+#include <array>
+
 /**
- * Test-only postprocessor: after a KokkosInterfaceQuantityToNEML2 gather, reads the
- * gatheredData() tensor (host memory on CPU Kokkos) and verifies that every diagonal
- * row matches either the expected primary- or neighbor-side diagonal value.
- * Returns the number of checked batch rows; a wrong value triggers mooseError.
+ * Test-only postprocessor: after a KokkosInterfaceQuantityToNEML2 gather, verifies the
+ * gathered NEML2 input buffer directly on the device it lives on. A Kokkos reduction over
+ * the batch rows checks all nine row-major rank-two components of each row against the
+ * expected primary- or neighbor-side pattern and counts the matching rows, so the buffer is
+ * never dereferenced on the host. This makes the oracle valid for both CPU and CUDA Kokkos
+ * without a host copy, host mirror, or .cpu() staging of the device buffer.
+ * Returns the number of matched batch rows; a wrong value fails the CSV comparison.
  */
 class KokkosInterfaceGatheringOracle : public GeneralUserObject, public Postprocessor
 {
@@ -37,8 +42,10 @@ public:
 private:
   const KokkosInterfaceQuantityToNEML2 & _gatherer;
   const NEML2BatchIndexGenerator & _batch_index_generator;
-  const Real _expected_diag_primary;
-  const Real _expected_diag_neighbor;
+  /// Expected full rank-two primary-side components, row-major (i * 3 + j).
+  std::array<Real, 9> _expected_primary;
+  /// Expected full rank-two neighbor-side components, row-major (i * 3 + j).
+  std::array<Real, 9> _expected_neighbor;
   std::size_t _checked_rows = 0;
 };
 
