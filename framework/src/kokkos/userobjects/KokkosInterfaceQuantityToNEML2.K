@@ -109,9 +109,20 @@ KokkosInterfaceQuantityToNEML2::finalize()
 
   const auto total_batch = _batch_index_generator.getBatchIndex();
   const at::Device torch_device(_app.getLibtorchDevice());
-  _gathered_tensor = at::from_blob(_buffer.deviceData(),
-                                   {static_cast<int64_t>(total_batch), 3, 3},
-                                   at::TensorOptions().dtype(at::kDouble).device(torch_device));
+  const auto opts = at::TensorOptions().dtype(at::kDouble).device(torch_device);
+
+  // A distributed partition may own no cohesive interface faces, so this rank contributes zero
+  // batch rows. _buffer is then never allocated and deviceData() is null; at::from_blob with a
+  // CUDA device rejects a null/host pointer via libtorch's pointer-device-registration check.
+  // Return a device-resident empty tensor instead. This is the correct zero-row result, not a
+  // workaround: NEML2ModelExecutor short-circuits an empty batch (isEmpty()) so it is never read
+  // for model evaluation, and the gather oracle treats size(0) == 0 as zero checked rows. No host
+  // copy, mirror, or .cpu() staging is introduced.
+  if (total_batch == 0)
+    _gathered_tensor = at::empty({0, 3, 3}, opts);
+  else
+    _gathered_tensor =
+        at::from_blob(_buffer.deviceData(), {static_cast<int64_t>(total_batch), 3, 3}, opts);
 #endif
 }
 
