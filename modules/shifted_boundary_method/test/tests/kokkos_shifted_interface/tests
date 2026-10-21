@@ -45,6 +45,33 @@
     capabilities = 'kokkos & libtorch & neml2'
     compute_devices = cpu
   []
+  [sczm_stateful_serial_cuda]
+    type = Exodiff
+    input = sczm_stateful_kokkos.i
+    cli_args = 'NEML2/device=cuda'
+    exodiff = sczm_stateful_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    recover = false
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall execute a stateful NEML2 radial-return loading and unloading trajectory in serial on the CUDA device, advancing history only after converged timesteps and reproducing the reference solution.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
+  [sczm_stateful_distributed_cuda]
+    type = Exodiff
+    input = sczm_stateful_kokkos.i
+    cli_args = 'NEML2/device=cuda'
+    exodiff = sczm_stateful_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    min_parallel = 2
+    max_parallel = 2
+    mesh_mode = distributed
+    recover = false
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall preserve stateful NEML2 loading and unloading results on the CUDA device when interface elements and their ghost-side neighbors are distributed across MPI ranks.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
   [sczm_pk1_host_jacobian]
     type = PetscJacobianTester
     input = sczm_pk1_host.i
@@ -70,6 +97,17 @@
     requirement = 'The ShiftedCohesiveZone Physics shall convert distinct primary- and neighbor-side full PK2 stress and deformation-gradient tangent properties to PK1 properties and consistently assemble all displacement couplings of the three-dimensional Kokkos directional correction.'
     capabilities = 'kokkos & libtorch & neml2'
     compute_devices = cpu
+    allow_test_objects = true
+  []
+  [sczm_pk2_kokkos_jacobian_cuda]
+    type = PetscJacobianTester
+    input = sczm_pk2_kokkos.i
+    cli_args = 'NEML2/device=cuda'
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The ShiftedCohesiveZone Physics shall gather the deformation gradient into NEML2 and convert distinct primary- and neighbor-side full PK2 stress and tangent properties to PK1 properties on the CUDA device, consistently assembling all displacement couplings of the three-dimensional Kokkos directional correction.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
     allow_test_objects = true
   []
   [sczm_pk2_action_modes]
