@@ -128,6 +128,24 @@
     compute_devices = 'cpu'
   []
 
+  [neml2_action_material_3d]
+    type = Exodiff
+    input = 'neml2_action_kokkos_linear_elasticity_3d.i'
+    exodiff = 'neml2_action_kokkos_linear_elasticity_3d_out.e'
+    requirement = 'The NEML2 action shall gather Kokkos infinitesimal strain using six-component Mandel packing and create Kokkos symmetric stress and tangent material properties for three-dimensional Cartesian elasticity problems on CPU and CUDA devices.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+  []
+
+  [neml2_action_material_3d_jacobian]
+    type = PetscJacobianTester
+    input = 'neml2_action_kokkos_linear_elasticity_3d.i'
+    cli_args = 'Outputs/exodus=false'
+    requirement = 'The three-dimensional Kokkos NEML2 input and output backends shall provide a consistent coupled Jacobian from a requested NEML2 stress derivative on CPU and CUDA devices.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+  []
+
   [neml2_perfect_plasticity]
     type = Exodiff
     input = 'neml2_kokkos_perfect_plasticity.i'
