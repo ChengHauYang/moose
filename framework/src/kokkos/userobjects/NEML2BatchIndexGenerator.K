@@ -24,6 +24,17 @@ NEML2BatchIndexGenerator::updateKokkosMirrors()
   const auto * const kokkos_mesh = _fe_problem.mesh().getKokkosMesh();
   mooseAssert(kokkos_mesh, "Kokkos mesh must be initialized");
 
+  // The Kokkos mesh is populated (contiguous element ids, local element count, element maps) only
+  // once an actual Kokkos object triggers Moose::Kokkos::Mesh::update() (gated on hasKokkosObjects()
+  // in MooseMesh::update()). These device mirrors are consumed only by the Kokkos NEML2 gatherers,
+  // which require a Kokkos quantity and therefore always imply such an object, so the mesh is
+  // guaranteed initialized whenever the mirrors are needed. With the Torch input backend this
+  // generator still exists but no gatherer reads the mirrors and the mesh is never initialized;
+  // building them anyway would read an unset extra-integer id out of bounds in
+  // getContiguousElementID. Skip until the mesh is ready.
+  if (!kokkos_mesh->initialized())
+    return;
+
   if (_kokkos_element_batch_indices.size() != kokkos_mesh->getNumLocalElements())
     _kokkos_element_batch_indices.create(kokkos_mesh->getNumLocalElements());
 
