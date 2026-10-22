@@ -100,57 +100,53 @@ private:
       return rot;
     }
 
-    // rotVec1ToVec2(e_x, normal): Gram-Schmidt a unit basis vector against the normal, then order
-    // the rows as (v0, v1, normal).
-    const Real nx = normal(0);
-    const Real ny = normal(1);
-    const Real nz = normal(2);
+    // rotVec1ToVec2(e_x, normal), reproduced from RotationMatrix::rotVecToZ so the device result
+    // equals the host CohesiveZoneModelTools::computeReferenceRotation. rotVecToZ(normal) builds the
+    // orthonormal frame with rows (v0, v1, normal), and rotVecToZ(normal)^T * rotVecToZ(e_x) works
+    // out to the columns (normal, v1, -v0). The Gram-Schmidt seed is the basis vector along the
+    // smallest-magnitude normal component, matching the host; it can never be parallel to the normal,
+    // so the projection below cannot collapse the seed to a zero-length vector.
+    Moose::Kokkos::Real3 n = normal;
+    const Real n_norm = ::Kokkos::sqrt(n(0) * n(0) + n(1) * n(1) + n(2) * n(2));
+    n(0) /= n_norm;
+    n(1) /= n_norm;
+    n(2) /= n_norm;
 
-    Moose::Kokkos::Real3 v1;
-    if (nz >= nx && nx >= ny)
-    {
-      v1(2) = 1.0;
-      v1(0) = v1(1) = 0.0;
-    }
-    else if (nz >= ny && ny >= nx)
-    {
-      v1(1) = 1.0;
-      v1(0) = v1(2) = 0.0;
-    }
-    else if ((nx >= nz && nz >= ny) || (nx >= ny && ny >= nz))
-    {
-      v1(0) = 1.0;
-      v1(1) = v1(2) = 0.0;
-    }
+    const Real wx = ::Kokkos::fabs(n(0));
+    const Real wy = ::Kokkos::fabs(n(1));
+    const Real wz = ::Kokkos::fabs(n(2));
+
+    Moose::Kokkos::Real3 v1 = 0.0;
+    if ((wz >= wy && wy >= wx) || (wy >= wz && wz >= wx))
+      v1(0) = 1.0; // n(0) is the smallest-magnitude component
+    else if ((wz >= wx && wx >= wy) || (wx >= wz && wz >= wy))
+      v1(1) = 1.0; // n(1) is the smallest-magnitude component
     else
-    {
-      v1(2) = 1.0;
-      v1(0) = v1(1) = 0.0;
-    }
+      v1(2) = 1.0; // n(2) is the smallest-magnitude component
 
-    const Real projection = v1(0) * nx + v1(1) * ny + v1(2) * nz;
-    v1(0) -= projection * nx;
-    v1(1) -= projection * ny;
-    v1(2) -= projection * nz;
-    const Real norm = ::Kokkos::sqrt(v1(0) * v1(0) + v1(1) * v1(1) + v1(2) * v1(2));
-    v1(0) /= norm;
-    v1(1) /= norm;
-    v1(2) /= norm;
+    const Real projection = v1(0) * n(0) + v1(1) * n(1) + v1(2) * n(2);
+    v1(0) -= projection * n(0);
+    v1(1) -= projection * n(1);
+    v1(2) -= projection * n(2);
+    const Real v1_norm = ::Kokkos::sqrt(v1(0) * v1(0) + v1(1) * v1(1) + v1(2) * v1(2));
+    v1(0) /= v1_norm;
+    v1(1) /= v1_norm;
+    v1(2) /= v1_norm;
 
     // v0 = v1 x normal
-    const Real v0x = v1(1) * nz - v1(2) * ny;
-    const Real v0y = v1(2) * nx - v1(0) * nz;
-    const Real v0z = v1(0) * ny - v1(1) * nx;
+    const Real v0x = v1(1) * n(2) - v1(2) * n(1);
+    const Real v0y = v1(2) * n(0) - v1(0) * n(2);
+    const Real v0z = v1(0) * n(1) - v1(1) * n(0);
 
-    rot(0, 0) = v0x;
-    rot(0, 1) = v0y;
-    rot(0, 2) = v0z;
-    rot(1, 0) = v1(0);
+    rot(0, 0) = n(0);
+    rot(0, 1) = v1(0);
+    rot(0, 2) = -v0x;
+    rot(1, 0) = n(1);
     rot(1, 1) = v1(1);
-    rot(1, 2) = v1(2);
-    rot(2, 0) = nx;
-    rot(2, 1) = ny;
-    rot(2, 2) = nz;
+    rot(1, 2) = -v0y;
+    rot(2, 0) = n(2);
+    rot(2, 1) = v1(2);
+    rot(2, 2) = -v0z;
     return rot;
   }
 

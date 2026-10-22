@@ -212,6 +212,42 @@
     # See sczm_angled_kokkos_matches_host for why recovery is disabled.
     recover = false
   []
+  [sczm_angled_3d_noshifted_host]
+    type = Exodiff
+    input = sczm_angled_3d_noshifted_host.i
+    exodiff = sczm_angled_3d_noshifted_host_out.e
+    recover = false
+    requirement = 'The host shifted cohesive-zone formulation shall compute the displacement solution on a three-dimensional angled interface with the shifted terms disabled.'
+  []
+  [sczm_angled_3d_noshifted_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_angled_3d_noshifted_kokkos.i
+    exodiff = sczm_angled_3d_noshifted_kokkos_out.e
+    # Host and Kokkos evaluate identical double-precision discrete equations, so they must agree tightly.
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    # With the shifted terms disabled the device rotation comes from referenceRotation on the FE face
+    # normal rather than the host-precomputed rotations, so this is the only coverage of the
+    # three-dimensional Gram-Schmidt branch of that device helper.
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall reproduce the host solution on a three-dimensional angled interface with the shifted terms disabled, computing the reference rotation on the device from the face normal.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    # See sczm_angled_kokkos_matches_host for why recovery is disabled.
+    recover = false
+  []
+  [sczm_angled_3d_noshifted_jacobian]
+    type = PetscJacobianTester
+    input = sczm_angled_3d_noshifted_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    # With the shifted terms disabled the base traction Jacobian uses the natural test functions and
+    # no area correction, and the directional correction contributes nothing. Comparing against
+    # finite differences of that residual fails if either the area correction or the shifted test
+    # functions are still applied.
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall assemble Jacobian entries consistent with its residual for all three interface-side displacements when the shifted terms are disabled on a three-dimensional angled interface.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
   [sczm_hetero_host]
     type = Exodiff
     input = sczm_hetero_host.i
