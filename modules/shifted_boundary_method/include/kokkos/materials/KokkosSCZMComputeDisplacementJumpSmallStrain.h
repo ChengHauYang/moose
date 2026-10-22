@@ -35,10 +35,13 @@ public:
     const auto index = face.qp_map_offset + qp;
     const auto distance = _surrogate_distance_vectors[index];
 
-    // The host uses the true normal for the rotation when shifted and the surrogate face normal
-    // when no_shifted is set, see SCZMComputeDisplacementJumpBase::computeRotationMatrices.
+    // The host uses the true normal for the rotation when shifted and the FE face normal
+    // (_normals[_qp]) when no_shifted is set, see SCZMComputeDisplacementJumpBase::
+    // computeRotationMatrices. _ndisp is the mesh dimension (the constructor errors unless
+    // _ndisp == _mesh.dimension()) and is used instead of _mesh.dimension() because _mesh is the
+    // host MooseMesh reference inherited from MaterialBase and cannot be dereferenced on device.
     const auto rotation =
-        _shifted ? _rotations[index] : referenceRotation(elem_datum.normals(qp), _mesh.dimension());
+        _shifted ? _rotations[index] : referenceRotation(elem_datum.normals(qp), _ndisp);
 
     auto jump_global = _displacement_jump_global(elem_datum, qp);
     auto jump_local = _interface_displacement_jump(elem_datum, qp);
