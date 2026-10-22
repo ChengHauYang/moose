@@ -13,7 +13,7 @@
 
 #include "KokkosDispatcher.h"
 #ifdef NEML2_ENABLED
-#include "MooseApp.h"
+#include "KokkosNEML2Device.h"
 registerKokkosUserObject("MooseApp", KokkosQuantityToNEML2);
 #endif
 
@@ -99,9 +99,10 @@ KokkosQuantityToNEML2::finalize()
   ::Kokkos::fence();
 
   const auto total_batch = _batch_index_generator.getBatchIndex();
-  // On CPU Kokkos, deviceData() is host memory; on CUDA it is GPU memory.
-  // The at::Device must match so NEML2 evaluates on the correct device.
-  const at::Device torch_device(_app.getLibtorchDevice());
+  // deviceData() lives in the Kokkos execution space's memory (host for a CPU build, the GPU for a
+  // CUDA build), so the wrapping tensor must be labeled with that device; NEML2ModelExecutor then
+  // transfers it to the requested NEML2 device. See KokkosNEML2Device.h.
+  const at::Device torch_device(kokkosTorchDevice());
   const auto shape = _symmetric ? std::vector<int64_t>{static_cast<int64_t>(total_batch), 6}
                                 : std::vector<int64_t>{static_cast<int64_t>(total_batch), 3, 3};
   _gathered_tensor = at::from_blob(

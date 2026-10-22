@@ -11,6 +11,7 @@
 #include "NEML2BatchIndexGenerator.h"
 #include "NEML2ModelExecutor.h"
 #include "NEML2Utils.h"
+#include "KokkosNEML2Device.h"
 
 #include <algorithm>
 
@@ -20,15 +21,7 @@
 #endif
 
 #ifdef NEML2_ENABLED
-namespace
-{
-/**
- * Torch device backing the Kokkos execution space.
- *
- * NEML2 outputs must be staged on this device before Kokkos can consume them: the unmanaged Views
- * built over the output tensors in computeProperties() are only addressable from the Kokkos
- * execution space if the tensor memory lives on the same device.
- */
+// Declared in KokkosNEML2Device.h and shared with the Kokkos->NEML2 gatherers.
 at::Device
 kokkosTorchDevice()
 {
@@ -62,7 +55,6 @@ kokkosTorchDevice()
   ::mooseError("NEML2ToKokkosMaterialProperty supports GPU execution only with the CUDA, HIP, "
                "and SYCL Kokkos backends.");
 #endif
-}
 }
 #endif
 

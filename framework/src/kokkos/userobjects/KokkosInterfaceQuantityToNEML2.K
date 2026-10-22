@@ -13,7 +13,7 @@
 
 #include "KokkosDispatcher.h"
 #ifdef NEML2_ENABLED
-#include "MooseApp.h"
+#include "KokkosNEML2Device.h"
 registerKokkosInterfaceUserObject("MooseApp", KokkosInterfaceQuantityToNEML2);
 #endif
 
@@ -108,7 +108,10 @@ KokkosInterfaceQuantityToNEML2::finalize()
   ::Kokkos::fence();
 
   const auto total_batch = _batch_index_generator.getBatchIndex();
-  const at::Device torch_device(_app.getLibtorchDevice());
+  // deviceData() lives in the Kokkos execution space's memory, so the wrapping tensor (and the
+  // empty zero-row tensor below) must be labeled with that device; NEML2ModelExecutor then
+  // transfers it to the requested NEML2 device. See KokkosNEML2Device.h.
+  const at::Device torch_device(kokkosTorchDevice());
   const auto opts = at::TensorOptions().dtype(at::kDouble).device(torch_device);
 
   // A distributed partition may own no cohesive interface faces, so this rank contributes zero
