@@ -23,21 +23,39 @@ These guidelines bias toward caution over speed. For trivial tasks, use judgment
 
 ## 0. Local Harness Map
 
-For Cheng-Hau's private macOS Apple Silicon workflow, use the single entry point
-`./scripts/mac/moose.sh`:
+Cheng-Hau has two private stacks, each with one per-machine entry point. Define `{machine} = mac` or
+`cuda`, and drive everything through `./scripts/{machine}/<entry>` (shown as `moose` below):
 
-- Inspect state: `./scripts/mac/moose.sh doctor`
-- Dashboard and progress: `./scripts/mac/moose.sh dummy`
-- Initialize dependencies and configuration: `./scripts/mac/moose.sh init`
-- Incremental compile: `./scripts/mac/moose.sh compile <framework|solid_mechanics|shifted_boundary_method|unit|neml2|all>`
-- Run an input: `./scripts/mac/moose.sh run <framework|solid_mechanics|shifted_boundary_method> <input.i> [options...]`
-- Test without compiling: `./scripts/mac/moose.sh test [scope|module] [pattern] [options...]`
-- Run C++ GoogleTest unit tests: `./scripts/mac/moose.sh unit [target] [pattern] [options...]`
-- Compile and test: `./scripts/mac/moose.sh verify <scope|module|unit> [options...]`
-- Full initialization, compile, and test: `./scripts/mac/moose.sh all`
-- Install the pre-commit hook, once per clone: `./scripts/mac/moose.sh precheck`
+- `{machine} = cuda` -> `./scripts/cuda/moose_cuda.sh` -- Linux GPU box, from-scratch CUDA-Kokkos stack under `kokkos-cuda-stack/`.
+- `{machine} = mac` -> `./scripts/mac/moose.sh` -- macOS Apple Silicon, Conda `moose` stack.
 
-Do not treat missing generated files such as `framework_config.h`, configured Makefiles, object files, or module binaries as a broken checkout. Fresh checkouts are expected to lack them. On macOS, run `./scripts/mac/moose.sh doctor` before inventing build commands or asking how to configure MOOSE.
+Common commands (identical on both machines):
+
+- Inspect compilers, CUDA/MPI, Python, paths: `moose doctor`
+- Initialize dependencies and configuration: `moose init`
+- Incremental compile: `moose compile <framework|solid_mechanics|shifted_boundary_method|neml2> [-j N]`
+- Run an input: `moose run <target> <input.i> [options...]`
+- Test without compiling: `moose test <scope> [pattern] [options...]`
+- Compile and test: `moose verify <scope> [options...]`
+- Full initialization, compile, and test: `moose all`
+
+Machine-specific:
+
+- **cuda:** build state is `moose status`. `run`/`test`/`verify` add `--compute-device=cuda` by default;
+  override with `--compute-device=cpu`. A CUDA build only proves the kernels compiled -- confirm actual
+  GPU execution by running on `--compute-device=cuda`.
+- **mac:** dashboard/progress is `moose dummy`; C++ GoogleTest unit tests are `moose unit [target] [pattern]`
+  (and `unit` is also a `compile`/`verify` scope); install the pre-commit hook once per clone with
+  `moose precheck`.
+
+The cuda harness does not depend on or conflict with direnv. On that box `.envrc` sources
+`kokkos-cuda-stack/scripts/activate.sh` when you `cd` in, exporting the CUDA-stack paths (`PETSC_DIR`,
+`LIBMESH_DIR`, `WASP_DIR`, `OPAL_PREFIX`, `PATH`, `VIRTUAL_ENV`, ...). `moose_cuda.sh` runs in its own
+subprocess and re-exports those same values itself (`cuda_export_settings`, plus `env.sh` to purge
+Conda build hints during builds), so it produces identical results whether or not direnv has
+activated. There is no need to deactivate direnv before using it.
+
+Do not treat missing generated files such as `framework_config.h`, configured Makefiles, object files, or module binaries as a broken checkout. Fresh checkouts are expected to lack them. Run `moose doctor` before inventing build commands or asking how to configure MOOSE.
 
 ## 1. Think Before Coding
 
@@ -128,15 +146,20 @@ that request requires.
 
 ## 6. Tool Use
 
-For Cheng-Hau's macOS Apple Silicon workflow, use the Local Harness Map at the top of this file before asking about Conda or inventing build commands.
+Use the Local Harness Map (Section 0) before asking about the environment or inventing
+build commands. The `moose` entry point sets up its own stack: on macOS it activates the
+Conda `moose` env, and on the Linux GPU box the cuda harness is a self-contained
+from-scratch stack (no Conda) that also matches the direnv-activated `.envrc`.
 - Prefer builtin tools over bash commands whenever possible in the vein of
   reducing permission prompting.
-- Before building or performing verification, including running tests or
-  invoking a pre-existing MOOSE executable, ask the user whether their MOOSE
-  stack uses conda unless this has already been established in the
-  conversation. If it does, ask which conda environment to activate and wait
-  for the answer before running the command; do not use an existing binary or
-  current shell state as a shortcut around this check.
+- Before building or performing verification OUTSIDE the harness, including running
+  tests or invoking a pre-existing MOOSE executable, establish the environment instead
+  of relying on an existing binary or current shell state: for a Conda stack (macOS, or
+  Linux CPU work), ask whether the stack uses conda unless this has already been
+  established in the conversation, and if it does ask which conda environment to activate
+  and wait for the answer; for the Linux cuda stack, source its environment first
+  (`.envrc` / `kokkos-cuda-stack/scripts/activate.sh`, or `cuda_runtime_env` from
+  `scripts/cuda/moose_cuda_common.sh`).
 
 ## 7. TestHarness Coverage
 
