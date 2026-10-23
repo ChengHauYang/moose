@@ -12,7 +12,7 @@
 #include <memory>
 
 #ifdef NEML2_ENABLED
-#include "neml2/models/Model.h"
+#include "NEML2ModelHandle.h"
 #endif
 
 #include "Action.h"
@@ -33,6 +33,8 @@ public:
 
   virtual void act() override;
 
+  virtual void addRelationshipManagers(Moose::RelationshipManagerType input_rm_type) override;
+
 protected:
   const NEML2ActionCommon & getCommonAction() const;
 
@@ -42,17 +44,10 @@ protected:
 
   struct VariableMapping
   {
-    std::string name;
+    std::string name; ///< MOOSE quantity name (base name, no ~N lag suffix)
     NEML2Utils::MOOSEIOType moose_type;
-    neml2::TensorType neml2_type;
+    std::string moose_tensor_type; ///< MOOSE C++ tensor type string (e.g. SymmetricRankTwoTensor)
     std::size_t history_order;
-  };
-
-  struct ParameterMapping
-  {
-    std::string name;
-    NEML2Utils::MOOSEIOType moose_type;
-    neml2::TensorType neml2_type;
   };
 
   struct DerivativeMapping
@@ -60,26 +55,50 @@ protected:
     std::string name;
     std::string y;
     std::string x;
+    std::string moose_tensor_type; ///< MOOSE C++ tensor type string of the derivative block
+  };
+
+  struct ParameterMapping
+  {
+    std::string moose_name; ///< MOOSE quantity name (from_moose source)
+    std::string neml2_name; ///< fully-qualified NEML2 parameter name (set target)
+    NEML2Utils::MOOSEIOType moose_type;
+    std::string moose_tensor_type; ///< MOOSE C++ tensor type string
   };
 
   /// Set up MOOSE-NEML2 input variable mappings
-  void setupInputMappings(const neml2::Model &);
+  void setupInputMappings(const NEML2ModelHandle &);
 
   /// Set up MOOSE-NEML2 output variable mappings
-  void setupOutputMappings(const neml2::Model &);
-
-  /// Set up MOOSE-NEML2 model parameter mappings
-  void setupParameterMappings(const neml2::Model &);
+  void setupOutputMappings(const NEML2ModelHandle &);
 
   /// Set up MOOSE-NEML2 derivative mappings
-  void setupDerivativeMappings(const neml2::Model &);
+  void setupDerivativeMappings(const NEML2ModelHandle &);
 
-  /// Set up MOOSE-NEML2 parameter derivative mappings
-  void setupParameterDerivativeMappings(const neml2::Model &);
+  /// Set up MOOSE-NEML2 model parameter (value) mappings
+  void setupParameterMappings(const NEML2ModelHandle &);
 
-  /// Infer the MOOSE IO type from the variable name and type
-  NEML2Utils::MOOSEIOType inferMOOSEIOType(const neml2::VariableName & name,
-                                           const neml2::TensorType & type) const;
+  /// Set up MOOSE-NEML2 output-parameter-derivative mappings
+  void setupParameterDerivativeMappings(const NEML2ModelHandle &);
+
+  /// Validate consistency between the action configuration and the model's I/O before MOOSE wires
+  /// up (stateful) material properties. Guards against two configurations that otherwise crash
+  /// during stateful material property initialization: (1) 'initialize_outputs' naming a variable
+  /// that is not a model output, and (2) an old (stateful) material input 'var~N' whose base 'var'
+  /// is neither a current model input nor a model output (so nothing declares the property whose
+  /// old value is requested).
+  void checkStatefulConsistency(const NEML2ModelHandle &) const;
+
+  /// Resolve a user-written parameter name to a fully-qualified NEML2 parameter name. Accepts an
+  /// exact match or an unambiguous trailing ".<name>" suffix of a registered parameter. The
+  /// candidates are the keys of the model's parameter_base_shapes() map.
+  std::string
+  resolveParameterName(const std::string & user_name,
+                       const std::map<std::string, std::vector<int64_t>> & param_shapes) const;
+
+  /// Infer the MOOSE IO type from the variable name (only scalar-typed variables can map to
+  /// time/scalar/function/field quantities; everything else is a material property)
+  NEML2Utils::MOOSEIOType inferMOOSEIOType(const std::string & name, bool is_scalar) const;
 
   /// Name of the NEML2 input file
   FileName _fname;
@@ -87,14 +106,12 @@ protected:
   /// List of cli-args
   std::vector<std::string> _cli_args;
 
-  /// The neml2 model
-  std::shared_ptr<neml2::Model> _model;
+  /// The neml2 model handle, used here only for introspection during setup. Built from the
+  /// cpp-eager source '.i' or the cpp-aoti artifact folder -- both given by 'input' -- per 'eager'.
+  std::unique_ptr<NEML2ModelHandle> _model;
 
   /// MOOSE-NEML2 input variable mappings
   std::vector<VariableMapping> _inputs;
-
-  /// MOOSE-NEML2 model parameter mappings
-  std::vector<ParameterMapping> _params;
 
   /// MOOSE-NEML2 output variable mappings
   std::vector<VariableMapping> _outputs;
@@ -102,7 +119,10 @@ protected:
   /// MOOSE-NEML2 derivative mappings
   std::vector<DerivativeMapping> _derivs;
 
-  /// MOOSE-NEML2 parameter derivative mappings
+  /// MOOSE-NEML2 model parameter (value) mappings
+  std::vector<ParameterMapping> _params;
+
+  /// MOOSE-NEML2 output-parameter-derivative mappings
   std::vector<DerivativeMapping> _param_derivs;
 
 #endif
@@ -114,6 +134,15 @@ protected:
 
   /// Blocks this sub-block action applies to
   const std::vector<SubdomainName> _block;
+
+  /// Interfaces this sub-block action applies to
+  const std::vector<BoundaryName> _interface;
+
+  /// If true, only create the boundary (interface) material and batch interface side data
+  const bool _interface_only;
+
+  /// MATERIAL inputs supplied by a true InterfaceMaterial (read from INTERFACE_MATERIAL_DATA)
+  const std::vector<MaterialPropertyName> _interface_material_inputs;
 
   /// Input variables to skip (i.e., not to set up mappings for)
   std::vector<std::string> _skip_input_variables;
