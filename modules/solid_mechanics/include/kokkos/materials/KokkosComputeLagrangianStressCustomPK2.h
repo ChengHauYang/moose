@@ -159,7 +159,7 @@ KokkosComputeLagrangianStressCustomPK2Templ<interface, neighbor>::convertPK2ToPK
   Cof[1][1] = F[0][0] * F[2][2] - F[0][2] * F[2][0];
   Cof[1][2] = -(F[0][0] * F[2][1] - F[0][1] * F[2][0]);
   Cof[2][0] = F[0][1] * F[1][2] - F[0][2] * F[1][1];
-  Cof[2][1] = -(F[0][0] * F[1][2] - F[0][2] * F[2][0]);
+  Cof[2][1] = -(F[0][0] * F[1][2] - F[0][2] * F[1][0]);
   Cof[2][2] = F[0][0] * F[1][1] - F[0][1] * F[1][0];
   Real Fust_invT[3][3];
   for (unsigned int i = 0; i < 3; ++i)
