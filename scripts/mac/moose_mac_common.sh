@@ -20,12 +20,19 @@ moose_mac_die()
 
 moose_mac_activate()
 {
+    moose_mac_locate_repo
+    local temp_env=""
+    if [[ -f "$MOOSE_DIR/temp_conda_env" ]]; then
+        temp_env="$(awk '{ sub(/#.*/, ""); if (NF) { print $1; exit } }' "$MOOSE_DIR/temp_conda_env")"
+    fi
+    export MOOSE_CONDA_ENV="${temp_env:-${MOOSE_CONDA_ENV:-moose}}"
+
     # Do not require nounset during Conda activation.
     # Conda compiler hooks may reference unset backup variables.
     set +u
 
     source "$HOME/miniforge/etc/profile.d/conda.sh"
-    conda activate "${MOOSE_CONDA_ENV:-moose}"
+    conda activate "$MOOSE_CONDA_ENV"
 
     set -u
 }

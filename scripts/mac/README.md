@@ -65,3 +65,6 @@ Test scopes are `framework-kokkos`, `sczm`, `neml2-aoti`, `neml2`, `all`, or any
 
 The CLI activates `${MOOSE_CONDA_ENV:-moose}` automatically. You can override `METHOD`,
 `BUILD_JOBS`, `JOBS`, or `MOOSE_CONDA_ENV` in the environment.
+If the repository root contains `temp_conda_env`, its first nonempty, noncomment
+line overrides `MOOSE_CONDA_ENV` for all commands. Remove the file to restore
+the normal environment selection.

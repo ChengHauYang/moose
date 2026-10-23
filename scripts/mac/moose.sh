@@ -65,7 +65,7 @@ Examples:
   ./scripts/mac/moose.sh verify neml2
 
 Environment overrides:
-  MOOSE_CONDA_ENV   Conda environment (default: moose)
+  MOOSE_CONDA_ENV   Conda environment (default: moose; repo temp_conda_env overrides)
   MOOSE_NEML2_SRC   NEML2 source mode: auto (default), local, committed, or conda
   METHOD            Build method (default: opt)
   BUILD_JOBS        Parallel compile jobs (default: half of P-cores minus one,
