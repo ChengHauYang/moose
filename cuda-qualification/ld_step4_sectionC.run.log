@@ -1,0 +1,222 @@
+WARNING: CPU IP/backtrace sampling not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+WARNING: CPU context switch tracing not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+
+[31m
+*** Deprecation Warning ***
+***** Invalid Object: GenericConstantRealVectorValue *****
+Expired on Thu Jan  1 00:00:00 2026
+[39m
+Setting Up
+  Finished Setting Up Options                                                            [[33m  1.43 s[39m] [[33m 1382 MB[39m]
+
+[36mNEML2 MATERIAL MODEL SUMMARY BEGIN ********************************************[39m
+NEML2 input file location: /home/chenghau.yang/packages/moose-kokkos/modules/solid_mechanics/test/tests/neml2/crystal_plasticity/exact_kinematics_neml2.i
+NEML2 action path:         NEML2/all
+[36mMaterial model structure ------------------------------------------------------[39m
+NEML2 model inputs:
+  - orientation
+  - deformation_gradient
+  - slip_hardening~1
+  - t
+  - t~1
+  - plastic_deformation_gradient~1
+NEML2 model outputs:
+  - slip_hardening
+  - neml2_stress
+  - plastic_deformation_gradient
+[36mTransfer between MOOSE and NEML2 ----------------------------------------------[39m
+MOOSE --> NEML2
+  - orientation (MATERIAL)
+  - t (TIME)
+MOOSE <-- NEML2
+[36mNEML2 MATERIAL MODEL SUMMARY END **********************************************[39m
+
+Finished Setting Up                                                                      [[33m  1.51 s[39m] [[33m 1407 MB[39m]
+Framework Information:
+MOOSE Version:           git commit f0a0cd799b on 2026-10-22
+LibMesh Version:         90766057ef390adc9968b529e8ded2a87b0a77c7
+PETSc Version:           3.25.4
+SLEPc Version:           3.25.1
+Libtorch Version:        2.13.0
+Current Time:            Thu Oct 22 17:28:54 2026
+Executable Timestamp:    Thu Oct 22 17:11:33 2026
+
+Input File(s):
+  /home/chenghau.yang/packages/moose-kokkos/modules/solid_mechanics/test/tests/kokkos/plasticity_LD/step4_plasticity_gpu_neml2_kokkos_cpu_petsc.i
+
+Command Line Argument(s):
+  --compute-device=cuda
+
+Command Line Input Argument(s):
+  Outputs/exodus=false
+  N=8
+  Executioner/num_steps=2
+  Executioner/dt=5e-3
+
+Checkpoint:
+  Wall Time Interval:      Every 3600 s
+  Checkpoint:              Outputs/checkpoint
+  # Checkpoints Kept:      2
+  Execute On:              TIMESTEP_END 
+
+Parallelism:
+  Num Processors:          1
+  Num Threads:             1
+
+Mesh: 
+  Parallel Type:           replicated
+  Mesh Dimension:          3
+  Spatial Dimension:       3
+  Nodes:                   729
+  Elems:                   512
+  Num Subdomains:          1
+
+Nonlinear System:
+  Num DOFs:                2187
+  Num Local DOFs:          2187
+  Variables:               { "disp_x" "disp_y" "disp_z" } 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Execution Information:
+  Executioner:             Transient
+  TimeStepper:             ConstantDT
+  TimeIntegrator(s):       ImplicitEuler
+  Solver Mode:             NEWTON 
+  PETSc Preconditioner:    hypre boomeramg strong_threshold: 0.7 (auto)
+  MOOSE Preconditioner:    SMP 
+
+Currently Executing
+  Performing Initial Setup
+    Computing User Objects
+      Finished Torch FEM kernel execution                                                [[33m  0.13 s[39m] [[33m 1765 MB[39m]
+      Finished Evaluating the NEML2 model                                                [[33m  0.86 s[39m] [[33m 2034 MB[39m]
+    Finished Computing User Objects                                                      [[33m  1.06 s[39m] [[33m 2034 MB[39m]
+  Finished Performing Initial Setup                                                      [[33m  1.11 s[39m] [[33m 2034 MB[39m]
+
+Time Step 0, time = 0
+
+Postprocessor Values:
++----------------+----------------+----------------+
+| time           | ux_center      | ux_right       |
++----------------+----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |   0.000000e+00 |
++----------------+----------------+----------------+
+
+
+Time Step 1, time = 0.005, dt = 0.005
+
+Performing automatic scaling calculation
+
+ 0 Nonlinear |R| = [32m4.500000e-02[39m
+      0 Linear |R| = [32m4.500000e-02[39m
+      1 Linear |R| = [32m6.591134e-04[39m
+      2 Linear |R| = [32m3.258641e-05[39m
+      3 Linear |R| = [32m3.092759e-06[39m
+      4 Linear |R| = [32m3.196627e-07[39m
+ 1 Nonlinear |R| = [32m7.986121e-04[39m
+      0 Linear |R| = [32m7.986121e-04[39m
+      1 Linear |R| = [32m1.077712e-04[39m
+      2 Linear |R| = [32m3.349718e-05[39m
+      3 Linear |R| = [32m1.265902e-05[39m
+      4 Linear |R| = [32m3.496385e-06[39m
+      5 Linear |R| = [32m9.101059e-07[39m
+      6 Linear |R| = [32m2.502730e-07[39m
+      7 Linear |R| = [32m6.184585e-08[39m
+      8 Linear |R| = [32m1.342397e-08[39m
+      9 Linear |R| = [32m3.185053e-09[39m
+ 2 Nonlinear |R| = [32m9.386714e-06[39m
+      0 Linear |R| = [32m9.386714e-06[39m
+      1 Linear |R| = [32m2.992750e-06[39m
+      2 Linear |R| = [32m9.369150e-07[39m
+      3 Linear |R| = [32m2.679163e-07[39m
+      4 Linear |R| = [32m5.663760e-08[39m
+      5 Linear |R| = [32m1.577617e-08[39m
+      6 Linear |R| = [32m3.504291e-09[39m
+      7 Linear |R| = [32m7.915067e-10[39m
+      8 Linear |R| = [32m1.587677e-10[39m
+      9 Linear |R| = [32m3.380795e-11[39m
+ 3 Nonlinear |R| = [32m2.181084e-08[39m
+      0 Linear |R| = [32m2.181084e-08[39m
+      1 Linear |R| = [32m5.727423e-09[39m
+      2 Linear |R| = [32m1.766673e-09[39m
+      3 Linear |R| = [32m4.303728e-10[39m
+      4 Linear |R| = [32m1.303969e-10[39m
+      5 Linear |R| = [32m3.162893e-11[39m
+      6 Linear |R| = [32m8.618899e-12[39m
+      7 Linear |R| = [32m2.044986e-12[39m
+      8 Linear |R| = [32m3.817613e-13[39m
+      9 Linear |R| = [32m7.745142e-14[39m
+ 4 Nonlinear |R| = [32m2.181962e-13[39m
+[32m Solve Converged![39m
+
+
+Outlier Variable Residual Norms:
+  disp_y: [33m1.796523e-13[39m
+
+Postprocessor Values:
++----------------+----------------+----------------+
+| time           | ux_center      | ux_right       |
++----------------+----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |   0.000000e+00 |
+|   5.000000e-03 |   2.420917e-03 |   5.000000e-03 |
++----------------+----------------+----------------+
+
+
+Time Step 2, time = 0.01, dt = 0.005
+ 0 Nonlinear |R| = [32m4.500090e-02[39m
+      0 Linear |R| = [32m4.500090e-02[39m
+      1 Linear |R| = [32m1.402648e-03[39m
+      2 Linear |R| = [32m2.834663e-04[39m
+      3 Linear |R| = [32m5.549023e-05[39m
+      4 Linear |R| = [32m1.177388e-05[39m
+      5 Linear |R| = [32m2.617169e-06[39m
+      6 Linear |R| = [32m5.614510e-07[39m
+      7 Linear |R| = [32m1.076614e-07[39m
+ 1 Nonlinear |R| = [32m1.410649e-04[39m
+      0 Linear |R| = [32m1.410649e-04[39m
+      1 Linear |R| = [32m3.561104e-05[39m
+      2 Linear |R| = [32m1.323531e-05[39m
+      3 Linear |R| = [32m3.679819e-06[39m
+      4 Linear |R| = [32m1.012878e-06[39m
+      5 Linear |R| = [32m2.390326e-07[39m
+      6 Linear |R| = [32m6.596755e-08[39m
+      7 Linear |R| = [32m1.634179e-08[39m
+      8 Linear |R| = [32m3.599603e-09[39m
+      9 Linear |R| = [32m7.286745e-10[39m
+ 2 Nonlinear |R| = [32m1.161262e-06[39m
+      0 Linear |R| = [32m1.161262e-06[39m
+      1 Linear |R| = [32m4.086751e-07[39m
+      2 Linear |R| = [32m1.662249e-07[39m
+      3 Linear |R| = [32m4.726363e-08[39m
+      4 Linear |R| = [32m1.161966e-08[39m
+      5 Linear |R| = [32m3.059697e-09[39m
+      6 Linear |R| = [32m7.767498e-10[39m
+      7 Linear |R| = [32m1.904671e-10[39m
+      8 Linear |R| = [32m3.552192e-11[39m
+      9 Linear |R| = [32m7.944083e-12[39m
+ 3 Nonlinear |R| = [32m3.636011e-10[39m
+[32m Solve Converged![39m
+
+
+Postprocessor Values:
++----------------+----------------+----------------+
+| time           | ux_center      | ux_right       |
++----------------+----------------+----------------+
+|   0.000000e+00 |   0.000000e+00 |   0.000000e+00 |
+|   5.000000e-03 |   2.420917e-03 |   5.000000e-03 |
+|   1.000000e-02 |   4.793928e-03 |   1.000000e-02 |
++----------------+----------------+----------------+
+
+Finished Executing                                                                       [[33m  4.16 s[39m] [[33m 2128 MB[39m]
+The target application terminated. One or more process it created re-parented.
+Waiting for termination of re-parented processes.
+Use the `--wait` option to modify this behavior.
+Generating '/tmp/user/333475/nsys-report-fe89.qdstrm'
+[1/1] [0%                          ] ld_step4_sectionC.nsys-rep[1/1] [0%                          ] ld_step4_sectionC.nsys-rep[1/1] [9%                          ] ld_step4_sectionC.nsys-rep[1/1] [8%                          ] ld_step4_sectionC.nsys-rep[1/1] [6%                          ] ld_step4_sectionC.nsys-rep[1/1] [5%                          ] ld_step4_sectionC.nsys-rep[1/1] [5%                          ] ld_step4_sectionC.nsys-rep[1/1] [6%                          ] ld_step4_sectionC.nsys-rep[1/1] [5%                          ] ld_step4_sectionC.nsys-rep[1/1] [10%                         ] ld_step4_sectionC.nsys-rep[1/1] [=15%                        ] ld_step4_sectionC.nsys-rep[1/1] [==20%                       ] ld_step4_sectionC.nsys-rep[1/1] [====26%                     ] ld_step4_sectionC.nsys-rep[1/1] [=====31%                    ] ld_step4_sectionC.nsys-rep[1/1] [=======36%                  ] ld_step4_sectionC.nsys-rep[1/1] [========42%                 ] ld_step4_sectionC.nsys-rep[1/1] [==========47%               ] ld_step4_sectionC.nsys-rep[1/1] [===========52%              ] ld_step4_sectionC.nsys-rep[1/1] [=============58%            ] ld_step4_sectionC.nsys-rep[1/1] [==============63%           ] ld_step4_sectionC.nsys-rep[1/1] [================68%         ] ld_step4_sectionC.nsys-rep[1/1] [=================74%        ] ld_step4_sectionC.nsys-rep[1/1] [==================76%       ] ld_step4_sectionC.nsys-rep[1/1] [========================100%] ld_step4_sectionC.nsys-rep[1/1] [========================100%] ld_step4_sectionC.nsys-rep
+Generated:
+    /home/chenghau.yang/packages/moose-kokkos/cuda-qualification/ld_step4_sectionC.nsys-rep
