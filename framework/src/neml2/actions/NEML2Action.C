@@ -30,6 +30,7 @@ const std::map<neml2::TensorType, std::string> tensor_type_map = {
     {neml2::TensorType::kScalar, "Real"},
     {neml2::TensorType::kSR2, "SymmetricRankTwoTensor"},
     {neml2::TensorType::kR2, "RankTwoTensor"},
+    {neml2::TensorType::kWR2, "RankTwoTensor"},
     {neml2::TensorType::kSSR4, "SymmetricRankFourTensor"},
     {neml2::TensorType::kR4, "RankFourTensor"},
     {neml2::TensorType::kRot, "RealVectorValue"}};
