@@ -114,8 +114,16 @@ NEML2ModelExecutor::NEML2ModelExecutor(const InputParameters & params)
     // No derivative retained yet -> nothing stale; the retriever's undefined-derivative path (zero
     // fill) covers the first steps. Only an actual batch resize (meshChanged) makes it invalid.
     _derivative_valid(true),
-    _pending_state_t_step(0),
-    _state_committed(false),
+    _state_vars(declareRestartableData<std::map<std::string, at::Tensor>>("state_vars")),
+    _pending_state_vars(
+        declareRestartableData<std::map<std::string, at::Tensor>>("pending_state_vars")),
+    _state_batch_indices(declareRestartableData<NEML2BatchIndexGenerator::StateBatchIndexMap>(
+        "state_batch_indices")),
+    _pending_state_batch_indices(
+        declareRestartableData<NEML2BatchIndexGenerator::StateBatchIndexMap>(
+            "pending_state_batch_indices")),
+    _pending_state_t_step(declareRestartableData<int>("pending_state_t_step", 0)),
+    _state_committed(declareRestartableData<bool>("state_committed", false)),
     _state_remap_pending(false),
     _error_message(""),
     _num_failed_dumps(0)
@@ -220,7 +228,7 @@ NEML2ModelExecutor::initialSetup()
     const auto & in_shapes = model().input_base_shapes();
     const auto opts = at::TensorOptions().dtype(at::kDouble).device(device());
     for (const auto i : index_range(in_names))
-      if (parseLag(in_names[i]).second > 0)
+      if (parseLag(in_names[i]).second > 0 && !_state_vars.count(in_names[i]))
         _state_vars[in_names[i]] = at::zeros(in_shapes[i], opts);
   }
 }
@@ -229,6 +237,19 @@ std::size_t
 NEML2ModelExecutor::getBatchIndex(dof_id_type elem_id) const
 {
   return _batch_index_generator.getBatchIndex(elem_id);
+}
+
+std::size_t
+NEML2ModelExecutor::getSideBatchIndex(const NEML2BatchIndexGenerator::ElemSide & elem_side) const
+{
+  return _batch_index_generator.getSideBatchIndex(elem_side);
+}
+
+bool
+NEML2ModelExecutor::isSideBatchIndexExist(
+    const NEML2BatchIndexGenerator::ElemSide & elem_side) const
+{
+  return _batch_index_generator.isSideBatchIndexExist(elem_side);
 }
 
 void
@@ -317,23 +338,16 @@ NEML2ModelExecutor::execute()
 
   fillInputs();
 
-  if (_t_step > 0)
   {
-    // Compute the (comparatively expensive) input Jacobian only when MOOSE is assembling the
-    // Jacobian -- currentlyComputingJacobian() is set for a Jacobian evaluation, the automatic-
-    // scaling Jacobian, and a combined residual-and-Jacobian evaluation. A pure residual evaluation
-    // (line search, damping, JFNK residuals) takes the value-only path. (We cannot key off the
-    // residual flag: the tagged residual path never sets currentlyComputingResidual().) Consumers
-    // reading the input derivative at EXEC_TIMESTEP_END therefore see the last Jacobian's value.
-    // Parameter derivatives are handled separately in solve()/extractOutputs(): because they are
-    // typically consumed as outputs (e.g. inverse-optimization sensitivities), they are evaluated
-    // on every pass so they are always current.
+    // Compute input derivatives whenever a consumer retrieves one. Kokkos residual-and-Jacobian
+    // assembly can execute this user object only on EXEC_LINEAR, before the Jacobian pass, so a
+    // derivative retriever must receive a current tangent from that evaluation. Models without a
+    // derivative consumer remain on the value-only path.
     //
     // Also recompute when the retained input derivative is no longer valid for the current batch
     // (e.g. after a mesh change resized the batch); otherwise a residual sweep would reuse a stale,
     // wrongly-sized derivative tensor and a retriever would index out of range.
-    const bool compute_derivative = _fe_problem.currentlyComputingJacobian() || !_derivative_valid;
-
+    const bool compute_derivative = !_retrieved_derivatives.empty() || !_derivative_valid;
     auto success = solve(compute_derivative);
     if (success)
     {
@@ -373,7 +387,7 @@ NEML2ModelExecutor::fillInputs()
     for (const auto & [name, val] : _zero_seed_vars)
       _in[name] = val;
 
-    if (_manage_state_advance && _t_step > 0)
+    if (_manage_state_advance)
       for (const auto & [name, val] : _state_vars)
         if (val.defined())
           _in[name] = val;
@@ -493,7 +507,7 @@ NEML2ModelExecutor::advanceState()
       mooseError("Failed to find cached value for old variable: ", name);
   }
 
-  _pending_state_batch_indices = _batch_index_generator.getBatchIndexMap();
+  _pending_state_batch_indices = _batch_index_generator.getStateBatchIndexMap();
   _pending_state_t_step = _t_step;
 }
 
@@ -510,7 +524,7 @@ NEML2ModelExecutor::commitState()
 void
 NEML2ModelExecutor::remapState()
 {
-  const auto & new_indices = _batch_index_generator.getBatchIndexMap();
+  const auto new_indices = _batch_index_generator.getStateBatchIndexMap();
 
   // Before the first state advance, state variables are base-shaped zeros that NEML2 broadcasts.
   // There is no committed batch to remap yet.
@@ -520,12 +534,13 @@ NEML2ModelExecutor::remapState()
     return;
   }
 
-  std::map<std::size_t, dof_id_type> old_offsets;
-  std::map<std::size_t, dof_id_type> new_offsets;
-  for (const auto & [elem_id, offset] : _state_batch_indices)
-    old_offsets[offset] = elem_id;
-  for (const auto & [elem_id, offset] : new_indices)
-    new_offsets[offset] = elem_id;
+  using StateKey = NEML2BatchIndexGenerator::ElemSide;
+  std::map<std::size_t, StateKey> old_offsets;
+  std::map<std::size_t, StateKey> new_offsets;
+  for (const auto & [key, offset] : _state_batch_indices)
+    old_offsets[offset] = key;
+  for (const auto & [key, offset] : new_indices)
+    new_offsets[offset] = key;
 
   const auto batchSize =
       [](const auto & offsets, const std::size_t offset, const std::size_t total_batch_size)
@@ -561,9 +576,11 @@ NEML2ModelExecutor::remapState()
       const auto old_qp = batchSize(old_offsets, old_it->second, old_batch_size);
       const auto new_qp = batchSize(new_offsets, new_it->second, new_batch_size);
       if (old_qp != new_qp)
-        mooseError("Cannot remap NEML2 state for element ",
-                   new_it->first,
-                   " after its number of quadrature points changed from ",
+        mooseError("Cannot remap NEML2 state for element side (",
+                   new_it->first.first,
+                   ", ",
+                   new_it->first.second,
+                   ") after its number of quadrature points changed from ",
                    old_qp,
                    " to ",
                    new_qp,
@@ -720,6 +737,10 @@ NEML2ModelExecutor::extractOutputs(bool compute_derivative)
                e.what(),
                NEML2Utils::NEML2_help_message);
   }
+
+  // Mark outputs ready as soon as the tensors are populated so downstream material retrieval
+  // during the same execute phase can see the fresh values.
+  _output_ready = true;
 }
 
 void

@@ -83,7 +83,7 @@ if [ "${NEML2_SUPPORT:-1}" = "1" ]; then
     exit 1
   fi
   export VIRTUAL_ENV="$STACK_DIR/neml2-venv"
-  MINIFORGE_BIN="/home/chenghau.yang/miniforge/bin"
+  MINIFORGE_BIN="${MINIFORGE_BIN:-$HOME/miniforge/bin}"
   export PATH="$PREFIX/bin:$NEML2_VENV_BIN:$MINIFORGE_BIN:$PATH"
   if ! "$NEML2_VENV_BIN/python3" -c 'import neml2' 2>/dev/null; then
     echo "[build_moose] ERROR: NEML2_SUPPORT=1 but 'import neml2' fails in $NEML2_VENV_BIN/python3." >&2

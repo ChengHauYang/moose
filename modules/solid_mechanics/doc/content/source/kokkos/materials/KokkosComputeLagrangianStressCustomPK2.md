@@ -16,6 +16,12 @@ P_{iJ} = F_{iK} S_{KJ},
 The input properties are full tensors rather than symmetric Mandel tensors. The material requires
 three scalar Cartesian displacement variables on a three-dimensional reference mesh.
 
+`KokkosInterfaceComputeLagrangianStressCustomPK2` and
+`KokkosNeighborComputeLagrangianStressCustomPK2` provide the same conversion in the primary and
+neighbor interface material-property domains, respectively. They require a boundary restriction and
+do not support `stabilize_strain = true`, because the SCZM interface kernel does not assemble the
+non-local F-bar Jacobian coupling.
+
 ## Example Input Syntax
 
 !listing solid_mechanics/test/tests/kokkos/neml2_input_gatherer/exact_kinematics.i block=Materials/pk1

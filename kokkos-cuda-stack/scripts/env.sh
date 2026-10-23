@@ -18,28 +18,35 @@
 KEEP_VARS="HOME USER LOGNAME PWD OLDPWD SHELL TERM DISPLAY XAUTHORITY MAIL LANG LC_ALL TMPDIR"
 KEEP_VARS="$KEEP_VARS SSH_AUTH_SOCK SSH_CONNECTION SSH_CLIENT SSH_TTY XDG_RUNTIME_DIR"
 KEEP_VARS="$KEEP_VARS MOOSE_CUDA_STACK_KEEP"  # escape hatch
+KEEP_VARS="$KEEP_VARS MOOSE_DIR STACK_DIR PREFIX LOGS CUDA_DIR CUDA_HOME CUDA_ARCH TORCH_CUDA_ARCH_LIST"
+KEEP_VARS="$KEEP_VARS OMPI_CC OMPI_CXX OMPI_FC MINIFORGE_BIN MINIFORGE_PYTHON OpenBLAS_HOME"
+KEEP_VARS="$KEEP_VARS FORTRAN_LIB_DIR BLAS_LIB LAPACK_LIB METHOD MOOSE_JOBS TEST_JOBS NEML2_SUPPORT FORCE_REBUILD"
+KEEP_VARS="$KEEP_VARS CUDA_VISIBLE_DEVICES NVIDIA_VISIBLE_DEVICES CUDA_DEVICE_ORDER PETSC_OPTIONS OMP_NUM_THREADS"
+
+# Resolve the checkout before the purge removes PATH needed by dirname.
+export MOOSE_DIR="${MOOSE_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)}"
 
 # Extra vars the user may have set intentionally before sourcing env.sh
-for extra in ${MOOSE_CUDA_STACK_KEEP:-}; do
-  KEEP_VARS="$KEEP_VARS $extra"
+for _moose_cuda_keep_var in ${MOOSE_CUDA_STACK_KEEP:-}; do
+  KEEP_VARS="$KEEP_VARS $_moose_cuda_keep_var"
 done
 
 # Build a Python one-liner that unsets everything not in KEEP_VARS.
 # `env -i` inside a running shell is not an option — we need to keep the
 # current shell alive for the caller — so we `unset` by name instead.
 KEEP_SET=" $(echo $KEEP_VARS | tr -s ' ' | sed 's/ / /g') "
-for var in $(compgen -e); do
+for _moose_cuda_env_var in $(compgen -e); do
   case " $KEEP_SET " in
-    *" $var "*) : keep ;;
-    *) unset "$var" ;;
+    *" $_moose_cuda_env_var "*) : keep ;;
+    *) unset "$_moose_cuda_env_var" ;;
   esac
 done
+unset _moose_cuda_keep_var _moose_cuda_env_var
 
 # Anchor points
-export MOOSE_DIR=/home/chenghau.yang/packages/moose-kokkos
-export STACK_DIR=${MOOSE_DIR}/kokkos-cuda-stack
-export PREFIX=${STACK_DIR}/prefix
-export LOGS=${STACK_DIR}/logs
+export STACK_DIR="${STACK_DIR:-$MOOSE_DIR/kokkos-cuda-stack}"
+export PREFIX="${PREFIX:-$STACK_DIR/prefix}"
+export LOGS="${LOGS:-$STACK_DIR/logs}"
 
 # Deterministic PATH. $PREFIX/bin first so downstream `command -v mpicc` in
 # build_libmesh.sh, build_wasp.sh, and update_and_rebuild_libmesh.sh resolves
@@ -47,7 +54,8 @@ export LOGS=${STACK_DIR}/logs
 # entries are harmless (the very first build_openmpi run has no $PREFIX/bin).
 # Set BEFORE any external command (e.g. mkdir) is invoked below - the purge
 # loop above cleared PATH, so a bare `mkdir` at this point would not resolve.
-export PATH=$PREFIX/bin:/usr/local/cuda/bin:/usr/bin:/bin:/sbin:/usr/sbin
+export CUDA_DIR="${CUDA_DIR:-/usr/local/cuda}"
+export PATH="$PREFIX/bin:$CUDA_DIR/bin:/usr/bin:/bin:/sbin:/usr/sbin"
 
 # OPAL_PREFIX: OpenMPI's own override for a relocated install. The
 # mpicc/mpicxx/mpif90 wrappers are symlinks to opal_wrapper, which reads its
@@ -81,15 +89,15 @@ export PETSC_SRC_DIR=${MOOSE_DIR}/petsc
 export LIBMESH_SRC_DIR=${MOOSE_DIR}/libmesh
 
 # --- CUDA ---------------------------------------------------------------
-export CUDA_DIR=/usr/local/cuda
+export CUDA_HOME="$CUDA_DIR"
 
 # OpenMPI needs OMPI_FC because system /usr/bin/gfortran symlink is absent.
-export OMPI_CC=/usr/bin/gcc-11
-export OMPI_CXX=/usr/bin/g++-11
-export OMPI_FC=/usr/bin/gfortran-9
+export OMPI_CC="${OMPI_CC:-/usr/bin/gcc-11}"
+export OMPI_CXX="${OMPI_CXX:-/usr/bin/g++-11}"
+export OMPI_FC="${OMPI_FC:-/usr/bin/gfortran-9}"
 
 # Parallel build. Machine has 32 cores; use 8 to leave headroom.
-export MOOSE_JOBS=8
+export MOOSE_JOBS="${MOOSE_JOBS:-8}"
 
 # Announce, if run interactively.
 if [ -n "${PS1:-}" ]; then
