@@ -340,25 +340,28 @@ KokkosSCZMInterfaceKernelSmallStrain::computeDResidualDDisplacement(
   const auto distance = surrogateDistanceVector(elem_datum, qp);
   const auto coefficient = areaCorrection(elem_datum, qp) * tangent;
 
+  Real res = 0.0;
   switch (type)
   {
     case Moose::ElementElement:
-      return _test(elem_datum, i, qp) * coefficient *
-             shiftedPhi(_phi, _grad_phi, elem_datum, distance, j, qp);
+      res = _test(elem_datum, i, qp) * coefficient *
+            shiftedPhi(_phi, _grad_phi, elem_datum, distance, j, qp);
+      break;
     case Moose::ElementNeighbor:
-      return -_test(elem_datum, i, qp) * coefficient *
-             shiftedPhi(
-                 _phi_neighbor, _grad_phi_neighbor, neighbor_datum, distance, j, neighbor_qp);
+      res = -_test(elem_datum, i, qp) * coefficient *
+            shiftedPhi(_phi_neighbor, _grad_phi_neighbor, neighbor_datum, distance, j, neighbor_qp);
+      break;
     case Moose::NeighborElement:
-      return -_test_neighbor(neighbor_datum, i, neighbor_qp) * coefficient *
-             shiftedPhi(_phi, _grad_phi, elem_datum, distance, j, qp);
+      res = -_test_neighbor(neighbor_datum, i, neighbor_qp) * coefficient *
+            shiftedPhi(_phi, _grad_phi, elem_datum, distance, j, qp);
+      break;
     case Moose::NeighborNeighbor:
-      return _test_neighbor(neighbor_datum, i, neighbor_qp) * coefficient *
-             shiftedPhi(
-                 _phi_neighbor, _grad_phi_neighbor, neighbor_datum, distance, j, neighbor_qp);
+      res = _test_neighbor(neighbor_datum, i, neighbor_qp) * coefficient *
+            shiftedPhi(_phi_neighbor, _grad_phi_neighbor, neighbor_datum, distance, j, neighbor_qp);
+      break;
   }
 
-  return 0;
+  return res;
 }
 
 KOKKOS_FUNCTION Real
