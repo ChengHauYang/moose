@@ -2,6 +2,16 @@
 
 Branch: `neml2-v3-kokkos-solid-mechanics-LD-mac`. Written 2026-10-26.
 
+> **SUPERSEDED.** The block-restriction approach described below (plan Option 1, the `_neml2_interface_only`
+> private flag) was abandoned, and the Tier-4 duplicate-declaration blocker it reports is resolved. The
+> neighbor-side retriever is now a boundary-restricted interface material carrying
+> `_material_data_type = NEIGHBOR_MATERIAL_DATA`, so the retrievers stay boundary-restricted and never
+> collide with a bulk block producer. All four tiers pass; see
+> `.plans/neml2/host-interface-only-two-sided-final-report.md` for the current state, and
+> `.plans/neml2/host-interface-only-two-sided-output.md` (Revision 2) for the architecture analysis.
+> Sections 1 (motivation), 7 (commits to reference) and 9 (do-not list) below are still accurate;
+> Sections 2-6 and 8 describe the abandoned approach and are kept only as a record.
+
 This hands off the host `interface_only = true` two-sided output work. The fix is **implemented and
 passes its targeted tests, but Tier-4 (the real benchmark) exposed a genuine defect that blocks
 upstream submission.** Read this before touching the fix or re-running the benchmark.
