@@ -24,7 +24,43 @@ moose_mac_activate()
     # Conda compiler hooks may reference unset backup variables.
     set +u
 
-    source "$HOME/miniforge/etc/profile.d/conda.sh"
+    local conda_base="${MOOSE_CONDA_BASE:-${CONDA_BASE:-}}"
+    local candidate conda_bin
+
+    if [[ -z "$conda_base" ]] && declare -F conda >/dev/null 2>&1; then
+        conda_base="$(conda info --base 2>/dev/null || true)"
+    fi
+
+    if [[ -z "$conda_base" ]]; then
+        conda_bin="$(command -v conda 2>/dev/null || true)"
+        if [[ -n "$conda_bin" ]]; then
+            conda_base="$(conda info --base 2>/dev/null || true)"
+            if [[ -z "$conda_base" ]]; then
+                conda_base="$(cd "$(dirname "$conda_bin")/.." 2>/dev/null && pwd -P || true)"
+            fi
+        fi
+    fi
+
+    if [[ -z "$conda_base" ]]; then
+        for candidate in \
+            "$HOME/miniforge" "$HOME/mambaforge" "$HOME/miniconda" \
+            "$HOME/miniconda3" "$HOME/anaconda3" \
+            "/opt/homebrew/Caskroom/miniforge/base" \
+            "/usr/local/Caskroom/miniforge/base"; do
+            if [[ -f "$candidate/etc/profile.d/conda.sh" ]]; then
+                conda_base="$candidate"
+                break
+            fi
+        done
+    fi
+
+    if [[ -z "$conda_base" || ! -f "$conda_base/etc/profile.d/conda.sh" ]]; then
+        set -u
+        moose_mac_die "Could not locate a Conda installation. Set MOOSE_CONDA_BASE to the Conda base directory containing etc/profile.d/conda.sh."
+        return 1
+    fi
+
+    source "$conda_base/etc/profile.d/conda.sh"
     conda activate "${MOOSE_CONDA_ENV:-moose}"
 
     set -u
@@ -413,12 +449,40 @@ print("Torch path    :", torch.__file__)
 PY
 }
 
+# A complete installed NEML2 tree contains the pkg-config metadata, the
+# libraries, and every header MOOSE includes through NEML2ModelHandle.h. An
+# incomplete install (for example one missing include/ or neml2.pc) must be
+# treated as not installed so the harness rebuilds instead of failing deep in a
+# MOOSE compile.
+moose_mac_neml2_install_complete()
+{
+    local dir="${1:-$(moose_mac_active_neml2_dir)}"
+    [[ -n "$dir" && -d "$dir" ]] || return 1
+    [[ -f "$dir/share/pkgconfig/neml2.pc" ]] || return 1
+    [[ -f "$dir/lib/libneml2.dylib" ]] || return 1
+    [[ -f "$dir/lib/libneml2_eager.dylib" ]] || return 1
+
+    local required_headers=(
+        "neml2/csrc/eager/Model.h"
+        "neml2/csrc/eager/load_model.h"
+        "neml2/csrc/dispatchers/factory.h"
+        "neml2/csrc/dispatchers/DispatchedModel.h"
+        "neml2/csrc/dispatchers/MPISimpleScheduler.h"
+    )
+    local header
+    for header in "${required_headers[@]}"; do
+        [[ -f "$dir/include/$header" ]] || return 1
+    done
+    return 0
+}
+
 moose_mac_local_neml2_ok()
 {
     local local_dir local_site
     local_site="$(moose_mac_local_neml2_site)"
     local_dir="$(moose_mac_local_neml2_dir)"
     [[ -d "$local_dir" && -f "$local_dir/share/pkgconfig/neml2.pc" ]] || return 1
+    moose_mac_neml2_install_complete "$local_dir" || return 1
     PYTHONPATH="$local_site" python - "$local_dir" <<'PY' >/dev/null 2>&1
 import neml2, os, sys
 actual = os.path.realpath(os.path.dirname(neml2.__file__))
@@ -429,7 +493,11 @@ PY
 
 moose_mac_conda_neml2_ok()
 {
-    PYTHONPATH="" python -c 'import neml2' >/dev/null 2>&1
+    local conda_dir
+    conda_dir="$(moose_mac_conda_neml2_dir)"
+    PYTHONPATH="" python -c 'import neml2' >/dev/null 2>&1 || return 1
+    moose_mac_neml2_install_complete "$conda_dir" || return 1
+    return 0
 }
 
 moose_mac_conda_neml2_dir()
@@ -522,6 +590,144 @@ moose_mac_active_neml2_dir()
     else
         moose_mac_local_neml2_dir
     fi
+}
+
+# Conda provenance distinguishes both the selected environment and the exact
+# package transaction used to build an executable.
+moose_mac_conda_env_name()
+{
+    echo "${CONDA_DEFAULT_ENV:-${MOOSE_CONDA_ENV:-$(basename "${CONDA_PREFIX:-}")}}"
+}
+
+moose_mac_conda_prefix()
+{
+    if [[ -n "${CONDA_PREFIX:-}" ]]; then
+        (cd "$CONDA_PREFIX" 2>/dev/null && pwd -P) || echo "$CONDA_PREFIX"
+    fi
+}
+
+# Hash conda's immutable package records rather than installed libraries. A
+# package install, removal, build change, or pip transaction changes this
+# manifest. The cache key is the manifest itself, so it cannot remain stale for
+# a fixed time after an environment update.
+moose_mac_conda_fingerprint()
+{
+    local prefix manifest_key cache_dir cache_file
+    prefix="$(moose_mac_conda_prefix)"
+    [[ -n "$prefix" ]] || { echo "none"; return 0; }
+
+    # Conda appends every transaction to history, while pip adds/removes entries
+    # in site-packages. These directory/file mtimes make the common cache lookup
+    # constant-time; a changed key triggers the thorough manifest hash below.
+    manifest_key="$({
+        printf 'prefix=%s\n' "$prefix"
+        stat -f 'conda:%z:%m:%c:%i' "$prefix/conda-meta/history" 2>/dev/null || true
+        find "$prefix"/lib/python*/site-packages -maxdepth 2 -type f \
+            \( -name RECORD -o -name METADATA -o -name WHEEL \
+               -o -name PKG-INFO \) -exec stat -f 'pip:%N:%z:%m:%c:%i' {} + \
+            2>/dev/null | sort
+    } | shasum -a 256 | awk '{print $1}')"
+
+    cache_dir="${TMPDIR:-/tmp}/moose-mac-conda-fingerprints"
+    mkdir -p "$cache_dir"
+    cache_file="$cache_dir/$manifest_key"
+    if [[ -f "$cache_file" ]]; then
+        cat "$cache_file"
+        return 0
+    fi
+
+    # Package record contents include name, version, build string, channel, and
+    # file inventory. Hashing them is done only once for each manifest state.
+    {
+        printf 'prefix=%s\n' "$prefix"
+        if [[ -d "$prefix/conda-meta" ]]; then
+            find "$prefix/conda-meta" -maxdepth 1 -type f \
+                \( -name '*.json' -o -name history \) -print0 2>/dev/null |
+                sort -z | xargs -0 shasum -a 256 2>/dev/null
+        fi
+        # RECORD/METADATA/WHEEL distinguish same-version pip reinstalls and
+        # local wheel rebuilds, not just distribution names and versions.
+        find "$prefix"/lib/python*/site-packages -maxdepth 2 -type f \
+            \( -name RECORD -o -name METADATA -o -name WHEEL \
+               -o -name PKG-INFO \) -print0 2>/dev/null |
+            sort -z | xargs -0 shasum -a 256 2>/dev/null
+    } | shasum -a 256 | awk '{print $1}' | tee "$cache_file"
+}
+
+# Launching the application asks dyld to resolve the complete transitive
+# dependency graph, including indirect libraries such as libmpifort.12.dylib.
+# The application's own exit status is irrelevant: reaching main means loading
+# succeeded.
+# Conservative heuristic for when a full clobber (not just per-target clean) is
+# likely required. Returns a non-empty reason on stdout when recommended; empty
+# otherwise. This is intentionally cheap and conservative: clobberall is very
+# expensive, so it is only recommended for clear build-system corruption
+# signals, never for ordinary staleness (which make clean already handles).
+moose_mac_clobberall_reason()
+{
+    local reason=""
+    local method="${METHOD:-opt}"
+
+    # 1. Inconsistent framework build: objects present but the library missing.
+    if [[ -z "$reason" ]]; then
+        if [[ -d "$MOOSE_DIR/framework/src" ]] && \
+           find "$MOOSE_DIR/framework/src" -type f -name "*.${method}.lo" -print -quit 2>/dev/null | grep -q . && \
+           [[ ! -e "$MOOSE_DIR/framework/libmoose-${method}.la" && ! -e "$MOOSE_DIR/framework/libmoose-${method}.dylib" ]]; then
+            reason="Framework object files exist but libmoose is missing (inconsistent build)."
+        fi
+    fi
+
+    # 3. Orphaned dependency files referencing headers that no longer exist.
+    if [[ -z "$reason" ]]; then
+        local dfile header missing=0 checked=0
+        while IFS= read -r dfile; do
+            [[ -n "$dfile" ]] || continue
+            while IFS= read -r header; do
+                [[ -n "$header" ]] || continue
+                header="${header# }"
+                [[ "$header" == *.h ]] || continue
+                if [[ ! -f "$header" && ! -f "$MOOSE_DIR/$header" ]]; then
+                    missing=$((missing + 1))
+                fi
+                checked=$((checked + 1))
+                (( checked >= 40 )) && break 2
+            done < <(grep -oE '[^ ]+\.h' "$dfile" 2>/dev/null | head -8)
+            (( missing >= 4 )) && { reason="Several dependency files reference headers that no longer exist (orphaned .d files)."; break; }
+        done < <(find "$MOOSE_DIR/framework" "$MOOSE_DIR/test" "$MOOSE_DIR/modules" \
+                    -type f -name '*.d' 2>/dev/null | head -30)
+    fi
+
+    printf '%s' "$reason"
+}
+
+moose_mac_exe_loads()
+{
+    local exe="$1" out
+    [[ -f "$exe" && -x "$exe" ]] || return 1
+
+    out="$(python - "$exe" <<'PY' 2>&1
+import subprocess, sys
+try:
+    result = subprocess.run([sys.argv[1], "--version"], capture_output=True,
+                            text=True, timeout=10)
+    print(result.stdout)
+    print(result.stderr)
+except subprocess.TimeoutExpired:
+    # The process started, so dyld completed successfully.
+    pass
+except OSError as error:
+    print(error)
+PY
+)" || true
+
+    if printf '%s' "$out" | grep -Eqi \
+        'dyld|Library not loaded|image not found|no suitable image|Symbol not found'; then
+        MOOSE_MAC_LOAD_ERROR="$(printf '%s' "$out" | grep -Ei \
+            'Library not loaded|image not found|no suitable image|Symbol not found' | head -n 1 | sed 's/^[[:space:]]*//')"
+        return 1
+    fi
+    MOOSE_MAC_LOAD_ERROR=""
+    return 0
 }
 
 moose_mac_configured_neml2_dir()
@@ -886,7 +1092,10 @@ moose_mac_sync_neml2()
 {
     if [[ "${MOOSE_MAC_SKIP_NEML2_SYNC:-0}" == "1" ]]; then
         moose_mac_section "NEML2 Status (--skip-neml2-sync)"
-        echo "Skipping NEML2 sync check as requested."
+        echo "Skipping NEML2 sync/rebuild as requested."
+        if ! moose_mac_neml2_install_complete; then
+            moose_mac_die "Installed NEML2 is incomplete (missing neml2.pc, libneml2.dylib, libneml2_eager.dylib, or a required header such as neml2/csrc/eager/Model.h). Rebuild NEML2 first: ./scripts/mac/moose.sh compile neml2"
+        fi
         return 0
     fi
 
@@ -1059,6 +1268,13 @@ moose_mac_module_exe()
     esac
 }
 
+moose_mac_build_failed_marker()
+{
+    local target="${1:-unknown}"
+    local method="${2:-${METHOD:-opt}}"
+    echo "$MOOSE_DIR/.moose_mac_build_failed.${target}.${method}"
+}
+
 moose_mac_target_receipt_file()
 {
     local exe="$1"
@@ -1085,11 +1301,25 @@ moose_mac_write_target_receipt()
     active_hash="$(moose_mac_active_neml2_hash)"
 
     local neml2_lib="$active_dir/lib/libneml2.dylib"
+    local neml2_eager_lib="$active_dir/lib/libneml2_eager.dylib"
     if [[ -f "$neml2_lib" ]]; then
         neml2_mtime="$(stat -f "%m" "$neml2_lib" 2>/dev/null || date +%s)"
     else
         neml2_mtime="0"
     fi
+    local neml2_eager_mtime
+    if [[ -f "$neml2_eager_lib" ]]; then
+        neml2_eager_mtime="$(stat -f "%m" "$neml2_eager_lib" 2>/dev/null || date +%s)"
+    else
+        neml2_eager_mtime="0"
+    fi
+
+    local conda_prefix
+    conda_prefix="$(moose_mac_conda_prefix)"
+    local conda_env_name
+    conda_env_name="$(moose_mac_conda_env_name)"
+    local conda_fingerprint
+    conda_fingerprint="$(moose_mac_conda_fingerprint)"
 
     cat > "$receipt" <<EOF
 TARGET=$target
@@ -1098,8 +1328,29 @@ NEML2_BACKEND=$active_backend
 NEML2_DIR=$active_dir
 NEML2_HASH=$active_hash
 NEML2_LIB_MTIME=$neml2_mtime
+NEML2_EAGER_LIB_MTIME=$neml2_eager_mtime
+CONDA_PREFIX=$conda_prefix
+CONDA_ENV_NAME=$conda_env_name
+CONDA_REQUESTED_ENV=${MOOSE_CONDA_ENV:-moose}
+CONDA_FINGERPRINT=$conda_fingerprint
 BUILT_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 EOF
+}
+
+moose_mac_clean_target_objects()
+{
+    local target="$1"
+    local method="${METHOD:-opt}"
+    local module_dir
+    module_dir="$(moose_mac_module_dir "$target")"
+
+    # Use MOOSE's make targets so generated, unity, Kokkos, dependency, and
+    # application objects are all covered. An environment ABI change also
+    # invalidates framework objects linked into every application.
+    make -C "$module_dir" clean METHOD="$method"
+    if [[ "$module_dir" != "$MOOSE_DIR/framework" ]]; then
+        make -C "$MOOSE_DIR/framework" clean METHOD="$method"
+    fi
 }
 
 moose_mac_clean_target_binaries()
@@ -1180,6 +1431,7 @@ moose_mac_target_status()
 
     TARGET_STATUS="MISSING"
     TARGET_STALE_REASON=""
+    TARGET_STALE_KIND=""
     TARGET_BUILT_NEML2_HASH=""
     TARGET_ACTIVE_NEML2_HASH=""
     TARGET_NEML2_LINKAGE="None"
@@ -1227,6 +1479,7 @@ moose_mac_target_status()
     active_hash="$(moose_mac_active_neml2_hash)"
     active_dir="$(moose_mac_active_neml2_dir)"
     neml2_lib="$active_dir/lib/libneml2.dylib"
+    local neml2_eager_lib="$active_dir/lib/libneml2_eager.dylib"
     TARGET_ACTIVE_NEML2_HASH="$active_hash"
 
     local is_neml2_consumer=0
@@ -1236,11 +1489,69 @@ moose_mac_target_status()
             ;;
     esac
 
-    # Source freshness: has any source or header in this target's own trees been
-    # modified since the executable was last linked? This is an mtime heuristic,
-    # not make's full dependency graph, so it reliably catches edits to this
-    # target's code but does not chase transitive framework edits onto module
-    # entries. find -quit stops at the first newer file, so it is cheap.
+    # Configuration must follow the active conda environment before any rebuild.
+    if [[ -f "$MOOSE_DIR/conf_vars.mk" ]]; then
+        local conf_conda_prefix
+        conf_conda_prefix="$(awk -F':=' '/^LIBTORCH_DIR[[:space:]]*:=/ {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); print $2}' "$MOOSE_DIR/conf_vars.mk" 2>/dev/null | sed -E 's#(/lib/python[0-9.]+/site-packages/torch)$##; s#(/lib)$##' | head -n 1)"
+        if [[ -z "$conf_conda_prefix" ]]; then
+            conf_conda_prefix="$(awk -F':=' '/^libPNG_LIBS[[:space:]]*:=/ {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); print $2}' "$MOOSE_DIR/conf_vars.mk" 2>/dev/null | sed -E 's#^-L##; s# -l.*##; s#/lib$##' | head -n 1)"
+        fi
+        if [[ -n "$conf_conda_prefix" && "$conf_conda_prefix" != "$(moose_mac_conda_prefix)" ]]; then
+            TARGET_STATUS="STALE"
+            TARGET_STALE_KIND="configure"
+            TARGET_STALE_REASON="MOOSE configured against a different conda env ($conf_conda_prefix); run configure_mac.sh"
+            return 0
+        fi
+    fi
+
+    # Conda environment awareness: detect environment identity, package
+    # transaction, and runtime dependency changes.
+    local receipt
+    receipt="$(moose_mac_target_receipt_file "$exe")"
+    if [[ ! -f "$receipt" ]] || ! grep -q '^CONDA_FINGERPRINT=' "$receipt"; then
+        TARGET_STATUS="STALE"
+        TARGET_STALE_KIND="conda"
+        TARGET_STALE_REASON="Build predates conda provenance tracking; rebuild once to record the environment"
+        return 0
+    fi
+
+    local built_conda_prefix built_conda_env built_requested_env built_conda_fingerprint
+    built_conda_prefix="$(grep '^CONDA_PREFIX=' "$receipt" 2>/dev/null | cut -d= -f2- || true)"
+    built_conda_env="$(grep '^CONDA_ENV_NAME=' "$receipt" 2>/dev/null | cut -d= -f2- || true)"
+    built_requested_env="$(grep '^CONDA_REQUESTED_ENV=' "$receipt" 2>/dev/null | cut -d= -f2- || true)"
+    built_conda_fingerprint="$(grep '^CONDA_FINGERPRINT=' "$receipt" 2>/dev/null | cut -d= -f2- || true)"
+
+    local current_conda_prefix current_conda_env current_requested_env
+    current_conda_prefix="$(moose_mac_conda_prefix)"
+    current_conda_env="$(moose_mac_conda_env_name)"
+    current_requested_env="${MOOSE_CONDA_ENV:-moose}"
+    if [[ "$built_conda_prefix" != "$current_conda_prefix" || \
+          "$built_conda_env" != "$current_conda_env" || \
+          -n "$built_requested_env" && "$built_requested_env" != "$current_requested_env" ]]; then
+        TARGET_STATUS="STALE"
+        TARGET_STALE_KIND="conda"
+        TARGET_STALE_REASON="Conda environment changed: built with ${built_conda_env:-unknown} ($built_conda_prefix), active is ${current_conda_env:-unknown} ($current_conda_prefix)"
+        return 0
+    fi
+
+    local current_fingerprint
+    current_fingerprint="$(moose_mac_conda_fingerprint)"
+    if [[ "$built_conda_fingerprint" != "$current_fingerprint" ]]; then
+        TARGET_STATUS="STALE"
+        TARGET_STALE_KIND="conda"
+        TARGET_STALE_REASON="Conda environment contents changed since build (package manifest differs)"
+        return 0
+    fi
+
+    if ! moose_mac_exe_loads "$exe"; then
+        TARGET_STATUS="STALE"
+        TARGET_STALE_KIND="conda"
+        TARGET_STALE_REASON="Executable cannot load a dynamic dependency${MOOSE_MAC_LOAD_ERROR:+: $MOOSE_MAC_LOAD_ERROR}"
+        return 0
+    fi
+
+    # Source freshness is checked after conda provenance so a simultaneous env
+    # change receives the stronger object-file cleanup.
     local src_roots existing_roots=() root newer
     src_roots="$(moose_mac_target_source_roots "$target")"
     for root in $src_roots; do
@@ -1312,6 +1623,16 @@ moose_mac_target_status()
             exe_mtime_str="$(date -r "$(stat -f "%m" "$exe")" +"%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "earlier")"
             neml2_mtime_str="$(date -r "$(stat -f "%m" "$neml2_lib")" +"%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "now")"
             TARGET_STALE_REASON="libneml2.dylib was updated ($neml2_mtime_str) after executable was compiled ($exe_mtime_str)"
+            return 0
+        fi
+
+        # 3b. Timestamp comparison for eager library.
+        if [[ -f "$neml2_eager_lib" && "$exe" -ot "$neml2_eager_lib" ]]; then
+            TARGET_STATUS="STALE"
+            local exe_mtime_str2 eager_mtime_str
+            exe_mtime_str2="$(date -r "$(stat -f "%m" "$exe")" +"%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "earlier")"
+            eager_mtime_str="$(date -r "$(stat -f "%m" "$neml2_eager_lib")" +"%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "now")"
+            TARGET_STALE_REASON="libneml2_eager.dylib was updated ($eager_mtime_str) after executable was compiled ($exe_mtime_str2)"
             return 0
         fi
 
@@ -1500,7 +1821,15 @@ moose_mac_make_target()
     moose_mac_target_status "$target"
     if [[ "$TARGET_STATUS" == "STALE" ]]; then
         echo "[INFO] Stale binary detected for target '$target': $TARGET_STALE_REASON"
-        echo "       Cleaning $target libraries and executable to force clean relink against active NEML2..."
+        if [[ "$TARGET_STALE_KIND" == "configure" ]]; then
+            moose_mac_die "MOOSE configuration belongs to another conda environment. Run ./scripts/mac/configure_mac.sh before compiling."
+        fi
+        if [[ "$TARGET_STALE_KIND" == "conda" ]]; then
+            echo "       Conda provenance changed; removing compiled objects for an ABI-safe rebuild..."
+            moose_mac_clean_target_objects "$target"
+        else
+            echo "       Cleaning $target libraries and executable to force a clean relink..."
+        fi
         moose_mac_clean_target_binaries "$target"
     fi
 

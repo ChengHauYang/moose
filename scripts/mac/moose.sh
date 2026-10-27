@@ -22,6 +22,9 @@ Commands:
   init [neml2-flag]              Install dependencies and configure when needed;
                                  builds repo-isolated NEML2 without modifying Conda
   compile [target] [-j N] [--raw] [--profile] [neml2-flag]
+  clobber [target|all] [--yes]    Full clobber (generated/unity/dep files) for a
+                                 target or all; expensive, use only when the
+                                 harness reports build-system corruption
                                  Auto-sync repo-isolated NEML2 if branch changed, then
                                  compile framework-core (library only), framework,
                                  solid_mechanics (default), shifted_boundary_method,
@@ -44,7 +47,7 @@ NEML2 Source Flags (supported on init, compile, verify, all, doctor, test, unit,
   --use-committed-neml2  Reset framework/contrib/neml2 to the MOOSE-committed SHA
                          and sync/use it
   --use-conda-neml2      Skip repo-isolated NEML2 and use Conda's installed neml2
-  --skip-neml2-sync      Skip all NEML2 preflight checks and sync actions
+  --skip-neml2-sync      Skip NEML2 synchronization/rebuild; retain installation sanity checks
 
 Test scopes:
   framework-kokkos, sczm, neml2-aoti, neml2, all (default),
@@ -132,6 +135,10 @@ parse_jobs()
 
 compile_target()
 {
+    moose_mac_activate
+    moose_mac_locate_repo
+    moose_mac_env_exports
+
     local target="solid_mechanics"
     local raw_flag=()
     local profile_flag=()
@@ -155,8 +162,78 @@ compile_target()
         esac
     done
 
-    "$SCRIPT_DIR/build_mac.sh" "$target" \
-        ${raw_flag[@]+"${raw_flag[@]}"} ${profile_flag[@]+"${profile_flag[@]}"}
+    if "$SCRIPT_DIR/build_mac.sh" "$target" \
+        ${raw_flag[@]+"${raw_flag[@]}"} ${profile_flag[@]+"${profile_flag[@]}"}; then
+        rm -f "$(moose_mac_build_failed_marker "$target" "${METHOD:-opt}")"
+        if ! ls "$MOOSE_DIR"/.moose_mac_build_failed.*.* >/dev/null 2>&1; then
+            rm -f "$MOOSE_DIR/.moose_mac_build_failed"
+        fi
+    else
+        touch "$MOOSE_DIR/.moose_mac_build_failed"
+        touch "$(moose_mac_build_failed_marker "$target" "${METHOD:-opt}")"
+        local reason
+        reason="$(moose_mac_clobberall_reason)"
+        if [[ -n "$reason" ]]; then
+            echo
+            echo "[CLOBBERALL RECOMMENDED] $reason"
+            echo "  This looks like build-system corruption rather than ordinary staleness."
+            echo "  Try a defensive full clobber, then rebuild:"
+            echo "    ./scripts/mac/moose.sh clobber $target"
+            echo "    ./scripts/mac/moose.sh compile $target"
+        fi
+        return 1
+    fi
+}
+
+clobber_target()
+{
+    moose_mac_activate
+    moose_mac_locate_repo
+    moose_mac_env_exports
+
+    local target="all"
+    local confirm=0
+    for arg in "$@"; do
+        case "$arg" in
+            --yes|-y) confirm=1 ;;
+            all|framework|solid_mechanics|shifted_boundary_method|sbm|unit|framework_unit|*_unit)
+                target="$arg" ;;
+            *) moose_mac_die "Unknown clobber option '$arg'." ;;
+        esac
+    done
+
+    if [[ "$confirm" -ne 1 ]]; then
+        echo "This will run 'make clobber' (full clean including generated/unity/dependency files) for: $target"
+        echo "It can take a long time to rebuild afterwards."
+        read -r -p "Continue? [y/N] " reply
+        [[ "$reply" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
+    fi
+
+    local dirs=()
+    if [[ "$target" == "all" ]]; then
+        dirs+=("$MOOSE_DIR/framework" "$MOOSE_DIR/test" "$MOOSE_DIR/unit")
+        local mod_dir
+        for mod_dir in "$MOOSE_DIR"/modules/*/; do
+            [[ -d "$mod_dir" ]] || continue
+            if [[ -f "$mod_dir/Makefile" ]]; then
+                dirs+=("${mod_dir%/}")
+                if [[ -d "${mod_dir}unit" && -f "${mod_dir}unit/Makefile" ]]; then
+                    dirs+=("${mod_dir%/}/unit")
+                fi
+            fi
+        done
+    else
+        dirs+=("$(moose_mac_module_dir "$target")")
+    fi
+
+    local dir
+    for dir in "${dirs[@]}"; do
+        echo "Clobbering in $dir ..."
+        make -C "$dir" clobber METHOD="${METHOD:-opt}"
+    done
+
+    rm -f "$MOOSE_DIR"/.moose_mac_build_failed* 2>/dev/null || true
+    echo "Clobber complete. Rebuild with: ./scripts/mac/moose.sh compile $target"
 }
 
 run_input()
@@ -409,6 +486,9 @@ case "$COMMAND" in
         ;;
     unit)
         run_unit "$@"
+        ;;
+    clobber)
+        clobber_target "$@"
         ;;
     verify)
         verify_scope "$@"
