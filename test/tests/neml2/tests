@@ -277,6 +277,52 @@
     valgrind = heavy
     collections = 'SYSTEM'
   []
+  [interface_only_two_sided]
+    requirement = 'The framework shall publish an interface_only NEML2 model output and its derivatives on a split interface, using inputs that differ across the interface and without disturbing a bulk material that declares the same property names on the blocks the interface straddles,'
+    issues = '#32413'
+    design = 'NEML2Action.md NEML2ToMOOSEMaterialProperty.md'
+    # Each side variant writes its own output file, so the three can run concurrently. Suppressing
+    # one side makes exactly that side fall back to the bulk material's value, which is what
+    # identifies the interface retrievers as the sole writers of their respective storages.
+    [both]
+      detail = 'on both the primary and the neighbor side by default,'
+      type = CSVDiff
+      input = 'interface_only_two_sided.i'
+      csvdiff = 'interface_only_two_sided_out.csv'
+      capabilities = 'libtorch & neml2'
+      valgrind = heavy
+      collections = 'SYSTEM'
+    []
+    [primary]
+      detail = 'on the primary side only when interface_output_side is primary, leaving the neighbor material data to the bulk producer, and'
+      type = CSVDiff
+      input = 'interface_only_two_sided.i'
+      cli_args = 'NEML2/source/interface_output_side=primary Outputs/file_base=interface_only_two_sided_primary_out'
+      csvdiff = 'interface_only_two_sided_primary_out.csv'
+      capabilities = 'libtorch & neml2'
+      valgrind = none
+      collections = 'SYSTEM'
+    []
+    [neighbor]
+      detail = 'on the neighbor side only when interface_output_side is neighbor, leaving the boundary material data to the bulk producer.'
+      type = CSVDiff
+      input = 'interface_only_two_sided.i'
+      cli_args = 'NEML2/source/interface_output_side=neighbor Outputs/file_base=interface_only_two_sided_neighbor_out'
+      csvdiff = 'interface_only_two_sided_neighbor_out.csv'
+      capabilities = 'libtorch & neml2'
+      valgrind = none
+      collections = 'SYSTEM'
+    []
+  []
+  [interface_only_two_sided_jacobian]
+    requirement = 'The framework shall compute a correct Jacobian for an interface_only NEML2 model consumed on both the primary and neighbor side, covering the element-element, element-neighbor, neighbor-element, and neighbor-neighbor couplings.'
+    type = PetscJacobianTester
+    issues = '#32413'
+    input = 'interface_only_two_sided_jacobian.i'
+    run_sim = true
+    capabilities = 'libtorch & neml2'
+    collections = 'SYSTEM'
+  []
   [linear_cohesive_interface]
     requirement = 'The framework shall be capable of using a NEML2 linear cohesive interface law in a scalar Poisson problem.'
     type = Exodiff

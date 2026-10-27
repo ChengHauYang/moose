@@ -99,7 +99,7 @@ NEML2Action::validParams()
   params.addParam<MooseEnum>(
       "interface_output_side",
       MooseEnum("both primary neighbor", "both"),
-      "For Kokkos interface-only output, publish each NEML2 output to both sides, only the "
+      "For interface-only output, publish each NEML2 output to both sides, only the "
       "primary side, or only the neighbor side. Use primary/neighbor with distinct executors to "
       "avoid duplicate writers to a material-property storage.");
   // Block materials need no hint: the same material is reinit'd as BLOCK/FACE/NEIGHBOR data and the
@@ -582,7 +582,41 @@ NEML2Action::act()
       }
       else
 #endif
-        _problem->addMaterial(obj_type, obj_name, obj_params);
+      {
+        if (!_interface_only)
+        {
+          _problem->addMaterial(obj_type, obj_name, obj_params);
+          return;
+        }
+
+        // Both sides of a split interface carry their own deformation state, so the model is
+        // evaluated on each and must publish on each. The primary side is an ordinary
+        // boundary-restricted material: it writes BOUNDARY_MATERIAL_DATA during
+        // reinitMaterialsBoundary, which is what an interface consumer's getMaterialProperty
+        // reads.
+        if (interface_output_side != "neighbor")
+          _problem->addMaterial(obj_type, obj_name, obj_params);
+        if (interface_output_side == "primary")
+          return;
+
+        // The neighbor side needs NEIGHBOR_MATERIAL_DATA, which a boundary-restricted material
+        // cannot reach: FEProblemBase::addMaterialHelper only clones the face and neighbor copies
+        // for block-restricted materials, and reinitMaterialsNeighbor only ever runs
+        // block-restricted neighbor objects. Register this copy as an interface material instead.
+        // Every loop that visits an interface -- NonlinearThread::onInterface (and its
+        // h-refinement-mismatch variant), ComputeUserObjectsThread::onInterface, and
+        // ComputeElemAuxBcsThread -- calls reinitMaterialsInterface only after reinitNeighbor and
+        // reinitMaterialsNeighbor, so by then the neighbor element, its face quadrature rule, and
+        // the neighbor material data (resized and swapped) are all valid. Writing
+        // _neighbor_material_props from there is therefore safe, and it mirrors the Kokkos path,
+        // whose neighbor retriever is likewise a boundary-restricted interface material carrying
+        // _material_data_type = NEIGHBOR_MATERIAL_DATA.
+        auto neighbor_params = obj_params;
+        neighbor_params.set<bool>("_neighbor") = true;
+        neighbor_params.set<Moose::MaterialDataType>("_material_data_type") =
+            Moose::NEIGHBOR_MATERIAL_DATA;
+        _problem->addInterfaceMaterial(obj_type, obj_name + "_neighbor", neighbor_params);
+      }
     };
 
     // NEML2ToMOOSE output retrievers

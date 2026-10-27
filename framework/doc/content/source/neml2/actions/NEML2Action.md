@@ -76,6 +76,25 @@ Next, a [NEML2BatchIndexGenerator](NEML2BatchIndexGenerator.md) and a [NEML2Mode
 
 The last step is creating the `NEML2ToMOOSE` retrievers to retrieve NEML2 model outputs (and their derivatives) back to MOOSE. This step is similar to [creating MOOSEToNEML2 gatherers](NEML2Action.md#gatherer).
 
+### Interface-only output id=interface_output
+
+With [!param](/NEML2/interface_only) set to `true` the model is evaluated at the quadrature points of
+both sides of the sideset named by [!param](/NEML2/interface), so each side of a split interface
+carries its own constitutive state. The retrievers follow: for every output and derivative the action
+creates one retriever that publishes the primary side into the boundary material data, which an
+interface consumer reads with `getMaterialProperty`, and a second one that publishes the neighbor side
+into the neighbor material data, which it reads with `getNeighborMaterialProperty`. The neighbor
+retriever is registered as an interface material so that it runs after the neighbor element and its
+material data have been reinitialized. Both backends behave the same way, and
+[!param](/NEML2/interface_output_side) selects which sides are published.
+
+Because these retrievers are boundary restricted, they declare their properties on the sideset rather
+than on the adjacent subdomains, so a bulk model emitting the same output names on those subdomains
+does not collide with them. Where both are active the interface values take precedence: on the
+interface sideset the interface retrievers run after the bulk face and neighbor material copies, so a
+consumer reading such a name there sees the interface model's value, while the bulk values are
+untouched in the volume and on every other face.
+
 ## Debugging a failed constitutive update id=dump
 
 A NEML2 constitutive update can fail to converge for some elements -- a *recoverable* return-map failure (a Newton divergence or max-iterations in the material solve). MOOSE then cuts the time step and retries, so the exact inputs that triggered the failure are normally lost by the time the run ends. Set [!param](/NEML2/dump_inputs_on_failure) to `true` to capture them: on each failed update the executor serializes the whole local batch of NEML2 input tensors (strains, temperature, old state, model parameters, ...) to a per-rank TorchScript file `<model>_count<c>_rank<r>.pt`.
