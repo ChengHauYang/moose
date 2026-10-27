@@ -66,6 +66,18 @@ public:
   /// check if the output is fully computed and ready to be fetched
   bool outputReady() const { return _output_ready; }
 
+  /// Whether an initial value was gathered for the named model output. Output initializers are the
+  /// MOOSEToNEML2 gatherers listed in 'output_initializers'; each supplies the per-QP initial
+  /// condition for one output material property at t == 0 (the retriever's
+  /// 'moose_material_property_init'). They are gathered independently of state advance, so this is
+  /// available whether or not manage_state_advance is set.
+  bool hasOutputInitializer(const std::string & output_name) const;
+
+  /// Get a reference(!) to the gathered initial value for the named model output, shaped
+  /// (batch, *base_shape) on the output device, ready to stage into the output material property.
+  /// Only valid when hasOutputInitializer(output_name) is true.
+  const at::Tensor & getOutputInitializer(const std::string & output_name) const;
+
 protected:
   /// Register a NEML2 input variable gathered by a gatherer
   virtual void addGatheredVariable(const UserObjectName &, const std::string &);
@@ -184,6 +196,17 @@ protected:
 
   /// MOOSE data gathering user objects used to initialize device-managed state
   std::vector<const MOOSEToNEML2 *> _state_initializers;
+
+  /// MOOSE data gathering user objects supplying the t == 0 initial value of output material
+  /// properties (the retriever's 'moose_material_property_init'). Keyed, like _output_init_tensors,
+  /// by the un-lagged output name. Gathered independently of manage_state_advance; the same gatherer
+  /// may also appear in _state_initializers when manage_state_advance is true, in which case one
+  /// gather serves both the device OLD state and the output material initialization.
+  std::vector<const MOOSEToNEML2 *> _output_initializers;
+
+  /// Gathered output initial values, output name -> (batch, *base_shape) tensor on the output
+  /// device. Populated at EXEC_INITIAL from _output_initializers and read via getOutputInitializer.
+  std::map<std::string, at::Tensor> _output_init_tensors;
 
   /// MOOSE data gathering user objects (model parameters)
   std::vector<const MOOSEToNEML2 *> _param_gatherers;

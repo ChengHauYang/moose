@@ -181,6 +181,42 @@
       valgrind = none
     []
   []
+  [kokkos_scalar_output]
+    requirement = 'The framework shall map a scalar (Real) NEML2 model output into a material property through the Kokkos output backend, reproducing the host backend values'
+    design = 'NEML2Action.md NEML2ToKokkosMaterialProperty.md'
+    issues = '#31596'
+    # The gold is the host NEML2ToMOOSERealMaterialProperty result. The host variant runs first and
+    # all variants share one output file, so they are prereq-chained to serialize that file.
+    [host]
+      detail = 'with the host backend (the reference the Kokkos backend is checked against),'
+      type = CSVDiff
+      input = 'kokkos_scalar_output.i'
+      cli_args = 'NEML2/trace/output_backend=moose Postprocessors/t_avg/type=ElementAverageMaterialProperty Postprocessors/t_max/type=ElementExtremeMaterialProperty'
+      csvdiff = 'kokkos_scalar_output_out.csv'
+      capabilities = 'libtorch & neml2'
+      valgrind = none
+    []
+    [cpu]
+      detail = 'on the CPU device, and'
+      type = CSVDiff
+      input = 'kokkos_scalar_output.i'
+      csvdiff = 'kokkos_scalar_output_out.csv'
+      prereq = 'kokkos_scalar_output/host'
+      capabilities = 'kokkos & libtorch & neml2'
+      valgrind = none
+    []
+    [cuda]
+      detail = 'on the CUDA device.'
+      type = CSVDiff
+      input = 'kokkos_scalar_output.i'
+      cli_args = 'NEML2/device=cuda'
+      csvdiff = 'kokkos_scalar_output_out.csv'
+      prereq = 'kokkos_scalar_output/cpu'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cuda'
+      valgrind = none
+    []
+  []
   [no_neml2]
     requirement = 'The framework shall throw an error upon instantiation of NEML2 interface objects if NEML2 is not available.'
     type = RunException

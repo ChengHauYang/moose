@@ -90,6 +90,14 @@ NEML2ModelExecutor::validParams()
       {},
       "List of MOOSE*ToNEML2 user objects gathering initial values for device-managed state");
   params.addParam<std::vector<UserObjectName>>(
+      "output_initializers",
+      {},
+      "List of MOOSE*ToNEML2 user objects gathering the t == 0 initial value of output material "
+      "properties. Gathered independently of manage_state_advance; a gatherer may also appear in "
+      "state_initializers, in which case one gather serves both the device old state and the "
+      "output "
+      "material initialization.");
+  params.addParam<std::vector<UserObjectName>>(
       "param_gatherers",
       {},
       "List of MOOSE*ToNEML2 user objects gathering MOOSE data as NEML2 model parameters");
@@ -137,6 +145,8 @@ NEML2ModelExecutor::NEML2ModelExecutor(const InputParameters & params)
     _depend_uo.insert(gatherer_name);
   for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("state_initializers"))
     _depend_uo.insert(gatherer_name);
+  for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("output_initializers"))
+    _depend_uo.insert(gatherer_name);
   for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("param_gatherers"))
     _depend_uo.insert(gatherer_name);
 #endif
@@ -175,6 +185,22 @@ NEML2ModelExecutor::initialSetup()
                  uo.NEML2Name(),
                  "` must be an old variable with manage_state_advance = true.");
     _state_initializers.push_back(&uo);
+  }
+
+  for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("output_initializers"))
+  {
+    const auto & uo = getUserObjectByName<MOOSEToNEML2>(gatherer_name, /*is_dependency=*/false);
+    // The gatherer targets the lag-1 old variable (it is shared with the state initializer), but an
+    // output initial condition is keyed by the un-lagged output name, which is what a retriever
+    // requests. Require an actual model output so a misconfiguration is caught here rather than
+    // silently never matching a retriever.
+    const auto [base_name, _] = parseLag(uo.NEML2Name());
+    if (!contains(model().output_names(), base_name))
+      paramError("output_initializers",
+                 "The output initializer target `",
+                 uo.NEML2Name(),
+                 "` does not name a model output.");
+    _output_initializers.push_back(&uo);
   }
 
   // deal with user object provided model parameters
@@ -380,6 +406,23 @@ NEML2ModelExecutor::fillInputs()
         uo->insertInto(_state_vars);
     for (const auto & uo : _param_gatherers)
       uo->insertInto(_model_params);
+
+    // Output material initial conditions are needed only at t == 0, when a retriever seeds its
+    // output material property (moose_material_property_init) before the first solve has produced
+    // an output. Gather them here so they are ready for the retrievers in the same evaluation pass
+    // (fillInputs runs before the material compute that calls getOutputInitializer). Keyed by the
+    // un-lagged output name and placed on the output device, matching how retrievers read outputs.
+    // This is independent of manage_state_advance and of the device old-state seeding above, so one
+    // shared gatherer can serve both without either role disturbing the other.
+    if (_t_step == 0)
+    {
+      _output_init_tensors.clear();
+      for (const auto & uo : _output_initializers)
+      {
+        const auto base_name = parseLag(uo->NEML2Name()).first;
+        _output_init_tensors[base_name] = uo->gatheredData().to(output_device()).contiguous();
+      }
+    }
 
     // Cold-start in-place-updated unknowns at zero (see initialSetup): a base-shaped zero broadcast
     // over the batch, re-injected on every evaluation so the return-map initial guess is 0 each
@@ -813,6 +856,23 @@ NEML2ModelExecutor::getOutput(const std::string & output_name) const
     mooseError("Trying to retrieve a non-existent NEML2 output variable '", output_name, "'.");
 
   return _retrieved_outputs[output_name];
+}
+
+bool
+NEML2ModelExecutor::hasOutputInitializer(const std::string & output_name) const
+{
+  return _output_init_tensors.count(output_name) > 0;
+}
+
+const at::Tensor &
+NEML2ModelExecutor::getOutputInitializer(const std::string & output_name) const
+{
+  const auto it = _output_init_tensors.find(output_name);
+  if (it == _output_init_tensors.end())
+    mooseError("No initial value was gathered for NEML2 output variable '",
+               output_name,
+               "'. This should be guarded by hasOutputInitializer().");
+  return it->second;
 }
 
 const at::Tensor &

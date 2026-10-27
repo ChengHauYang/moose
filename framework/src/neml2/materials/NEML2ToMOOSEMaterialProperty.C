@@ -98,8 +98,7 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   const bool batched = _value.dim() > base_ndim;
   const auto base_size = NEML2Utils::Layout<T>::strides[0];
   const auto batch_size = batched ? _value.numel() / base_size : 1;
-  const auto flat_value =
-      batched ? _value.flatten(0, _value.dim() - base_ndim - 1) : _value;
+  const auto flat_value = batched ? _value.flatten(0, _value.dim() - base_ndim - 1) : _value;
 
   // Fast path: the retrieved output lives on the host (the default output_device) as a contiguous
   // double buffer (see NEML2ModelExecutor::extractOutputs), so copy each element's data with a
@@ -128,7 +127,6 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
     for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
       NEML2Utils::copyTensorToMOOSEData(
           batched ? flat_value[static_cast<int64_t>(i + _qp)] : flat_value, _prop[_qp]);
-
 }
 #endif
 

@@ -14,20 +14,24 @@
 #include "MathUtils.h"
 
 /**
- * Copies a symmetric or full rank-two or rank-four NEML2 output into a Kokkos material property.
+ * Copies a scalar (Real), or a symmetric or full rank-two or rank-four NEML2 output into a Kokkos
+ * material property.
  *
  * The Kokkos material-property rank is part of the MaterialProperty<Real, rank> type, so it must
  * be fixed at compile time for device code. The interface and neighbor template parameters likewise
  * select the appropriate material dispatcher and property storage at compile time. The public
  * aliases below provide factory-registerable names for these specializations without duplicating
- * their implementation.
+ * their implementation. rank == 0 is the scalar case: a single component with no tensor index or
+ * Mandel factor, matching the host NEML2ToMOOSERealMaterialProperty; 'full' is meaningless for it.
  */
 template <unsigned int rank, bool full = false, bool interface = false, bool neighbor = false>
 class NEML2ToKokkosMaterialProperty
   : public std::conditional_t<interface, Moose::Kokkos::InterfaceMaterial, Moose::Kokkos::Material>,
     public NEML2OutputInterface
 {
-  static_assert(rank == 2 || rank == 4, "Only rank-two and rank-four properties are supported.");
+  static_assert(rank == 0 || rank == 2 || rank == 4,
+                "Only scalar, rank-two, and rank-four properties are supported.");
+  static_assert(!(rank == 0 && full), "'full' is meaningless for a scalar property.");
 
 public:
   using MaterialBase =
@@ -58,6 +62,21 @@ private:
                                              Datum & datum,
                                              unsigned int storage_qp) const;
 
+#ifdef NEML2_ENABLED
+  /// Stage a (batch, *base_shape) NEML2 tensor into _staged_output and (re)build _batch_offset so the
+  /// device write path can copy it into the material property. Shared by the regular output path and
+  /// the t == 0 initialization path, which differ only in which tensor they stage.
+  void stageOutput(const at::Tensor & output);
+#endif
+
+  /// The NEML2 output variable this retriever copies. Used to look up the t == 0 initial value from
+  /// the executor's output initializers (the 'moose_material_property_init' gatherer).
+  const std::string _from_neml2;
+
+  /// Whether 'moose_material_property_init' was supplied, i.e. this output has a t == 0 initial value
+  /// to stage in place of the (not-yet-ready) model output at the first step.
+  const bool _has_init;
+
   Moose::Kokkos::MaterialProperty<Real, rank> _prop;
   Moose::Kokkos::Array<Real> _staged_output;
   Moose::Kokkos::Array<dof_id_type> _batch_offset;
@@ -65,6 +84,10 @@ private:
   bool _broadcast_output = false;
 };
 
+using NEML2ToKokkosRealMaterialProperty = NEML2ToKokkosMaterialProperty<0>;
+using NEML2ToKokkosSideRealMaterialProperty = NEML2ToKokkosMaterialProperty<0, false, true>;
+using NEML2ToKokkosNeighborRealMaterialProperty =
+    NEML2ToKokkosMaterialProperty<0, false, true, true>;
 using NEML2ToKokkosRankTwoMaterialProperty = NEML2ToKokkosMaterialProperty<2>;
 using NEML2ToKokkosRankFourMaterialProperty = NEML2ToKokkosMaterialProperty<4>;
 using NEML2ToKokkosFullRankTwoMaterialProperty = NEML2ToKokkosMaterialProperty<2, true>;
@@ -110,43 +133,48 @@ NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::writeOutputToPro
     const dof_id_type batch_index, Datum & datum, const unsigned int storage_qp) const
 {
   auto prop = _prop(datum, storage_qp);
-  const unsigned int dim = this->kokkosAssembly().getDimension();
-  for (unsigned int i = 0; i < dim; ++i)
-    for (unsigned int j = 0; j < dim; ++j)
-    {
-      if constexpr (full)
+  if constexpr (rank == 0)
+    prop = batch_index == libMesh::DofObject::invalid_id ? 0.0 : _staged_output[batch_index];
+  else
+  {
+    const unsigned int dim = this->kokkosAssembly().getDimension();
+    for (unsigned int i = 0; i < dim; ++i)
+      for (unsigned int j = 0; j < dim; ++j)
       {
-        if constexpr (rank == 2)
-          prop(i, j) = batch_index == libMesh::DofObject::invalid_id
-                           ? 0.0
-                           : _staged_output[batch_index * 9 + 3 * i + j];
+        if constexpr (full)
+        {
+          if constexpr (rank == 2)
+            prop(i, j) = batch_index == libMesh::DofObject::invalid_id
+                             ? 0.0
+                             : _staged_output[batch_index * 9 + 3 * i + j];
+          else
+            for (unsigned int k = 0; k < dim; ++k)
+              for (unsigned int l = 0; l < dim; ++l)
+                prop(i, j, k, l) =
+                    batch_index == libMesh::DofObject::invalid_id
+                        ? 0.0
+                        : _staged_output[batch_index * 81 + 27 * i + 9 * j + 3 * k + l];
+        }
         else
-          for (unsigned int k = 0; k < dim; ++k)
-            for (unsigned int l = 0; l < dim; ++l)
-              prop(i, j, k, l) =
-                  batch_index == libMesh::DofObject::invalid_id
-                      ? 0.0
-                      : _staged_output[batch_index * 81 + 27 * i + 9 * j + 3 * k + l];
+        {
+          const auto a = mandelIndex(i, j);
+          if constexpr (rank == 2)
+            prop(i, j) = batch_index == libMesh::DofObject::invalid_id
+                             ? 0.0
+                             : _staged_output[batch_index * 6 + a] / mandelFactor(a);
+          else
+            for (unsigned int k = 0; k < dim; ++k)
+              for (unsigned int l = 0; l < dim; ++l)
+              {
+                const auto b = mandelIndex(k, l);
+                prop(i, j, k, l) = batch_index == libMesh::DofObject::invalid_id
+                                       ? 0.0
+                                       : _staged_output[batch_index * 36 + 6 * a + b] /
+                                             (mandelFactor(a) * mandelFactor(b));
+              }
+        }
       }
-      else
-      {
-        const auto a = mandelIndex(i, j);
-        if constexpr (rank == 2)
-          prop(i, j) = batch_index == libMesh::DofObject::invalid_id
-                           ? 0.0
-                           : _staged_output[batch_index * 6 + a] / mandelFactor(a);
-        else
-          for (unsigned int k = 0; k < dim; ++k)
-            for (unsigned int l = 0; l < dim; ++l)
-            {
-              const auto b = mandelIndex(k, l);
-              prop(i, j, k, l) = batch_index == libMesh::DofObject::invalid_id
-                                     ? 0.0
-                                     : _staged_output[batch_index * 36 + 6 * a + b] /
-                                           (mandelFactor(a) * mandelFactor(b));
-            }
-      }
-    }
+  }
 }
 
 template <unsigned int rank, bool full, bool interface, bool neighbor>

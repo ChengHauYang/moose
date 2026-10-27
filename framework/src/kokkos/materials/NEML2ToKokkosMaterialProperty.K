@@ -58,14 +58,17 @@ kokkosTorchDevice()
 }
 #endif
 
+registerKokkosMaterial("MooseApp", NEML2ToKokkosRealMaterialProperty);
 registerKokkosMaterial("MooseApp", NEML2ToKokkosRankTwoMaterialProperty);
 registerKokkosMaterial("MooseApp", NEML2ToKokkosRankFourMaterialProperty);
 registerKokkosMaterial("MooseApp", NEML2ToKokkosFullRankTwoMaterialProperty);
 registerKokkosMaterial("MooseApp", NEML2ToKokkosFullRankFourMaterialProperty);
+registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideRealMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideRankTwoMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideRankFourMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideFullRankTwoMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideFullRankFourMaterialProperty);
+registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosNeighborRealMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosNeighborRankTwoMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosNeighborRankFourMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosNeighborFullRankTwoMaterialProperty);
@@ -83,18 +86,32 @@ NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::validParams()
   else if constexpr (interface)
     params.template set<Moose::MaterialDataType>("_material_data_type") =
         Moose::INTERFACE_MATERIAL_DATA;
-  params.addClassDescription("Provides a " + std::string(full ? "full" : "symmetric") + " rank-" +
-                             std::to_string(rank) +
-                             " NEML2 output or derivative as a Kokkos material property.");
+  params.addClassDescription(
+      rank == 0 ? "Provides a scalar (Real) NEML2 output as a Kokkos material property."
+                : "Provides a " + std::string(full ? "full" : "symmetric") + " rank-" +
+                      std::to_string(rank) +
+                      " NEML2 output or derivative as a Kokkos material property.");
   params.template addRequiredParam<MaterialPropertyName>(
       "to_moose", "Kokkos material property used to store the NEML2 output or derivative.");
+  params.template addParam<MaterialPropertyName>(
+      "moose_material_property_init",
+      "Optional material property supplying this output's value at t == 0, before the NEML2 model "
+      "has produced output. The initial value is gathered per quadrature point by the executor's "
+      "output initializer, so it may be spatially varying.");
   return params;
 }
 
 template <unsigned int rank, bool full, bool interface, bool neighbor>
 NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::NEML2ToKokkosMaterialProperty(
     const InputParameters & params)
-  : MaterialBase(params), NEML2OutputInterface(params, *this)
+  : MaterialBase(params),
+    NEML2OutputInterface(params, *this),
+    _from_neml2(this->template getParam<std::string>("from_neml2")),
+    // moose_material_property_init initializes the output value itself; it is meaningless for a
+    // derivative retriever, which never receives it from NEML2Action.
+    _has_init(this->isParamValid("moose_material_property_init") &&
+              !this->isParamValid("neml2_input_derivative") &&
+              !this->isParamValid("neml2_parameter_derivative"))
 {
   _prop = this->template declareKokkosPropertyByName<Real, rank>(
       this->template getParam<MaterialPropertyName>("to_moose"),
@@ -110,6 +127,8 @@ NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::NEML2ToKokkosMat
     const NEML2ToKokkosMaterialProperty & object)
   : MaterialBase(object),
     NEML2OutputInterface(object),
+    _from_neml2(object._from_neml2),
+    _has_init(object._has_init),
     _prop(object._prop),
     _staged_output(object._staged_output),
     _batch_offset(object._batch_offset),
@@ -130,9 +149,26 @@ void
 NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::computeProperties()
 {
 #ifdef NEML2_ENABLED
-  constexpr unsigned int num_components = full ? (rank == 2 ? 9 : 81) : (rank == 2 ? 6 : 36);
+  constexpr unsigned int num_components =
+      rank == 0 ? 1 : (full ? (rank == 2 ? 9 : 81) : (rank == 2 ? 6 : 36));
   if (!outputReady())
   {
+    // The executor marks no output ready at t == 0 (it solves at EXEC_INITIAL but does not publish
+    // a value), so this is the only opportunity to honor moose_material_property_init: stage the
+    // per-QP initial value gathered by the executor's output initializer in place of the missing
+    // model output. The gatherer shares the state initializer's tensor type and batch ordering, so
+    // the initial tensor has the same (batch, *base_shape) layout as a normal output and stages
+    // through the identical path.
+    if (_has_init && _execute_neml2_model.hasOutputInitializer(_from_neml2))
+    {
+      stageOutput(_execute_neml2_model.getOutputInitializer(_from_neml2));
+#ifndef MOOSE_ENABLE_KOKKOS_GPU
+      _staged_output.copyToDevice();
+#endif
+      MaterialBase::computeProperties();
+      return;
+    }
+
     if (_staged_output.size() != num_components || !_broadcast_output)
     {
       this->_compute_dispatcher.reset();
@@ -195,122 +231,7 @@ NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::computePropertie
     _batch_mapping_outdated = false;
   }
   else
-  {
-    const auto base_ndim = static_cast<int64_t>(full ? rank : rank / 2);
-    const auto batch_ndim = neml2Output().dim() - base_ndim;
-    const auto expected_shape = full        ? std::vector<int64_t>(rank, 3)
-                                : rank == 2 ? std::vector<int64_t>{6}
-                                            : std::vector<int64_t>{6, 6};
-    const auto actual_shape = neml2Output().sizes().slice(batch_ndim);
-    if (batch_ndim < 0 || batch_ndim > 2 || !actual_shape.equals(expected_shape))
-      mooseError("Cannot copy NEML2 tensor with shape ",
-                 neml2Output().sizes(),
-                 " into a ",
-                 full ? "full" : "symmetric",
-                 " rank-",
-                 rank,
-                 " Kokkos material property; expected base shape ",
-                 expected_shape,
-                 ".");
-    if (neml2Output().dtype() != at::kDouble)
-      mooseError("Cannot copy NEML2 tensor with dtype ",
-                 neml2Output().dtype(),
-                 " into a Real Kokkos material property.");
-
-    const auto kokkos_device = kokkosTorchDevice();
-    if (neml2Output().device() != kokkos_device)
-      mooseError("Cannot copy NEML2 output on ",
-                 neml2Output().device(),
-                 " into a Kokkos material property on ",
-                 kokkos_device,
-                 ". Set the NEML2 executor output_device to ",
-                 kokkos_device,
-                 ".");
-
-    const auto output = neml2Output().contiguous();
-    const auto batch_size = static_cast<std::size_t>(output.numel() / num_components);
-    const bool broadcast_output = batch_ndim == 0;
-    if (_staged_output.size() != static_cast<std::size_t>(output.numel()) ||
-        _broadcast_output != broadcast_output)
-    {
-      this->_compute_dispatcher.reset();
-      _staged_output.create(output.numel());
-      _broadcast_output = broadcast_output;
-    }
-#ifdef MOOSE_ENABLE_KOKKOS_GPU
-    const auto output_view =
-        ::Kokkos::View<const Real *, MemSpace, ::Kokkos::MemoryTraits<::Kokkos::Unmanaged>>(
-            output.template data_ptr<Real>(), output.numel());
-    ::Kokkos::deep_copy(_staged_output.deviceView(), output_view);
-#else
-    std::copy_n(output.template data_ptr<Real>(), output.numel(), _staged_output.hostData());
-#endif
-
-    const auto map_size = [&]()
-    {
-      if constexpr (interface)
-        return this->kokkosInterfaceFaces().size();
-      else
-        return this->kokkosMesh().getNumLocalElements();
-    }();
-    if (_batch_mapping_outdated || _batch_offset.size() != map_size)
-    {
-      if (_batch_offset.size() != map_size)
-      {
-        this->_compute_dispatcher.reset();
-        _batch_offset.create(map_size);
-      }
-
-      if constexpr (interface)
-      {
-        // An interface restriction can leave a cached face without a corresponding NEML2 side.
-        // Initialize every entry so an erroneous mapping can never expose uninitialized device
-        // data.
-        std::fill_n(_batch_offset.hostData(), map_size, libMesh::DofObject::invalid_id);
-        for (const auto face_index : index_range(this->kokkosInterfaceFaces()))
-        {
-          const auto & face = this->kokkosInterfaceFaces()[face_index];
-          const auto elem_side =
-              NEML2BatchIndexGenerator::ElemSide(neighbor ? face.neighbor_id : face.elem_id,
-                                                 neighbor ? face.neighbor_side : face.side);
-          if (_execute_neml2_model.isSideBatchIndexExist(elem_side))
-          {
-            // The staged tensor is flat even when NEML2 retains a two-dimensional batch shape.
-            // Its side start therefore always comes from the executor's stable ElemSide map, not
-            // from the Kokkos-oriented face index.
-            const auto batch_offset = _execute_neml2_model.getSideBatchIndex(elem_side);
-            _batch_offset.hostData()[face.face_index] = batch_offset;
-            if (!_broadcast_output && batch_offset + face.n_qps > batch_size)
-              mooseError("Interface element side (",
-                         std::get<0>(elem_side),
-                         ", ",
-                         std::get<1>(elem_side),
-                         ") maps outside NEML2 output tensor with shape ",
-                         output.sizes(),
-                         ".");
-          }
-        }
-      }
-      else
-      {
-        for (const auto elem : this->_mesh.getMesh().active_local_element_ptr_range())
-        {
-          const auto elem_id = this->kokkosMesh().getContiguousElementID(elem);
-          _batch_offset.hostData()[elem_id] = neml2BatchIndex(elem->id());
-          const auto num_qps = this->kokkosAssembly().getNumQpsHost(elem_id);
-          if (!_broadcast_output && _batch_offset.hostData()[elem_id] + num_qps > batch_size)
-            mooseError("Element ",
-                       elem->id(),
-                       " maps outside NEML2 output tensor with shape ",
-                       output.sizes(),
-                       ".");
-        }
-      }
-
-      _batch_offset.copyToDevice();
-      _batch_mapping_outdated = false;
-    }
-  }
+    stageOutput(neml2Output());
 
 #ifndef MOOSE_ENABLE_KOKKOS_GPU
   _staged_output.copyToDevice();
@@ -321,6 +242,134 @@ NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::computePropertie
 #endif
 }
 
+#ifdef NEML2_ENABLED
+template <unsigned int rank, bool full, bool interface, bool neighbor>
+void
+NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::stageOutput(
+    const at::Tensor & tensor)
+{
+  constexpr unsigned int num_components =
+      rank == 0 ? 1 : (full ? (rank == 2 ? 9 : 81) : (rank == 2 ? 6 : 36));
+  const auto base_ndim = static_cast<int64_t>(rank == 0 ? 0 : (full ? rank : rank / 2));
+  const auto batch_ndim = tensor.dim() - base_ndim;
+  const auto expected_shape = rank == 0   ? std::vector<int64_t>{}
+                              : full      ? std::vector<int64_t>(rank, 3)
+                              : rank == 2 ? std::vector<int64_t>{6}
+                                          : std::vector<int64_t>{6, 6};
+  const auto actual_shape = tensor.sizes().slice(batch_ndim);
+  if (batch_ndim < 0 || batch_ndim > 2 || !actual_shape.equals(expected_shape))
+    mooseError("Cannot copy NEML2 tensor with shape ",
+               tensor.sizes(),
+               " into a ",
+               rank == 0 ? "scalar" : (full ? "full" : "symmetric"),
+               rank == 0 ? "" : " rank-",
+               rank == 0 ? "" : std::to_string(rank),
+               " Kokkos material property; expected base shape ",
+               expected_shape,
+               ".");
+  if (tensor.dtype() != at::kDouble)
+    mooseError("Cannot copy NEML2 tensor with dtype ",
+               tensor.dtype(),
+               " into a Real Kokkos material property.");
+
+  const auto kokkos_device = kokkosTorchDevice();
+  if (tensor.device() != kokkos_device)
+    mooseError("Cannot copy NEML2 output on ",
+               tensor.device(),
+               " into a Kokkos material property on ",
+               kokkos_device,
+               ". Set the NEML2 executor output_device to ",
+               kokkos_device,
+               ".");
+
+  const auto output = tensor.contiguous();
+  const auto batch_size = static_cast<std::size_t>(output.numel() / num_components);
+  const bool broadcast_output = batch_ndim == 0;
+  if (_staged_output.size() != static_cast<std::size_t>(output.numel()) ||
+      _broadcast_output != broadcast_output)
+  {
+    this->_compute_dispatcher.reset();
+    _staged_output.create(output.numel());
+    _broadcast_output = broadcast_output;
+  }
+#ifdef MOOSE_ENABLE_KOKKOS_GPU
+  const auto output_view =
+      ::Kokkos::View<const Real *, MemSpace, ::Kokkos::MemoryTraits<::Kokkos::Unmanaged>>(
+          output.template data_ptr<Real>(), output.numel());
+  ::Kokkos::deep_copy(_staged_output.deviceView(), output_view);
+#else
+  std::copy_n(output.template data_ptr<Real>(), output.numel(), _staged_output.hostData());
+#endif
+
+  const auto map_size = [&]()
+  {
+    if constexpr (interface)
+      return this->kokkosInterfaceFaces().size();
+    else
+      return this->kokkosMesh().getNumLocalElements();
+  }();
+  if (_batch_mapping_outdated || _batch_offset.size() != map_size)
+  {
+    if (_batch_offset.size() != map_size)
+    {
+      this->_compute_dispatcher.reset();
+      _batch_offset.create(map_size);
+    }
+
+    if constexpr (interface)
+    {
+      // An interface restriction can leave a cached face without a corresponding NEML2 side.
+      // Initialize every entry so an erroneous mapping can never expose uninitialized device
+      // data.
+      std::fill_n(_batch_offset.hostData(), map_size, libMesh::DofObject::invalid_id);
+      for (const auto face_index : index_range(this->kokkosInterfaceFaces()))
+      {
+        const auto & face = this->kokkosInterfaceFaces()[face_index];
+        const auto elem_side = NEML2BatchIndexGenerator::ElemSide(
+            neighbor ? face.neighbor_id : face.elem_id, neighbor ? face.neighbor_side : face.side);
+        if (_execute_neml2_model.isSideBatchIndexExist(elem_side))
+        {
+          // The staged tensor is flat even when NEML2 retains a two-dimensional batch shape.
+          // Its side start therefore always comes from the executor's stable ElemSide map, not
+          // from the Kokkos-oriented face index.
+          const auto batch_offset = _execute_neml2_model.getSideBatchIndex(elem_side);
+          _batch_offset.hostData()[face.face_index] = batch_offset;
+          if (!_broadcast_output && batch_offset + face.n_qps > batch_size)
+            mooseError("Interface element side (",
+                       std::get<0>(elem_side),
+                       ", ",
+                       std::get<1>(elem_side),
+                       ") maps outside NEML2 output tensor with shape ",
+                       output.sizes(),
+                       ".");
+        }
+      }
+    }
+    else
+    {
+      for (const auto elem : this->_mesh.getMesh().active_local_element_ptr_range())
+      {
+        const auto elem_id = this->kokkosMesh().getContiguousElementID(elem);
+        _batch_offset.hostData()[elem_id] = neml2BatchIndex(elem->id());
+        const auto num_qps = this->kokkosAssembly().getNumQpsHost(elem_id);
+        if (!_broadcast_output && _batch_offset.hostData()[elem_id] + num_qps > batch_size)
+          mooseError("Element ",
+                     elem->id(),
+                     " maps outside NEML2 output tensor with shape ",
+                     output.sizes(),
+                     ".");
+      }
+    }
+
+    _batch_offset.copyToDevice();
+    _batch_mapping_outdated = false;
+  }
+}
+#endif
+
+template class NEML2ToKokkosMaterialProperty<0>;
+template class NEML2ToKokkosMaterialProperty<0, false, true>;
+template class NEML2ToKokkosMaterialProperty<0, false, true, true>;
 template class NEML2ToKokkosMaterialProperty<2>;
 template class NEML2ToKokkosMaterialProperty<4>;
 template class NEML2ToKokkosMaterialProperty<2, true>;
