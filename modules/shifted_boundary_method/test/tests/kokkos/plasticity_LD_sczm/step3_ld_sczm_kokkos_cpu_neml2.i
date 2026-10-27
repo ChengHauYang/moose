@@ -282,11 +282,14 @@ theta_rad = '${fparse theta * pi / 180}'
   []
 []
 
+# hypre boomeramg + gmres, line_search=none: the single preconditioner shared by all six steps (see
+# step1 for the rationale). Kokkos assembles on the GPU here but PETSc still solves on the CPU.
 [Executioner]
   type = Transient
   solve_type = NEWTON
-  petsc_options_iname = '-pc_type'
-  petsc_options_value = 'lu'
+  line_search = none
+  petsc_options_iname = '-pc_type -pc_hypre_type -ksp_type'
+  petsc_options_value = 'hypre boomeramg    gmres'
   automatic_scaling = true
   dt = ${DT}
   num_steps = ${NUM_STEPS}

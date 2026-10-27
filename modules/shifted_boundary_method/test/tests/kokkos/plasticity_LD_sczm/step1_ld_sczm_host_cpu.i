@@ -182,11 +182,19 @@ theta_rad = '${fparse theta * pi / 180}'
   []
 []
 
+# hypre boomeramg + gmres, line_search=none is the single preconditioner shared by all six steps so
+# the CPU-vs-GPU comparison isolates the compute backend, not the solver. boomeramg converges in the
+# same Newton count as LU on this CP LD + SCZM tangent; LU (the exact direct reference) can be
+# recovered with
+#   Executioner/petsc_options_iname=-pc_type Executioner/petsc_options_value=lu
+# when a machine-precision reference match is required. line_search=none matches the CP host
+# reference: the crystal-plasticity return map already handles the material nonlinearity.
 [Executioner]
   type = Transient
   solve_type = NEWTON
-  petsc_options_iname = '-pc_type'
-  petsc_options_value = 'lu'
+  line_search = none
+  petsc_options_iname = '-pc_type -pc_hypre_type -ksp_type'
+  petsc_options_value = 'hypre boomeramg    gmres'
   automatic_scaling = true
   dt = ${DT}
   num_steps = ${NUM_STEPS}
