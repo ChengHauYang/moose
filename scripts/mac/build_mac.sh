@@ -51,7 +51,15 @@ moose_mac_check_sdk
 
 if [[ "$TARGET" == "neml2" ]]; then
     moose_mac_ensure_neml2_submodule
-    moose_mac_build_neml2
+    if ! moose_mac_build_neml2; then
+        touch "$MOOSE_DIR/.moose_mac_build_failed"
+        touch "$(moose_mac_build_failed_marker "neml2" "${METHOD:-opt}")"
+        exit 1
+    fi
+    rm -f "$(moose_mac_build_failed_marker "neml2" "${METHOD:-opt}")"
+    if ! ls "$MOOSE_DIR"/.moose_mac_build_failed.*.* >/dev/null 2>&1; then
+        rm -f "$MOOSE_DIR/.moose_mac_build_failed"
+    fi
     moose_mac_sync_neml2_config_dir
     moose_mac_recommend_next_steps_after_build "neml2"
     echo
@@ -61,6 +69,12 @@ fi
 
 if ! moose_mac_configured; then
     moose_mac_die "MOOSE is not configured. Run ./scripts/mac/configure_mac.sh first."
+fi
+
+if moose_mac_neml2_enabled; then
+    if ! moose_mac_neml2_install_complete; then
+        moose_mac_die "Installed NEML2 is incomplete (missing neml2.pc, libneml2.dylib, libneml2_eager.dylib, or a required header such as neml2/csrc/eager/Model.h). Rebuild NEML2 first: ./scripts/mac/moose.sh compile neml2"
+    fi
 fi
 
 if moose_mac_neml2_enabled && [[ "${MOOSE_MAC_NEML2_ALREADY_SYNCED:-0}" != "1" ]]; then
@@ -74,7 +88,15 @@ else
 fi
 
 for target in "${targets[@]}"; do
-    moose_mac_make_target "$target"
+    if ! moose_mac_make_target "$target"; then
+        touch "$MOOSE_DIR/.moose_mac_build_failed"
+        touch "$(moose_mac_build_failed_marker "$target" "${METHOD:-opt}")"
+        exit 1
+    fi
+    rm -f "$(moose_mac_build_failed_marker "$target" "${METHOD:-opt}")"
+    if ! ls "$MOOSE_DIR"/.moose_mac_build_failed.*.* >/dev/null 2>&1; then
+        rm -f "$MOOSE_DIR/.moose_mac_build_failed"
+    fi
 done
 
 moose_mac_recommend_next_steps_after_build "${targets[@]}"
