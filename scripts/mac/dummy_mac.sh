@@ -45,6 +45,8 @@ NEML2_ENABLED=0
 moose_mac_torch_ok && TORCH_OK=1
 [[ -f "$MOOSE_DIR/framework/contrib/neml2/CMakeLists.txt" ]] && NEML2_SUBMODULE_OK=1
 moose_mac_neml2_ok && NEML2_OK=1
+NEML2_INSTALL_COMPLETE=0
+moose_mac_neml2_install_complete && NEML2_INSTALL_COMPLETE=1
 moose_mac_configured && MOOSE_CONFIGURED=1
 moose_mac_kokkos_enabled && KOKKOS_ENABLED=1
 moose_mac_neml2_enabled && NEML2_ENABLED=1
@@ -73,6 +75,7 @@ for target in "${targets[@]}"; do
     if [[ "$target" == "solid_mechanics" ]]; then
         solid_status="$TARGET_STATUS"
         solid_stale_reason="$TARGET_STALE_REASON"
+        solid_stale_kind="$TARGET_STALE_KIND"
         solid_built_hash="$TARGET_BUILT_NEML2_HASH"
         solid_linkage="$TARGET_NEML2_LINKAGE"
     fi
@@ -189,7 +192,7 @@ else
     fi
 
     SOLID_NEML2_MISMATCH=0
-    if [[ "${solid_status:-}" == "STALE" ]]; then
+    if [[ "${solid_status:-}" == "STALE" && -z "${solid_stale_kind:-}" ]]; then
         SOLID_NEML2_MISMATCH=1
         echo
         echo "  [MISMATCH] framework/contrib/neml2 and solid_mechanics are using DIFFERENT versions of NEML2!"
@@ -361,4 +364,12 @@ else
     echo "    ./scripts/mac/moose.sh run solid_mechanics path/to/input.i"
     echo "    ./scripts/mac/moose.sh run shifted_boundary_method path/to/input.i"
 fi
+_clobber_reason="$(moose_mac_clobberall_reason)"
+if [[ -n "$_clobber_reason" ]]; then
+    echo
+    echo "  [CLOBBERALL RECOMMENDED] $_clobber_reason"
+    echo "  Full clobber is expensive; use only if the above signals apply:"
+    echo "    ./scripts/mac/moose.sh clobber all"
+fi
+
 echo "============================================"
