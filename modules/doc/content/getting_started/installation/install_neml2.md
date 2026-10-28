@@ -12,7 +12,19 @@ NEML2 is built from source and installed as a Python package that lives in the *
 environment as PyTorch* (a conda environment or a virtual environment). A single install provides
 both the C++ libraries MOOSE links against and the Python tooling (e.g. `neml2-compile`, used by
 the ahead-of-time compilation runtime). The workflow is: provide PyTorch, build and install NEML2,
-then configure MOOSE.
+configure MOOSE, then build MOOSE and run the NEML2 tests.
+
+!alert! warning title=Use one Python environment for every step
+Activate the same Python environment before each step below, including building MOOSE and running
+the tests: MOOSE embeds the Python interpreter of that environment, and some NEML2 tests call
+`neml2-compile` from it. If you previously followed instructions that exported `LIBTORCH_DIR` or
+`NEML2_DIR` (for example in a shell startup file), remove those exports, since they override the
+paths detected below:
+
+```bash
+unset LIBTORCH_DIR NEML2_DIR
+```
+!alert-end!
 
 !alert! note title=NEML2 uses the PyTorch in your Python environment
 The blessed way to enable NEML2 is a PyTorch installed in the active Python environment (a pip
@@ -98,6 +110,8 @@ options and influential environment variables.
 
 ### 3. Configure MOOSE
 
+Run the `./configure` command printed at the end of step 2, or equivalently:
+
 ```bash
 ./configure --with-neml2 --with-libtorch=$(python3 -c 'import torch, os; print(os.path.dirname(torch.__file__))')
 ```
@@ -109,9 +123,37 @@ environment. To override, pass an explicit path or set the `NEML2_DIR` environme
 ./configure --with-neml2=/path/to/neml2 --with-libtorch=/path/to/torch
 ```
 
-After that, follow the [getting started](getting_started/installation/index_content.md optional=True)
+The `--with-libtorch` path must be the PyTorch that NEML2 was built against. If it is not, `make`
+stops with an error that names both libtorch locations and the `--with-libtorch` value to use.
+
+### 4. Build MOOSE and run the NEML2 tests
+
+Follow the [getting started](getting_started/installation/index_content.md optional=True)
 instructions to build MOOSE as usual. The `make check_neml2` command can be used to check whether
-NEML2 is successfully enabled within MOOSE and to inspect the additional compile/link flags.
+NEML2 is successfully enabled within MOOSE and to inspect the additional compile/link flags. To
+check the installation, run the NEML2 tests of the framework:
+
+```bash
+cd ~/projects/moose/test
+make -j 6
+./run_tests -j 6 --re=neml2
+```
+
+!alert! note title=OpenMP runtime on macOS
+PyTorch wheels for macOS bundle their own copy of the OpenMP runtime (`torch/lib/libomp.dylib`),
+while the MOOSE conda environment provides another one that PETSc and libMesh link against. If a
+MOOSE executable aborts with `OMP: Error #15: Initializing libomp.dylib, but found libomp.dylib
+already initialized`, both copies were loaded into the same process. Replace the copy bundled with
+PyTorch by a link to the conda one (repeat this after reinstalling PyTorch):
+
+```bash
+ln -sf "$CONDA_PREFIX/lib/libomp.dylib" \
+  "$(python3 -c 'import torch, os; print(os.path.dirname(torch.__file__))')/lib/libomp.dylib"
+```
+
+Do not set `KMP_DUPLICATE_LIB_OK=TRUE` instead: two OpenMP runtimes in one process can produce
+incorrect results.
+!alert-end!
 
 ## Using NEML2 in a MOOSE simulation
 

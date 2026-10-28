@@ -220,11 +220,23 @@ if [[ $? -eq 0 ]]; then
   echo "****************************************************************************************************"
   echo "libtorch has been successfully installed. "
   echo
-  echo "To configure MOOSE with libtorch, run the following commands:"
-  echo
-  echo "  cd ${MOOSE_DIR}"
-  echo "  ./configure --with-libtorch=${LIBTORCH_DIR}"
-  echo
-  echo "Append other configure options as needed. See configure --help for more information."
+  if [[ "${INSTALL_PYTHON_PACKAGE}" == true ]]; then
+    # NEML2 links the PyTorch installed in the Python environment, so MOOSE must be configured
+    # with that copy rather than with ${LIBTORCH_DIR}.
+    echo "To build NEML2 against this PyTorch and configure MOOSE with it, run the following commands"
+    echo "in the same Python environment:"
+    echo
+    echo "  cd ${MOOSE_DIR}"
+    echo "  ./scripts/update_and_rebuild_neml2.sh"
+    echo
+    echo "and then run the ./configure command that it prints."
+  else
+    echo "To configure MOOSE with libtorch, run the following commands:"
+    echo
+    echo "  cd ${MOOSE_DIR}"
+    echo "  ./configure --with-libtorch=${LIBTORCH_DIR}"
+    echo
+    echo "Append other configure options as needed. See configure --help for more information."
+  fi
   echo "****************************************************************************************************"
 fi
