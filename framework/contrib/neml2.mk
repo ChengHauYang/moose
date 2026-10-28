@@ -26,6 +26,16 @@ ifneq ($(wildcard $(NEML2_TORCH_PC)),)
 neml2_torch_INCLUDES := $(shell pkg-config --cflags $(NEML2_TORCH_PC))
 neml2_torch_LDIRS    := $(shell pkg-config --libs-only-L $(NEML2_TORCH_PC))
 neml2_torch_LIBS     := $(shell pkg-config --libs $(NEML2_TORCH_PC))
+
+# NEML2 and MOOSE must share one libtorch: the torch NEML2 was built against (recorded in
+# neml2-torch.pc) must be the one MOOSE was configured with. A mismatch typically comes from a
+# stale LIBTORCH_DIR environment variable or from mixing Python environments.
+ifeq ($(ENABLE_LIBTORCH),true)
+neml2_torch_LIBDIR := $(abspath $(patsubst -L%,%,$(firstword $(neml2_torch_LDIRS))))
+ifneq ($(realpath $(neml2_torch_LIBDIR)),$(realpath $(LIBTORCH_DIR)/lib))
+$(error NEML2 ($(NEML2_DIR)) was built against the libtorch in $(neml2_torch_LIBDIR), but MOOSE was configured with LIBTORCH_DIR=$(LIBTORCH_DIR). Re-run ./configure with --with-libtorch=$(abspath $(neml2_torch_LIBDIR)/..), or rebuild NEML2 in the Python environment that provides $(LIBTORCH_DIR))
+endif
+endif
 endif
 
 neml2_INCLUDES += $(filter-out $(neml2_torch_INCLUDES),$(shell PKG_CONFIG_PATH=$(NEML2_DIR)/share/pkgconfig:${PKG_CONFIG_PATH} pkg-config --cflags $(NEML2_PC)))

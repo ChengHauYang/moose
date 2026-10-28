@@ -52,6 +52,11 @@ If libtorch was installed to a non-default location, pass that path explicitly:
 ./configure --with-libtorch=/path/to/libtorch
 ```
 
+When enabling [NEML2](install_neml2.md), do not configure with the C++ libtorch installed above.
+NEML2 links against the PyTorch in the active Python environment (installed by
+`--install-python-package`), and MOOSE must use that same copy: build NEML2 next and run the
+`./configure` command that `scripts/update_and_rebuild_neml2.sh` prints.
+
 ## HPC systems
 
 On INL HPC systems, libtorch is already provided through the `moose-dev` module/container and does not need to be built manually. See the [INL HPC installation instructions](inl_hpc_install_moose.md) for more information. On other HPC systems, follow the same procedure as for a workstation, taking care to load a compatible compiler stack and CMake before invoking the script.

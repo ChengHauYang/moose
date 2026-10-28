@@ -24,6 +24,12 @@ ifneq (,$(findstring darwin,$(libmesh_HOST)))
 	libmesh_LDFLAGS += -Wl,-headerpad_max_install_names
 endif
 
+# exodiff only needs libMesh (for Exodus/NetCDF), so link it before the optional dependencies
+# (wasp, libtorch, NEML2, libpython, ...) are appended below. Loading those into exodiff can
+# abort it, e.g. when a PyTorch wheel brings a second copy of the OpenMP runtime on macOS.
+exodiff_LDFLAGS := $(libmesh_LDFLAGS)
+exodiff_LIBS    := $(libmesh_LIBS)
+
 #
 # Dynamic library suffix
 #
@@ -654,7 +660,7 @@ $(exodiff_objects): | prebuild
 $(exodiff_APP): $(exodiff_objects)
 	@echo "Linking Executable "$@"..."
 	@bash -c '$(libmesh_LIBTOOL) --tag=CXX $(LIBTOOLFLAGS) --mode=link --quiet \
-	  $(libmesh_CXX) $(libmesh_CPPFLAGS) $(libmesh_CXXFLAGS) $(libmesh_INCLUDE) $(exodiff_objects) -o $@ $(LDFLAGS) $(libmesh_LDFLAGS) $(libmesh_LIBS) $(EXTERNAL_FLAGS) ${SILENCE_SOME_WARNINGS}'
+	  $(libmesh_CXX) $(libmesh_CPPFLAGS) $(libmesh_CXXFLAGS) $(libmesh_INCLUDE) $(exodiff_objects) -o $@ $(LDFLAGS) $(exodiff_LDFLAGS) $(exodiff_LIBS) $(EXTERNAL_FLAGS) ${SILENCE_SOME_WARNINGS}'
 
 -include $(wildcard $(exodiff_DIR)/*.d)
 
