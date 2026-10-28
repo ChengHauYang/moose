@@ -358,8 +358,13 @@ OutputData
 # PETSc binary output
 binaryoutput
 
-# Nsight Systems profiling output
+# Nsight Systems / Nsight Compute profiling output: reports, the raw
+# .qdstrm stream left behind when report conversion does not complete, the
+# legacy .qdrep report format, and SQLite exports
 *.nsys-rep
+*.qdstrm
+*.qdrep
+*.ncu-rep
 *.sqlite
 
 # CodeGraph (see the codegraph / pr-review skills). The index is a

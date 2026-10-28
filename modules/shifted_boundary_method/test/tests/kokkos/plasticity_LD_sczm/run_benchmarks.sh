@@ -8,10 +8,10 @@
 # isolates the compute/solve backend, not the solver:
 #   step1  host MOOSE   / CPU NEML2 / CPU PETSc (aij / standard vec)
 #   step2  host MOOSE   / GPU NEML2 / CPU PETSc (aij / standard vec)
-#   step3  Kokkos asm   / CPU NEML2 / CPU PETSc (aij / standard vec)
-#   step4  Kokkos asm   / GPU NEML2 / CPU PETSc (aij / standard vec)
-#   step5  Kokkos asm   / GPU NEML2 / GPU PETSc (AIJKOKKOS / kokkos vec)
-#   step6  Kokkos asm   / GPU NEML2 / GPU PETSc (MATHYPRE  / cuda   vec)
+#   step3  Kokkos   / CPU NEML2 / CPU PETSc (aij / standard vec)
+#   step4  Kokkos   / GPU NEML2 / CPU PETSc (aij / standard vec)
+#   step5  Kokkos   / GPU NEML2 / GPU PETSc (AIJKOKKOS / kokkos vec)
+#   step6  Kokkos   / GPU NEML2 / GPU PETSc (MATHYPRE  / cuda   vec)
 #
 # step5 vs step6 is the AIJKOKKOS-vs-MATHYPRE matrix-backend comparison under one BoomerAMG PC. The two
 # cannot share a PETSc vector type on this HYPRE_MEMORY_DEVICE build: AIJKOKKOS needs -vec_type kokkos,
@@ -83,7 +83,7 @@ run_step()
   local petsc_args=("${CPU_PETSC_ARGS[@]}")
   local device_args=()
 
-  # NEML2 runs on the GPU from step2 on (step2 is host assembly + GPU NEML2); Kokkos assembly needs
+  # NEML2 runs on the GPU from step2 on (step2 is host assembly + GPU NEML2); Kokkos needs
   # --compute-device=cuda from step3 on. step2 sets its NEML2 device in the input, so the harness flag
   # only has to select the device for the Kokkos steps (3-6).
   case "$step" in

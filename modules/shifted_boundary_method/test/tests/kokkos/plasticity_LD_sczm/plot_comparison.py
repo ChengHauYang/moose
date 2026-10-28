@@ -20,8 +20,8 @@ import pandas as pd
 def plot_results(frame: pd.DataFrame, output: Path) -> None:
     """Reproduce the same 3x2 layout as analyze_results.py from a saved CSV."""
     short = [
-        "1. Host CPU", "2. GPU NEML2", "3. GPU asm",
-        "4. GPU NEML2+asm", "5. AIJKOKKOS", "6. MATHYPRE",
+        "1. Host CPU", "2. GPU NEML2", "3. GPU kokkos",
+        "4. GPU NEML2+kokkos", "5. AIJKOKKOS", "6. MATHYPRE",
     ]
     # Pad to 6 rows if the CSV was produced from fewer steps.
     n = len(frame)

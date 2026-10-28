@@ -6,10 +6,10 @@ compute/solve backend, not the solver:
 
   step1  host MOOSE   / CPU NEML2 / CPU PETSc  (aij)
   step2  host MOOSE   / GPU NEML2 / CPU PETSc  (aij)
-  step3  Kokkos asm   / CPU NEML2 / CPU PETSc  (aij)
-  step4  Kokkos asm   / GPU NEML2 / CPU PETSc  (aij)
-  step5  Kokkos asm   / GPU NEML2 / GPU PETSc  (AIJKOKKOS / kokkos vec)
-  step6  Kokkos asm   / GPU NEML2 / GPU PETSc  (MATHYPRE  / cuda vec)
+  step3  Kokkos   / CPU NEML2 / CPU PETSc  (aij)
+  step4  Kokkos   / GPU NEML2 / CPU PETSc  (aij)
+  step5  Kokkos   / GPU NEML2 / GPU PETSc  (AIJKOKKOS / kokkos vec)
+  step6  Kokkos   / GPU NEML2 / GPU PETSc  (MATHYPRE  / cuda vec)
 
 step5 vs step6 is the AIJKOKKOS-vs-MATHYPRE matrix-backend comparison. The
 MatConvert call count (visible in -log_view output) quantifies the per-PC-setup
@@ -40,13 +40,13 @@ import pandas as pd
 
 STEPS = [
     ("step1_ld_sczm_host_cpu",
-     "1. Host CPU\n(CPU NEML2, CPU asm, CPU PETSc)"),
+     "1. Host CPU\n(CPU NEML2, CPU assembly, CPU PETSc)"),
     ("step2_ld_sczm_host_cuda_neml2",
-     "2. GPU NEML2\n(host asm, CPU PETSc)"),
+     "2. GPU NEML2\n(host assembly, CPU PETSc)"),
     ("step3_ld_sczm_kokkos_cpu_neml2",
-     "3. GPU asm\n(CPU NEML2, CPU PETSc)"),
+     "3. GPU kokkos\n(CPU NEML2, CPU PETSc)"),
     ("step4_ld_sczm_gpu_neml2_kokkos_cpu_petsc",
-     "4. GPU NEML2+asm\n(CPU PETSc)"),
+     "4. GPU NEML2+kokkos\n(CPU PETSc)"),
     ("step5_ld_sczm_full_gpu",
      "5. Full GPU\n(AIJKOKKOS)"),
     ("step6_ld_sczm_full_gpu_mathypre",
@@ -278,8 +278,8 @@ def plot_results(frame: pd.DataFrame, output: Path) -> None:
     """Generate a 3x2 summary plot."""
     # Short display labels to avoid multi-line tick clutter.
     short = [
-        "1. Host CPU", "2. GPU NEML2", "3. GPU asm",
-        "4. GPU NEML2+asm", "5. AIJKOKKOS", "6. MATHYPRE",
+        "1. Host CPU", "2. GPU NEML2", "3. GPU kokkos",
+        "4. GPU NEML2+kokkos", "5. AIJKOKKOS", "6. MATHYPRE",
     ]
 
     fig, axes = plt.subplots(3, 2, figsize=(14, 12), constrained_layout=True)
