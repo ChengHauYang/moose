@@ -403,10 +403,12 @@ moose_mac_print_env()
 moose_mac_torch_dir()
 {
     python - <<'PY'
-import importlib.util
+import importlib.util, os
 spec = importlib.util.find_spec("torch")
 if spec and spec.submodule_search_locations:
-    print(next(iter(spec.submodule_search_locations)))
+    # Resolve symlinks: when the repo-local NEML2 site is on PYTHONPATH, torch is found through
+    # its torch symlink, and linking that path back onto itself would create a symlink loop.
+    print(os.path.realpath(next(iter(spec.submodule_search_locations))))
 PY
 }
 
