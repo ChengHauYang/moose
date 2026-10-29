@@ -79,6 +79,7 @@ theta_rad = '${fparse theta * pi / 180}'
     surfaces = true_interface
     boundary = 'Block0_Block1'
     execute_on = INITIAL
+    execution_order_group = -1
   []
 []
 

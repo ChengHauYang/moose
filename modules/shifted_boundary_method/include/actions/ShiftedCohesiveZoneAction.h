@@ -70,6 +70,7 @@ protected:
 
   /// Sets SCZM-specific parameters on the generated displacement jump material.
   void customizeCZMDisplacementJumpMaterialParameters(InputParameters & params) const override;
+  void customizeCZMGlobalTractionMaterialParameters(InputParameters & params) const override;
 
   /// Whether the action creates Kokkos SCZM objects.
   const bool _use_kokkos;

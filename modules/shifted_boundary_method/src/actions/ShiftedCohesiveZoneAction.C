@@ -200,7 +200,7 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
 
   if (_use_kokkos && _use_AD)
     paramError("use_automatic_differentiation",
-               "Kokkos SCZM currently supports only non-AD small-strain objects.");
+               "Kokkos SCZM currently supports only non-AD objects.");
 
   switch (_strain)
   {
@@ -221,7 +221,20 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
       break;
     }
     case Strain::Finite:
-      paramError("strain", "Shifted cohesive zone models currently support only small strain.");
+    {
+      _czm_kernel_name = _use_kokkos ? "KokkosSCZMInterfaceKernelTotalLagrangian"
+                                     : (_use_AD ? "ADSCZMInterfaceKernelTotalLagrangian"
+                                                : "SCZMInterfaceKernelTotalLagrangian");
+      _disp_jump_provider_name = _use_kokkos
+                                     ? "KokkosSCZMComputeDisplacementJumpTotalLagrangian"
+                                     : (_use_AD ? "ADSCZMComputeDisplacementJumpTotalLagrangian"
+                                                : "SCZMComputeDisplacementJumpTotalLagrangian");
+      _equilibrium_traction_calculator_name =
+          _use_kokkos ? "KokkosSCZMComputeGlobalTractionTotalLagrangian"
+                      : (_use_AD ? "ADSCZMComputeGlobalTractionTotalLagrangian"
+                                 : "SCZMComputeGlobalTractionTotalLagrangian");
+      break;
+    }
     default:
       mooseError(
           "ShiftedCohesiveZoneAction Error: Invalid kinematic parameter. Allowed values are: "
@@ -531,6 +544,7 @@ ShiftedCohesiveZoneAction::addRequiredCZMInterfaceMaterials()
   params = _factory.getValidParams(_equilibrium_traction_calculator_name);
   params.set<std::vector<BoundaryName>>("boundary") = _boundary;
   params.set<std::string>("base_name") = _base_name;
+  customizeCZMGlobalTractionMaterialParameters(params);
   _problem->addKokkosMaterial(_equilibrium_traction_calculator_name,
                               _equilibrium_traction_calculator_name + "_" + _name,
                               params);
@@ -550,14 +564,22 @@ ShiftedCohesiveZoneAction::customizeCZMInterfaceKernelParameters(InputParameters
     params.set<bool>("no_shifted") = getParam<bool>("no_shifted");
   if (params.isParamValid("directional_correction"))
     params.set<bool>("directional_correction") = getParam<bool>("directional_correction");
-  if (getParam<bool>("directional_correction") && !getParam<bool>("no_shifted"))
+  if (params.isParamValid("stress"))
+    params.set<MaterialPropertyName>("stress") =
+        _strain == Strain::Finite && !isParamSetByUser("stress")
+            ? MaterialPropertyName("pk1_stress")
+            : getParam<MaterialPropertyName>("stress");
+  if (params.isParamValid("tangent"))
+    params.set<MaterialPropertyName>("tangent") =
+        _strain == Strain::Finite && !isParamSetByUser("tangent")
+            ? MaterialPropertyName("pk1_jacobian")
+            : getParam<MaterialPropertyName>("tangent");
+  if (params.isParamValid("tangent_definition"))
   {
-    if (params.isParamValid("stress"))
-      params.set<MaterialPropertyName>("stress") = getParam<MaterialPropertyName>("stress");
-    if (params.isParamValid("tangent"))
-      params.set<MaterialPropertyName>("tangent") = getParam<MaterialPropertyName>("tangent");
-    if (isParamSetByUser("tangent_definition") && params.isParamValid("tangent_definition"))
+    if (isParamSetByUser("tangent_definition"))
       params.set<MooseEnum>("tangent_definition") = getParam<MooseEnum>("tangent_definition");
+    else if (_strain == Strain::Finite)
+      params.set<MooseEnum>("tangent_definition") = "pk1_wrt_deformation_gradient";
   }
 
   if (params.isParamValid("volumetric_locking_correction"))
@@ -583,10 +605,20 @@ void
 ShiftedCohesiveZoneAction::customizeCZMDisplacementJumpMaterialParameters(
     InputParameters & params) const
 {
-  if (getParam<bool>("generate_sbm_distance") || isParamSetByUser("complete_interface_mesh"))
-    params.set<UserObjectName>("sbm_distance_uo") = sbmDistanceUserObjectName();
-  else if (isParamSetByUser("sbm_distance_uo"))
-    params.set<UserObjectName>("sbm_distance_uo") = getParam<UserObjectName>("sbm_distance_uo");
+  if (params.have_parameter<UserObjectName>("sbm_distance_uo"))
+  {
+    if (getParam<bool>("generate_sbm_distance") || isParamSetByUser("complete_interface_mesh"))
+      params.set<UserObjectName>("sbm_distance_uo") = sbmDistanceUserObjectName();
+    else if (isParamSetByUser("sbm_distance_uo"))
+      params.set<UserObjectName>("sbm_distance_uo") = getParam<UserObjectName>("sbm_distance_uo");
+  }
   if (isParamSetByUser("no_shifted") && params.isParamValid("no_shifted"))
     params.set<bool>("no_shifted") = getParam<bool>("no_shifted");
+}
+
+void
+ShiftedCohesiveZoneAction::customizeCZMGlobalTractionMaterialParameters(
+    InputParameters & params) const
+{
+  customizeCZMDisplacementJumpMaterialParameters(params);
 }

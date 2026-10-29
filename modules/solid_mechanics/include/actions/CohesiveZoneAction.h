@@ -39,6 +39,9 @@ protected:
   /// Allows derived actions to set parameters on the generated displacement jump material.
   virtual void customizeCZMDisplacementJumpMaterialParameters(InputParameters & /*params*/) const {}
 
+  /// Allows derived actions to set parameters on the generated global traction material.
+  virtual void customizeCZMGlobalTractionMaterialParameters(InputParameters & /*params*/) const {}
+
   /// verifies order and family of output variables
   void verifyOrderAndFamilyOutputs();
 

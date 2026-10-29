@@ -4,7 +4,13 @@
 
 The Shifted Cohesive Zone Physics creates the interface kernels, displacement-jump and
 global-traction materials, and optional geometry objects needed by the shifted cohesive-zone method
-(SCZM). Only small-strain kinematics are currently supported.
+(SCZM). Small-strain and total-Lagrangian kinematics are supported on the host; Kokkos SCZM
+currently supports only small strain.
+
+For `strain = FINITE`, SCZM Taylor-shifts the displacement jump to the true interface and uses the
+true reference normal for the cohesive frame and Nanson transformation. The deformation gradient
+is averaged across the surrogate interface but is not Taylor-shifted; displacement basis orders
+above `SECOND` therefore produce a warning about the accuracy limitation of this approximation.
 
 Setting up an SCZM problem involves two independent choices:
 
@@ -115,11 +121,14 @@ implements the traction-jump residual and Jacobian contribution using device mat
 properties. It can be instantiated directly with compatible Kokkos property producers.
 The focused tests exercise assembly with a test-only linear traction law.
 
-Set `use_kokkos = true` to create `KokkosSCZMComputeDisplacementJumpSmallStrain`,
-`KokkosCZMComputeGlobalTractionSmallStrain`, and
-`KokkosSCZMInterfaceKernelSmallStrain`. The constitutive traction law remains an explicit
-material; use a compatible Kokkos material such as `KokkosPureElasticTractionSeparation`.
-Kokkos SCZM supports only non-AD small-strain evaluation with shifted evaluation enabled.
+Set `use_kokkos = true` to create the Kokkos implementation objects. For `strain = SMALL`,
+this instantiates `KokkosSCZMComputeDisplacementJumpSmallStrain`,
+`KokkosCZMComputeGlobalTractionSmallStrain`, and `KokkosSCZMInterfaceKernelSmallStrain`.
+For `strain = FINITE`, it instantiates `KokkosSCZMComputeDisplacementJumpTotalLagrangian`,
+`KokkosSCZMComputeGlobalTractionTotalLagrangian`, and `KokkosSCZMInterfaceKernelTotalLagrangian`.
+The constitutive traction law remains an explicit material; use a compatible Kokkos material
+such as `KokkosPureElasticTractionSeparation`. Kokkos SCZM supports non-AD evaluation with both
+small-strain and total-Lagrangian finite-strain kinematics.
 
 ### Directional correction
 

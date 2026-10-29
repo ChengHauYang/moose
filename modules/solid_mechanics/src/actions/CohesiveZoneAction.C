@@ -170,6 +170,7 @@ CohesiveZoneAction::addRequiredCZMInterfaceMaterials()
   paramsm.set<std::vector<BoundaryName>>("boundary") = _boundary;
 
   paramsm.set<std::string>("base_name") = _base_name;
+  customizeCZMGlobalTractionMaterialParameters(paramsm);
   _problem->addInterfaceMaterial(
       _equilibrium_traction_calculator_name, unique_material_name, paramsm);
 }

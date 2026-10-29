@@ -351,6 +351,134 @@
   []
 
 
+  [sczm_tl_2d_host]
+    type = Exodiff
+    input = sczm_tl_2d_host.i
+    exodiff = sczm_tl_2d_host_out.e
+    recover = false
+    requirement = 'The host shifted cohesive-zone formulation shall compute the displacement solution on a two-dimensional angled interface using total-Lagrangian finite-strain kinematics.'
+  []
+  [sczm_tl_2d_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_tl_2d_kokkos.i
+    exodiff = sczm_tl_2d_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall produce the same displacement solution as the host formulation on a two-dimensional angled interface using total-Lagrangian finite-strain kinematics.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    recover = false
+  []
+  [sczm_tl_2d_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_2d_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its residual including polar decomposition, reference rotation, displacement-jump, and deformation-gradient contributions.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+  [sczm_tl_2d_noshifted_host]
+    type = Exodiff
+    input = sczm_tl_2d_noshifted_host.i
+    exodiff = sczm_tl_2d_noshifted_host_out.e
+    recover = false
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall compute the displacement solution on a two-dimensional interface with shifted terms disabled.'
+  []
+  [sczm_tl_2d_noshifted_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_tl_2d_noshifted_kokkos.i
+    exodiff = sczm_tl_2d_noshifted_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host solution with shifted terms disabled.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    recover = false
+  []
+  [sczm_tl_2d_noshifted_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_2d_noshifted_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its residual when shifted corrections are disabled.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+  [sczm_tl_3d_host]
+    type = Exodiff
+    input = sczm_tl_3d_host.i
+    exodiff = sczm_tl_3d_host_out.e
+    recover = false
+    requirement = 'The host shifted cohesive-zone formulation shall compute the displacement solution on a three-dimensional angled interface using total-Lagrangian finite-strain kinematics.'
+  []
+  [sczm_tl_3d_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_tl_3d_kokkos.i
+    exodiff = sczm_tl_3d_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall produce the same displacement solution as the host formulation on a three-dimensional angled interface using total-Lagrangian finite-strain kinematics.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    recover = false
+  []
+  [sczm_tl_3d_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_3d_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its residual on three-dimensional interfaces.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+  [sczm_tl_3d_noshifted_host]
+    type = Exodiff
+    input = sczm_tl_3d_noshifted_host.i
+    exodiff = sczm_tl_3d_noshifted_host_out.e
+    recover = false
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall compute the displacement solution on a three-dimensional interface with shifted terms disabled.'
+  []
+  [sczm_tl_3d_noshifted_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_tl_3d_noshifted_kokkos.i
+    exodiff = sczm_tl_3d_noshifted_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host solution on a three-dimensional interface with shifted terms disabled.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    recover = false
+  []
+  [sczm_tl_3d_noshifted_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_3d_noshifted_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its residual on a three-dimensional interface when shifted corrections are disabled.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+  [sczm_tl_pk1_host_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_pk1_host.i
+    cli_args = 'Outputs/exodus=false'
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its directional correction with full nonsymmetric PK1 stress and tangent.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_tl_pk1_kokkos_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_pk1_kokkos.i
+    cli_args = 'Outputs/exodus=false'
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its directional correction with full nonsymmetric PK1 stress and tangent on device.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu'
+  []
+
   # Unsupported combinations must be rejected explicitly. Each of these would otherwise be silently
   # dropped, leaving the user to believe an option took effect.
   [kokkos_directional_correction_rejections]

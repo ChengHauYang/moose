@@ -38,12 +38,20 @@ ADCZMComputeGlobalTractionTotalLagrangian::initQpStatefulProperties()
   _PK1traction[_qp] = 0;
 }
 
+RealVectorValue
+ADCZMComputeGlobalTractionTotalLagrangian::referenceNormal() const
+{
+  // The fitted interface face is the true reference interface, so its face normal is the true
+  // reference normal.
+  return _normals[_qp];
+}
+
 void
 ADCZMComputeGlobalTractionTotalLagrangian::computeEquilibriumTracion()
 {
   const auto J = _F[_qp].det();
   const auto F_inv = _F[_qp].inverse();
-  const auto area_ratio = J * (F_inv.transpose() * _normals[_qp]).norm();
+  const auto area_ratio = J * (F_inv.transpose() * referenceNormal()).norm();
 
   _traction_global[_qp] = _czm_total_rotation[_qp] * _interface_traction[_qp];
   _PK1traction[_qp] = _traction_global[_qp] * area_ratio;

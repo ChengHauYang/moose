@@ -49,6 +49,39 @@
     requirement = 'The system shall compute an automatic-differentiation Jacobian consistent with '
                   'its residual when shifted cohesive zone evaluation is disabled.'
   []
+  [total_lagrangian]
+    requirement = 'The system shall solve an angled, non-interface-fitted shifted cohesive zone '
+                  'problem using total-Lagrangian finite-strain kinematics and shall compute a '
+                  'Jacobian consistent with its residual by'
+    [ad_jacobian]
+      type = PetscJacobianTester
+      input = 'angled_sczm_total_lagrangian.i'
+      cli_args = "Executioner/num_steps=1 Outputs/active=''"
+      run_sim = true
+      mesh_mode = REPLICATED
+      detail = 'automatically differentiating the shifted displacement jump, interface rotation, '
+               'and Nanson traction transformation,'
+    []
+    [nonad_jacobian]
+      type = PetscJacobianTester
+      input = 'angled_sczm_total_lagrangian.i'
+      cli_args = "Physics/SolidMechanics/ShiftedCohesiveZone/czm/use_automatic_differentiation=false "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/czm/directional_correction=true "
+                 "Materials/czm/type=PureElasticTractionSeparation Executioner/num_steps=1 Outputs/active=''"
+      run_sim = true
+      mesh_mode = REPLICATED
+      ratio_tol = 5e-8
+      difference_tol = 1e-6
+      detail = 'using the hand-coded shifted-jump, unshifted deformation-gradient, and directional-correction derivatives,'
+    []
+    [high_order_warning]
+      type = RunException
+      input = 'angled_sczm_total_lagrangian_high_order.i'
+      expect_err = 'Displacement basis orders above SECOND may therefore be limited'
+      mesh_mode = REPLICATED
+      detail = 'and warning when the displacement basis order exceeds the accuracy supported by the unshifted deformation-gradient approximation.'
+    []
+  []
   [angled_nonad_salehani]
     type = CSVDiff
     input = 'angled_sczm_nonad_salehani.i'
@@ -258,12 +291,13 @@
       expect_err = "'volumetric_locking_correction' value in ShiftedCohesiveZone block is different"
       detail = 'if explicitly specified volumetric locking correction settings differ between shifted cohesive zone and solid mechanics Physics blocks.'
     []
-    [finite_strain_rejected]
+    [kokkos_ad_rejected]
       type = RunException
-      input = 'rectangle_sczm_tri_material.i'
-      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/strain=FINITE'
-      expect_err = 'Shifted cohesive zone models currently support only small strain.'
-      detail = 'if unsupported finite-strain cohesive zone kinematics are requested.'
+      input = 'angled_sczm_total_lagrangian.i'
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm/use_kokkos=true '
+                 'Physics/SolidMechanics/ShiftedCohesiveZone/czm/use_automatic_differentiation=true'
+      expect_err = 'Kokkos SCZM currently supports only non-AD objects.'
+      detail = 'if Kokkos execution is requested with automatic differentiation.'
     []
     [surface_meshes_without_generation]
       type = RunException
