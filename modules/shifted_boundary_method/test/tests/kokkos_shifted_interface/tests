@@ -478,6 +478,16 @@
     capabilities = 'kokkos & libtorch & neml2'
     compute_devices = 'cpu'
   []
+  [sczm_tl_pk1_kokkos_jacobian_cuda]
+    type = PetscJacobianTester
+    input = sczm_tl_pk1_kokkos.i
+    cli_args = 'Outputs/exodus=false NEML2/device=cuda'
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its directional correction with full nonsymmetric PK1 stress and tangent gathered into NEML2 on the CUDA device.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
 
   # Unsupported combinations must be rejected explicitly. Each of these would otherwise be silently
   # dropped, leaving the user to believe an option took effect.
