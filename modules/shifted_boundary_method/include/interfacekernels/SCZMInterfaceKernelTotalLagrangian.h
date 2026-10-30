@@ -11,6 +11,9 @@
 
 #include "SCZMInterfaceKernelBase.h"
 
+#include "libmesh/fe_base.h"
+#include "libmesh/quadrature.h"
+
 /** Shifted cohesive interface kernel for the total-Lagrangian formulation. */
 template <bool is_ad>
 class SCZMInterfaceKernelTotalLagrangianTempl : public SCZMInterfaceKernelBaseTempl<is_ad>
@@ -18,6 +21,9 @@ class SCZMInterfaceKernelTotalLagrangianTempl : public SCZMInterfaceKernelBaseTe
 public:
   static InputParameters validParams();
   SCZMInterfaceKernelTotalLagrangianTempl(const InputParameters & parameters);
+
+  virtual void initialSetup() override;
+  virtual void jacobianSetup() override;
 
 protected:
   GenericReal<is_ad> computeQpResidual(Moose::DGResidualType type) override;
@@ -29,7 +35,29 @@ protected:
                                             Moose::DGJacobianType type) const;
   Real calculateDirectionalCorrectionJacobian(unsigned int ivar,
                                               unsigned int jvar,
-                                              Moose::DGJacobianType type) const;
+                                              Moose::DGJacobianType type);
+
+  /**
+   * Contribution of the F-bar deformation gradient B = (det(M) / det(U))^(1/3) U to
+   * n_t . dP / du_j for the row-side stress P = P(U, B), given the stabilized tangent C_B = dP/dB,
+   * U, M, and the local and element-volume averaged trial gradients.
+   */
+  Real fbarDirectionalCorrection(unsigned int ivar,
+                                 unsigned int jvar,
+                                 const RankFourTensor & stabilized_tangent,
+                                 const RankTwoTensor & U,
+                                 const RankTwoTensor & M,
+                                 const RealVectorValue & normal_tangent,
+                                 const RealVectorValue & grad_phi,
+                                 const RealVectorValue & avg_grad_phi) const;
+
+  /**
+   * Average of the trial-function gradients over the true reference volume of elem, cached until
+   * elem changes. The volume quadrature matches the one used for the average deformation gradient.
+   */
+  const std::vector<RealVectorValue> & volumeAverageGradPhi(const Elem * elem,
+                                                            const Elem *& cached_elem,
+                                                            std::vector<RealVectorValue> & cache);
 
   /// The PK1 stress tensor on the element and neighbor sides, when directional correction is used
   ///@{
@@ -47,19 +75,42 @@ protected:
   const MaterialProperty<RankFourTensor> * _Jacobian_mult_neighbor;
   ///@}
 
+  /// Total-mode F-bar data on the element and neighbor sides, used with
+  /// volumetric_locking_correction: the stabilized tangent dP/dB at fixed U, the physical
+  /// deformation gradient U, and its owning-element volume average M
+  ///@{
+  const MaterialProperty<RankFourTensor> * _stabilized_tangent;
+  const MaterialProperty<RankFourTensor> * _stabilized_tangent_neighbor;
+  const MaterialProperty<RankTwoTensor> * _physical_deformation_gradient;
+  const MaterialProperty<RankTwoTensor> * _physical_deformation_gradient_neighbor;
+  const MaterialProperty<RankTwoTensor> * _average_deformation_gradient;
+  const MaterialProperty<RankTwoTensor> * _average_deformation_gradient_neighbor;
+  ///@}
+
+  /// Volume quadrature and finite element used to average trial gradients over an element
+  ///@{
+  std::unique_ptr<libMesh::QBase> _volume_qrule;
+  std::unique_ptr<libMesh::FEBase> _volume_fe;
+  ///@}
+
+  /// Cached element-volume averages of the trial gradients on the element and neighbor sides
+  ///@{
+  const Elem * _avg_grad_phi_elem;
+  const Elem * _avg_grad_phi_neighbor_elem;
+  std::vector<RealVectorValue> _avg_grad_phi;
+  std::vector<RealVectorValue> _avg_grad_phi_neighbor;
+  ///@}
+
   /// Whether to add the directional correction term
   const bool _directional_correction;
 
-  /// Whether to apply volumetric locking correction to the directional correction Jacobian
+  /// Whether the directional correction uses the total-mode F-bar PK1 stress P(U, B)
   bool _volumetric_locking_correction;
 
   using SCZMInterfaceKernelBaseTempl<is_ad>::_base_name;
   using SCZMInterfaceKernelBaseTempl<is_ad>::_component;
   using SCZMInterfaceKernelBaseTempl<is_ad>::_ndisp;
   using SCZMInterfaceKernelBaseTempl<is_ad>::_shifted;
-  using SCZMInterfaceKernelBaseTempl<is_ad>::_coord;
-  using SCZMInterfaceKernelBaseTempl<is_ad>::_coord_sys;
-  using SCZMInterfaceKernelBaseTempl<is_ad>::_JxW;
   using SCZMInterfaceKernelBaseTempl<is_ad>::_normals;
   using SCZMInterfaceKernelBaseTempl<is_ad>::surrogateDistance;
   using SCZMInterfaceKernelBaseTempl<is_ad>::trueNormal;

@@ -8,46 +8,7 @@
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SCZMInterfaceKernelTotalLagrangian.h"
-#include "StabilizationUtils.h"
-
-namespace
-{
-RankTwoTensor
-tlGradOpForCoord(const Moose::CoordinateSystemType coord_sys,
-                 const unsigned int component,
-                 const RealVectorValue & grad,
-                 const Real value,
-                 const Point & point)
-{
-  RankTwoTensor grad_op;
-
-  switch (coord_sys)
-  {
-    case Moose::COORD_XYZ:
-      for (const auto j : make_range(3))
-        grad_op(component, j) = grad(j);
-      break;
-
-    case Moose::COORD_RZ:
-      for (const auto j : make_range(2))
-        grad_op(component, j) = grad(j);
-      if (component == 0)
-        grad_op(2, 2) = value / point(0);
-      break;
-
-    case Moose::COORD_RSPHERICAL:
-      grad_op(0, 0) = grad(0);
-      grad_op(1, 1) = value / point(0);
-      grad_op(2, 2) = value / point(0);
-      break;
-
-    default:
-      mooseError("Unsupported coordinate system for SCZMInterfaceKernelTotalLagrangian.");
-  }
-
-  return grad_op;
-}
-}
+#include "MooseVariableFE.h"
 
 registerMooseObject("ShiftedBoundaryMethodApp", SCZMInterfaceKernelTotalLagrangian);
 registerMooseObject("ShiftedBoundaryMethodApp", ADSCZMInterfaceKernelTotalLagrangian);
@@ -72,7 +33,23 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::validParams()
     params.addParam<bool>(
         "volumetric_locking_correction",
         false,
-        "Whether to apply volumetric locking correction to the directional correction Jacobian.");
+        "Use the total-mode F-bar PK1 stress P(U, B) in the directional correction. The 'tangent' "
+        "property is then d(P)/d(U) at fixed B, and the Jacobian adds the local and element-volume "
+        "F-bar terms through B = (det(M) / det(U))^(1/3) U.");
+    params.addParam<MaterialPropertyName>(
+        "stabilized_tangent",
+        "stabilized_pk1_jacobian",
+        "Derivative of the PK1 stress with respect to the F-bar deformation gradient B at fixed "
+        "physical deformation gradient U, used with volumetric_locking_correction.");
+    params.addParam<MaterialPropertyName>(
+        "physical_deformation_gradient",
+        "physical_deformation_gradient",
+        "Physical deformation gradient U, used with volumetric_locking_correction.");
+    params.addParam<MaterialPropertyName>(
+        "average_deformation_gradient",
+        "average_deformation_gradient",
+        "Average M of the physical deformation gradient over the owning element volume, used with "
+        "volumetric_locking_correction.");
   }
   params.addClassDescription(
       "Assembles shifted cohesive traction using total-Lagrangian kinematics.");
@@ -96,6 +73,14 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::SCZMInterfaceKernelTotalLagrangi
     _dPK1traction_dF(nullptr),
     _Jacobian_mult(nullptr),
     _Jacobian_mult_neighbor(nullptr),
+    _stabilized_tangent(nullptr),
+    _stabilized_tangent_neighbor(nullptr),
+    _physical_deformation_gradient(nullptr),
+    _physical_deformation_gradient_neighbor(nullptr),
+    _average_deformation_gradient(nullptr),
+    _average_deformation_gradient_neighbor(nullptr),
+    _avg_grad_phi_elem(nullptr),
+    _avg_grad_phi_neighbor_elem(nullptr),
     _directional_correction(parameters.get<bool>("directional_correction")),
     _volumetric_locking_correction(false)
 {
@@ -121,7 +106,69 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::SCZMInterfaceKernelTotalLagrangi
           this->_base_name + parameters.get<MaterialPropertyName>("tangent"));
     }
     _volumetric_locking_correction = parameters.get<bool>("volumetric_locking_correction");
+
+    if (_volumetric_locking_correction && this->_shifted && _directional_correction)
+    {
+      if (this->_ndisp != 3)
+        this->paramError("volumetric_locking_correction",
+                         "The total-Lagrangian F-bar correction requires three-dimensional "
+                         "displacements.");
+      if (parameters.get<MooseEnum>("tangent_definition") != "pk1_wrt_deformation_gradient")
+        this->paramError("tangent_definition",
+                         "The total-Lagrangian F-bar correction requires "
+                         "'pk1_wrt_deformation_gradient'.");
+      for (const auto i : make_range(this->_ndisp))
+        if (_vars[i]->feType() != _vars[0]->feType())
+          this->paramError("displacements",
+                           "The total-Lagrangian F-bar correction requires all displacements to "
+                           "share one finite element type.");
+
+      const auto stabilized_tangent =
+          this->_base_name + parameters.get<MaterialPropertyName>("stabilized_tangent");
+      const auto physical =
+          this->_base_name + parameters.get<MaterialPropertyName>("physical_deformation_gradient");
+      const auto average =
+          this->_base_name + parameters.get<MaterialPropertyName>("average_deformation_gradient");
+      _stabilized_tangent =
+          &this->template getMaterialPropertyByName<RankFourTensor>(stabilized_tangent);
+      _stabilized_tangent_neighbor =
+          &this->template getNeighborMaterialPropertyByName<RankFourTensor>(stabilized_tangent);
+      _physical_deformation_gradient =
+          &this->template getMaterialPropertyByName<RankTwoTensor>(physical);
+      _physical_deformation_gradient_neighbor =
+          &this->template getNeighborMaterialPropertyByName<RankTwoTensor>(physical);
+      _average_deformation_gradient =
+          &this->template getMaterialPropertyByName<RankTwoTensor>(average);
+      _average_deformation_gradient_neighbor =
+          &this->template getNeighborMaterialPropertyByName<RankTwoTensor>(average);
+    }
   }
+}
+
+template <bool is_ad>
+void
+SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::initialSetup()
+{
+  SCZMInterfaceKernelBaseTempl<is_ad>::initialSetup();
+
+  if (_stabilized_tangent)
+    for (const auto bid : this->boundaryIDs())
+      for (const auto block : this->_mesh.getBoundaryConnectedBlocks(bid))
+        if (this->_mesh.getCoordSystem(block) != Moose::COORD_XYZ)
+          this->paramError("volumetric_locking_correction",
+                           "The total-Lagrangian F-bar correction only supports Cartesian "
+                           "coordinates.");
+}
+
+template <bool is_ad>
+void
+SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::jacobianSetup()
+{
+  SCZMInterfaceKernelBaseTempl<is_ad>::jacobianSetup();
+
+  // Element pointers may be reused after mesh changes, so the averages are rebuilt each assembly.
+  _avg_grad_phi_elem = nullptr;
+  _avg_grad_phi_neighbor_elem = nullptr;
 }
 
 template <bool is_ad>
@@ -224,7 +271,7 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::computeDResidualDDeformationGrad
 template <bool is_ad>
 Real
 SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::calculateDirectionalCorrectionJacobian(
-    const unsigned int ivar, const unsigned int jvar, const Moose::DGJacobianType type) const
+    const unsigned int ivar, const unsigned int jvar, const Moose::DGJacobianType type)
 {
   if constexpr (is_ad)
     return 0;
@@ -251,34 +298,118 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::calculateDirectionalCorrectionJa
 
     if (_volumetric_locking_correction)
     {
-      const auto grad_op =
-          tlGradOpForCoord(this->_coord_sys,
-                           jvar,
-                           grad_phi,
-                           trial_on_element ? this->_phi[this->_j][this->_qp]
-                                            : this->_phi_neighbor[this->_j][this->_qp],
-                           this->_q_point[this->_qp]);
-      const auto avg_grad_op = StabilizationUtils::elementAverage(
-          [this, jvar, trial_on_element](unsigned int qp)
-          {
-            return tlGradOpForCoord(this->_coord_sys,
-                                    jvar,
-                                    trial_on_element ? this->_grad_phi[this->_j][qp]
-                                                     : this->_grad_phi_neighbor[this->_j][qp],
-                                    trial_on_element ? this->_phi[this->_j][qp]
-                                                     : this->_phi_neighbor[this->_j][qp],
-                                    this->_q_point[qp]);
-          },
-          this->_JxW,
-          this->_coord);
-      const Real volumetric_increment = (avg_grad_op.trace() - grad_op.trace()) / 3.0;
-      for (const auto J : make_range(3))
-        for (const auto L : make_range(3))
-          jacobian += tangent(ivar, J, L, L) * normal_tangent(J) * test * volumetric_increment;
+      // The F-bar terms only couple a side's stress to the displacements of the same element, so
+      // this is reached for ElementElement and NeighborNeighbor only.
+      mooseAssert(type == Moose::ElementElement || type == Moose::NeighborNeighbor,
+                  "The F-bar directional correction only couples same-side displacements.");
+      const bool on_element = type == Moose::ElementElement;
+      const auto & avg_grad_phi =
+          on_element ? volumeAverageGradPhi(this->_current_elem, _avg_grad_phi_elem, _avg_grad_phi)
+                     : volumeAverageGradPhi(this->_neighbor_elem,
+                                            _avg_grad_phi_neighbor_elem,
+                                            _avg_grad_phi_neighbor);
+      jacobian += test * fbarDirectionalCorrection(
+                             ivar,
+                             jvar,
+                             on_element ? (*_stabilized_tangent)[this->_qp]
+                                        : (*_stabilized_tangent_neighbor)[this->_qp],
+                             on_element ? (*_physical_deformation_gradient)[this->_qp]
+                                        : (*_physical_deformation_gradient_neighbor)[this->_qp],
+                             on_element ? (*_average_deformation_gradient)[this->_qp]
+                                        : (*_average_deformation_gradient_neighbor)[this->_qp],
+                             normal_tangent,
+                             grad_phi,
+                             avg_grad_phi[this->_j]);
     }
 
     return jacobian;
   }
+}
+
+template <bool is_ad>
+Real
+SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::fbarDirectionalCorrection(
+    const unsigned int ivar,
+    const unsigned int jvar,
+    const RankFourTensor & stabilized_tangent,
+    const RankTwoTensor & U,
+    const RankTwoTensor & M,
+    const RealVectorValue & normal_tangent,
+    const RealVectorValue & grad_phi,
+    const RealVectorValue & avg_grad_phi) const
+{
+  const Real gamma = std::cbrt(M.det() / U.det());
+  const auto U_inv = U.inverse();
+  const auto M_inv = M.inverse();
+
+  // For the trial direction e_c (x) grad(phi_j) with c = jvar, U^{-T} : dU and M^{-T} : dM reduce
+  // to the c-th column of the inverses contracted with the local and element-volume averaged trial
+  // gradients.
+  Real U_invT_dU = 0;
+  Real M_invT_dM = 0;
+  for (const auto L : make_range(3))
+  {
+    U_invT_dU += U_inv(L, jvar) * grad_phi(L);
+    M_invT_dM += M_inv(L, jvar) * avg_grad_phi(L);
+  }
+
+  // With B = gamma U and dgamma = gamma / 3 (M^{-T} : dM - U^{-T} : dU), the B path of dP is
+  // C_B : dB = gamma C_B : dU + Q dgamma, where Q = C_B : U.
+  Real correction = 0;
+  for (const auto J : make_range(3))
+  {
+    Real Q = 0;
+    Real stabilized_tangent_dU = 0;
+    for (const auto L : make_range(3))
+    {
+      stabilized_tangent_dU += stabilized_tangent(ivar, J, jvar, L) * grad_phi(L);
+      for (const auto k : make_range(3))
+        Q += stabilized_tangent(ivar, J, k, L) * U(k, L);
+    }
+    correction += normal_tangent(J) *
+                  (gamma * stabilized_tangent_dU + gamma / 3.0 * Q * (M_invT_dM - U_invT_dU));
+  }
+
+  return correction;
+}
+
+template <bool is_ad>
+const std::vector<RealVectorValue> &
+SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::volumeAverageGradPhi(
+    const Elem * const elem, const Elem *& cached_elem, std::vector<RealVectorValue> & cache)
+{
+  if (elem == cached_elem)
+    return cache;
+
+  // Reuse the volume rule of the current assembly context, matching the rule used by
+  // ComputeDeformationGradient for M. Elements on both sides of the interface must therefore share
+  // one volume quadrature rule.
+  if (!_volume_fe)
+  {
+    const auto & volume_rule = *this->_assembly.qRule();
+    _volume_qrule =
+        libMesh::QBase::build(volume_rule.type(), this->_mesh.dimension(), volume_rule.get_order());
+    _volume_fe = libMesh::FEBase::build(this->_mesh.dimension(), _vars[0]->feType());
+    _volume_fe->attach_quadrature_rule(_volume_qrule.get());
+    _volume_fe->get_dphi();
+    _volume_fe->get_JxW();
+  }
+
+  _volume_fe->reinit(elem);
+  const auto & dphi = _volume_fe->get_dphi();
+  const auto & JxW = _volume_fe->get_JxW();
+
+  Real measure = 0;
+  for (const auto qp : index_range(JxW))
+    measure += JxW[qp];
+
+  cache.assign(dphi.size(), RealVectorValue());
+  for (const auto j : index_range(dphi))
+    for (const auto qp : index_range(JxW))
+      cache[j] += JxW[qp] * dphi[j][qp] / measure;
+
+  cached_elem = elem;
+  return cache;
 }
 
 template <bool is_ad>

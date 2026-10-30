@@ -38,11 +38,26 @@ KokkosSCZMInterfaceKernelTotalLagrangian::validParams()
   params.addParam<bool>(
       "volumetric_locking_correction",
       false,
-      "Apply the bulk-consistent volumetric locking correction to the directional "
-      "Jacobian blocks.");
+      "Use the total-mode F-bar PK1 stress P(U, B) in the directional correction. The 'tangent' "
+      "property is then d(P)/d(U) at fixed B, and the Jacobian adds the local and element-volume "
+      "F-bar terms through B = (det(M) / det(U))^(1/3) U.");
   params.addParam<MaterialPropertyName>("stress", "pk1_stress", "PK1 stress material property.");
   params.addParam<MaterialPropertyName>(
       "tangent", "pk1_jacobian", "Constitutive tangent material property (d(PK1)/d(F)).");
+  params.addParam<MaterialPropertyName>(
+      "stabilized_tangent",
+      "stabilized_pk1_jacobian",
+      "Derivative of the PK1 stress with respect to the F-bar deformation gradient B at fixed "
+      "physical deformation gradient U, used with volumetric_locking_correction.");
+  params.addParam<MaterialPropertyName>(
+      "physical_deformation_gradient",
+      "physical_deformation_gradient",
+      "Physical deformation gradient U, used with volumetric_locking_correction.");
+  params.addParam<MaterialPropertyName>(
+      "average_deformation_gradient",
+      "average_deformation_gradient",
+      "Average M of the physical deformation gradient over the owning element volume, used with "
+      "volumetric_locking_correction.");
   params.addParam<MooseEnum>("tangent_definition",
                              MooseEnum("auto stress_wrt_strain pk1_wrt_deformation_gradient",
                                        "pk1_wrt_deformation_gradient"),
@@ -101,5 +116,31 @@ KokkosSCZMInterfaceKernelTotalLagrangian::KokkosSCZMInterfaceKernelTotalLagrangi
                                                         getParam<MaterialPropertyName>("tangent"));
     _tangent_neighbor = getKokkosNeighborMaterialPropertyByName<Real, 4>(
         prefix + getParam<MaterialPropertyName>("tangent"));
+
+    if (_volumetric_locking_correction)
+    {
+      if (_ndisp != 3)
+        paramError("volumetric_locking_correction",
+                   "The total-Lagrangian F-bar correction requires three-dimensional "
+                   "displacements.");
+      if (getParam<MooseEnum>("tangent_definition") != "pk1_wrt_deformation_gradient")
+        paramError("tangent_definition",
+                   "The total-Lagrangian F-bar correction requires "
+                   "'pk1_wrt_deformation_gradient'.");
+
+      const auto stabilized_tangent = prefix + getParam<MaterialPropertyName>("stabilized_tangent");
+      const auto physical =
+          prefix + getParam<MaterialPropertyName>("physical_deformation_gradient");
+      const auto average = prefix + getParam<MaterialPropertyName>("average_deformation_gradient");
+      _stabilized_tangent = getKokkosMaterialPropertyByName<Real, 4>(stabilized_tangent);
+      _stabilized_tangent_neighbor =
+          getKokkosNeighborMaterialPropertyByName<Real, 4>(stabilized_tangent);
+      _physical_deformation_gradient = getKokkosMaterialPropertyByName<Real, 2>(physical);
+      _physical_deformation_gradient_neighbor =
+          getKokkosNeighborMaterialPropertyByName<Real, 2>(physical);
+      _average_deformation_gradient = getKokkosMaterialPropertyByName<Real, 2>(average);
+      _average_deformation_gradient_neighbor =
+          getKokkosNeighborMaterialPropertyByName<Real, 2>(average);
+    }
   }
 }

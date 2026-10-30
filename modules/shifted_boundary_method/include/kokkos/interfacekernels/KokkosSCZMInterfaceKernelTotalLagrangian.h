@@ -104,6 +104,21 @@ protected:
                                        AssemblyDatum & neighbor_datum,
                                        const Moose::Kokkos::Real3 & avg_grad_phi) const;
 
+  /**
+   * Contribution of the F-bar deformation gradient B to the row-side directional correction
+   * derivative n_t . dP / du_j, where P = P(U, B) and B = (det(M) / det(U))^(1/3) U. This adds the
+   * local terms gamma C_B - gamma / 3 Q (x) U^{-T} and the element-volume term
+   * gamma / 3 Q (x) M^{-T} contracted with the volume-averaged trial gradient avg_grad_phi.
+   */
+  KOKKOS_FUNCTION Real
+  computeFbarDirectionalCorrection(bool on_element,
+                                   unsigned int component_j,
+                                   unsigned int row_qp,
+                                   AssemblyDatum & row_datum,
+                                   const Moose::Kokkos::Real3 & normal_tangent,
+                                   const Moose::Kokkos::Real3 & grad_phi,
+                                   const Moose::Kokkos::Real3 & avg_grad_phi) const;
+
   KOKKOS_FUNCTION Moose::Kokkos::Real3 normalTangent(AssemblyDatum & datum, unsigned int qp) const
   {
     const auto true_normal = trueNormal(datum, qp);
@@ -124,6 +139,17 @@ protected:
   Moose::Kokkos::MaterialProperty<Real, 4> _tangent;
   Moose::Kokkos::MaterialProperty<Real, 2> _stress_neighbor;
   Moose::Kokkos::MaterialProperty<Real, 4> _tangent_neighbor;
+
+  /// F-bar data on the element and neighbor sides, used with volumetric locking correction:
+  /// d(P)/d(B) at fixed U, the physical deformation gradient U, and its element-volume average M
+  ///@{
+  Moose::Kokkos::MaterialProperty<Real, 4> _stabilized_tangent;
+  Moose::Kokkos::MaterialProperty<Real, 4> _stabilized_tangent_neighbor;
+  Moose::Kokkos::MaterialProperty<Real, 2> _physical_deformation_gradient;
+  Moose::Kokkos::MaterialProperty<Real, 2> _physical_deformation_gradient_neighbor;
+  Moose::Kokkos::MaterialProperty<Real, 2> _average_deformation_gradient;
+  Moose::Kokkos::MaterialProperty<Real, 2> _average_deformation_gradient_neighbor;
+  ///@}
 };
 
 template <typename Derived>
@@ -440,28 +466,78 @@ KokkosSCZMInterfaceKernelTotalLagrangian::computeDirectionalCorrectionJacobian(
         part += normal_tangent(jj) * tangent(_component, jj, component_j, ll) * grad_phi(ll);
   }
 
-  Real correction_jacobian = part * test;
-
   if (_volumetric_locking_correction)
   {
-    const Real volumetric_increment = (avg_grad_phi(component_j) - grad_phi(component_j)) / 3.0;
-    Real tangent_normal_trace = 0.0;
-    if (type == Moose::ElementElement)
-    {
-      const auto tangent = _tangent(elem_datum, qp);
-      for (unsigned int m = 0; m < _ndisp; ++m)
-        for (unsigned int jj = 0; jj < _ndisp; ++jj)
-          tangent_normal_trace += tangent(_component, jj, m, m) * normal_tangent(jj);
-    }
-    else
-    {
-      const auto tangent = _tangent_neighbor(neighbor_datum, neighbor_qp);
-      for (unsigned int m = 0; m < _ndisp; ++m)
-        for (unsigned int jj = 0; jj < _ndisp; ++jj)
-          tangent_normal_trace += tangent(_component, jj, m, m) * normal_tangent(jj);
-    }
-    correction_jacobian += tangent_normal_trace * test * volumetric_increment;
+    const bool on_element = type == Moose::ElementElement;
+    part += computeFbarDirectionalCorrection(on_element,
+                                             component_j,
+                                             on_element ? qp : neighbor_qp,
+                                             on_element ? elem_datum : neighbor_datum,
+                                             normal_tangent,
+                                             grad_phi,
+                                             avg_grad_phi);
   }
 
+  const Real correction_jacobian = part * test;
+
   return type == Moose::ElementElement ? -correction_jacobian : correction_jacobian;
+}
+
+KOKKOS_FUNCTION inline Real
+KokkosSCZMInterfaceKernelTotalLagrangian::computeFbarDirectionalCorrection(
+    const bool on_element,
+    const unsigned int component_j,
+    const unsigned int row_qp,
+    AssemblyDatum & row_datum,
+    const Moose::Kokkos::Real3 & normal_tangent,
+    const Moose::Kokkos::Real3 & grad_phi,
+    const Moose::Kokkos::Real3 & avg_grad_phi) const
+{
+  const auto stabilized_tangent = on_element ? _stabilized_tangent(row_datum, row_qp)
+                                             : _stabilized_tangent_neighbor(row_datum, row_qp);
+  const auto physical = on_element ? _physical_deformation_gradient(row_datum, row_qp)
+                                   : _physical_deformation_gradient_neighbor(row_datum, row_qp);
+  const auto average = on_element ? _average_deformation_gradient(row_datum, row_qp)
+                                  : _average_deformation_gradient_neighbor(row_datum, row_qp);
+
+  Moose::Kokkos::Real33 U, M;
+  for (unsigned int k = 0; k < 3; ++k)
+    for (unsigned int L = 0; L < 3; ++L)
+    {
+      U(k, L) = physical(k, L);
+      M(k, L) = average(k, L);
+    }
+  const Real gamma = ::Kokkos::cbrt(M.determinant() / U.determinant());
+  const auto U_inv = U.inverse();
+  const auto M_inv = M.inverse();
+
+  // For the trial direction e_c (x) grad(phi_j) with c = component_j, U^{-T} : dU and M^{-T} : dM
+  // reduce to the c-th column of the inverses contracted with the local and element-volume
+  // averaged trial gradients.
+  Real U_invT_dU = 0.0;
+  Real M_invT_dM = 0.0;
+  for (unsigned int L = 0; L < 3; ++L)
+  {
+    U_invT_dU += U_inv(L, component_j) * grad_phi(L);
+    M_invT_dM += M_inv(L, component_j) * avg_grad_phi(L);
+  }
+
+  // With B = gamma U and dgamma = gamma / 3 (M^{-T} : dM - U^{-T} : dU), the B path of dP is
+  // C_B : dB = gamma C_B : dU + Q dgamma, where Q = C_B : U.
+  Real correction = 0.0;
+  for (unsigned int J = 0; J < 3; ++J)
+  {
+    Real Q = 0.0;
+    Real stabilized_tangent_dU = 0.0;
+    for (unsigned int L = 0; L < 3; ++L)
+    {
+      stabilized_tangent_dU += stabilized_tangent(_component, J, component_j, L) * grad_phi(L);
+      for (unsigned int k = 0; k < 3; ++k)
+        Q += stabilized_tangent(_component, J, k, L) * U(k, L);
+    }
+    correction += normal_tangent(J) *
+                  (gamma * stabilized_tangent_dU + gamma / 3.0 * Q * (M_invT_dM - U_invT_dU));
+  }
+
+  return correction;
 }

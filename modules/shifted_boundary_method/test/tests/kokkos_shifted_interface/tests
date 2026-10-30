@@ -489,6 +489,160 @@
     compute_devices = cuda
   []
 
+  # Total-mode F-bar on a distorted three-dimensional mesh with an angled true interface. The bulk
+  # and the interface directional correction are both stabilized, so the interface PK1 stress is
+  # U PK2(B) with B formed from the element-volume average of U.
+  [sczm_tl_fbar_host]
+    type = CSVDiff
+    input = sczm_tl_fbar_host.i
+    csvdiff = sczm_tl_fbar_host_out.csv
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall compute the directional correction with the total-mode F-bar PK1 stress on a distorted three-dimensional mesh with an angled interface.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_tl_fbar_average]
+    type = RunApp
+    input = sczm_tl_fbar_average.i
+    cli_args = 'file_base=sczm_tl_fbar_average_out'
+    requirement = 'The total-Lagrangian F-bar interface kinematics shall use, on both sides of the interface, the average of the physical deformation gradient over the true element volume rather than over the interface face.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_tl_fbar_kokkos_matches_host]
+    type = CSVDiff
+    input = sczm_tl_fbar_kokkos.i
+    csvdiff = sczm_tl_fbar_kokkos_out.csv
+    abs_zero = 1e-9
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host total-mode F-bar directional-correction solution.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_tl_fbar_kokkos_matches_host_cuda]
+    type = CSVDiff
+    input = sczm_tl_fbar_kokkos.i
+    cli_args = 'NEML2/device=cuda'
+    csvdiff = sczm_tl_fbar_kokkos_out.csv
+    abs_zero = 1e-9
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host total-mode F-bar directional-correction solution with NEML2 evaluated on the CUDA device.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
+  [sczm_tl_fbar_off_host]
+    type = CSVDiff
+    input = sczm_tl_fbar_host.i
+    cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+               "interface_inputs=deformation_gradient "
+               "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+               "file_base=sczm_tl_fbar_off_host_out"
+    csvdiff = sczm_tl_fbar_off_host_out.csv
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall compute a different solution on the distorted F-bar test mesh when F-bar is disabled in the bulk and in the directional correction.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_tl_fbar_host_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_fbar_host.i
+    ratio_tol = 1e-7
+    # The bulk stiffness gives ||J||_F of about 450, so the finite-difference noise in
+    # ||J - Jfd||_F is about 1.5e-5 even with F-bar disabled; the ratio test remains sensitive.
+    difference_tol = 1e-4
+    # The F-bar directional correction couples each interface residual row to every displacement
+    # DOF of its own bulk element through the element-volume average, including DOFs on the element
+    # face opposite the interface.
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall consistently linearize the total-mode F-bar directional correction, including its coupling to every displacement DOF of the bulk element on each side of the interface.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_tl_fbar_kokkos_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_fbar_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-4
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize the total-mode F-bar directional correction, including its coupling to every displacement DOF of the bulk element on each side of the interface.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_tl_fbar_kokkos_jacobian_cuda]
+    type = PetscJacobianTester
+    input = sczm_tl_fbar_kokkos.i
+    cli_args = 'NEML2/device=cuda'
+    ratio_tol = 1e-7
+    difference_tol = 1e-4
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize the total-mode F-bar directional correction with NEML2 evaluated on the CUDA device.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
+
+  # The same problem with a stateful crystal-plasticity interface model (sczm_tl_fbar_cp.i is
+  # merged after the host or Kokkos input). The host bulk takes the elastic constants of the
+  # crystal-plasticity model, which the Kokkos bulk reads from sczm_tl_fbar_cp_neml2.i.
+  [sczm_tl_fbar_cp_host]
+    type = CSVDiff
+    input = 'sczm_tl_fbar_host.i sczm_tl_fbar_cp.i'
+    cli_args = "Materials/bulk_elasticity_tensor/youngs_modulus=1e5 "
+               "Materials/bulk_elasticity_tensor/poissons_ratio=0.25 file_base=sczm_tl_fbar_cp_host_out"
+    csvdiff = sczm_tl_fbar_cp_host_out.csv
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall compute the total-mode F-bar directional correction with a stateful crystal-plasticity interface model over several time steps.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_tl_fbar_cp_kokkos_matches_host]
+    type = CSVDiff
+    input = 'sczm_tl_fbar_kokkos.i sczm_tl_fbar_cp.i'
+    cli_args = 'file_base=sczm_tl_fbar_cp_kokkos_out'
+    csvdiff = sczm_tl_fbar_cp_kokkos_out.csv
+    abs_zero = 1e-12
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host total-mode F-bar solution with a stateful crystal-plasticity interface model.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_tl_fbar_cp_kokkos_matches_host_cuda]
+    type = CSVDiff
+    input = 'sczm_tl_fbar_kokkos.i sczm_tl_fbar_cp.i'
+    cli_args = 'NEML2/device=cuda file_base=sczm_tl_fbar_cp_kokkos_out'
+    csvdiff = sczm_tl_fbar_cp_kokkos_out.csv
+    abs_zero = 1e-12
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host total-mode F-bar solution with a stateful crystal-plasticity interface model evaluated on the CUDA device.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
+  # The Jacobian is checked at every Newton iteration of every step, so the later steps consume an
+  # advanced plastic state. ||J||_F is about 3.8e5. The crystal-plasticity tangent differs from the
+  # finite-difference Jacobian by a ratio of about 2e-6 to 7e-6 independently of F-bar: the error
+  # grows linearly with the time step, is the same with F-bar disabled, and matches the ratio of up
+  # to 8e-6 of the bulk crystal-plasticity Jacobian test in solid_mechanics.
+  [sczm_tl_fbar_cp_host_jacobian]
+    type = PetscJacobianTester
+    input = 'sczm_tl_fbar_host.i sczm_tl_fbar_cp.i'
+    cli_args = "Materials/bulk_elasticity_tensor/youngs_modulus=1e5 "
+               "Materials/bulk_elasticity_tensor/poissons_ratio=0.25"
+    run_sim = true
+    ratio_tol = 2e-5
+    difference_tol = 10
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall linearize the total-mode F-bar directional correction consistently with a stateful crystal-plasticity interface model, to within the accuracy of the crystal-plasticity tangent.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_tl_fbar_cp_kokkos_jacobian]
+    type = PetscJacobianTester
+    input = 'sczm_tl_fbar_kokkos.i sczm_tl_fbar_cp.i'
+    run_sim = true
+    ratio_tol = 2e-5
+    difference_tol = 10
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall linearize the total-mode F-bar directional correction consistently with a stateful crystal-plasticity interface model, to within the accuracy of the crystal-plasticity tangent.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_tl_fbar_cp_kokkos_jacobian_cuda]
+    type = PetscJacobianTester
+    input = 'sczm_tl_fbar_kokkos.i sczm_tl_fbar_cp.i'
+    cli_args = 'NEML2/device=cuda'
+    run_sim = true
+    ratio_tol = 2e-5
+    difference_tol = 10
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall linearize the total-mode F-bar directional correction consistently with a stateful crystal-plasticity interface model evaluated on the CUDA device.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
+
   # Unsupported combinations must be rejected explicitly. Each of these would otherwise be silently
   # dropped, leaving the user to believe an option took effect.
   [kokkos_directional_correction_rejections]

@@ -4,8 +4,8 @@
 
 The Shifted Cohesive Zone Physics creates the interface kernels, displacement-jump and
 global-traction materials, and optional geometry objects needed by the shifted cohesive-zone method
-(SCZM). Small-strain and total-Lagrangian kinematics are supported on the host; Kokkos SCZM
-currently supports only small strain.
+(SCZM). Small-strain and total-Lagrangian kinematics are supported on the host and, with non-AD
+evaluation in Cartesian coordinates, on the Kokkos path (see [#kokkos-implementation-status]).
 
 For `strain = FINITE`, SCZM Taylor-shifts the displacement jump to the true interface and uses the
 true reference normal for the cohesive frame and Nanson transformation. The deformation gradient
@@ -114,6 +114,36 @@ property name requires an explicit `tangent_definition`:
 The AD interface kernel differentiates its residual automatically and does not use `tangent` or
 `tangent_definition`; setting either parameter with AD enabled is an error.
 
+## Total-Lagrangian F-bar id=total-lagrangian-f-bar
+
+For `strain = FINITE` with `directional_correction = true`, `volumetric_locking_correction = true`
+applies the total-mode F-bar correction to the bulk PK1 stress used by the directional correction,
+on both the host non-AD and the Kokkos paths. It is limited to three-dimensional Cartesian meshes and
+requires `tangent_definition = pk1_wrt_deformation_gradient`. On each side of the interface, the
+stress is
+
+!equation
+\mathbf{P} = \mathbf{U}\,\mathbf{S}(\mathbf{B}), \qquad
+\mathbf{B} = \left(\frac{\det\mathbf{M}}{\det\mathbf{U}}\right)^{1/3}\mathbf{U},
+
+where $\mathbf{U} = \mathbf{I} + \nabla_X\mathbf{u}$ is the physical deformation gradient,
+$\mathbf{S}$ is the second Piola-Kirchhoff stress, and $\mathbf{M}$ is the average of $\mathbf{U}$
+over the reference volume of the bulk element on that side. The cohesive kinematics and the Nanson
+geometry continue to use $\mathbf{U}$.
+
+[ComputeDeformationGradient](ComputeDeformationGradient.md) or
+[KokkosComputeDeformationGradient](KokkosComputeDeformationGradient.md) with `stabilize_strain = true`
+provides $\mathbf{U}$, $\mathbf{M}$, and $\mathbf{B}$ as the `physical_deformation_gradient`,
+`average_deformation_gradient`, and `deformation_gradient` properties. The constitutive model must
+provide the stress $\mathbf{P}$ as `stress`, its derivative with respect to $\mathbf{U}$ at fixed
+$\mathbf{B}$ as `tangent`, and its derivative with respect to $\mathbf{B}$ at fixed $\mathbf{U}$
+as `stabilized_tangent`. The Jacobian adds the derivative of $\mathbf{B}$ with respect to the
+displacements, including the contribution of $\mathbf{M}$ that couples each interface residual to
+every displacement degree of freedom of the bulk element on the same side. With NEML2, both
+derivatives are requested from a single interface model:
+
+!listing modules/shifted_boundary_method/test/tests/kokkos_shifted_interface/sczm_tl_fbar_common.i block=NEML2
+
 ## Kokkos Implementation Status
 
 The [KokkosSCZMInterfaceKernelSmallStrain](KokkosSCZMInterfaceKernelSmallStrain.md)
@@ -157,7 +187,8 @@ suppressed entirely. Setting `directional_correction = true` alongside it is har
 correction is simply not applied, matching the host.
 
 These outstanding items mean the Kokkos path is not yet full host parity. Volumetric locking
-correction and general tangent semantics are still to be implemented.
+correction is available only for total-Lagrangian kinematics, as described in
+[#total-lagrangian-f-bar]. General tangent semantics are still to be implemented.
 
 !syntax parameters /Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction
 

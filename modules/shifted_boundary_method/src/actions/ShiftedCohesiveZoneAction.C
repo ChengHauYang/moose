@@ -147,6 +147,12 @@ ShiftedCohesiveZoneAction::validParams()
       "Whether to apply volumetric locking correction to the directional correction Jacobian "
       "term in SCZM. If not specified, this value is automatically inherited from the solid "
       "mechanics physics block.");
+  params.addParam<MaterialPropertyName>(
+      "stabilized_tangent",
+      "stabilized_pk1_jacobian",
+      "Name of the derivative of the PK1 stress with respect to the F-bar deformation gradient at "
+      "fixed physical deformation gradient, used by the total-Lagrangian volumetric locking "
+      "correction.");
 
   return params;
 }
@@ -574,6 +580,9 @@ ShiftedCohesiveZoneAction::customizeCZMInterfaceKernelParameters(InputParameters
         _strain == Strain::Finite && !isParamSetByUser("tangent")
             ? MaterialPropertyName("pk1_jacobian")
             : getParam<MaterialPropertyName>("tangent");
+  if (params.isParamValid("stabilized_tangent"))
+    params.set<MaterialPropertyName>("stabilized_tangent") =
+        getParam<MaterialPropertyName>("stabilized_tangent");
   if (params.isParamValid("tangent_definition"))
   {
     if (isParamSetByUser("tangent_definition"))
