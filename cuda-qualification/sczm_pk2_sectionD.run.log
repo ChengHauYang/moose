@@ -1,0 +1,138 @@
+WARNING: CPU IP/backtrace sampling not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+WARNING: CPU context switch tracing not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+Setting Up
+  Finished Setting Up Options                                                            [[33m  1.70 s[39m] [[33m 1374 MB[39m]
+
+[36mNEML2 MATERIAL MODEL SUMMARY BEGIN ********************************************[39m
+NEML2 input file location: /home/chenghau.yang/packages/moose-kokkos/modules/shifted_boundary_method/test/tests/kokkos_shifted_interface/sczm_pk2_primary_neml2.i
+NEML2 action path:         NEML2/primary
+[36mMaterial model structure ------------------------------------------------------[39m
+NEML2 model inputs:
+  - deformation_gradient
+NEML2 model outputs:
+  - pk2_stress
+[36mTransfer between MOOSE and NEML2 ----------------------------------------------[39m
+MOOSE --> NEML2
+  - deformation_gradient (MATERIAL)
+MOOSE <-- NEML2
+  - pk2_stress
+  - dpk2_dF
+[36mNEML2 MATERIAL MODEL SUMMARY END **********************************************[39m
+
+
+[36mNEML2 MATERIAL MODEL SUMMARY BEGIN ********************************************[39m
+NEML2 input file location: /home/chenghau.yang/packages/moose-kokkos/modules/shifted_boundary_method/test/tests/kokkos_shifted_interface/sczm_pk2_neighbor_neml2.i
+NEML2 action path:         NEML2/neighbor
+[36mMaterial model structure ------------------------------------------------------[39m
+NEML2 model inputs:
+  - deformation_gradient
+NEML2 model outputs:
+  - pk2_stress
+[36mTransfer between MOOSE and NEML2 ----------------------------------------------[39m
+MOOSE --> NEML2
+  - deformation_gradient (MATERIAL)
+MOOSE <-- NEML2
+  - pk2_stress
+  - dpk2_dF
+[36mNEML2 MATERIAL MODEL SUMMARY END **********************************************[39m
+
+Finished Setting Up                                                                      [[33m  1.78 s[39m] [[33m 1394 MB[39m]
+Framework Information:
+MOOSE Version:           git commit f6edfc1c5c on 2026-10-23
+LibMesh Version:         90766057ef390adc9968b529e8ded2a87b0a77c7
+PETSc Version:           3.25.4
+SLEPc Version:           3.25.1
+Libtorch Version:        2.13.0
+Current Time:            Fri Oct 23 09:47:36 2026
+Executable Timestamp:    Fri Oct 23 09:43:06 2026
+
+Input File(s):
+  /home/chenghau.yang/packages/moose-kokkos/modules/shifted_boundary_method/test/tests/kokkos_shifted_interface/sczm_pk2_kokkos.i
+
+Command Line Argument(s):
+  --compute-device=cuda
+  --allow-test-objects
+
+Command Line Input Argument(s):
+  Outputs/exodus=false
+  NEML2/device=cuda
+
+Checkpoint:
+  Wall Time Interval:      Every 3600 s
+  Checkpoint:              Outputs/checkpoint
+  # Checkpoints Kept:      2
+  Execute On:              TIMESTEP_END 
+
+Parallelism:
+  Num Processors:          1
+  Num Threads:             1
+
+Mesh: 
+  Parallel Type:           replicated
+  Mesh Dimension:          3
+  Spatial Dimension:       3
+  Nodes:                   24
+  Elems:                   4
+  Num Subdomains:          2
+
+Nonlinear System:
+  Num DOFs:                72
+  Num Local DOFs:          72
+  Variables:               { "ux" "uy" "uz" } 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Execution Information:
+  Executioner:             Steady
+  Solver Mode:             NEWTON 
+  MOOSE Preconditioner:    SMP 
+
+Currently Executing
+  Performing Initial Setup
+    Computing User Objects
+      Finished Evaluating the NEML2 model                                                [[33m  0.56 s[39m] [[33m 1517 MB[39m]
+    Finished Computing User Objects                                                      [[33m  0.56 s[39m] [[33m 1518 MB[39m]
+  Finished Performing Initial Setup                                                      [[33m  0.58 s[39m] [[33m 1518 MB[39m]
+ 0 Nonlinear |R| = [32m6.841712e-01[39m
+      0 Linear |R| = [32m6.841712e-01[39m
+      1 Linear |R| = [32m1.964891e-02[39m
+      2 Linear |R| = [32m1.692188e-03[39m
+      3 Linear |R| = [32m2.197253e-04[39m
+      4 Linear |R| = [32m3.307557e-05[39m
+      5 Linear |R| = [32m2.067994e-06[39m
+ 1 Nonlinear |R| = [32m2.924703e-03[39m
+      0 Linear |R| = [32m2.924703e-03[39m
+      1 Linear |R| = [32m4.769264e-04[39m
+      2 Linear |R| = [32m5.585024e-05[39m
+      3 Linear |R| = [32m3.202312e-06[39m
+      4 Linear |R| = [32m4.059173e-07[39m
+      5 Linear |R| = [32m1.486741e-08[39m
+ 2 Nonlinear |R| = [32m2.275458e-06[39m
+      0 Linear |R| = [32m2.275458e-06[39m
+      1 Linear |R| = [32m1.754541e-07[39m
+      2 Linear |R| = [32m1.934086e-08[39m
+      3 Linear |R| = [32m1.739377e-09[39m
+      4 Linear |R| = [32m2.240912e-10[39m
+      5 Linear |R| = [32m1.014453e-11[39m
+ 3 Nonlinear |R| = [32m1.010739e-11[39m
+      0 Linear |R| = [32m1.010739e-11[39m
+      1 Linear |R| = [32m1.497732e-12[39m
+      2 Linear |R| = [32m1.109036e-13[39m
+      3 Linear |R| = [32m8.590335e-15[39m
+      4 Linear |R| = [32m8.132471e-16[39m
+      5 Linear |R| = [32m5.834384e-17[39m
+ 4 Nonlinear |R| = [32m1.178703e-16[39m
+[32m Solve Converged![39m
+
+Finished Executing                                                                       [[33m  0.75 s[39m] [[33m 1548 MB[39m]
+The target application terminated. One or more process it created re-parented.
+Waiting for termination of re-parented processes.
+Use the `--wait` option to modify this behavior.
+Generating '/tmp/user/333475/nsys-report-915d.qdstrm'
+[1/1] [0%                          ] sczm_pk2_sectionD.nsys-rep[1/1] [0%                          ] sczm_pk2_sectionD.nsys-rep[1/1] [12%                         ] sczm_pk2_sectionD.nsys-rep[1/1] [====25%                     ] sczm_pk2_sectionD.nsys-rep[1/1] [=====29%                    ] sczm_pk2_sectionD.nsys-rep[1/1] [======33%                   ] sczm_pk2_sectionD.nsys-rep[1/1] [=================72%        ] sczm_pk2_sectionD.nsys-rep[1/1] [====================84%     ] sczm_pk2_sectionD.nsys-rep[1/1] [========================100%] sczm_pk2_sectionD.nsys-rep[1/1] [========================100%] sczm_pk2_sectionD.nsys-rep
+Generated:
+    /home/chenghau.yang/packages/moose-kokkos/cuda-qualification/sczm_pk2_sectionD.nsys-rep

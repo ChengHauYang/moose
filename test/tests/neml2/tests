@@ -79,6 +79,144 @@
     capabilities = 'libtorch & neml2'
     valgrind = none
   []
+  [kokkos_batch_index_map]
+    type = CSVDiff
+    input = kokkos_batch_index_map.i
+    csvdiff = kokkos_batch_index_map_out.csv
+    requirement = 'The framework shall publish generator-defined NEML2 interface batch indices in face-indexed Kokkos storage before Kokkos user objects execute.'
+    design = 'NEML2Action.md'
+    capabilities = 'kokkos & libtorch & neml2'
+    valgrind = none
+  []
+  [kokkos_quantity_to_neml2_bulk]
+    type = CSVDiff
+    input = kokkos_quantity_to_neml2_bulk.i
+    csvdiff = kokkos_quantity_to_neml2_bulk_out.csv
+    requirement = 'The framework shall preserve element and quadrature-point batch row destinations and all nine rank-two tensor components when gathering a spatially varying Kokkos material property into NEML2 inputs, reproducing the analytical weighted contraction pointwise.'
+    design = 'NEML2Action.md'
+    issues = '#31596'
+    capabilities = 'kokkos & libtorch & neml2'
+    valgrind = none
+  []
+  [kokkos_cuda_quantity_to_neml2_bulk]
+    type = CSVDiff
+    input = kokkos_quantity_to_neml2_bulk.i
+    cli_args = 'NEML2/device=cuda'
+    csvdiff = kokkos_quantity_to_neml2_bulk_out.csv
+    requirement = 'The framework shall gather a spatially varying Kokkos material property into NEML2 inputs on the CUDA device, preserving batch row destinations and all nine rank-two tensor components, and reproduce the analytical weighted contraction pointwise through a NEML2-consumed MOOSE output.'
+    design = 'NEML2Action.md'
+    issues = '#31596'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cuda'
+    valgrind = none
+  []
+  [kokkos_interface_quantity_to_neml2]
+    type = CSVDiff
+    input = kokkos_interface_quantity_to_neml2.i
+    csvdiff = kokkos_interface_quantity_to_neml2_out.csv
+    requirement = 'The framework shall write all nine rank-two tensor components for both primary and neighbor sides of a cohesive interface into the correct device buffer rows when gathering Kokkos interface material properties into NEML2 inputs, on CPU and CUDA devices.'
+    design = 'NEML2Action.md'
+    issues = '#31596'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+    valgrind = none
+  []
+  [kokkos_input_backend_restrictions]
+    requirement = 'The framework shall reject unsupported NEML2 Action input mappings when the Kokkos input backend is selected, rather than falling back to MOOSE gatherers.'
+    design = 'NEML2Action.md'
+    issues = '#31596'
+    [non_rank_two]
+      type = RunException
+      input = custom_model.i
+      cli_args = 'NEML2/all/input_backend=kokkos'
+      expect_err = 'The Kokkos input backend supports only current-state full rank-two MATERIAL inputs'
+      detail = 'a non-rank-two input.'
+      capabilities = 'kokkos & libtorch & neml2'
+      valgrind = none
+    []
+    [input_kernel]
+      type = RunException
+      input = kokkos_quantity_to_neml2_bulk.i
+      cli_args = 'NEML2/input_types= NEML2/inputs= NEML2/weighted/input_kernels=F'
+      expect_err = 'The Kokkos input backend does not support input_kernels'
+      detail = 'an input kernel.'
+      capabilities = 'kokkos & libtorch & neml2'
+      valgrind = none
+    []
+    [interface_material]
+      type = RunException
+      input = kokkos_interface_quantity_to_neml2.i
+      cli_args = 'NEML2/weighted/interface_material_inputs=F'
+      expect_err = 'The Kokkos input backend does not support true interface material data'
+      detail = 'a true interface material input.'
+      capabilities = 'kokkos & libtorch & neml2'
+      valgrind = none
+    []
+  []
+  [kokkos_interface_retriever]
+    requirement = 'The framework shall retrieve symmetric NEML2 output and input derivatives into Kokkos interface material properties on the requested primary and neighbor output sides.'
+    design = 'NEML2Action.md NEML2ToKokkosMaterialProperty.md'
+    issues = '#31596'
+    [both]
+      detail = 'write and retrieve both sides while converting Mandel stress and tangent components.'
+      type = RunApp
+      input = 'kokkos_interface_retriever.i'
+      capabilities = 'kokkos & libtorch & neml2'
+      valgrind = none
+    []
+    [primary]
+      detail = 'write and retrieve the primary side only.'
+      type = RunApp
+      input = 'kokkos_interface_retriever.i'
+      cli_args = 'NEML2/elasticity/interface_output_side=primary Materials/neighbor_oracle/type=KokkosNEML2PrimaryInterfaceRetrieverOracle Materials/neighbor_oracle/expected_normal_stress=2 Materials/neighbor_oracle/expected_transverse_stress=4 Materials/neighbor_oracle/expected_shear_stress=6'
+      capabilities = 'kokkos & libtorch & neml2'
+      valgrind = none
+    []
+    [neighbor]
+      detail = 'write and retrieve the neighbor side only.'
+      type = RunApp
+      input = 'kokkos_interface_retriever.i'
+      cli_args = 'NEML2/elasticity/interface_output_side=neighbor Materials/primary_oracle/type=KokkosNEML2NeighborInterfaceRetrieverOracle Materials/primary_oracle/expected_normal_stress=8 Materials/primary_oracle/expected_transverse_stress=10 Materials/primary_oracle/expected_shear_stress=12'
+      capabilities = 'kokkos & libtorch & neml2'
+      valgrind = none
+    []
+  []
+  [kokkos_scalar_output]
+    requirement = 'The framework shall map a scalar (Real) NEML2 model output into a material property through the Kokkos output backend, reproducing the host backend values'
+    design = 'NEML2Action.md NEML2ToKokkosMaterialProperty.md'
+    issues = '#31596'
+    # The gold is the host NEML2ToMOOSERealMaterialProperty result. The host variant runs first and
+    # all variants share one output file, so they are prereq-chained to serialize that file.
+    [host]
+      detail = 'with the host backend (the reference the Kokkos backend is checked against),'
+      type = CSVDiff
+      input = 'kokkos_scalar_output.i'
+      cli_args = 'NEML2/trace/output_backend=moose Postprocessors/t_avg/type=ElementAverageMaterialProperty Postprocessors/t_max/type=ElementExtremeMaterialProperty'
+      csvdiff = 'kokkos_scalar_output_out.csv'
+      capabilities = 'libtorch & neml2'
+      valgrind = none
+    []
+    [cpu]
+      detail = 'on the CPU device, and'
+      type = CSVDiff
+      input = 'kokkos_scalar_output.i'
+      csvdiff = 'kokkos_scalar_output_out.csv'
+      prereq = 'kokkos_scalar_output/host'
+      capabilities = 'kokkos & libtorch & neml2'
+      valgrind = none
+    []
+    [cuda]
+      detail = 'on the CUDA device.'
+      type = CSVDiff
+      input = 'kokkos_scalar_output.i'
+      cli_args = 'NEML2/device=cuda'
+      csvdiff = 'kokkos_scalar_output_out.csv'
+      prereq = 'kokkos_scalar_output/cpu'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cuda'
+      valgrind = none
+    []
+  []
   [no_neml2]
     requirement = 'The framework shall throw an error upon instantiation of NEML2 interface objects if NEML2 is not available.'
     type = RunException
@@ -145,6 +283,163 @@
       capabilities = 'libtorch & neml2'
       valgrind = heavy
     []
+  []
+  [boundary_restriction]
+    requirement = 'The framework shall be capable of defining NEML2 models on material interfaces'
+    type = Exodiff
+    issues = '#32413'
+    input = 'interface_material.i'
+    exodiff = 'interface_material_out.e'
+    capabilities = 'libtorch & neml2'
+    valgrind = heavy
+    collections = 'SYSTEM'
+  []
+  [boundary_restriction_jacobian]
+    requirement = 'The framework shall compute a correct Jacobian for a NEML2 model defined on a material interface with volume (block) evaluation, using the derivative provided by the NEML2 model.'
+    type = PetscJacobianTester
+    issues = '#32413'
+    input = 'interface_material.i'
+    run_sim = true
+    capabilities = 'libtorch & neml2'
+    collections = 'SYSTEM'
+  []
+  [interface_only_restriction]
+    requirement = 'The framework shall be capable of defining NEML2 models on material interfaces using block material properties without volume-element evaluation.'
+    type = Exodiff
+    issues = '#32413'
+    input = 'interface_only_material.i'
+    exodiff = 'interface_only_material_out.e'
+    capabilities = 'libtorch & neml2'
+    valgrind = heavy
+    collections = 'SYSTEM'
+  []
+  [interface_only_two_sided]
+    requirement = 'The framework shall publish an interface_only NEML2 model output and its derivatives on a split interface, using inputs that differ across the interface and without disturbing a bulk material that declares the same property names on the blocks the interface straddles,'
+    issues = '#32413'
+    design = 'NEML2Action.md NEML2ToMOOSEMaterialProperty.md'
+    # Each side variant writes its own output file, so the three can run concurrently. Suppressing
+    # one side makes exactly that side fall back to the bulk material's value, which is what
+    # identifies the interface retrievers as the sole writers of their respective storages.
+    [both]
+      detail = 'on both the primary and the neighbor side by default,'
+      type = CSVDiff
+      input = 'interface_only_two_sided.i'
+      csvdiff = 'interface_only_two_sided_out.csv'
+      capabilities = 'libtorch & neml2'
+      valgrind = heavy
+      collections = 'SYSTEM'
+    []
+    [primary]
+      detail = 'on the primary side only when interface_output_side is primary, leaving the neighbor material data to the bulk producer, and'
+      type = CSVDiff
+      input = 'interface_only_two_sided.i'
+      cli_args = 'NEML2/source/interface_output_side=primary Outputs/file_base=interface_only_two_sided_primary_out'
+      csvdiff = 'interface_only_two_sided_primary_out.csv'
+      capabilities = 'libtorch & neml2'
+      valgrind = none
+      collections = 'SYSTEM'
+    []
+    [neighbor]
+      detail = 'on the neighbor side only when interface_output_side is neighbor, leaving the boundary material data to the bulk producer.'
+      type = CSVDiff
+      input = 'interface_only_two_sided.i'
+      cli_args = 'NEML2/source/interface_output_side=neighbor Outputs/file_base=interface_only_two_sided_neighbor_out'
+      csvdiff = 'interface_only_two_sided_neighbor_out.csv'
+      capabilities = 'libtorch & neml2'
+      valgrind = none
+      collections = 'SYSTEM'
+    []
+  []
+  [interface_only_two_sided_jacobian]
+    requirement = 'The framework shall compute a correct Jacobian for an interface_only NEML2 model consumed on both the primary and neighbor side, covering the element-element, element-neighbor, neighbor-element, and neighbor-neighbor couplings.'
+    type = PetscJacobianTester
+    issues = '#32413'
+    input = 'interface_only_two_sided_jacobian.i'
+    run_sim = true
+    capabilities = 'libtorch & neml2'
+    collections = 'SYSTEM'
+  []
+  [linear_cohesive_interface]
+    requirement = 'The framework shall be capable of using a NEML2 linear cohesive interface law in a scalar Poisson problem.'
+    type = Exodiff
+    input = 'linear_cohesive_interface.i'
+    exodiff = 'linear_cohesive_interface_out.e'
+    capabilities = 'libtorch & neml2'
+    valgrind = heavy
+    collections = 'SYSTEM'
+  []
+  [interface_material_input_required]
+    requirement = 'The framework shall throw an error when a NEML2 material input supplied by a true interface material is not routed through interface material data, because it is then validated as a block material property that no block supplies.'
+    type = RunException
+    issues = '#32413'
+    input = 'linear_cohesive_interface.i'
+    cli_args = 'NEML2/cohesive/interface_material_inputs='
+    expect_err = "Material property 'jump'.*is not defined on block"
+    capabilities = 'libtorch & neml2'
+    valgrind = none
+    collections = 'SYSTEM'
+  []
+  [interface_material_input_not_found]
+    requirement = 'The framework shall throw an error when a name listed in interface_material_inputs is not a NEML2 input of the model.'
+    type = RunException
+    issues = '#32413'
+    input = 'interface_material.i'
+    cli_args = 'NEML2/source/interface_material_inputs=typo'
+    expect_err = "'typo' is not a NEML2 input"
+    capabilities = 'libtorch & neml2'
+    valgrind = none
+    collections = 'SYSTEM'
+  []
+  [interface_material_input_not_material]
+    requirement = 'The framework shall throw an error when a name listed in interface_material_inputs is a NEML2 input that is not mapped as a MATERIAL.'
+    type = RunException
+    issues = '#32413'
+    input = 'interface_material.i'
+    cli_args = 'NEML2/source/interface_material_inputs=u'
+    expect_err = "'u' is mapped as .*not MATERIAL"
+    capabilities = 'libtorch & neml2'
+    valgrind = none
+    collections = 'SYSTEM'
+  []
+  [interface_only_no_interface]
+    requirement = 'The framework shall throw an error when a NEML2 model is set to be interface-only but no interface is specified.'
+    type = RunException
+    issues = '#32413'
+    input = 'custom_model.i'
+    cli_args = 'NEML2/all/interface_only=true'
+    expect_err = "'interface_only' is true, but 'interface' is unset"
+    collections = 'SYSTEM'
+    capabilities = 'libtorch & neml2'
+    valgrind = none
+  []
+  [linear_cohesive_interface_jacobian]
+    requirement = 'The framework shall compute a correct Jacobian for a NEML2 linear cohesive interface law using the derivative provided by the NEML2 model.'
+    type = PetscJacobianTester
+    issues = '#32413'
+    input = 'linear_cohesive_interface.i'
+    run_sim = true
+    capabilities = 'libtorch & neml2'
+    collections = 'SYSTEM'
+  []
+  [mixed_material_sources]
+    requirement = 'The framework shall route each NEML2 material input to the correct material data store per input, allowing a single model to mix a true interface material input with a block material input evaluated on the interface sides.'
+    type = Exodiff
+    issues = '#32413'
+    input = 'mixed_source_interface.i'
+    exodiff = 'mixed_source_interface_out.e'
+    capabilities = 'libtorch & neml2'
+    valgrind = heavy
+    collections = 'SYSTEM'
+  []
+  [two_sided_block_material]
+    requirement = 'The framework shall read a block material input to a NEML2 interface model independently on the element and neighbor sides of the interface, so that a material differing across the interface produces a different output on each side.'
+    type = Exodiff
+    issues = '#32413'
+    input = 'interface_block_material_two_sided.i'
+    exodiff = 'interface_block_material_two_sided_out.e'
+    capabilities = 'libtorch & neml2'
+    valgrind = heavy
+    collections = 'SYSTEM'
   []
   [empty]
     requirement = "The framework shall be capable of running custom NEML2 models and handling empty "

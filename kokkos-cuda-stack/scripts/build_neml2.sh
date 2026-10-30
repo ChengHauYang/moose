@@ -33,7 +33,7 @@ NEML2_VENV_BIN="$NEML2_VENV/bin"
 # the interpreter -- newest cu124-compatible Python already installed on this
 # box (main `moose` conda env is on 3.14, unusable with cu124 wheels).
 if [ ! -x "$NEML2_VENV_BIN/python3" ]; then
-  MINIFORGE_PYTHON="/home/chenghau.yang/miniforge/bin/python3"
+  MINIFORGE_PYTHON="${MINIFORGE_PYTHON:-${MINIFORGE_BIN:-$HOME/miniforge/bin}/python3}"
   if [ ! -x "$MINIFORGE_PYTHON" ]; then
     echo "[build_neml2] ERROR: miniforge base python not found at $MINIFORGE_PYTHON" >&2
     echo "[build_neml2]        expected miniforge with a base python; adjust MINIFORGE_PYTHON here" >&2
@@ -145,7 +145,7 @@ else
   # TORCH_CUDA_ARCH_LIST=8.6 restricts CUDA compilation to Ampere sm_86
   # (RTX A5000 on this box). Without this, pytorch compiles kernels for
   # many archs, tripling build time.
-  export TORCH_CUDA_ARCH_LIST="8.6"
+  export TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST:-8.6}"
 
   # OpenBLAS_HOME: MOOSE's configure_libtorch.sh hardcodes -DBLAS=OpenBLAS
   # -DUSE_LAPACK=ON, but OpenBLAS is NOT installed system-wide on this box
@@ -154,7 +154,7 @@ else
   # point pytorch's FindOpenBLAS.cmake at that copy. We only USE the .so
   # + headers; no conda env activation, no other conda pollution. The
   # resulting libtorch will bake this path into RUNPATH.
-  export OpenBLAS_HOME="/home/chenghau.yang/miniforge/envs/moose"
+  export OpenBLAS_HOME="${OpenBLAS_HOME:-$HOME/miniforge/envs/moose}"
 
   cd "$MOOSE_DIR"
   scripts/update_and_rebuild_libtorch.sh --install-python-package 2>&1 | tee -a "$LOG"

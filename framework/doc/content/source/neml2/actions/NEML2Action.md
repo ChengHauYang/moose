@@ -20,12 +20,12 @@ Four types of objects are constructed by this action:
 
 Currently supported objects are summarized below.
 
-| Type            | MOOSE object(s)                                                 |
-| :-------------- | :-------------------------------------------------------------- |
-| Gatherer        | [MOOSEQuantityToNEML2](MOOSEQuantityToNEML2.md)                 |
-| Retriever       | [NEML2ToMOOSEMaterialProperty](NEML2ToMOOSEMaterialProperty.md) |
-| Index generator | [NEML2BatchIndexGenerator](NEML2BatchIndexGenerator.md)         |
-| Executor        | [NEML2ModelExecutor](NEML2ModelExecutor.md)                     |
+| Type            | MOOSE object(s)                                                                                                                      |
+| :-------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
+| Gatherer        | [MOOSEQuantityToNEML2](../userobjects/MOOSEQuantityToNEML2.md), [KokkosQuantityToNEML2](../userobjects/KokkosQuantityToNEML2.md), [KokkosInterfaceQuantityToNEML2](../userobjects/KokkosInterfaceQuantityToNEML2.md) |
+| Retriever       | [NEML2ToMOOSEMaterialProperty](../materials/NEML2ToMOOSEMaterialProperty.md), [NEML2ToKokkosMaterialProperty](../materials/NEML2ToKokkosMaterialProperty.md) |
+| Index generator | [NEML2BatchIndexGenerator](NEML2BatchIndexGenerator.md)                                                                              |
+| Executor        | [NEML2ModelExecutor](NEML2ModelExecutor.md)                                                                                          |
 
 Multiple gatherers and retrievers may be created by this action, but each instance of the action creates one and only one index generator and executor.  Each step performed by this action is explained in one of the following sections, in the order of execution.
 
@@ -55,7 +55,18 @@ These maps are used later to create objects for transferring data between MOOSE 
 
 This step involves the creation of `MOOSEToNEML2` gatherers for NEML2 input variables and model parameters. The first two maps mentioned in the previous section are used. The maps are looped through to create objects one-by-one.
 
-Note that the correct type of object is selected/created relying on NEML2 model introspection. For example, if a NEML2 input variable is of type `SR2`, we can infer that the corresponding MOOSE data structure should be `SymmetricRankTwoTensor`.
+The `input_backend` parameter selects the gatherer backend. Its default `moose` value uses
+[MOOSEQuantityToNEML2](../userobjects/MOOSEQuantityToNEML2.md) for bulk and interface inputs. The
+`kokkos` value creates [KokkosQuantityToNEML2](../userobjects/KokkosQuantityToNEML2.md) for bulk
+inputs and [KokkosInterfaceQuantityToNEML2](../userobjects/KokkosInterfaceQuantityToNEML2.md) for
+`interface_only` inputs.
+Kokkos input gathering supports current-state full `RankTwoTensor` material properties and bulk
+current-state `SymmetricRankTwoTensor` material properties, which use six-component Mandel packing;
+variables, history inputs, model parameters, input kernels, and true interface-material properties
+are rejected during Action setup. This selection is independent of `output_backend`.
+
+The NEML2 input shape determines the MOOSE tensor type. For example, an NEML2 input variable of
+type `SR2` maps to `SymmetricRankTwoTensor`.
 
 ## Creating the NEML2 index generator and model executor
 
@@ -64,6 +75,25 @@ Next, a [NEML2BatchIndexGenerator](NEML2BatchIndexGenerator.md) and a [NEML2Mode
 ## Creating NEML2ToMOOSE retrievers
 
 The last step is creating the `NEML2ToMOOSE` retrievers to retrieve NEML2 model outputs (and their derivatives) back to MOOSE. This step is similar to [creating MOOSEToNEML2 gatherers](NEML2Action.md#gatherer).
+
+### Interface-only output id=interface_output
+
+With [!param](/NEML2/interface_only) set to `true` the model is evaluated at the quadrature points of
+both sides of the sideset named by [!param](/NEML2/interface), so each side of a split interface
+carries its own constitutive state. The retrievers follow: for every output and derivative the action
+creates one retriever that publishes the primary side into the boundary material data, which an
+interface consumer reads with `getMaterialProperty`, and a second one that publishes the neighbor side
+into the neighbor material data, which it reads with `getNeighborMaterialProperty`. The neighbor
+retriever is registered as an interface material so that it runs after the neighbor element and its
+material data have been reinitialized. Both backends behave the same way, and
+[!param](/NEML2/interface_output_side) selects which sides are published.
+
+Because these retrievers are boundary restricted, they declare their properties on the sideset rather
+than on the adjacent subdomains, so a bulk model emitting the same output names on those subdomains
+does not collide with them. Where both are active the interface values take precedence: on the
+interface sideset the interface retrievers run after the bulk face and neighbor material copies, so a
+consumer reading such a name there sees the interface model's value, while the bulk values are
+untouched in the volume and on every other face.
 
 ## Debugging a failed constitutive update id=dump
 

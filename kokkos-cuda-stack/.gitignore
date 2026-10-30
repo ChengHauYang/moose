@@ -5,6 +5,7 @@ src/
 logs/
 libmesh-build/
 neml2-venv/
+.cuda-cli/
 
 # One-time transition notes; regenerated on demand.
 RESUME.txt

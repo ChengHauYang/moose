@@ -1,0 +1,673 @@
+[Tests]
+  design = 'syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md'
+  issues = '#33666 #30655'
+  [shifted_penalty_jacobian]
+    type = PetscJacobianTester
+    input = shifted_penalty.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    requirement = 'The Kokkos shifted-interface base shall cache static shifted geometry on the device and consistently linearize first-order shifted values across all four interface Jacobian blocks.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    allow_test_objects = true
+  []
+  [sczm_linear_jacobian]
+    type = PetscJacobianTester
+    input = sczm_linear.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    requirement = 'The ShiftedCohesiveZone Physics shall create Kokkos small-strain shifted cohesive-zone kernels and materials that consistently assemble diagonal and cross-component traction-jump Jacobian blocks including the directional correction Jacobian, using device material properties.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda xpu'
+  []
+  [sczm_stateful_serial]
+    type = Exodiff
+    input = sczm_stateful_kokkos.i
+    exodiff = sczm_stateful_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    recover = false
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall execute a stateful NEML2 radial-return loading and unloading trajectory in serial while advancing history only after converged timesteps.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_stateful_distributed]
+    type = Exodiff
+    input = sczm_stateful_kokkos.i
+    exodiff = sczm_stateful_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    min_parallel = 2
+    max_parallel = 2
+    mesh_mode = distributed
+    recover = false
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall preserve stateful NEML2 loading and unloading results when interface elements and their ghost-side neighbors are distributed across MPI ranks.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_stateful_serial_cuda]
+    type = Exodiff
+    input = sczm_stateful_kokkos.i
+    cli_args = 'NEML2/device=cuda'
+    exodiff = sczm_stateful_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    recover = false
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall execute a stateful NEML2 radial-return loading and unloading trajectory in serial on the CUDA device, advancing history only after converged timesteps and reproducing the reference solution.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
+  [sczm_stateful_distributed_cuda]
+    type = Exodiff
+    input = sczm_stateful_kokkos.i
+    cli_args = 'NEML2/device=cuda'
+    exodiff = sczm_stateful_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    min_parallel = 2
+    max_parallel = 2
+    mesh_mode = distributed
+    recover = false
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall preserve stateful NEML2 loading and unloading results on the CUDA device when interface elements and their ghost-side neighbors are distributed across MPI ranks.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
+  [sczm_pk1_host_jacobian]
+    type = PetscJacobianTester
+    input = sczm_pk1_host.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The host shifted cohesive-zone formulation shall consistently linearize its directional correction when stress is first Piola-Kirchhoff stress and the full nonsymmetric constitutive tangent is its derivative with respect to deformation gradient.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_pk1_kokkos_jacobian]
+    type = PetscJacobianTester
+    input = sczm_pk1_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall transfer full nonsymmetric NEML2 stress and deformation-gradient tangent properties on both interface sides and use the d(PK1)/d(F) directional-correction contraction.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu'
+  []
+  [sczm_pk2_kokkos_jacobian]
+    type = PetscJacobianTester
+    input = sczm_pk2_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The ShiftedCohesiveZone Physics shall convert distinct primary- and neighbor-side full PK2 stress and deformation-gradient tangent properties to PK1 properties and consistently assemble all displacement couplings of the three-dimensional Kokkos directional correction.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    allow_test_objects = true
+  []
+  [sczm_pk2_kokkos_jacobian_cuda]
+    type = PetscJacobianTester
+    input = sczm_pk2_kokkos.i
+    cli_args = 'NEML2/device=cuda'
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The ShiftedCohesiveZone Physics shall gather the deformation gradient into NEML2 and convert distinct primary- and neighbor-side full PK2 stress and tangent properties to PK1 properties on the CUDA device, consistently assembling all displacement couplings of the three-dimensional Kokkos directional correction.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    allow_test_objects = true
+  []
+  [sczm_pk2_action_modes]
+    requirement = 'The ShiftedCohesiveZone Physics PK2 input contract shall create converters only when the active directional correction consumes them and shall diagnose an unsupported active host conversion.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    recover = false
+    [directional_correction_inactive]
+      type = RunApp
+      input = sczm_pk2_action_modes.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/directional_correction=false'
+      detail = 'It shall run without conversion when directional correction is disabled,'
+    []
+    [shifted_terms_inactive]
+      type = RunApp
+      input = sczm_pk2_action_modes.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/no_shifted=true Problem/solve=false'
+      detail = 'initialize without conversion when all shifted terms are disabled,'
+    []
+    [host_active]
+      type = RunException
+      input = sczm_pk2_action_modes.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/use_kokkos=false'
+      expect_err = 'Automatic PK2-to-PK1 conversion for directional correction is not yet supported on the CPU path'
+      detail = 'and reject active conversion on the host backend.'
+    []
+  []
+  [sczm_angled_host]
+    type = Exodiff
+    input = sczm_angled_host.i
+    exodiff = sczm_angled_host_out.e
+    recover = false
+    requirement = 'The host shifted cohesive-zone formulation shall compute the displacement solution on a two-dimensional angled interface including the directional correction.'
+  []
+  [sczm_angled_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_angled_kokkos.i
+    exodiff = sczm_angled_kokkos_out.e
+    # Host and Kokkos evaluate identical double-precision discrete equations, so they must agree tightly.
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall produce the same displacement solution as the host formulation on a two-dimensional angled interface including the directional correction.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda xpu'
+    # Recovery is disabled for the Kokkos interface comparisons because it does not rebuild the
+    # interface neighbor state. The disjoint neighbor information is not currently saved to Exodus
+    # or to the checkpoint file, so a recovered mesh comes back without it and the Kokkos interface
+    # face cache cannot resolve the neighbor element of an interface face. It has to be regenerated
+    # rather than recovered, and the recovery path does not do that yet.
+    recover = false
+  []
+  [sczm_angled_noshifted_host]
+    type = Exodiff
+    input = sczm_angled_noshifted_host.i
+    exodiff = sczm_angled_noshifted_host_out.e
+    recover = false
+    requirement = 'The host shifted cohesive-zone formulation shall compute the displacement solution on a two-dimensional angled interface with the shifted terms disabled.'
+  []
+  [sczm_angled_noshifted_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_angled_noshifted_kokkos.i
+    exodiff = sczm_angled_noshifted_kokkos_out.e
+    # Host and Kokkos evaluate identical double-precision discrete equations, so they must agree tightly.
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall reproduce the host solution with the shifted terms disabled, dropping the area correction, the shifted test functions, the displacement-jump gradient contribution, and the directional correction.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    # See sczm_angled_kokkos_matches_host for why recovery is disabled.
+    recover = false
+  []
+  [sczm_angled_noshifted_jacobian]
+    type = PetscJacobianTester
+    input = sczm_angled_noshifted_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    # With the shifted terms disabled the base traction Jacobian uses the natural test functions and
+    # no area correction, and the directional correction contributes nothing. Comparing against
+    # finite differences of that residual fails if either the area correction or the shifted test
+    # functions are still applied.
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall assemble Jacobian entries consistent with its residual for both interface sides when the shifted terms are disabled.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+  [sczm_angled_3d_host]
+    type = Exodiff
+    input = sczm_angled_3d_host.i
+    exodiff = sczm_angled_3d_host_out.e
+    recover = false
+    requirement = 'The host shifted cohesive-zone formulation shall compute the displacement solution on a three-dimensional angled interface including the directional correction.'
+  []
+  [sczm_angled_3d_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_angled_3d_kokkos.i
+    exodiff = sczm_angled_3d_kokkos_out.e
+    # Host and Kokkos evaluate identical double-precision discrete equations, so they must agree tightly.
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall produce the same displacement solution as the host formulation on a three-dimensional angled interface including the directional correction.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda xpu'
+    # See sczm_angled_kokkos_matches_host for why recovery is disabled.
+    recover = false
+  []
+  [sczm_angled_3d_noshifted_host]
+    type = Exodiff
+    input = sczm_angled_3d_noshifted_host.i
+    exodiff = sczm_angled_3d_noshifted_host_out.e
+    recover = false
+    requirement = 'The host shifted cohesive-zone formulation shall compute the displacement solution on a three-dimensional angled interface with the shifted terms disabled.'
+  []
+  [sczm_angled_3d_noshifted_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_angled_3d_noshifted_kokkos.i
+    exodiff = sczm_angled_3d_noshifted_kokkos_out.e
+    # Host and Kokkos evaluate identical double-precision discrete equations, so they must agree tightly.
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    # With the shifted terms disabled the device rotation comes from referenceRotation on the FE face
+    # normal rather than the host-precomputed rotations, so this is the only coverage of the
+    # three-dimensional Gram-Schmidt branch of that device helper.
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall reproduce the host solution on a three-dimensional angled interface with the shifted terms disabled, computing the reference rotation on the device from the face normal.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    # See sczm_angled_kokkos_matches_host for why recovery is disabled.
+    recover = false
+  []
+  [sczm_angled_3d_noshifted_jacobian]
+    type = PetscJacobianTester
+    input = sczm_angled_3d_noshifted_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    # With the shifted terms disabled the base traction Jacobian uses the natural test functions and
+    # no area correction, and the directional correction contributes nothing. Comparing against
+    # finite differences of that residual fails if either the area correction or the shifted test
+    # functions are still applied.
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall assemble Jacobian entries consistent with its residual for all three interface-side displacements when the shifted terms are disabled on a three-dimensional angled interface.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+  [sczm_hetero_host]
+    type = Exodiff
+    input = sczm_hetero_host.i
+    exodiff = sczm_hetero_host_out.e
+    recover = false
+    requirement = 'The host shifted cohesive-zone formulation shall compute the displacement solution on an angled interface whose primary and neighbor bulk responses have different elastic constants.'
+  []
+  [sczm_hetero_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_hetero_kokkos.i
+    exodiff = sczm_hetero_kokkos_out.e
+    # Host and Kokkos evaluate identical double-precision discrete equations, so they must agree tightly.
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall consume the primary bulk stress and Lame constants for the element block and the neighbor ones for the neighbor block, producing the same displacement solution as the host formulation on a heterogeneous angled interface.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda xpu'
+    # See sczm_angled_kokkos_matches_host for why recovery is disabled.
+    recover = false
+  []
+  [sczm_hetero_jacobian_blocks]
+    type = PetscJacobianTester
+    input = sczm_hetero_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    # The directional correction residual depends on the primary stress in the element row and on the
+    # neighbor stress in the neighbor row, and on no other side's displacements. Comparing the
+    # assembled Jacobian against finite differences of that residual therefore fails if primary and
+    # neighbor properties are swapped in either residual row or in either diagonal block, or if a
+    # correction term is added to either cross block.
+    requirement = 'The Kokkos SCZM directional correction shall assemble Jacobian entries that are the exact derivative of its residual for both interface sides with independently configured bulk properties supplied through NEML2, where the NEML2 batch index is keyed by the primary quadrature point and the neighbor-side property is written to the corresponding neighbor storage quadrature point, and shall contribute no correction to the cross blocks.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda xpu'
+  []
+  [sczm_angled_kokkos_volumetric_locking]
+    type = Exodiff
+    input = sczm_angled_kokkos.i
+    cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volumetric_locking_correction=true'
+    exodiff = sczm_angled_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    recover = false
+    requirement = 'The Kokkos SCZM directional correction shall accept Cartesian two-dimensional volumetric locking correction and preserve the converged solution while applying its bulk-element trial-gradient average to the diagonal directional Jacobian blocks.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_hetero_host_volumetric_locking]
+    type = Exodiff
+    input = sczm_hetero_host.i
+    cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volumetric_locking_correction=true Outputs/file_base=sczm_hetero_host_volumetric_locking_out'
+    exodiff = sczm_hetero_host_volumetric_locking_out.e
+    recover = false
+    requirement = 'The host shifted cohesive-zone formulation shall compute a corrected heterogeneous angled-interface solution with independently configured primary and neighbor elastic responses.'
+  []
+  [sczm_hetero_kokkos_volumetric_locking_matches_host]
+    type = Exodiff
+    input = sczm_hetero_kokkos.i
+    cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volumetric_locking_correction=true Outputs/file_base=sczm_hetero_kokkos_volumetric_locking_out'
+    exodiff = sczm_hetero_kokkos_volumetric_locking_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    recover = false
+    requirement = 'The Kokkos SCZM volumetric-locking correction shall use the primary and neighbor side''s own volume-averaged trial gradients and row-side tangents, reproducing the host solution on a heterogeneous angled interface.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_volumetric_locking_sensitivity]
+    requirement = 'The Kokkos SCZM volumetric-locking correction shall change the stabilized diagonal Jacobian blocks, producing a different first linear-iteration residual from the correction-off matrix.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    max_parallel = 1
+    recover = false
+    [off]
+      type = RunApp
+      input = sczm_angled_kokkos.i
+      max_parallel = 1
+      cli_args = 'Executioner/petsc_options=-ksp_monitor Outputs/exodus=false'
+      expect_out = '1 KSP Residual norm 1.508085642598e-02'
+      detail = 'with the correction disabled,'
+    []
+    [on]
+      type = RunApp
+      input = sczm_angled_kokkos.i
+      max_parallel = 1
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volumetric_locking_correction=true Executioner/petsc_options=-ksp_monitor Outputs/exodus=false'
+      expect_out = '1 KSP Residual norm 1.619133203872e-02'
+      detail = 'and with the correction enabled.'
+    []
+  []
+  [sczm_angled_3d_kokkos_volumetric_locking]
+    type = Exodiff
+    input = sczm_angled_3d_kokkos.i
+    cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volumetric_locking_correction=true'
+    exodiff = sczm_angled_3d_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    recover = false
+    requirement = 'The Kokkos SCZM directional correction shall accept Cartesian three-dimensional volumetric locking correction and preserve the converged solution while applying each side''s own bulk-element trial-gradient average to its diagonal directional Jacobian block.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+
+
+  [sczm_tl_2d_host]
+    type = Exodiff
+    input = sczm_tl_2d_host.i
+    exodiff = sczm_tl_2d_host_out.e
+    recover = false
+    requirement = 'The host shifted cohesive-zone formulation shall compute the displacement solution on a two-dimensional angled interface using total-Lagrangian finite-strain kinematics.'
+  []
+  [sczm_tl_2d_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_tl_2d_kokkos.i
+    exodiff = sczm_tl_2d_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall produce the same displacement solution as the host formulation on a two-dimensional angled interface using total-Lagrangian finite-strain kinematics.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    recover = false
+  []
+  [sczm_tl_2d_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_2d_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its residual including polar decomposition, reference rotation, displacement-jump, and deformation-gradient contributions.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+  [sczm_tl_2d_noshifted_host]
+    type = Exodiff
+    input = sczm_tl_2d_noshifted_host.i
+    exodiff = sczm_tl_2d_noshifted_host_out.e
+    recover = false
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall compute the displacement solution on a two-dimensional interface with shifted terms disabled.'
+  []
+  [sczm_tl_2d_noshifted_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_tl_2d_noshifted_kokkos.i
+    exodiff = sczm_tl_2d_noshifted_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host solution with shifted terms disabled.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    recover = false
+  []
+  [sczm_tl_2d_noshifted_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_2d_noshifted_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its residual when shifted corrections are disabled.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+  [sczm_tl_3d_host]
+    type = Exodiff
+    input = sczm_tl_3d_host.i
+    exodiff = sczm_tl_3d_host_out.e
+    recover = false
+    requirement = 'The host shifted cohesive-zone formulation shall compute the displacement solution on a three-dimensional angled interface using total-Lagrangian finite-strain kinematics.'
+  []
+  [sczm_tl_3d_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_tl_3d_kokkos.i
+    exodiff = sczm_tl_3d_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall produce the same displacement solution as the host formulation on a three-dimensional angled interface using total-Lagrangian finite-strain kinematics.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    recover = false
+  []
+  [sczm_tl_3d_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_3d_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its residual on three-dimensional interfaces.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+  [sczm_tl_3d_noshifted_host]
+    type = Exodiff
+    input = sczm_tl_3d_noshifted_host.i
+    exodiff = sczm_tl_3d_noshifted_host_out.e
+    recover = false
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall compute the displacement solution on a three-dimensional interface with shifted terms disabled.'
+  []
+  [sczm_tl_3d_noshifted_kokkos_matches_host]
+    type = Exodiff
+    input = sczm_tl_3d_noshifted_kokkos.i
+    exodiff = sczm_tl_3d_noshifted_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host solution on a three-dimensional interface with shifted terms disabled.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    recover = false
+  []
+  [sczm_tl_3d_noshifted_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_3d_noshifted_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its residual on a three-dimensional interface when shifted corrections are disabled.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+  []
+  [sczm_tl_pk1_host_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_pk1_host.i
+    cli_args = 'Outputs/exodus=false'
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its directional correction with full nonsymmetric PK1 stress and tangent.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_tl_pk1_kokkos_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_pk1_kokkos.i
+    cli_args = 'Outputs/exodus=false'
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its directional correction with full nonsymmetric PK1 stress and tangent on device.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu'
+  []
+  [sczm_tl_pk1_kokkos_jacobian_cuda]
+    type = PetscJacobianTester
+    input = sczm_tl_pk1_kokkos.i
+    cli_args = 'Outputs/exodus=false NEML2/device=cuda'
+    ratio_tol = 1e-7
+    difference_tol = 1e-5
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its directional correction with full nonsymmetric PK1 stress and tangent gathered into NEML2 on the CUDA device.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
+
+  # Total-mode F-bar on a distorted three-dimensional mesh with an angled true interface. The bulk
+  # and the interface directional correction are both stabilized, so the interface PK1 stress is
+  # U PK2(B) with B formed from the element-volume average of U.
+  [sczm_tl_fbar_host]
+    type = CSVDiff
+    input = sczm_tl_fbar_host.i
+    csvdiff = sczm_tl_fbar_host_out.csv
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall compute the directional correction with the total-mode F-bar PK1 stress on a distorted three-dimensional mesh with an angled interface.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_tl_fbar_average]
+    type = RunApp
+    input = sczm_tl_fbar_average.i
+    cli_args = 'file_base=sczm_tl_fbar_average_out'
+    requirement = 'The total-Lagrangian F-bar interface kinematics shall use, on both sides of the interface, the average of the physical deformation gradient over the true element volume rather than over the interface face.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_tl_fbar_kokkos_matches_host]
+    type = CSVDiff
+    input = sczm_tl_fbar_kokkos.i
+    csvdiff = sczm_tl_fbar_kokkos_out.csv
+    abs_zero = 1e-9
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host total-mode F-bar directional-correction solution.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_tl_fbar_kokkos_matches_host_cuda]
+    type = CSVDiff
+    input = sczm_tl_fbar_kokkos.i
+    cli_args = 'NEML2/device=cuda'
+    csvdiff = sczm_tl_fbar_kokkos_out.csv
+    abs_zero = 1e-9
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host total-mode F-bar directional-correction solution with NEML2 evaluated on the CUDA device.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
+  [sczm_tl_fbar_off_host]
+    type = CSVDiff
+    input = sczm_tl_fbar_host.i
+    cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+               "interface_inputs=deformation_gradient "
+               "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+               "file_base=sczm_tl_fbar_off_host_out"
+    csvdiff = sczm_tl_fbar_off_host_out.csv
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall compute a different solution on the distorted F-bar test mesh when F-bar is disabled in the bulk and in the directional correction.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_tl_fbar_host_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_fbar_host.i
+    ratio_tol = 1e-7
+    # The bulk stiffness gives ||J||_F of about 450, so the finite-difference noise in
+    # ||J - Jfd||_F is about 1.5e-5 even with F-bar disabled; the ratio test remains sensitive.
+    difference_tol = 1e-4
+    # The F-bar directional correction couples each interface residual row to every displacement
+    # DOF of its own bulk element through the element-volume average, including DOFs on the element
+    # face opposite the interface.
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall consistently linearize the total-mode F-bar directional correction, including its coupling to every displacement DOF of the bulk element on each side of the interface.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_tl_fbar_kokkos_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_fbar_kokkos.i
+    ratio_tol = 1e-7
+    difference_tol = 1e-4
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize the total-mode F-bar directional correction, including its coupling to every displacement DOF of the bulk element on each side of the interface.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_tl_fbar_kokkos_jacobian_cuda]
+    type = PetscJacobianTester
+    input = sczm_tl_fbar_kokkos.i
+    cli_args = 'NEML2/device=cuda'
+    ratio_tol = 1e-7
+    difference_tol = 1e-4
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize the total-mode F-bar directional correction with NEML2 evaluated on the CUDA device.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
+
+  # The same problem with a stateful crystal-plasticity interface model (sczm_tl_fbar_cp.i is
+  # merged after the host or Kokkos input). The host bulk takes the elastic constants of the
+  # crystal-plasticity model, which the Kokkos bulk reads from sczm_tl_fbar_cp_neml2.i.
+  [sczm_tl_fbar_cp_host]
+    type = CSVDiff
+    input = 'sczm_tl_fbar_host.i sczm_tl_fbar_cp.i'
+    cli_args = "Materials/bulk_elasticity_tensor/youngs_modulus=1e5 "
+               "Materials/bulk_elasticity_tensor/poissons_ratio=0.25 file_base=sczm_tl_fbar_cp_host_out"
+    csvdiff = sczm_tl_fbar_cp_host_out.csv
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall compute the total-mode F-bar directional correction with a stateful crystal-plasticity interface model over several time steps.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_tl_fbar_cp_kokkos_matches_host]
+    type = CSVDiff
+    input = 'sczm_tl_fbar_kokkos.i sczm_tl_fbar_cp.i'
+    cli_args = 'file_base=sczm_tl_fbar_cp_kokkos_out'
+    csvdiff = sczm_tl_fbar_cp_kokkos_out.csv
+    abs_zero = 1e-12
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host total-mode F-bar solution with a stateful crystal-plasticity interface model.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_tl_fbar_cp_kokkos_matches_host_cuda]
+    type = CSVDiff
+    input = 'sczm_tl_fbar_kokkos.i sczm_tl_fbar_cp.i'
+    cli_args = 'NEML2/device=cuda file_base=sczm_tl_fbar_cp_kokkos_out'
+    csvdiff = sczm_tl_fbar_cp_kokkos_out.csv
+    abs_zero = 1e-12
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host total-mode F-bar solution with a stateful crystal-plasticity interface model evaluated on the CUDA device.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
+  # The Jacobian is checked at every Newton iteration of every step, so the later steps consume an
+  # advanced plastic state. ||J||_F is about 3.8e5. The crystal-plasticity tangent differs from the
+  # finite-difference Jacobian by a ratio of about 2e-6 to 7e-6 independently of F-bar: the error
+  # grows linearly with the time step, is the same with F-bar disabled, and matches the ratio of up
+  # to 8e-6 of the bulk crystal-plasticity Jacobian test in solid_mechanics.
+  [sczm_tl_fbar_cp_host_jacobian]
+    type = PetscJacobianTester
+    input = 'sczm_tl_fbar_host.i sczm_tl_fbar_cp.i'
+    cli_args = "Materials/bulk_elasticity_tensor/youngs_modulus=1e5 "
+               "Materials/bulk_elasticity_tensor/poissons_ratio=0.25"
+    run_sim = true
+    ratio_tol = 2e-5
+    difference_tol = 10
+    requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall linearize the total-mode F-bar directional correction consistently with a stateful crystal-plasticity interface model, to within the accuracy of the crystal-plasticity tangent.'
+    capabilities = 'libtorch & neml2'
+  []
+  [sczm_tl_fbar_cp_kokkos_jacobian]
+    type = PetscJacobianTester
+    input = 'sczm_tl_fbar_kokkos.i sczm_tl_fbar_cp.i'
+    run_sim = true
+    ratio_tol = 2e-5
+    difference_tol = 10
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall linearize the total-mode F-bar directional correction consistently with a stateful crystal-plasticity interface model, to within the accuracy of the crystal-plasticity tangent.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_tl_fbar_cp_kokkos_jacobian_cuda]
+    type = PetscJacobianTester
+    input = 'sczm_tl_fbar_kokkos.i sczm_tl_fbar_cp.i'
+    cli_args = 'NEML2/device=cuda'
+    run_sim = true
+    ratio_tol = 2e-5
+    difference_tol = 10
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall linearize the total-mode F-bar directional correction consistently with a stateful crystal-plasticity interface model evaluated on the CUDA device.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
+
+  # Unsupported combinations must be rejected explicitly. Each of these would otherwise be silently
+  # dropped, leaving the user to believe an option took effect.
+  [kokkos_directional_correction_rejections]
+    requirement = 'The Kokkos SCZM directional correction shall reject unsupported input combinations with an explicit error.'
+    design = 'syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md'
+    issues = '#33666 #30655'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda xpu'
+    recover = false
+
+    [non_cartesian_coordinates]
+      type = RunException
+      input = sczm_hetero_kokkos.i
+      cli_args = 'Mesh/coord_type=RSPHERICAL'
+      expect_err = 'currently supports only Cartesian coordinate systems'
+      detail = 'if a non-Cartesian coordinate system is requested, whose out-of-plane kinematics are not yet verified for NEML2.'
+    []
+
+    [neml2_output_backend_not_kokkos]
+      type = RunException
+      input = sczm_hetero_kokkos.i
+      cli_args = 'NEML2/primary_elasticity/output_backend=moose'
+      expect_err = "Set 'output_backend = kokkos' or set 'directional_correction = false'"
+      detail = 'if the NEML2 block providing the stress or tangent property to a Kokkos directional correction does not set output_backend = kokkos.'
+    []
+
+  []
+[]

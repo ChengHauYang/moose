@@ -30,6 +30,9 @@ protected:
   /// computes the PK1 traction and its derivatives
   void computeEquilibriumTracionAndDerivatives() override;
 
+  /// Reference normal used by the Nanson area transformation
+  virtual RealVectorValue referenceNormal() const;
+
   /// computes the PK1 traction derivatives w.r.t. the global displacement jump
   void computedTPK1dJumpGlobal();
 
