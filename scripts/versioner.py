@@ -199,7 +199,7 @@ MOOSE_DEV_STACK = set(["libmesh-vtk", "peacock"]).union(set(TRACKING_LIBRARIES))
 # This allows returning a hash for any library
 # note: If adding to the following list below, see line 64 in
 # python/MooseDocs/test/extensions/test_versioner.py
-LIBRARIES = set(["seacas", "pyhit", "pprof"]).union(
+LIBRARIES = set(["seacas", "pyhit", "pprof", "neml2-deps"]).union(
     set(TRACKING_LIBRARIES).union(MOOSE_DEV_STACK)
 )
 

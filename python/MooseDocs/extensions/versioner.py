@@ -109,7 +109,9 @@ class VersionerCodeReplace(command.CommandComponent):
                 return self.extension.getVersion(package_dashed, versioner_keys)
 
             return re.sub(
-                r"__VERSIONER_" + re.escape(prefix) + r"_(?P<package>[A-Z][A-Z_]+)__",
+                r"__VERSIONER_"
+                + re.escape(prefix)
+                + r"_(?P<package>[A-Z][A-Z0-9_]+)__",
                 sub_function,
                 content,
                 flags=re.UNICODE,

@@ -1,0 +1,95 @@
+# Python dependencies of NEML2 (framework/contrib/neml2/pyproject.toml) other
+# than PyTorch, which MOOSE builds from framework/contrib/pytorch. Keep the
+# versions below in sync with the NEML2 submodule.
+#
+# pyzag and pyro-ppl are pure Python. They are packaged here instead of being
+# taken from conda-forge because conda-forge's pyro-ppl requires conda-forge's
+# pytorch, which would replace the PyTorch built by MOOSE.
+{% set nmhit_version = "0.3.6" %}
+{% set pyzag_version = "2.0.0" %}
+{% set pyro_ppl_version = "1.9.2" %}
+
+package:
+  name: moose-neml2-deps
+  version: __VERSIONER_NEML2_DEPS_VERSION__
+
+source:
+  - url: https://files.pythonhosted.org/packages/source/n/nmhit/nmhit-{{ nmhit_version }}.tar.gz
+    sha256: f6c737a586c5227e9fad95a1cbea41ff73b759c36ad553fb3d9d72a02ee47940
+    folder: nmhit
+  - url: https://files.pythonhosted.org/packages/source/p/pyzag/pyzag-{{ pyzag_version }}.tar.gz
+    sha256: 9b2713b73fcc8a5e116d803b9f62e329d224d4365806e4d38d3984047e22d34d
+    folder: pyzag
+  - url: https://files.pythonhosted.org/packages/source/p/pyro-ppl/pyro_ppl-{{ pyro_ppl_version }}.tar.gz
+    sha256: e4a4b089023777c0bc98c01db4c6ed5e39a1001985ebccfe210dc545bf5b24dd
+    folder: pyro-ppl
+
+build:
+  number: 0
+  skip: true             # [win]
+  script:
+    - {{ PYTHON }} -m pip install ./nmhit ./pyzag ./pyro-ppl --no-deps --no-build-isolation -vv
+  script_env:
+    - REQUESTS_CA_BUNDLE
+    - SSL_CERT_FILE
+    - CURL_CA_BUNDLE
+    - NODE_EXTRA_CA_CERTS
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}
+    - cmake
+    - ninja
+  host:
+    - python {{ python }}
+    - pip
+    # nmhit 0.3.6 binds nullptr defaults without .none(), which nanobind 3
+    # rejects at call time; its PyPI wheels were built with nanobind 2
+    - nanobind >=2,<3
+    - scikit-build-core
+    - setuptools
+  run:
+    - python {{ python }}
+    # NEML2 build backend; update_and_rebuild_neml2.sh builds NEML2 with
+    # --no-build-isolation
+    - scikit-build-core >=0.10
+    # Python dependencies of PyTorch that the rest of the MOOSE environment
+    # does not already provide
+    - filelock
+    - fsspec >=0.8.5
+    # pyzag
+    - matplotlib-base
+    - numpy >=2
+    - scipy
+    - tqdm
+    # pyro-ppl
+    - opt_einsum >=2.3.2
+    - pyro-api >=0.1.1
+
+test:
+  source_files:
+    - nmhit/python/tests
+  requires:
+    - pip
+    - pytest
+  imports:
+    - nmhit
+  commands:
+    - pytest -v nmhit/python/tests
+
+about:
+  home: https://github.com/applied-material-modeling/neml2
+  license: MIT AND Apache-2.0
+  # nmhit declares MIT in its pyproject.toml but ships no license file
+  license_file:
+    - pyzag/LICENSE
+    - pyro-ppl/LICENSE.md
+  summary: >
+    Python dependencies for building NEML2 against the PyTorch built by MOOSE
+    (nmhit, pyzag and pyro-ppl).
+
+extra:
+  recipe-maintainers:
+    - cticenhour
+    - loganharbour

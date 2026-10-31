@@ -169,6 +169,15 @@ packages:
       - conda/functions/retry_build.sh
       - conda/seacas
   # dependers: none
+  neml2-deps:
+    version: 2026.10.30
+    conda: conda/neml2-deps
+    templates:
+      conda/neml2-deps/meta.yaml.template: conda/neml2-deps/meta.yaml
+    influential:
+      - conda/conda_build_config.yaml
+      - conda/neml2-deps
+  # dependers: none
   app:
     templates:
       conda/moose/meta.yaml.template: conda/moose/meta.yaml
