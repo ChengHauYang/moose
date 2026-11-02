@@ -643,6 +643,111 @@
     compute_devices = cuda
   []
 
+  # Plane-strain counterpart of the F-bar tests above. The Kokkos runs are compared against the host
+  # gold, so the host runs on every compute device to satisfy the prerequisite.
+  [sczm_tl_fbar_2d]
+    requirement = 'The total-Lagrangian shifted cohesive-zone formulation shall support the total-mode F-bar directional correction in two-dimensional plane strain on a distorted quadrilateral mesh with an angled interface, keeping full 3x3 deformation gradients with an out-of-plane stretch of one,'
+    capabilities = 'libtorch & neml2'
+    [host]
+      type = CSVDiff
+      input = sczm_tl_fbar_2d_host.i
+      csvdiff = sczm_tl_fbar_2d_host_out.csv
+      compute_devices = 'cpu cuda'
+      detail = 'computing the solution with the host objects,'
+    []
+    [kinematics]
+      type = RunApp
+      input = sczm_tl_fbar_2d_average.i
+      cli_args = 'file_base=sczm_tl_fbar_2d_average_out'
+      compute_devices = 'cpu cuda'
+      detail = 'computing interface kinematics U, M, and B identical to those of the host bulk total-Lagrangian strain calculator, with M the element-volume average,'
+    []
+    [kokkos]
+      type = CSVDiff
+      input = sczm_tl_fbar_2d_kokkos.i
+      cli_args = 'file_base=sczm_tl_fbar_2d_host_out'
+      csvdiff = sczm_tl_fbar_2d_host_out.csv
+      abs_zero = 1e-9
+      rel_err = 1e-8
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda'
+      prereq = 'sczm_tl_fbar_2d/host'
+      detail = 'reproducing the host solution with the Kokkos objects,'
+    []
+    [kokkos_neml2_cuda]
+      type = CSVDiff
+      input = sczm_tl_fbar_2d_kokkos.i
+      cli_args = 'NEML2/device=cuda file_base=sczm_tl_fbar_2d_host_out'
+      csvdiff = sczm_tl_fbar_2d_host_out.csv
+      abs_zero = 1e-9
+      rel_err = 1e-8
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cuda
+      prereq = 'sczm_tl_fbar_2d/kokkos'
+      detail = 'reproducing the host solution with the Kokkos objects and NEML2 evaluated on the CUDA device,'
+    []
+    [off_host]
+      type = CSVDiff
+      input = sczm_tl_fbar_2d_host.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "file_base=sczm_tl_fbar_2d_off_host_out"
+      csvdiff = sczm_tl_fbar_2d_off_host_out.csv
+      compute_devices = 'cpu cuda'
+      detail = 'computing a different host solution when F-bar is disabled,'
+    []
+    [off_kokkos]
+      type = CSVDiff
+      input = sczm_tl_fbar_2d_kokkos.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "file_base=sczm_tl_fbar_2d_off_host_out"
+      csvdiff = sczm_tl_fbar_2d_off_host_out.csv
+      abs_zero = 1e-9
+      rel_err = 1e-8
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda'
+      prereq = 'sczm_tl_fbar_2d/off_host'
+      detail = 'reproducing that host solution with the Kokkos objects when F-bar is disabled,'
+    []
+    [host_jacobian]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_2d_host.i
+      cli_args = 'Outputs/csv=false'
+      ratio_tol = 1e-7
+      # ||J||_F is about 700, so the finite-difference noise in ||J - Jfd||_F is about 2.5e-5 with
+      # F-bar on or off; the ratio test remains sensitive.
+      difference_tol = 1e-4
+      compute_devices = 'cpu cuda'
+      detail = 'consistently linearizing the host F-bar directional correction, including its coupling to every displacement DOF of the bulk element on each side of the interface,'
+    []
+    [kokkos_jacobian]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_2d_kokkos.i
+      cli_args = 'Outputs/csv=false'
+      ratio_tol = 1e-7
+      difference_tol = 1e-4
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda'
+      detail = 'consistently linearizing the Kokkos F-bar directional correction, including the same element-volume coupling, and'
+    []
+    [kokkos_off_jacobian]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_2d_kokkos.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "Outputs/csv=false"
+      ratio_tol = 1e-7
+      difference_tol = 1e-4
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda'
+      detail = 'consistently linearizing the Kokkos directional correction when F-bar is disabled.'
+    []
+  []
+
   # Unsupported combinations must be rejected explicitly. Each of these would otherwise be silently
   # dropped, leaving the user to believe an option took effect.
   [kokkos_directional_correction_rejections]
