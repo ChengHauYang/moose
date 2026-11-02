@@ -118,9 +118,10 @@ The AD interface kernel differentiates its residual automatically and does not u
 
 For `strain = FINITE` with `directional_correction = true`, `volumetric_locking_correction = true`
 applies the total-mode F-bar correction to the bulk PK1 stress used by the directional correction,
-on both the host non-AD and the Kokkos paths. It is limited to three-dimensional Cartesian meshes and
-requires `tangent_definition = pk1_wrt_deformation_gradient`. On each side of the interface, the
-stress is
+on both the host non-AD and the Kokkos paths. It is limited to Cartesian coordinates and requires
+`tangent_definition = pk1_wrt_deformation_gradient`. Two-dimensional meshes are treated in plane
+strain: all tensors remain $3 \times 3$ with $U_{zz} = 1$, so the formulation below is the same in
+two and three dimensions. On each side of the interface, the stress is
 
 !equation
 \mathbf{P} = \mathbf{U}\,\mathbf{S}(\mathbf{B}), \qquad

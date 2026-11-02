@@ -119,10 +119,6 @@ KokkosSCZMInterfaceKernelTotalLagrangian::KokkosSCZMInterfaceKernelTotalLagrangi
 
     if (_volumetric_locking_correction)
     {
-      if (_ndisp != 3)
-        paramError("volumetric_locking_correction",
-                   "The total-Lagrangian F-bar correction requires three-dimensional "
-                   "displacements.");
       if (getParam<MooseEnum>("tangent_definition") != "pk1_wrt_deformation_gradient")
         paramError("tangent_definition",
                    "The total-Lagrangian F-bar correction requires "
