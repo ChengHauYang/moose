@@ -113,9 +113,10 @@ NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::NEML2ToKokkosMat
               !this->isParamValid("neml2_input_derivative") &&
               !this->isParamValid("neml2_parameter_derivative"))
 {
+  // NEML2 tensors are always 3x3 (or 3x3x3x3). Keep every index at extent 3 in 2D as well: plane
+  // strain consumers such as the total-mode F-bar Jacobian need the out-of-plane components.
   _prop = this->template declareKokkosPropertyByName<Real, rank>(
-      this->template getParam<MaterialPropertyName>("to_moose"),
-      std::vector<unsigned int>(rank, this->_mesh.dimension()));
+      this->template getParam<MaterialPropertyName>("to_moose"), std::vector<unsigned int>(rank, 3));
   NEML2Utils::assertNEML2Enabled();
 #ifdef NEML2_ENABLED
   requestNEML2OutputDevice(kokkosTorchDevice());

@@ -137,7 +137,8 @@ NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::writeOutputToPro
     prop = batch_index == libMesh::DofObject::invalid_id ? 0.0 : _staged_output[batch_index];
   else
   {
-    const unsigned int dim = this->kokkosAssembly().getDimension();
+    // The property keeps the full 3x3 NEML2 tensor in every mesh dimension
+    const unsigned int dim = 3;
     for (unsigned int i = 0; i < dim; ++i)
       for (unsigned int j = 0; j < dim; ++j)
       {
