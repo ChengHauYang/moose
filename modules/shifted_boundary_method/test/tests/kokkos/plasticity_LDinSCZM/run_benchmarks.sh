@@ -35,13 +35,42 @@ else
 fi
 
 EXE=${EXE:-$MOOSE_DIR/modules/shifted_boundary_method/shifted_boundary_method-opt}
-RESULTS_DIR=${RESULTS_DIR:-$SCRIPT_DIR/results}
+# Raw run output (logs, .time, profiles) goes under raw/, kept out of git; results/ is for figures and
+# reports. Use RESULTS_DIR=raw/<dataset name> to keep each study separate.
+RESULTS_DIR=${RESULTS_DIR:-$SCRIPT_DIR/raw}
 MESH_N=${MESH_N:-16}
 REPEATS=${REPEATS:-3}
 PROFILE=${PROFILE:-1}
 # Extra Executioner overrides let callers change the loading without forking the script.
 NUM_STEPS=${NUM_STEPS:-5}
 DT=${DT:-5e-3}
+
+# AMG selects the BoomerAMG parameters added to every step's PETSc options. "simple" keeps the plain
+# boomeramg of the step inputs; "tuned" adds the parameters that gave the fastest CPU and GPU PETSc
+# solves in the plasticity_LD_sczm_grain_boundaries study (../plasticity_LD_sczm_grain_boundaries/
+# results/amg_report_n16_n32.md). Options left unset (coarsening, relaxation, CF ordering) still take
+# PCHYPRE's separate CPU and GPU defaults; -ksp_view reports the effective values.
+AMG=${AMG:-tuned}
+case "$AMG" in
+  simple) AMG_ARGS=() ;;
+  tuned)
+    AMG_ARGS=(
+      # One V-cycle per preconditioner application with no internal AMG convergence test.
+      -pc_hypre_boomeramg_max_iter 1
+      -pc_hypre_boomeramg_tol 0.0
+      # Extended+i interpolation, which hypre recommends with aggressive coarsening.
+      -pc_hypre_boomeramg_interp_type ext+i
+      # Aggressive coarsening on the finest level only.
+      -pc_hypre_boomeramg_agg_nl 1
+      # Strength-of-connection threshold of the reference configuration (hypre default 0.25).
+      -pc_hypre_boomeramg_strong_threshold 0.6
+    )
+    ;;
+  *)
+    echo "ERROR: unknown AMG='$AMG' (expected 'simple' or 'tuned')" >&2
+    exit 1
+    ;;
+esac
 
 if [ ! -x "$EXE" ]; then
   echo "ERROR: shifted_boundary_method executable not found at $EXE" >&2
@@ -50,6 +79,11 @@ if [ ! -x "$EXE" ]; then
 fi
 
 mkdir -p "$RESULTS_DIR"
+
+# Every run writes its exodus/CSV output next to its log (Outputs/file_base), so the step*_out.* files
+# next to the inputs are never overwritten. csv = true adds the postprocessor history to step2, whose
+# input has exodus output only, so analyze_results.py can compare every step against step1.
+OUTPUT_ARGS=(Outputs/csv=true)
 
 # Common diagnostics on every run (matrix/vector type, KSP convergence, PETSc event log).
 # -log_view is included so analyze_results.py can extract the MatConvert call count per run,
@@ -62,11 +96,11 @@ COMMON_DIAG=(
   -log_view
 )
 # steps 1-4: CPU PETSc, aij matrix + standard vectors.
-CPU_PETSC_ARGS=(-vec_type standard -nl0_mat_type aij "${COMMON_DIAG[@]}")
+CPU_PETSC_ARGS=(-vec_type standard -nl0_mat_type aij "${AMG_ARGS[@]}" "${COMMON_DIAG[@]}")
 # step5: full GPU, AIJKOKKOS matrix + kokkos vectors.
-AIJKOKKOS_PETSC_ARGS=(-vec_type kokkos -nl0_mat_type aijkokkos "${COMMON_DIAG[@]}")
+AIJKOKKOS_PETSC_ARGS=(-vec_type kokkos -nl0_mat_type aijkokkos "${AMG_ARGS[@]}" "${COMMON_DIAG[@]}")
 # step6: full GPU, MATHYPRE matrix + cuda vectors (HYPRE_MEMORY_DEVICE requires cuda, not kokkos).
-MATHYPRE_PETSC_ARGS=(-vec_type cuda -nl0_mat_type hypre "${COMMON_DIAG[@]}")
+MATHYPRE_PETSC_ARGS=(-vec_type cuda -nl0_mat_type hypre "${AMG_ARGS[@]}" "${COMMON_DIAG[@]}")
 
 steps=(
   step1_ld_sczm_host_cpu
@@ -97,16 +131,20 @@ run_step()
 
   for rep in $(seq 1 "$REPEATS"); do
     local prefix="$RESULTS_DIR/${step}_rep${rep}"
-    echo "Running $step repetition $rep/$REPEATS"
+    # Timestamps let externally sampled GPU memory be attributed to each run.
+    echo "$(date '+%F %T') Running $step repetition $rep/$REPEATS"
     /usr/bin/time -f '%e' -o "$prefix.time" \
       "$EXE" -i "$input" "${device_args[@]}" \
         "N=$MESH_N" \
         "DT=$DT" \
         "NUM_STEPS=$NUM_STEPS" \
+        "${OUTPUT_ARGS[@]}" \
+        "Outputs/file_base=$prefix" \
         "Outputs/perf_graph_json_file=$prefix.perf.json" \
         "${petsc_args[@]}" \
         --timing \
         > "$prefix.log" 2>&1
+    echo "$(date '+%F %T') Finished $step repetition $rep/$REPEATS"
   done
 
   if [ "$PROFILE" = 1 ]; then
@@ -116,17 +154,20 @@ run_step()
     fi
 
     local profile_prefix="$RESULTS_DIR/${step}_profile"
-    echo "Profiling $step once with Nsight Systems"
+    echo "$(date '+%F %T') Profiling $step once with Nsight Systems"
     nsys profile --force-overwrite=true --trace=cuda,nvtx,mpi \
       -o "$profile_prefix" \
       "$EXE" -i "$input" "${device_args[@]}" \
         "N=$MESH_N" \
         "DT=$DT" \
         "NUM_STEPS=$NUM_STEPS" \
+        "${OUTPUT_ARGS[@]}" \
+        "Outputs/file_base=$profile_prefix" \
         "Outputs/perf_graph_json_file=$profile_prefix.perf.json" \
         "${petsc_args[@]}" \
         --timing \
         > "$profile_prefix.log" 2>&1
+    echo "$(date '+%F %T') Finished $step profile"
   fi
 }
 
