@@ -88,9 +88,9 @@ KokkosComputeLagrangianStressCustomPK2Templ<interface, neighbor>::
                       ? this->template declareKokkosProperty<Real, 0>("fbar_gamma_over_3")
                       : Moose::Kokkos::MaterialProperty<Real, 0>())
 {
-  if (this->_mesh.dimension() != 3 || _ndisp != 3)
+  if (_ndisp != this->_mesh.dimension())
     this->paramError("displacements",
-                     "Exactly three displacement variables on a 3D mesh are required.");
+                     "The number of displacement variables must match the mesh dimension.");
   if constexpr (interface)
     if (_stabilize_strain)
       this->paramError("stabilize_strain",

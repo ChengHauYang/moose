@@ -57,9 +57,6 @@ KokkosComputeDeformationGradient::KokkosComputeDeformationGradient(
 
   if (_stabilize_strain)
   {
-    if (_ndisp != 3)
-      paramError("stabilize_strain",
-                 "F-bar stabilization requires three-dimensional displacements.");
     _stabilized_deformation_gradient = declareKokkosProperty<Real, 2>(
         getParam<MaterialPropertyName>("deformation_gradient"), {3, 3});
     _average_deformation_gradient = declareKokkosProperty<Real, 2>(

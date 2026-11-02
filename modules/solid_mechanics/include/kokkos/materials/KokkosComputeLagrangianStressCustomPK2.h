@@ -111,10 +111,15 @@ KokkosComputeLagrangianStressCustomPK2Templ<interface, neighbor>::convertPK2ToPK
   auto pk1 = _pk1_stress(datum, qp);
   auto dpk1_d_grad_u = _dpk1_d_grad_u(datum, qp);
 
+  // Rows beyond the displacement components keep the identity (F_zz = 1 in 2D plane strain), and
+  // the remaining PK1 algebra stays 3x3.
   Real F[3][3];
   for (unsigned int i = 0; i < 3; ++i)
     for (unsigned int j = 0; j < 3; ++j)
-      F[i][j] = (i == j) + _grad_displacements(datum, qp, i)(j);
+      F[i][j] = (i == j);
+  for (unsigned int i = 0; i < _ndisp; ++i)
+    for (unsigned int j = 0; j < 3; ++j)
+      F[i][j] += _grad_displacements(datum, qp, i)(j);
 
   for (unsigned int i = 0; i < 3; ++i)
     for (unsigned int J = 0; J < 3; ++J)

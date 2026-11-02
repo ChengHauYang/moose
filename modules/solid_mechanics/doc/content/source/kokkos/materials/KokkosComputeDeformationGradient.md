@@ -7,8 +7,8 @@ $\mathbf{F} = \mathbf{I} + \nabla \mathbf{u}$ from Kokkos displacement gradients
 as a Kokkos full rank-two material property. The property can be supplied directly to NEML2 through
 the Kokkos input backend.
 
-With [!param](/Materials/KokkosComputeDeformationGradient/stabilize_strain) set to `true`, which
-requires three-dimensional displacements, the physical deformation gradient
+With [!param](/Materials/KokkosComputeDeformationGradient/stabilize_strain) set to `true`, the
+physical deformation gradient
 $\mathbf{U} = \mathbf{I} + \nabla \mathbf{u}$ is stored under
 [!param](/Materials/KokkosComputeDeformationGradient/physical_deformation_gradient), its average
 $\mathbf{M}$ over the reference volume of the element is stored under

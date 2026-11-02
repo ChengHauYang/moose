@@ -71,9 +71,6 @@ ComputeDeformationGradient::ComputeDeformationGradient(const InputParameters & p
 
   if (_stabilize_strain)
   {
-    if (_ndisp != 3)
-      paramError("stabilize_strain",
-                 "F-bar stabilization requires three-dimensional displacements.");
     for (const auto i : make_range(_ndisp))
       if (_disp_vars[i]->feType() != _disp_vars[0]->feType())
         paramError("displacements",

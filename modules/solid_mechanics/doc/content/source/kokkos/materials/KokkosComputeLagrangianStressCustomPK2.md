@@ -14,7 +14,9 @@ P_{iJ} = F_{iK} S_{KJ},
 \]
 
 The input properties are full tensors rather than symmetric Mandel tensors. The material requires
-three scalar Cartesian displacement variables on a three-dimensional reference mesh.
+one scalar Cartesian displacement variable per reference mesh dimension. On a two-dimensional mesh
+the deformation gradient is the plane-strain tensor with $F_{zz} = 1$, and all tensors remain
+$3 \times 3$.
 
 `KokkosInterfaceComputeLagrangianStressCustomPK2` and
 `KokkosNeighborComputeLagrangianStressCustomPK2` provide the same conversion in the primary and

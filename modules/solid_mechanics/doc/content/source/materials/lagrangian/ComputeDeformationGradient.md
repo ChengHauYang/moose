@@ -6,8 +6,8 @@
 $\mathbf{F} = \mathbf{I} + \nabla \mathbf{u}$ in Cartesian coordinates and stores it under
 [!param](/Materials/ComputeDeformationGradient/deformation_gradient).
 
-With [!param](/Materials/ComputeDeformationGradient/stabilize_strain) set to `true`, which requires
-three-dimensional displacements, the physical deformation gradient
+With [!param](/Materials/ComputeDeformationGradient/stabilize_strain) set to `true`, the physical
+deformation gradient
 $\mathbf{U} = \mathbf{I} + \nabla \mathbf{u}$ is stored under
 [!param](/Materials/ComputeDeformationGradient/physical_deformation_gradient), its average
 $\mathbf{M}$ over the reference volume of the element is stored under

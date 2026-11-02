@@ -26,8 +26,9 @@
  * `Physics/SolidMechanics/QuasiStatic volumetric_locking_correction = true` selects by default.
  *
  * Restrictions:
- *   * 3D Cartesian only (three displacement variables, mesh dimension 3). The cube-root ratio in
- *     the total-mode F-bar formula assumes a 3D volume ratio.
+ *   * Cartesian coordinates, with one displacement variable per mesh dimension. As in the host
+ *     calculator, F_ust is always 3x3: in 2D plane strain the out-of-plane row keeps the identity
+ *     (F_zz = 1), so the same cube-root volume ratio applies in 2D and 3D.
  */
 class KokkosComputeFbarAverage : public Moose::Kokkos::Material
 {
@@ -68,12 +69,15 @@ KokkosComputeFbarAverage::computeQpProperties(const unsigned int /*qp*/, Datum &
   {
     const Real w = datum.JxW(p);
     vol += w;
-    // F_ust[i, j] = delta_{ij} + (grad u_i)_j
+    // F_ust[i, j] = delta_{ij} + (grad u_i)_j, with only the identity in rows beyond the
+    // displacement components
     for (unsigned int i = 0; i < 3; ++i)
+      F_sum[i][i] += w;
+    for (unsigned int i = 0; i < _ndisp; ++i)
     {
       const auto grad_i = _grad_displacements(datum, p, i);
       for (unsigned int j = 0; j < 3; ++j)
-        F_sum[i][j] += w * ((i == j ? 1.0 : 0.0) + grad_i(j));
+        F_sum[i][j] += w * grad_i(j);
     }
   }
 
