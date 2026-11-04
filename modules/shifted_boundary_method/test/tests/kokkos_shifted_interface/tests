@@ -538,6 +538,60 @@
     requirement = 'The host total-Lagrangian shifted cohesive-zone formulation shall compute a different solution on the distorted F-bar test mesh when F-bar is disabled in the bulk and in the directional correction.'
     capabilities = 'libtorch & neml2'
   []
+  [sczm_tl_fbar_off_kokkos_matches_host]
+    type = CSVDiff
+    input = sczm_tl_fbar_kokkos.i
+    cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+               "interface_inputs=deformation_gradient "
+               "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+               "file_base=sczm_tl_fbar_off_host_out"
+    csvdiff = sczm_tl_fbar_off_host_out.csv
+    abs_zero = 1e-9
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host solution on a distorted three-dimensional mesh when F-bar is disabled in the bulk and directional correction.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_tl_fbar_off_kokkos_matches_host_cuda]
+    type = CSVDiff
+    input = sczm_tl_fbar_kokkos.i
+    cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+               "interface_inputs=deformation_gradient "
+               "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+               "NEML2/device=cuda file_base=sczm_tl_fbar_off_host_out"
+    csvdiff = sczm_tl_fbar_off_host_out.csv
+    abs_zero = 1e-9
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host solution on a distorted three-dimensional mesh when F-bar is disabled and NEML2 is evaluated on the CUDA device.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
+  [sczm_tl_fbar_off_kokkos_jacobian]
+    type = PetscJacobianTester
+    input = sczm_tl_fbar_kokkos.i
+    cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+               "interface_inputs=deformation_gradient "
+               "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+               "Outputs/csv=false"
+    ratio_tol = 1e-7
+    difference_tol = 1e-4
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its bulk and interface residuals on a distorted three-dimensional mesh when F-bar is disabled.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+  []
+  [sczm_tl_fbar_off_kokkos_jacobian_cuda]
+    type = PetscJacobianTester
+    input = sczm_tl_fbar_kokkos.i
+    cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+               "interface_inputs=deformation_gradient "
+               "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+               "NEML2/device=cuda Outputs/csv=false"
+    ratio_tol = 1e-7
+    difference_tol = 1e-4
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall consistently linearize its bulk and interface residuals with F-bar disabled and NEML2 evaluated on the CUDA device.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+  []
   [sczm_tl_fbar_host_jacobian]
     type = PetscJacobianTester
     input = sczm_tl_fbar_host.i
