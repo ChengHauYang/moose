@@ -73,6 +73,16 @@ SideUserObject::checkNoInterfaceMaterialPropertyDependencies() const
       continue;
 
     for (const auto & material : interface_materials.getActiveBoundaryObjects(bnd_id, _tid))
+    {
+      // A side user object reads the boundary material data, so only an interface material that
+      // declares into that same storage can shadow what it sees. Property ids come from one
+      // registry shared by every MaterialPropertyStorage, so comparing ids alone would also flag
+      // an interface material that declares the same name into the neighbor storage, which a side
+      // user object cannot read at all and which therefore leaves its (boundary-storage) value
+      // untouched.
+      if (material->materialDataType() == Moose::NEIGHBOR_MATERIAL_DATA)
+        continue;
+
       for (const auto supplied_prop : material->getSuppliedPropIDs())
         if (consumed_props.count(supplied_prop))
           paramError("boundary",
@@ -86,6 +96,7 @@ SideUserObject::checkNoInterfaceMaterialPropertyDependencies() const
                      "class derived from InterfaceUserObject or InterfacePostprocessor for "
                      "interface quantities. Please refer to "
                      "https://github.com/idaholab/moose/pull/33168 for further context.");
+    }
   }
 }
 

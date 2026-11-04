@@ -163,6 +163,7 @@ NonlinearSystemBase::NonlinearSystemBase(FEProblemBase & fe_problem,
 #ifdef MOOSE_KOKKOS_ENABLED
     _kokkos_kernels(/*num_threads=*/1),
     _kokkos_integrated_bcs(/*num_threads=*/1),
+    _kokkos_interface_kernels(/*num_threads=*/1),
     _kokkos_nodal_bcs(/*num_threads=*/1),
     _kokkos_preset_nodal_bcs(/*num_threads=*/1),
     _kokkos_nodal_kernels(/*num_threads=*/1),
@@ -314,6 +315,7 @@ NonlinearSystemBase::initialSetup()
     _kokkos_kernels.initialSetup();
     _kokkos_nodal_kernels.initialSetup();
     _kokkos_integrated_bcs.initialSetup();
+    _kokkos_interface_kernels.initialSetup();
     _kokkos_nodal_bcs.initialSetup();
 #endif
   }
@@ -397,6 +399,7 @@ NonlinearSystemBase::timestepSetup()
   _kokkos_kernels.timestepSetup();
   _kokkos_nodal_kernels.timestepSetup();
   _kokkos_integrated_bcs.timestepSetup();
+  _kokkos_interface_kernels.timestepSetup();
   _kokkos_nodal_bcs.timestepSetup();
 #endif
 }
@@ -433,6 +436,7 @@ NonlinearSystemBase::customSetup(const ExecFlagType & exec_type)
   _kokkos_kernels.customSetup(exec_type);
   _kokkos_nodal_kernels.customSetup(exec_type);
   _kokkos_integrated_bcs.customSetup(exec_type);
+  _kokkos_interface_kernels.customSetup(exec_type);
   _kokkos_nodal_bcs.customSetup(exec_type);
 #endif
 }
@@ -1734,6 +1738,7 @@ NonlinearSystemBase::residualSetup()
   _kokkos_kernels.residualSetup();
   _kokkos_nodal_kernels.residualSetup();
   _kokkos_integrated_bcs.residualSetup();
+  _kokkos_interface_kernels.residualSetup();
   _kokkos_nodal_bcs.residualSetup();
 #endif
 
@@ -2986,6 +2991,7 @@ NonlinearSystemBase::jacobianSetup()
   _kokkos_kernels.jacobianSetup();
   _kokkos_nodal_kernels.jacobianSetup();
   _kokkos_integrated_bcs.jacobianSetup();
+  _kokkos_interface_kernels.jacobianSetup();
   _kokkos_nodal_bcs.jacobianSetup();
 #endif
 
@@ -3436,6 +3442,7 @@ NonlinearSystemBase::updateActive(THREAD_ID tid)
     _kokkos_kernels.updateActive();
     _kokkos_nodal_kernels.updateActive();
     _kokkos_integrated_bcs.updateActive();
+    _kokkos_interface_kernels.updateActive();
     _kokkos_nodal_bcs.updateActive();
     _kokkos_preset_nodal_bcs.updateActive();
 #endif

@@ -8,9 +8,18 @@
 # millisecond-lived runs, and any `Moose::Kokkos::` symbol in the output is
 # conclusive proof that MOOSE launched CUDA kernels.
 set -e
+set -o pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 . "$SCRIPT_DIR/env.sh"
+
+# env.sh resets PATH for dependency builds; use the installed Python
+# environment for benchmarks and for MOOSE's embedded NEML2 runtime.
+NEML2_VENV_BIN="$STACK_DIR/neml2-venv/bin"
+if [ -x "$NEML2_VENV_BIN/python3" ]; then
+  export VIRTUAL_ENV="$STACK_DIR/neml2-venv"
+  export PATH="$PREFIX/bin:$NEML2_VENV_BIN:${MINIFORGE_BIN:-$HOME/miniforge/bin}:$PATH"
+fi
 
 export PETSC_DIR="$PREFIX"
 export PETSC_ARCH=""
@@ -21,7 +30,7 @@ LOG="$LOGS/benchmark-$(date +%Y%m%d-%H%M%S).log"
 NSYS_OUT="$LOGS/moose-smoke-$(date +%Y%m%d-%H%M%S)"
 
 echo "[run_benchmark] nsys-profiling a smoke run to verify MOOSE launches CUDA kernels..."
-/usr/local/cuda/bin/nsys profile --stats=true -o "$NSYS_OUT" \
+"$CUDA_DIR/bin/nsys" profile --stats=true -o "$NSYS_OUT" \
   mpirun -np 1 "$MOOSE_DIR/modules/solid_mechanics/solid_mechanics-opt" \
     -i "$BENCH/kokkos_material_linear_elasticity.i" \
     --compute-device=cuda --n-threads=1 \

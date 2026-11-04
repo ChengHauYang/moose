@@ -107,6 +107,10 @@ Mesh::initMap()
         {
           _maps->ghost_elem_id_mapping[neighbor] = _num_local_elems + _num_ghost_elems++;
           elem_types.emplace(neighbor->type(), neighbor->p_level());
+
+          for (auto & node : neighbor->node_ref_range())
+            if (node.processor_id() != _mesh.processor_id())
+              ghost_nodes.insert(&node);
         }
       }
 
@@ -177,7 +181,7 @@ Mesh::initElement()
   }
 
   _num_sides.moveToDevice();
-  _num_nodes.moveToDevice();
+  _num_nodes.copyToDevice();
   _num_side_nodes.copyToDevice();
   _local_side_node.copyToDevice();
 
@@ -225,7 +229,7 @@ Mesh::initElement()
     _elem_info[ghost_eid].subdomain = getContiguousSubdomainID(ghost_elem->subdomain_id());
   }
 
-  _elem_info.moveToDevice();
+  _elem_info.copyToDevice();
   _extra_elem_ids.moveToDevice();
   _starting_elem_id.moveToDevice();
 
@@ -248,12 +252,21 @@ Mesh::initElement()
       _nodes(node, eid) = getContiguousNodeID(elem->node_ptr(node));
   }
 
+  for (const auto & [ghost_elem, ghost_eid] : _maps->ghost_elem_id_mapping)
+    for (const auto node : ghost_elem->node_index_range())
+    {
+      const auto node_id = getContiguousNodeID(ghost_elem->node_ptr(node));
+      if (node_id >= num_nodes)
+        mooseError("Invalid Kokkos node ID while caching ghost element connectivity.");
+      _nodes(node, ghost_eid) = node_id;
+    }
+
   for (const auto boundary : _mesh.meshBoundaryIds())
     _boundary_nodes[getContiguousBoundaryID(boundary)].copySet<false, true>(
         _maps->boundary_node_ids[boundary]);
 
-  _points.moveToDevice();
-  _nodes.moveToDevice();
+  _points.copyToDevice();
+  _nodes.copyToDevice();
   _boundary_nodes.copyToDevice();
 
   // Cache side boundary data

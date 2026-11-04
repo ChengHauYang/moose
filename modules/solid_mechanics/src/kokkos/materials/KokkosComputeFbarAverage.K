@@ -41,10 +41,9 @@ KokkosComputeFbarAverage::KokkosComputeFbarAverage(const InputParameters & param
     _F_avg(declareKokkosProperty<Real, 2>("F_avg", {3, 3})),
     _F_avg_invT(declareKokkosProperty<Real, 2>("F_avg_invT", {3, 3}))
 {
-  if (_mesh.dimension() != 3 || _ndisp != 3)
+  if (_ndisp != _mesh.dimension())
     paramError("displacements",
-               "KokkosComputeFbarAverage requires exactly three displacement variables on a 3D "
-               "mesh (the total-mode F-bar formula uses a 3D volume ratio).");
+               "The number of displacement variables must match the mesh dimension.");
 
   if (parameters.get<MooseEnum>("constant_on") != "ELEMENT")
     paramError("constant_on",

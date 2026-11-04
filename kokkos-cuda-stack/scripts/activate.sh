@@ -29,7 +29,7 @@ fi
 _activate_dir=$(cd "$(dirname "$_src")" && pwd)
 export MOOSE_DIR="${_activate_dir%/kokkos-cuda-stack/scripts}"
 export STACK_DIR="$MOOSE_DIR/kokkos-cuda-stack"
-export PREFIX="$STACK_DIR/prefix"
+export PREFIX="${MOOSE_CUDA_PREFIX:-$STACK_DIR/prefix}"
 
 # USE-side vars (parallel to env.sh's USE block).
 export PETSC_DIR="$PREFIX"
@@ -55,7 +55,7 @@ export OPAL_PREFIX="$PREFIX"
 # ordering, whatever the caller inherited, and duplicates every entry only
 # once so repeated sourcing is a no-op.
 NEML2_VENV_BIN="$STACK_DIR/neml2-venv/bin"
-MINIFORGE_BIN="/home/chenghau.yang/miniforge/bin"
+MINIFORGE_BIN="${MINIFORGE_BIN:-$HOME/miniforge/bin}"
 
 _head="$PREFIX/bin"
 if [ -x "$NEML2_VENV_BIN/python3" ]; then
@@ -65,7 +65,7 @@ fi
 if [ -x "$MINIFORGE_BIN/python3-config" ]; then
   _head="$_head:$MINIFORGE_BIN"
 fi
-_head="$_head:/usr/local/cuda/bin"
+_head="$_head:${CUDA_DIR:-/usr/local/cuda}/bin"
 
 _new_path="$_head"
 _orig_ifs="$IFS"

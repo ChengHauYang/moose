@@ -26,6 +26,12 @@ public:
                                const std::set<SubdomainID> & blocks_ids,
                                const std::set<BoundaryID> & boundary_ids);
 
+#ifdef MOOSE_KOKKOS_ENABLED
+  /** Special constructor used for Kokkos functor copy during parallel dispatch. */
+  TwoMaterialPropertyInterface(const TwoMaterialPropertyInterface & object,
+                               const Moose::Kokkos::FunctorCopy & key);
+#endif
+
   static InputParameters validParams();
 
   /**
@@ -87,6 +93,25 @@ public:
     return getGenericNeighborMaterialPropertyByName<T, true>(name, 0);
   }
   ///@}
+
+#ifdef MOOSE_KOKKOS_SCOPE
+  /** Get a neighbor-side Kokkos material property for any state. */
+  template <typename T, unsigned int dimension = 0, unsigned int state = 0>
+  Moose::Kokkos::MaterialProperty<T, dimension>
+  getKokkosNeighborMaterialProperty(const std::string & name)
+  {
+    return getKokkosNeighborMaterialPropertyByName<T, dimension, state>(
+        getMaterialPropertyName(name));
+  }
+
+  /** Get a neighbor-side Kokkos material property by property name for any state. */
+  template <typename T, unsigned int dimension = 0, unsigned int state = 0>
+  Moose::Kokkos::MaterialProperty<T, dimension>
+  getKokkosNeighborMaterialPropertyByName(const std::string & name)
+  {
+    return getKokkosMaterialPropertyByName<T, dimension, state>(name, _neighbor_material_data);
+  }
+#endif
 
 protected:
   MaterialData & _neighbor_material_data;

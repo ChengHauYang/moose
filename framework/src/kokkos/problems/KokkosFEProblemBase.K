@@ -16,10 +16,12 @@
 
 #include "FEProblemBase.h"
 #include "DisplacedProblem.h"
+#include "KokkosInterfaceFaceCache.h"
 #include "LinearSystem.h"
 #include "NonlinearSystemBase.h"
 #include "AuxiliarySystem.h"
 #include "MaterialBase.h"
+#include "MooseMesh.h"
 #include "MooseVariableDependencyInterface.h"
 #include "MaterialPropertyInterface.h"
 #include "Coupleable.h"
@@ -67,6 +69,18 @@ FEProblemBase::getKokkosFESystem(const unsigned int sys_num) const
   return _kokkos_fe_systems[sys_num];
 }
 
+const Moose::Kokkos::InterfaceFaceCache *
+FEProblemBase::getKokkosInterfaceFaceCache(const std::set<BoundaryID> & boundary_ids,
+                                           const MooseObject * error_object)
+{
+  auto & cache = _kokkos_interface_face_caches[boundary_ids];
+  if (!cache)
+    cache = std::make_shared<Moose::Kokkos::InterfaceFaceCache>(
+        _mesh, *_mesh.getKokkosMesh(), _kokkos_assembly, boundary_ids, error_object);
+
+  return cache.get();
+}
+
 void
 FEProblemBase::addKokkosKernel(const std::string & kernel_name,
                                const std::string & name,
@@ -108,6 +122,34 @@ FEProblemBase::addKokkosNodalKernel(const std::string & kernel_name,
 
   _has_kokkos_objects = true;
   _has_kokkos_residual_objects = true;
+}
+
+void
+FEProblemBase::addKokkosInterfaceKernel(const std::string & interface_kernel_name,
+                                        const std::string & name,
+                                        InputParameters & parameters)
+{
+  parallel_object_only();
+
+  const auto nl_sys_num = determineSolverSystem(parameters.varName("variable", name), true).second;
+  if (!isSolverSystemNonlinear(nl_sys_num))
+    mooseError("You are trying to add an InterfaceKernel to a linear variable/system, which is not "
+               "supported at the moment!");
+
+  setResidualObjectParamsAndLog(interface_kernel_name,
+                                name,
+                                parameters,
+                                nl_sys_num,
+                                "KokkosInterfaceKernel",
+                                _reinit_displaced_neighbor);
+
+  _nl[nl_sys_num]->addKokkosInterfaceKernel(interface_kernel_name, name, parameters);
+
+  _mesh.getKokkosMesh()->setNeedsElementSideGeometry();
+
+  _has_kokkos_objects = true;
+  _has_kokkos_residual_objects = true;
+  _has_internal_edge_residual_objects = true;
 }
 
 void

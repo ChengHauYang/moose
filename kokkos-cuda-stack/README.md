@@ -1,5 +1,10 @@
 # MOOSE with Kokkos: build and run
 
+Use [`scripts/cuda/moose_cuda.sh`](../scripts/cuda/README.md) for setup,
+incremental compilation, runs, and tests on Linux with CUDA. It uses the
+dependency installers and install prefix in this directory. The individual
+recipes below remain available for working on the stack directly.
+
 This directory holds a from-scratch **CUDA-capable** MOOSE stack (PETSc +
 libmesh + WASP + MOOSE) built against system compilers, plus this README, which
 also documents the simpler **CPU-only** Kokkos build that uses the `moose`
@@ -48,8 +53,8 @@ moose-kokkos/
 ```
 
 `env.sh` derives `STACK_DIR=$MOOSE_DIR/kokkos-cuda-stack` and
-`PREFIX=$STACK_DIR/prefix`, so moving the MOOSE checkout requires changing
-only `MOOSE_DIR` in `env.sh`.
+`PREFIX=$STACK_DIR/prefix` from the script location. Installed dependencies
+may still contain absolute paths and need rebuilding after relocation.
 
 ## Prerequisites
 

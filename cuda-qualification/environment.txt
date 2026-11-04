@@ -1,0 +1,29 @@
+=== GPU / driver / CUDA ===
+NVIDIA RTX A5000 (Ampere, compute capability 8.6), driver 550.54.15
+CUDA compilation tools, release 12.4, V12.4.131
+
+=== MOOSE branch / SHA / working tree ===
+branch: neml2-v3-kokkos-solid-mechanics-LD-mac
+HEAD:   f6edfc1c5c11f5756927c25fb0a26a08afd25000 (f6edfc1c5c)
+        [solid_mechanics] Fix F-bar stabilized TL Jacobian cofactor index
+tracked working tree: clean (only cuda-qualification/ is untracked; this evidence bundle)
+
+=== NEML2 submodule SHA ===
+12f3d599fa2410a8ee30bcefa3d8ca82d4244d94  framework/contrib/neml2  (v2.0.0-251-g12f3d599)
+
+=== library versions (build: opt) ===
+Kokkos   4.7.4   (CUDA backend; execution/memory space fixed at compile time to Cuda/CudaSpace)
+PETSc    3.25.4
+SLEPc    3.25.1
+libtorch 2.13.0  (NEML2 constitutive evaluation)
+libMesh  90766057ef390adc9968b529e8ded2a87b0a77c7
+
+=== device scope of the qualified CUDA-NEML2 workloads ===
+On this CUDA build the Kokkos execution/memory space is compile-time Cuda/CudaSpace, so Kokkos
+kernels and buffers are ALWAYS on the GPU; --compute-device selects only where NEML2/libtorch
+(and the solver) run. For the qualified --compute-device=cuda runs:
+  - Kokkos assembly/gather: GPU
+  - NEML2/libtorch constitutive evaluation: GPU
+  - PETSc linear/nonlinear solve: CPU
+PETSc remains on the CPU for these workloads. This is NOT a full-GPU PETSc qualification; only the
+Kokkos assembly and NEML2 constitutive evaluation are qualified on the device.

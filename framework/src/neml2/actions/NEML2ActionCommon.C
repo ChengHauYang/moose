@@ -43,8 +43,13 @@ NEML2ActionCommon::commonParams()
   // Output
   params.addParam<bool>("auto_output",
                         true,
-                        "Whether to automatically retrieve all NEML2 output variables as MOOSE "
+                        "Whether to automatically retrieve NEML2 output variables as MOOSE "
                         "material properties.");
+  params.addParam<std::vector<std::string>>(
+      "output_variables",
+      {},
+      "NEML2 output variables to retrieve when auto_output is true. An empty list retrieves all "
+      "outputs.");
 
   // Derivatives
   params.addParam<std::vector<std::vector<std::string>>>(

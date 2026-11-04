@@ -44,15 +44,6 @@ TorchDeformationGradient::TorchDeformationGradient(const InputParameters & param
                "TorchDeformationGradient requires 1 to 3 displacement variables, got ",
                disp_vars.size(),
                ".");
-  // The F-bar total-mode formula assumes a 3D deformation gradient (cbrt of a 3D volume ratio).
-  // Rather than silently doing the wrong thing for 1D/2D, require the full 3D triple.
-  if (_stabilize_strain && disp_vars.size() != 3)
-    paramError("stabilize_strain",
-               "The F-bar total-mode volumetric correction is only implemented for the full 3D "
-               "deformation gradient (3 displacement variables). Got ",
-               disp_vars.size(),
-               ". Set stabilize_strain=false or provide three displacement variables.");
-
   _grad_disp_x = &_fe.getGradient(disp_vars[0]);
   _grad_disp_y = disp_vars.size() >= 2 ? &_fe.getGradient(disp_vars[1]) : nullptr;
   _grad_disp_z = disp_vars.size() >= 3 ? &_fe.getGradient(disp_vars[2]) : nullptr;
@@ -66,6 +57,8 @@ TorchDeformationGradient::forward()
   const auto duz = _grad_disp_z ? *_grad_disp_z : at::zeros_like(dux);
 
   // F_ust[batch, 3, 3] = I + [[dux], [duy], [duz]], where each row is one component's gradient.
+  // Missing components leave identity rows, so in 2D plane strain F_zz = 1 and the F-bar below
+  // uses the host's 3x3 cube-root volume ratio unchanged.
   const auto F_ust = at::stack({dux, duy, duz}, -2) + at::eye(3, dux.options());
 
   if (!_stabilize_strain)

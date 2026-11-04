@@ -115,6 +115,64 @@
     compute_devices = 'cpu cuda'
   []
 
+  [fbar_2d]
+    requirement = 'The system shall solve a two-dimensional plane-strain total-Lagrangian problem on a non-affine quadrilateral mesh with full three-dimensional NEML2 PK2 stress and tangent'
+    [host]
+      type = CSVDiff
+      input = 'fbar_2d_host.i'
+      csvdiff = 'fbar_2d_out.csv'
+      detail = 'through the host total-Lagrangian kernels with the total-mode F-bar correction,'
+      capabilities = 'libtorch & neml2'
+      compute_devices = 'cpu cuda'
+    []
+    [kokkos]
+      type = CSVDiff
+      input = 'fbar_2d.i'
+      csvdiff = 'fbar_2d_out.csv'
+      detail = 'through the Kokkos total-Lagrangian kernels with the total-mode F-bar correction, matching the host solution,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda'
+      prereq = 'fbar_2d/host'
+    []
+    [off_host]
+      type = CSVDiff
+      input = 'fbar_2d_host.i'
+      cli_args = 'fbar=false Outputs/file_base=fbar_2d_off_out'
+      csvdiff = 'fbar_2d_off_out.csv'
+      detail = 'through the host total-Lagrangian kernels without the F-bar correction,'
+      capabilities = 'libtorch & neml2'
+      compute_devices = 'cpu cuda'
+    []
+    [off_kokkos]
+      type = CSVDiff
+      input = 'fbar_2d.i'
+      cli_args = 'fbar=false Outputs/file_base=fbar_2d_off_out'
+      csvdiff = 'fbar_2d_off_out.csv'
+      detail = 'through the Kokkos total-Lagrangian kernels without the F-bar correction, matching the host solution,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda'
+      prereq = 'fbar_2d/off_host'
+    []
+    [jacobian]
+      type = PetscJacobianTester
+      input = 'fbar_2d.i'
+      cli_args = 'Executioner/num_steps=1 Executioner/automatic_scaling=false Outputs/csv=false'
+      ratio_tol = 1e-7
+      detail = 'with a consistent Kokkos Jacobian, including the out-of-plane tangent terms and the cross-quadrature-point coupling of the F-bar element average, and'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda'
+    []
+    [off_jacobian]
+      type = PetscJacobianTester
+      input = 'fbar_2d.i'
+      cli_args = 'fbar=false Executioner/num_steps=1 Executioner/automatic_scaling=false Outputs/csv=false'
+      ratio_tol = 1e-7
+      detail = 'with a consistent Kokkos Jacobian without the F-bar correction.'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda'
+    []
+  []
+
   [total_lagrangian_jacobian]
     type = PetscJacobianTester
     input = 'total_lagrangian_jacobian.i'

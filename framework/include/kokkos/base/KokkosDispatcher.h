@@ -624,6 +624,35 @@ registerResidualObjectDispatchers(const std::string & objectname)
   registerMooseObjectAliased(app, classname, alias);                                               \
   callRegisterKokkosMaterialFunction(classname, alias)
 
+// InterfaceMaterial
+
+#define callRegisterKokkosInterfaceMaterialFunction(classname, objectname)                         \
+  static char registerKokkosInterfaceMaterial##classname()                                         \
+  {                                                                                                \
+    using namespace Moose::Kokkos;                                                                 \
+                                                                                                   \
+    DispatcherRegistry::addDispatcher<classname::InterfaceInit, classname>(objectname);            \
+    DispatcherRegistry::addDispatcher<classname::InterfaceCompute, classname>(objectname);         \
+    DispatcherRegistry::hasUserMethod<classname::InterfaceInit>(                                   \
+        objectname,                                                                                \
+        &classname::initQpStatefulProperties<classname> !=                                         \
+            classname::defaultInitStateful<classname>());                                          \
+                                                                                                   \
+    return 0;                                                                                      \
+  }                                                                                                \
+                                                                                                   \
+  [[maybe_unused]] static char combineNames(kokkos_dispatcher_interface_material_##classname,      \
+                                            __COUNTER__) =                                         \
+      registerKokkosInterfaceMaterial##classname()
+
+#define registerKokkosInterfaceMaterial(app, classname)                                            \
+  registerMooseObject(app, classname);                                                             \
+  callRegisterKokkosInterfaceMaterialFunction(classname, #classname)
+
+#define registerKokkosInterfaceMaterialAliased(app, classname, alias)                              \
+  registerMooseObjectAliased(app, classname, alias);                                               \
+  callRegisterKokkosInterfaceMaterialFunction(classname, alias)
+
 // AuxKernel
 
 #define callRegisterKokkosAuxKernelFunction(classname, objectname)                                 \

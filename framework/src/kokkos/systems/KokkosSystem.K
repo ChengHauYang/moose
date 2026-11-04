@@ -120,6 +120,14 @@ System::setupDofs()
             std::max(_max_dofs_per_elem[var], static_cast<unsigned int>(dof_indices.size()));
       }
 
+      for (const auto & [ghost_elem, _] : kokkosMesh().getGhostElemIdMapping())
+        if (_dof_map.is_evaluable(*ghost_elem, var))
+        {
+          _dof_map.dof_indices(ghost_elem, dof_indices, var);
+          _max_dofs_per_elem[var] =
+              std::max(_max_dofs_per_elem[var], static_cast<unsigned int>(dof_indices.size()));
+        }
+
       _local_elem_dof_index[var].create(_max_dofs_per_elem[var], num_total_elems);
       _local_elem_dof_index[var] = libMesh::DofObject::invalid_id;
 

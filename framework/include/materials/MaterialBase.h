@@ -279,6 +279,14 @@ public:
    */
   bool forceStatefulInit() const { return _force_stateful_init; }
 
+  /**
+   * @return The material data, and hence the material property storage, this object declares its
+   * properties into. Needed to tell apart objects that share a warehouse but write different
+   * storages, e.g. an interface material declaring into the neighbor storage rather than the
+   * boundary storage.
+   */
+  virtual Moose::MaterialDataType materialDataType() = 0;
+
 protected:
   /**
    * Users must override this method.
@@ -312,7 +320,6 @@ protected:
 
   virtual const MaterialData & materialData() const = 0;
   virtual MaterialData & materialData() = 0;
-  virtual Moose::MaterialDataType materialDataType() = 0;
 
   virtual const FEProblemBase & miProblem() const { return _fe_problem; }
   virtual FEProblemBase & miProblem() { return _fe_problem; }

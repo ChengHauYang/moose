@@ -25,6 +25,9 @@ protected:
 
   void computeEquilibriumTracion() override;
 
+  /// Reference normal used by the Nanson area transformation
+  virtual RealVectorValue referenceNormal() const;
+
   /// computes the area ratio
   void computeAreaRatio();
 
