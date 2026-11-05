@@ -253,7 +253,7 @@ TransientMultiApp::solveStep(Real dt, Real target_time, bool auto_advance)
 
           // Snag all of the local dof indices for all of these variables
           AllLocalDofIndicesThread aldit(problem, _transferred_vars);
-          ConstElemRange & elem_range = *problem.mesh().getActiveLocalElementRange();
+          const ConstElemRange & elem_range = *problem.mesh().getActiveLocalElementRange();
           Threads::parallel_reduce(elem_range, aldit);
 
           _transferred_dofs = aldit.getDofIndices();
@@ -675,7 +675,7 @@ TransientMultiApp::setupApp(unsigned int i, Real /*time*/) // FIXME: Should we b
   if (app->hasInitialBackupMesh())
   {
     app->restoreMeshFromInitialBackup(problem.mesh());
-    problem.mesh().prepare(/*mesh_to_clone=*/nullptr);
+    problem.mesh().prepare();
     problem.meshChanged(/*intermediate_change=*/false,
                         /*contract_mesh=*/false,
                         /*clean_refinement_flags=*/false);
