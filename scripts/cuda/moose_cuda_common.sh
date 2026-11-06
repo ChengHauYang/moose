@@ -21,6 +21,8 @@ OMPI_CC="${OMPI_CC:-/usr/bin/gcc-11}"
 OMPI_CXX="${OMPI_CXX:-/usr/bin/g++-11}"
 OMPI_FC="${OMPI_FC:-/usr/bin/gfortran-9}"
 MOOSE_CUDA_STATE="$STACK_DIR/.cuda-cli"
+# shellcheck source=../../kokkos-cuda-stack/scripts/nsys_select.sh
+source "$LEGACY/nsys_select.sh"
 
 cuda_die() { printf '[cuda] ERROR: %s\n' "$*" >&2; exit 1; }
 cuda_note() { printf '[cuda] %s\n' "$*"; }

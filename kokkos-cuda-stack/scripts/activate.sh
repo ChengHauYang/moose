@@ -66,6 +66,19 @@ if [ -x "$MINIFORGE_BIN/python3-config" ]; then
   _head="$_head:$MINIFORGE_BIN"
 fi
 _head="$_head:${CUDA_DIR:-/usr/local/cuda}/bin"
+# Nsight Systems (see nsys_select.sh): NSYS_BIN, through a shim that never
+# falls back to another install, or a standalone install's bin/ (nsys and
+# nsys-ui only) goes first so it shadows the older nsys in the CUDA toolkit.
+. "$_activate_dir/nsys_select.sh"
+moose_nsys_select || true
+if [ -n "${NSYS_BIN:-}" ]; then
+  export NSYS_BIN
+  _head="$_activate_dir/nsys-shim:$_head"
+elif [ "$NSYS_SOURCE" = standalone ]; then
+  _head="${NSYS_SELECTED%/*}:$_head"
+fi
+_nsys_problem=$(moose_nsys_problem)
+[ -z "$_nsys_problem" ] || echo "[activate.sh] WARNING: $_nsys_problem" >&2
 
 _new_path="$_head"
 _orig_ifs="$IFS"
@@ -82,7 +95,7 @@ done
 set +f
 IFS="$_orig_ifs"
 export PATH="$_new_path"
-unset _head _new_path _orig_ifs _p
+unset _head _new_path _orig_ifs _p _nsys_problem
 
 : "${MOOSE_JOBS:=8}"
 export MOOSE_JOBS

@@ -34,6 +34,9 @@ Global flags for init/compile/test/verify/all:
 Environment overrides: MOOSE_JOBS, TEST_JOBS, NEML2_SUPPORT, CUDA_DIR,
   MINIFORGE_BIN, OpenBLAS_HOME, CUDA_ARCH, TORCH_CUDA_ARCH_LIST,
   OMPI_CC, OMPI_CXX, OMPI_FC, MOOSE_CUDA_PREFIX, METHOD=opt.
+Nsight Systems: NSYS_BIN (explicit CLI, no fallback), NSYS_ROOT
+  (standalone installs, default kokkos-cuda-stack/nsight-systems),
+  NSYS_MIN_VERSION=2024.2.
 
 This CLI does not upload code, change Git branches, or reset dirty submodules.
 USAGE
@@ -92,7 +95,20 @@ status() {
     if [[ -x "$exe" ]]; then cuda_status_line "$step binary" 1 "$exe"
     else cuda_status_line "$step binary" 0 'not built'; fi
   done
+  nsys_status || true
   cuda_note 'Next: init (missing deps), compile solid_mechanics (source updates), verify solid_mechanics.'
+}
+
+# Report the selected Nsight Systems CLI; fail only for an unusable NSYS_BIN.
+nsys_status() {
+  local problem
+  moose_nsys_select || true
+  problem="$(moose_nsys_problem)"
+  if [[ -z "$NSYS_SELECTED" ]]; then cuda_status_line 'Nsight Systems' 0 'not usable'
+  elif [[ -z "$problem" ]]; then cuda_status_line 'Nsight Systems' 1 "$NSYS_VERSION ($NSYS_SOURCE) $NSYS_SELECTED"
+  else cuda_status_line 'Nsight Systems' 0 "$NSYS_VERSION ($NSYS_SOURCE) $NSYS_SELECTED"; fi
+  [[ -z "$problem" ]] || cuda_note "WARNING: $problem"
+  [[ -n "$NSYS_SELECTED" || -z "${NSYS_BIN:-}" ]]
 }
 
 doctor() {
@@ -115,6 +131,7 @@ doctor() {
     if [[ -x "$x" ]]; then cuda_status_line "MPI $(basename "$x")" 1 "$x"
     else cuda_status_line "MPI $(basename "$x")" 0 'run init'; fi
   done
+  nsys_status || bad=1
   if [[ -x "$NEML2_VENV/bin/python3" ]]; then
     "$NEML2_VENV/bin/python3" --version || true
   fi
@@ -342,6 +359,7 @@ main() {
     benchmark)
       (($#==0)) || cuda_die 'benchmark has no arguments (use legacy run_benchmark.sh to customize)'
       cuda_runtime_env
+      moose_nsys_select || cuda_die "$(moose_nsys_problem)"
       cuda_require_dependencies
       cuda_configured && cuda_state check-target framework && cuda_state check-target solid_mechanics || cuda_die 'Build identity changed; compile solid_mechanics first'
       cuda_mklog benchmark

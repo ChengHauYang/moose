@@ -32,11 +32,18 @@ keys = ('PREFIX','MOOSE_DIR','CUDA_DIR','CUDA_HOME','CUDA_ARCH',
         'MOOSE_JOBS','NEML2_SUPPORT','FORCE_REBUILD','CUDA_VISIBLE_DEVICES',
         'PETSC_OPTIONS','OMP_NUM_THREADS','METHOD','CONDA_PREFIX','CPATH',
         'CMAKE_ARGS','CXX_FOR_BUILD','TEST_JOBS')
-record = dict(op=op,args=args,cwd=os.getcwd(),env={k:os.getenv(k) for k in keys})
+record = dict(op=op,exe=sys.argv[0],args=args,cwd=os.getcwd(),
+              env={k:os.getenv(k) for k in keys})
 with open(os.environ['TEST_TRACE'],'a') as f: f.write(json.dumps(record)+'\n')
 if os.getenv('TEST_FAIL_OP') == op: sys.exit(7)
 if op == 'uname': print('Linux')
-elif op == 'nsys': print('Moose::Kokkos::FixtureKernel')
+elif op == 'nsys':
+    if args == ['--version']:
+        # Standalone fixtures report the version in their install path.
+        parts = p(sys.argv[0]).parts
+        version = parts[-3] if 'nsight-systems' in parts else '2023.4.4.54'
+        print('NVIDIA Nsight Systems version ' + version + '-0v0')
+    else: print('Moose::Kokkos::FixtureKernel')
 elif op == 'git':
     if 'rev-parse' in args: print('abc123')
     elif 'submodule' in args and 'status' in args: print(' abc123 fixture (heads/main)')
@@ -104,7 +111,10 @@ class CudaCLI(unittest.TestCase):
         self.stack = self.root / "kokkos-cuda-stack"
         self.legacy = self.stack / "scripts"
         self.legacy.mkdir(parents=True)
-        shutil.copy2(REPO / "kokkos-cuda-stack/scripts/env.sh", self.legacy / "env.sh")
+        for filename in ("env.sh", "nsys_select.sh"):
+            shutil.copy2(
+                REPO / "kokkos-cuda-stack/scripts" / filename, self.legacy / filename
+            )
         self.prefix = self.stack / "prefix"
         self.bin = self.prefix / "bin"
         self.bin.mkdir(parents=True)
@@ -552,6 +562,81 @@ class CudaCLI(unittest.TestCase):
         self.run_cli("benchmark", rc=7)
         self.assertTrue(self.events("nsys"))
         self.assertTrue(self.events("benchmark_cpu_and_gpu.py"))
+
+    def profiles(self):
+        """Return the mock nsys profile invocations."""
+        return [x for x in self.events("nsys") if x["args"][:1] == ["profile"]]
+
+    def activate(self, command):
+        """Source the legacy activation script in bash, then run a command."""
+        shutil.copy2(
+            REPO / "kokkos-cuda-stack/scripts/activate.sh", self.legacy / "activate.sh"
+        )
+        self.write_exe(
+            self.legacy / "nsys-shim/nsys",
+            (REPO / "kokkos-cuda-stack/scripts/nsys-shim/nsys").read_text(),
+        )
+        return subprocess.run(
+            ["/bin/bash", "-c", 'source "$1"; ' + command, "_",
+             str(self.legacy / "activate.sh")],
+            env=self.env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+
+    def test_nsys_prefers_newest_standalone_install(self):
+        """Prefer the newest standalone Nsight Systems over the CUDA toolkit nsys."""
+        output = self.run_cli("status")
+        self.assertRegex(output, r"\[MISS\] Nsight Systems +2023\.4\.4\.54 \(CUDA\)")
+        self.assertIn("Wrong event order", output)
+        installs = self.stack / "nsight-systems"
+        for version in ("2024.2.3", "2024.10.1"):
+            self.write_exe(installs / version / "bin/nsys", self.mock)
+        newest = installs / "2024.10.1/bin/nsys"
+        output = self.run_cli("doctor")
+        self.assertRegex(output, r"\[OK\] +Nsight Systems +2024\.10\.1 \(standalone\) ")
+        self.assertNotIn("WARNING", output)
+        result = self.activate("command -v nsys")
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(result.stdout.strip(), str(newest))
+        shutil.copy2(
+            REPO / "kokkos-cuda-stack/scripts/run_benchmark.sh",
+            self.legacy / "run_benchmark.sh",
+        )
+        bench = (
+            self.root
+            / "modules/solid_mechanics/test/tests/kokkos/linear_elasticity"
+            / "benchmark_cpu_and_gpu.py"
+        )
+        self.write_exe(bench, self.mock)
+        self.run_cli("benchmark")
+        self.assertEqual([x["exe"] for x in self.profiles()], [str(newest)])
+
+    def test_explicit_nsys_bin_wins(self):
+        """Use NSYS_BIN even when a newer standalone install exists."""
+        installs = self.stack / "nsight-systems"
+        for version in ("2024.2.3", "2024.10.1"):
+            self.write_exe(installs / version / "bin/nsys", self.mock)
+        self.env["NSYS_BIN"] = str(installs / "2024.2.3/bin/nsys")
+        self.assertRegex(
+            self.run_cli("doctor"), r"\[OK\] +Nsight Systems +2024\.2\.3 \(NSYS_BIN\) "
+        )
+        result = self.activate("nsys --version")
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("version 2024.2.3-", result.stdout)
+
+    def test_unusable_nsys_bin_does_not_fall_back(self):
+        """Reject an unusable explicit NSYS_BIN instead of profiling with another nsys."""
+        self.write_exe(self.stack / "nsight-systems/2024.2.3/bin/nsys", self.mock)
+        self.env["NSYS_BIN"] = str(self.root / "missing/nsys")
+        self.assertIn("refusing to fall back", self.run_cli("doctor", rc=1))
+        self.assertIn("refusing to fall back", self.run_cli("status"))
+        self.assertIn("refusing to fall back", self.run_cli("benchmark", rc=1))
+        result = self.activate("nsys profile")
+        self.assertEqual(result.returncode, 127, result.stdout)
+        self.assertIn("refusing to fall back", result.stdout)
+        self.assertFalse(self.profiles())
 
     def test_old_library_paths_are_reconfigured(self):
         """Replace stale library paths while retaining unrelated configure options."""

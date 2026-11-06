@@ -6,6 +6,8 @@ logs/
 libmesh-build/
 neml2-venv/
 .cuda-cli/
+# Machine-local standalone Nsight Systems installs (scripts/nsys_select.sh).
+nsight-systems/
 
 # One-time transition notes; regenerated on demand.
 RESUME.txt

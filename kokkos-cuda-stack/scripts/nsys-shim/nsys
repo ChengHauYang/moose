@@ -1,0 +1,9 @@
+#!/bin/sh
+# activate.sh puts this directory first on PATH when NSYS_BIN is set, so `nsys`
+# runs exactly NSYS_BIN, without the rest of its directory, and never falls back
+# to another install (see nsys_select.sh).
+case "${NSYS_BIN:-}" in
+  /*) [ -x "$NSYS_BIN" ] && exec "$NSYS_BIN" "$@" ;;
+esac
+echo "nsys: NSYS_BIN=${NSYS_BIN:-} is not a usable Nsight Systems CLI; refusing to fall back to another install" >&2
+exit 127

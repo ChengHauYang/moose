@@ -100,6 +100,47 @@ establish that those changes were installed.
 configure, switch submodules, or mutate sources. Build logs go to
 `kokkos-cuda-stack/logs/cli-*.log`.
 
+## Nsight Systems
+
+The `nsys` in CUDA 12.4 (`/usr/local/cuda/bin/nsys`, version 2023.4.4)
+intermittently aborts the report import of MOOSE Kokkos runs with
+`Wrong event order`; 2024.2.3 imports the same runs. A newer CLI is installed
+next to the toolkit without root and without changing `/usr/local/cuda`:
+
+```
+NSYS_BIN=                  # explicit absolute CLI path; if unusable, no other install is used
+NSYS_ROOT=<checkout>/kokkos-cuda-stack/nsight-systems   # <root>/<version>/bin/nsys
+NSYS_MIN_VERSION=2024.2    # older selections are reported as warnings
+```
+
+`kokkos-cuda-stack/scripts/nsys_select.sh` selects `NSYS_BIN` when set;
+otherwise the newest install under `NSYS_ROOT`, then `$CUDA_DIR/bin/nsys`, then
+`nsys` on `PATH`, preferring the first at least `NSYS_MIN_VERSION`. `doctor`
+and `status` print the selected version, source, and path; `doctor` fails when
+`NSYS_BIN` is set but unusable. `benchmark` profiles with the selection.
+`activate.sh` (and therefore direnv and the benchmark scripts that source it)
+puts a selected standalone install first on `PATH`; with `NSYS_BIN` set it puts
+`kokkos-cuda-stack/scripts/nsys-shim` first instead, whose `nsys` runs exactly
+`NSYS_BIN` or fails.
+
+To install 2024.2.3 from NVIDIA's Ubuntu 22.04 CUDA repository:
+
+```bash
+repo=https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64
+deb=nsight-systems-2024.2.3_2024.2.3.38-1_amd64.deb
+tmp=$(mktemp -d)
+curl -fLo "$tmp/$deb" "$repo/$deb"
+curl -fsL "$repo/Packages.gz" | gzip -dc | grep -A20 "^Filename: ./$deb" | grep '^SHA256:'
+sha256sum "$tmp/$deb"  # must match the SHA256 above
+dpkg-deb -x "$tmp/$deb" "$tmp/root"
+mkdir -p kokkos-cuda-stack/nsight-systems
+mv "$tmp/root/opt/nvidia/nsight-systems/2024.2.3" kokkos-cuda-stack/nsight-systems/
+./scripts/cuda/moose_cuda.sh doctor
+```
+
+The install (about 830 MB) is ignored by Git, as are `*.nsys-rep`, `*.qdstrm`,
+and `*.sqlite` reports.
+
 ## Dependency and configuration changes
 
 - On the first `init`, existing valid installations are adopted as a baseline
