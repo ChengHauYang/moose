@@ -12,27 +12,40 @@
 #include "ComputeRotatedElasticityTensorBase.h"
 
 /**
- * ComputeElasticityTensor defines an elasticity tensor material object as a function of
- * concentration field.
+ * Computes a concentration-dependent elasticity tensor using \f$\mathbf{C}(c) =
+ * \mathbf{C}_0 + c(\mathbf{C}_1 - \mathbf{C}_0)\f$. The endpoints may be rotated before
+ * interpolation to represent material orientations.
  */
-class ComputeConcentrationDependentElasticityTensor : public ComputeRotatedElasticityTensorBase
+template <bool is_ad>
+class ComputeConcentrationDependentElasticityTensorTempl
+    : public ComputeRotatedElasticityTensorBaseTempl<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  ComputeConcentrationDependentElasticityTensor(const InputParameters & parameters);
+  ComputeConcentrationDependentElasticityTensorTempl(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpElasticityTensor();
+  virtual void computeQpElasticityTensor() override;
 
   /// Elasticity tensor for phase with zero concentration.
   RankFourTensor _Cijkl0;
   /// Elasticity tensor for phase with concentration 1.
   RankFourTensor _Cijkl1;
   /// Concentration variable.
-  const VariableValue & _c;
+  const GenericVariableValue<is_ad> & _c;
   VariableName _c_name;
 
   /// Derivative of elasticity tensor with respect to concentration.
   MaterialProperty<RankFourTensor> * _delasticity_tensor_dc;
+
+  using ComputeRotatedElasticityTensorBaseTempl<is_ad>::_Euler_angles;
+  using ComputeElasticityTensorBaseTempl<is_ad>::_elasticity_tensor;
+  using ComputeElasticityTensorBaseTempl<is_ad>::_elasticity_tensor_name;
+  using Material::_qp;
 };
+
+using ComputeConcentrationDependentElasticityTensor =
+    ComputeConcentrationDependentElasticityTensorTempl<false>;
+using ADComputeConcentrationDependentElasticityTensor =
+    ComputeConcentrationDependentElasticityTensorTempl<true>;

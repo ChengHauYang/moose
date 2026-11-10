@@ -14,14 +14,17 @@
 // Forward Declarations
 
 /**
- * This postprocessor computes homogenized elastic constants
+ * Computes one homogenized elastic-constant component from asymptotic-expansion correctors and
+ * the local elasticity tensor. The AD form reads AD tensor properties but returns a scalar value.
  */
-class AsymptoticExpansionHomogenizationElasticConstants : public ElementIntegralPostprocessor
+template <bool is_ad>
+class AsymptoticExpansionHomogenizationElasticConstantsTempl
+  : public ElementIntegralPostprocessor
 {
 public:
   static InputParameters validParams();
 
-  AsymptoticExpansionHomogenizationElasticConstants(const InputParameters & parameters);
+  AsymptoticExpansionHomogenizationElasticConstantsTempl(const InputParameters & parameters);
 
   virtual void initialize() override;
   virtual void execute() override;
@@ -38,7 +41,7 @@ private:
 
   const std::array<std::array<const VariableGradient *, 3>, 6> _grad;
 
-  const MaterialProperty<RankFourTensor> & _elasticity_tensor;
+  const GenericMaterialProperty<RankFourTensor, is_ad> & _elasticity_tensor;
   const unsigned int _column, _row;
   const std::array<unsigned int, 6> _ik_index;
   const std::array<unsigned int, 6> _jl_index;
@@ -46,3 +49,8 @@ private:
   Real _volume;
   Real _integral_value;
 };
+
+using AsymptoticExpansionHomogenizationElasticConstants =
+    AsymptoticExpansionHomogenizationElasticConstantsTempl<false>;
+using ADAsymptoticExpansionHomogenizationElasticConstants =
+    AsymptoticExpansionHomogenizationElasticConstantsTempl<true>;

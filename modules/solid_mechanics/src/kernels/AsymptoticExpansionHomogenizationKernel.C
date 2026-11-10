@@ -10,11 +10,13 @@
 #include "AsymptoticExpansionHomogenizationKernel.h"
 
 registerMooseObject("SolidMechanicsApp", AsymptoticExpansionHomogenizationKernel);
+registerMooseObject("SolidMechanicsApp", ADAsymptoticExpansionHomogenizationKernel);
 
+template <bool is_ad>
 InputParameters
-AsymptoticExpansionHomogenizationKernel::validParams()
+AsymptoticExpansionHomogenizationKernelTempl<is_ad>::validParams()
 {
-  InputParameters params = Kernel::validParams();
+  InputParameters params = GenericKernel<is_ad>::validParams();
   params.addClassDescription("Kernel for asymptotic expansion homogenization for elasticity");
   params.addRequiredRangeCheckedParam<unsigned int>("component",
                                                     "component >= 0 & component < 3",
@@ -35,14 +37,18 @@ AsymptoticExpansionHomogenizationKernel::validParams()
   return params;
 }
 
-AsymptoticExpansionHomogenizationKernel::AsymptoticExpansionHomogenizationKernel(
-    const InputParameters & parameters)
-  : Kernel(parameters),
-
-    _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
-    _elasticity_tensor(getMaterialPropertyByName<RankFourTensor>(_base_name + "elasticity_tensor")),
-    _component(getParam<unsigned int>("component")),
-    _column(getParam<MooseEnum>("column")),
+template <bool is_ad>
+AsymptoticExpansionHomogenizationKernelTempl<is_ad>::
+    AsymptoticExpansionHomogenizationKernelTempl(const InputParameters & parameters)
+  : GenericKernel<is_ad>(parameters),
+    _base_name(this->isParamValid("base_name")
+                   ? this->template getParam<std::string>("base_name") + "_"
+                   : ""),
+    _elasticity_tensor(
+        this->template getGenericMaterialPropertyByName<RankFourTensor, is_ad>(
+            _base_name + "elasticity_tensor")),
+    _component(this->template getParam<unsigned int>("component")),
+    _column(this->template getParam<MooseEnum>("column")),
     _k_index({{0, 1, 2, 1, 0, 0}}),
     _l_index({{0, 1, 2, 2, 2, 1}}),
     _k(_k_index[_column]),
@@ -50,13 +56,17 @@ AsymptoticExpansionHomogenizationKernel::AsymptoticExpansionHomogenizationKernel
 {
 }
 
-Real
-AsymptoticExpansionHomogenizationKernel::computeQpResidual()
+template <bool is_ad>
+GenericReal<is_ad>
+AsymptoticExpansionHomogenizationKernelTempl<is_ad>::computeQpResidual()
 {
-  Real value = 0;
+  GenericReal<is_ad> value = 0;
 
   for (unsigned j = 0; j < 3; j++)
     value += _grad_test[_i][_qp](j) * _elasticity_tensor[_qp](_component, j, _k, _l);
 
   return value;
 }
+
+template class AsymptoticExpansionHomogenizationKernelTempl<false>;
+template class AsymptoticExpansionHomogenizationKernelTempl<true>;
