@@ -10,6 +10,7 @@
 #pragma once
 
 #include "Material.h"
+#include "MooseTypes.h"
 
 #include "RankTwoTensor.h"
 #include "SymmetricRankTwoTensor.h"
@@ -49,9 +50,11 @@ struct MandelConversion<RankFourTensor, false>
 };
 
 /**
- * Convert tensorial material properties between Mandel notation and full notation
+ * Converts rank-two or rank-four material properties between full and Mandel notation.
+ * `symmetrize` selects full-to-Mandel or Mandel-to-full conversion, while `is_ad` selects
+ * whether the converted property retains automatic-differentiation derivatives.
  */
-template <typename T, bool symmetrize>
+template <typename T, bool symmetrize, bool is_ad>
 class MandelConverter : public Material
 {
 public:
@@ -66,11 +69,15 @@ protected:
   void initQpStatefulProperties() override;
   void computeQpProperties() override;
 
-  const MaterialProperty<FromType> & _from;
-  MaterialProperty<ToType> & _to;
+  const GenericMaterialProperty<FromType, is_ad> & _from;
+  GenericMaterialProperty<ToType, is_ad> & _to;
 };
 
-using RankTwoTensorToSymmetricRankTwoTensor = MandelConverter<RankTwoTensor, true>;
-using SymmetricRankTwoTensorToRankTwoTensor = MandelConverter<RankTwoTensor, false>;
-using RankFourTensorToSymmetricRankFourTensor = MandelConverter<RankFourTensor, true>;
-using SymmetricRankFourTensorToRankFourTensor = MandelConverter<RankFourTensor, false>;
+using RankTwoTensorToSymmetricRankTwoTensor = MandelConverter<RankTwoTensor, true, false>;
+using ADRankTwoTensorToSymmetricRankTwoTensor = MandelConverter<RankTwoTensor, true, true>;
+using SymmetricRankTwoTensorToRankTwoTensor = MandelConverter<RankTwoTensor, false, false>;
+using ADSymmetricRankTwoTensorToRankTwoTensor = MandelConverter<RankTwoTensor, false, true>;
+using RankFourTensorToSymmetricRankFourTensor = MandelConverter<RankFourTensor, true, false>;
+using ADRankFourTensorToSymmetricRankFourTensor = MandelConverter<RankFourTensor, true, true>;
+using SymmetricRankFourTensorToRankFourTensor = MandelConverter<RankFourTensor, false, false>;
+using ADSymmetricRankFourTensorToRankFourTensor = MandelConverter<RankFourTensor, false, true>;

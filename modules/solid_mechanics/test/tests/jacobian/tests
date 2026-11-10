@@ -59,6 +59,19 @@
       cli_args = 'Executioner/num_steps=1'
       detail = 'inertial_torque'
     []
+    [inertial_torque_ad]
+      type = 'PetscJacobianTester'
+      input = 'inertial_torque.i'
+      ratio_tol = 1E-7
+      difference_tol = 1E10
+      detail = 'inertial_torque (AD)'
+      cli_args = 'Executioner/num_steps=1
+                  Kernels/icm_x/type=ADInertialTorque
+                  Kernels/icm_y/type=ADInertialTorque
+                  Kernels/icm_z/type=ADInertialTorque
+                  Materials/density/type=ADGenericConstantMaterial'
+      design = 'source/kernels/InertialTorque.md'
+    []
     # The --no-trap-fpe is necessary because when performing a singular value decomposition PETSc/LAPACK/BLAS checks 0/0, 1/0, etc, and Libmesh would trap these checks
     [cto01]
       type = 'PetscJacobianTester'
@@ -297,6 +310,51 @@
       difference_tol = 1E10
       cli_args = 'Executioner/num_steps=1'
       detail = 'poro01'
+    []
+    [poro01_ad]
+      type = 'PetscJacobianTester'
+      input = 'poro01.i'
+      ratio_tol = 1E-7
+      difference_tol = 1E10
+      detail = 'poro01 (AD)'
+      cli_args = 'Executioner/num_steps=1
+                  Kernels/grad_stress_x/type=ADStressDivergenceTensors
+                  Kernels/grad_stress_y/type=ADStressDivergenceTensors
+                  Kernels/grad_stress_z/type=ADStressDivergenceTensors
+                  Kernels/poro_x/type=ADPoroMechanicsCoupling
+                  Kernels/poro_y/type=ADPoroMechanicsCoupling
+                  Kernels/poro_z/type=ADPoroMechanicsCoupling
+                  Kernels/This_is_not_poroelasticity._It_is_checking_diagonal_jacobian/type=ADPoroMechanicsCoupling
+                  Kernels/This_is_not_poroelasticity._It_is_checking_diagonal_jacobian_again/type=ADPoroMechanicsCoupling
+                  Kernels/This_is_not_poroelasticity._It_is_checking_offdiagonal_jacobian_for_disps/type=ADPoroMechanicsCoupling
+                  Materials/elasticity_tensor/type=ADComputeElasticityTensor
+                  Materials/strain/type=ADComputeSmallStrain
+                  Materials/stress/type=ADComputeLinearElasticStress
+                  Materials/biot/type=ADGenericConstantMaterial'
+      design = 'source/kernels/PoroMechanicsCoupling.md'
+    []
+    [poro_action01]
+      type = 'PetscJacobianTester'
+      input = 'poro_action01.i'
+      ratio_tol = 1E-7
+      difference_tol = 1E10
+      cli_args = 'Executioner/num_steps=1'
+      detail = 'poro_action01'
+      design = 'source/kernels/PoroMechanicsCoupling.md syntax/Physics/SolidMechanics/QuasiStatic/index.md'
+    []
+    [poro_action01_ad]
+      type = 'PetscJacobianTester'
+      input = 'poro_action01.i'
+      ratio_tol = 1E-7
+      difference_tol = 1E10
+      detail = 'poro_action01 (AD)'
+      cli_args = 'Executioner/num_steps=1
+                  Kernels/PoroMechanics/use_automatic_differentiation=true
+                  Materials/elasticity_tensor/type=ADComputeElasticityTensor
+                  Materials/strain/type=ADComputeSmallStrain
+                  Materials/stress/type=ADComputeLinearElasticStress
+                  Materials/biot/type=ADGenericConstantMaterial'
+      design = 'source/kernels/PoroMechanicsCoupling.md syntax/Physics/SolidMechanics/QuasiStatic/index.md'
     []
 
     [cwp01]
@@ -960,6 +1018,69 @@
       difference_tol = 1E10
       cli_args = 'Executioner/num_steps=1'
       detail = 'thermal_coupling_rz'
+    []
+    [concentration_elasticity01_ad]
+      type = 'PetscJacobianTester'
+      input = 'concentration_elasticity01.i'
+      ratio_tol = 1E-7
+      difference_tol = 1E10
+      cli_args = 'Executioner/num_steps=1'
+      detail = 'concentration_elasticity01 (AD)'
+      design = 'source/materials/ComputeConcentrationDependentElasticityTensor.md'
+    []
+    [variable_base_eigenstrain01_ad]
+      type = 'PetscJacobianTester'
+      input = 'variable_base_eigenstrain01.i'
+      ratio_tol = 1E-7
+      difference_tol = 1E10
+      cli_args = 'Executioner/num_steps=1'
+      detail = 'variable_base_eigenstrain01 (AD)'
+      design = 'source/materials/ComputeVariableBaseEigenStrain.md'
+      allow_test_objects = true
+    []
+    [material_vector_body_force01_ad]
+      type = 'PetscJacobianTester'
+      input = 'material_vector_body_force01.i'
+      ratio_tol = 1E-7
+      difference_tol = 1E10
+      cli_args = 'Executioner/num_steps=1'
+      detail = 'material_vector_body_force01 (AD)'
+      design = 'source/kernels/MaterialVectorBodyForce.md'
+    []
+    [mandel_rank2_roundtrip01]
+      type = 'PetscJacobianTester'
+      input = 'mandel_rank2_roundtrip01.i'
+      ratio_tol = 1E-7
+      difference_tol = 1E10
+      cli_args = 'Executioner/num_steps=1'
+      detail = 'mandel_rank2_roundtrip01'
+      design = 'source/materials/MandelConverter.md'
+    []
+    [mandel_rank2_roundtrip01_ad]
+      type = 'PetscJacobianTester'
+      input = 'mandel_rank2_roundtrip01.i'
+      ratio_tol = 1E-7
+      difference_tol = 1E10
+      detail = 'mandel_rank2_roundtrip01 (AD)'
+      design = 'source/materials/MandelConverter.md'
+      cli_args = 'Executioner/num_steps=1
+                  Kernels/grad_stress_x/type=ADStressDivergenceTensors
+                  Kernels/grad_stress_y/type=ADStressDivergenceTensors
+                  Kernels/grad_stress_z/type=ADStressDivergenceTensors
+                  Materials/strain/type=ADComputeSmallStrain
+                  Materials/to_symmetric/type=ADRankTwoTensorToSymmetricRankTwoTensor
+                  Materials/to_full/type=ADSymmetricRankTwoTensorToRankTwoTensor
+                  Materials/elasticity_tensor/type=ADComputeIsotropicElasticityTensor
+                  Materials/stress/type=ADComputeLinearElasticStress'
+    []
+    [mandel_rank4_roundtrip01_ad]
+      type = 'PetscJacobianTester'
+      input = 'mandel_rank4_roundtrip01.i'
+      ratio_tol = 1E-7
+      difference_tol = 1E10
+      cli_args = 'Executioner/num_steps=1'
+      detail = 'mandel_rank4_roundtrip01 (AD)'
+      design = 'source/materials/MandelConverter.md'
     []
   []
 []

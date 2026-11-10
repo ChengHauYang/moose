@@ -11,11 +11,13 @@
 #include "RotationTensor.h"
 
 registerMooseObject("SolidMechanicsApp", ComputeConcentrationDependentElasticityTensor);
+registerMooseObject("SolidMechanicsApp", ADComputeConcentrationDependentElasticityTensor);
 
+template <bool is_ad>
 InputParameters
-ComputeConcentrationDependentElasticityTensor::validParams()
+ComputeConcentrationDependentElasticityTensorTempl<is_ad>::validParams()
 {
-  InputParameters params = ComputeRotatedElasticityTensorBase::validParams();
+  InputParameters params = ComputeRotatedElasticityTensorBaseTempl<is_ad>::validParams();
   params.addClassDescription("Compute concentration dependent elasticity tensor.");
   params.addRequiredParam<std::vector<Real>>("C0_ijkl",
                                              "Stiffness tensor for zero concentration phase");
@@ -29,19 +31,23 @@ ComputeConcentrationDependentElasticityTensor::validParams()
   return params;
 }
 
-ComputeConcentrationDependentElasticityTensor::ComputeConcentrationDependentElasticityTensor(
-    const InputParameters & parameters)
-  : ComputeRotatedElasticityTensorBase(parameters),
-    _Cijkl0(getParam<std::vector<Real>>("C0_ijkl"),
-            (RankFourTensor::FillMethod)(int)getParam<MooseEnum>("fill_method0")),
-    _Cijkl1(getParam<std::vector<Real>>("C1_ijkl"),
-            (RankFourTensor::FillMethod)(int)getParam<MooseEnum>("fill_method1")),
-    _c(coupledValue("c")),
-    _c_name(coupledName("c", 0)),
-    _delasticity_tensor_dc(isCoupledConstant("c") ? nullptr
-                                                  : &declarePropertyDerivative<RankFourTensor>(
-                                                        _elasticity_tensor_name, _c_name))
+template <bool is_ad>
+ComputeConcentrationDependentElasticityTensorTempl<is_ad>::
+    ComputeConcentrationDependentElasticityTensorTempl(const InputParameters & parameters)
+  : ComputeRotatedElasticityTensorBaseTempl<is_ad>(parameters),
+    _Cijkl0(this->template getParam<std::vector<Real>>("C0_ijkl"),
+            (RankFourTensor::FillMethod)(int)this->template getParam<MooseEnum>("fill_method0")),
+    _Cijkl1(this->template getParam<std::vector<Real>>("C1_ijkl"),
+            (RankFourTensor::FillMethod)(int)this->template getParam<MooseEnum>("fill_method1")),
+    _c(this->template coupledGenericValue<is_ad>("c")),
+    _c_name(this->coupledName("c", 0)),
+    _delasticity_tensor_dc(nullptr)
 {
+  if constexpr (!is_ad)
+    if (!this->isCoupledConstant("c"))
+      _delasticity_tensor_dc =
+          &this->template declarePropertyDerivative<RankFourTensor>(_elasticity_tensor_name, _c_name);
+
   // Define a rotation according to Euler angle parameters
   RotationTensor R(_Euler_angles); // R type: RealTensorValue
 
@@ -50,8 +56,9 @@ ComputeConcentrationDependentElasticityTensor::ComputeConcentrationDependentElas
   _Cijkl1.rotate(R);
 }
 
+template <bool is_ad>
 void
-ComputeConcentrationDependentElasticityTensor::computeQpElasticityTensor()
+ComputeConcentrationDependentElasticityTensorTempl<is_ad>::computeQpElasticityTensor()
 {
   // Assign elasticity tensor at a given quad point
   _elasticity_tensor[_qp] = _Cijkl0 + (_Cijkl1 - _Cijkl0) * _c[_qp];
@@ -59,3 +66,6 @@ ComputeConcentrationDependentElasticityTensor::computeQpElasticityTensor()
   if (_delasticity_tensor_dc)
     (*_delasticity_tensor_dc)[_qp] = (_Cijkl1 - _Cijkl0);
 }
+
+template class ComputeConcentrationDependentElasticityTensorTempl<false>;
+template class ComputeConcentrationDependentElasticityTensorTempl<true>;

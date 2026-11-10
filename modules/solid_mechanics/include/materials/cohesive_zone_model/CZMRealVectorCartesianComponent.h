@@ -14,12 +14,13 @@
  * This interface material class extract a cartesiona component from a vector materail property
  * defined on acohesive zone
  */
-class CZMRealVectorCartesianComponent : public InterfaceMaterial
+template <bool is_ad>
+class CZMRealVectorCartesianComponentTempl : public InterfaceMaterial
 {
 public:
   static InputParameters validParams();
 
-  CZMRealVectorCartesianComponent(const InputParameters & parameters);
+  CZMRealVectorCartesianComponentTempl(const InputParameters & parameters);
 
 protected:
   void computeQpProperties() override;
@@ -28,11 +29,16 @@ protected:
   const std::string _base_name;
 
   /// the property created by this material
-  MaterialProperty<Real> & _property;
+  GenericMaterialProperty<Real, is_ad> & _property;
 
   /// the vector material property
-  const MaterialProperty<RealVectorValue> & _vector;
+  const GenericMaterialProperty<RealVectorValue, is_ad> & _vector;
 
   /// the component of vector we want to extract
   const unsigned int _index;
+
+  usingInterfaceMaterialMembers;
 };
+
+using CZMRealVectorCartesianComponent = CZMRealVectorCartesianComponentTempl<false>;
+using ADCZMRealVectorCartesianComponent = CZMRealVectorCartesianComponentTempl<true>;
