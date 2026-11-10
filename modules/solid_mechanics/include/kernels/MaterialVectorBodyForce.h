@@ -9,32 +9,38 @@
 
 #pragma once
 
-#include "Kernel.h"
+#include "GenericKernel.h"
 
 class Function;
 
 /**
  * MaterialVectorBodyForce applies a body force (force/volume) given as a vector material property
  */
-class MaterialVectorBodyForce : public Kernel
+template <bool is_ad>
+class MaterialVectorBodyForceTempl : public GenericKernel<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  MaterialVectorBodyForce(const InputParameters & parameters);
+  MaterialVectorBodyForceTempl(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
+  virtual GenericReal<is_ad> computeQpResidual() override;
 
   /// coordinate axis this Kernel acts on
   unsigned int _component;
 
   /// coupled body force vector property
-  const MaterialProperty<RealVectorValue> & _body_force;
+  const GenericMaterialProperty<RealVectorValue, is_ad> & _body_force;
 
   /// optional scaling function
   const Function & _function;
 
   // alpha parameter for HHT time integration scheme
   const Real _alpha;
+
+  usingGenericKernelMembers;
 };
+
+using MaterialVectorBodyForce = MaterialVectorBodyForceTempl<false>;
+using ADMaterialVectorBodyForce = MaterialVectorBodyForceTempl<true>;

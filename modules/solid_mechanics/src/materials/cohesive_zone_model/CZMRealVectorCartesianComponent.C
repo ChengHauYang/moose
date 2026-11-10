@@ -10,9 +10,11 @@
 #include "CZMRealVectorCartesianComponent.h"
 
 registerMooseObject("SolidMechanicsApp", CZMRealVectorCartesianComponent);
+registerMooseObject("SolidMechanicsApp", ADCZMRealVectorCartesianComponent);
 
+template <bool is_ad>
 InputParameters
-CZMRealVectorCartesianComponent::validParams()
+CZMRealVectorCartesianComponentTempl<is_ad>::validParams()
 {
   InputParameters params = InterfaceMaterial::validParams();
   params.addClassDescription("Access a component of a RealVectorValue defined on a cohesive zone");
@@ -25,20 +27,27 @@ CZMRealVectorCartesianComponent::validParams()
   return params;
 }
 
-CZMRealVectorCartesianComponent::CZMRealVectorCartesianComponent(const InputParameters & parameters)
+template <bool is_ad>
+CZMRealVectorCartesianComponentTempl<is_ad>::CZMRealVectorCartesianComponentTempl(
+    const InputParameters & parameters)
   : InterfaceMaterial(parameters),
     _base_name(isParamValid("base_name") && !getParam<std::string>("base_name").empty()
                    ? getParam<std::string>("base_name") + "_"
                    : ""),
-    _property(declarePropertyByName<Real>(getParam<MaterialPropertyName>("property_name"))),
-    _vector(getMaterialPropertyByName<RealVectorValue>(_base_name +
-                                                       getParam<std::string>("real_vector_value"))),
+    _property(this->template declareGenericPropertyByName<Real, is_ad>(
+        getParam<MaterialPropertyName>("property_name"))),
+    _vector(this->template getGenericMaterialPropertyByName<RealVectorValue, is_ad>(
+        _base_name + getParam<std::string>("real_vector_value"))),
     _index(getParam<unsigned int>("index"))
 {
 }
 
+template <bool is_ad>
 void
-CZMRealVectorCartesianComponent::computeQpProperties()
+CZMRealVectorCartesianComponentTempl<is_ad>::computeQpProperties()
 {
   _property[_qp] = _vector[_qp](_index);
 }
+
+template class CZMRealVectorCartesianComponentTempl<false>;
+template class CZMRealVectorCartesianComponentTempl<true>;

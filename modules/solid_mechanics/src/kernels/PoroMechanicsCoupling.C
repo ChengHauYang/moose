@@ -15,11 +15,13 @@
 #include "MooseVariable.h"
 
 registerMooseObject("SolidMechanicsApp", PoroMechanicsCoupling);
+registerMooseObject("SolidMechanicsApp", ADPoroMechanicsCoupling);
 
+template <bool is_ad>
 InputParameters
-PoroMechanicsCoupling::validParams()
+PoroMechanicsCouplingTempl<is_ad>::validParams()
 {
-  InputParameters params = Kernel::validParams();
+  InputParameters params = GenericKernel<is_ad>::validParams();
   params.addClassDescription(
       "Adds $-Bi \\cdot p_s \\cdot \\nabla \\Psi_c$, where the subscript $c$ is the component.");
   params.addRequiredCoupledVar("porepressure", "Pore pressure, $p_s$.");
@@ -28,35 +30,54 @@ PoroMechanicsCoupling::validParams()
   return params;
 }
 
-PoroMechanicsCoupling::PoroMechanicsCoupling(const InputParameters & parameters)
-  : Kernel(parameters),
-    _coefficient(getMaterialProperty<Real>("biot_coefficient")),
-    _porepressure(coupledValue("porepressure")),
-    _porepressure_var_num(coupled("porepressure")),
-    _component(getParam<unsigned int>("component"))
+template <bool is_ad>
+PoroMechanicsCouplingTempl<is_ad>::PoroMechanicsCouplingTempl(const InputParameters & parameters)
+  : GenericKernel<is_ad>(parameters),
+    _coefficient(this->template getGenericMaterialProperty<Real, is_ad>("biot_coefficient")),
+    _porepressure(this->template coupledGenericValue<is_ad>("porepressure")),
+    _porepressure_var_num(this->coupled("porepressure")),
+    _component(this->template getParam<unsigned int>("component"))
 {
-  if (_component >= _mesh.dimension())
+  if (_component >= this->_mesh.dimension())
     mooseError("PoroMechanicsCoupling: component should not be greater than the mesh dimension\n");
 }
 
-Real
-PoroMechanicsCoupling::computeQpResidual()
+template <bool is_ad>
+GenericReal<is_ad>
+PoroMechanicsCouplingTempl<is_ad>::computeQpResidual()
 {
   return -_coefficient[_qp] * _porepressure[_qp] * _grad_test[_i][_qp](_component);
 }
 
+template <bool is_ad>
 Real
-PoroMechanicsCoupling::computeQpJacobian()
+PoroMechanicsCouplingTempl<is_ad>::computeQpJacobian()
 {
-  if (_var.number() != _porepressure_var_num)
+  if constexpr (is_ad)
+    // ADKernel assembles Jacobians by differentiating computeQpResidual().
     return 0.0;
-  return -_coefficient[_qp] * _phi[_j][_qp] * _grad_test[_i][_qp](_component);
+  else
+  {
+    if (_var.number() != _porepressure_var_num)
+      return 0.0;
+    return -_coefficient[_qp] * _phi[_j][_qp] * _grad_test[_i][_qp](_component);
+  }
 }
 
+template <bool is_ad>
 Real
-PoroMechanicsCoupling::computeQpOffDiagJacobian(unsigned int jvar)
+PoroMechanicsCouplingTempl<is_ad>::computeQpOffDiagJacobian(unsigned int jvar)
 {
-  if (jvar != _porepressure_var_num)
+  if constexpr (is_ad)
+    // ADKernel assembles Jacobians by differentiating computeQpResidual().
     return 0.0;
-  return -_coefficient[_qp] * _phi[_j][_qp] * _grad_test[_i][_qp](_component);
+  else
+  {
+    if (jvar != _porepressure_var_num)
+      return 0.0;
+    return -_coefficient[_qp] * _phi[_j][_qp] * _grad_test[_i][_qp](_component);
+  }
 }
+
+template class PoroMechanicsCouplingTempl<false>;
+template class PoroMechanicsCouplingTempl<true>;

@@ -10,13 +10,17 @@
 #include "MandelConverter.h"
 
 registerMooseObject("SolidMechanicsApp", RankTwoTensorToSymmetricRankTwoTensor);
+registerMooseObject("SolidMechanicsApp", ADRankTwoTensorToSymmetricRankTwoTensor);
 registerMooseObject("SolidMechanicsApp", SymmetricRankTwoTensorToRankTwoTensor);
+registerMooseObject("SolidMechanicsApp", ADSymmetricRankTwoTensorToRankTwoTensor);
 registerMooseObject("SolidMechanicsApp", RankFourTensorToSymmetricRankFourTensor);
+registerMooseObject("SolidMechanicsApp", ADRankFourTensorToSymmetricRankFourTensor);
 registerMooseObject("SolidMechanicsApp", SymmetricRankFourTensorToRankFourTensor);
+registerMooseObject("SolidMechanicsApp", ADSymmetricRankFourTensorToRankFourTensor);
 
-template <typename T, bool symmetrize>
+template <typename T, bool symmetrize, bool is_ad>
 InputParameters
-MandelConverter<T, symmetrize>::validParams()
+MandelConverter<T, symmetrize, is_ad>::validParams()
 {
   InputParameters params = Material::validParams();
   params.addClassDescription("Converts material property of type " +
@@ -27,29 +31,34 @@ MandelConverter<T, symmetrize>::validParams()
   return params;
 }
 
-template <typename T, bool symmetrize>
-MandelConverter<T, symmetrize>::MandelConverter(const InputParameters & params)
+template <typename T, bool symmetrize, bool is_ad>
+MandelConverter<T, symmetrize, is_ad>::MandelConverter(const InputParameters & params)
   : Material(params),
-    _from(getMaterialProperty<FromType>("from")),
-    _to(declareProperty<ToType>("to"))
+    _from(this->template getGenericMaterialProperty<FromType, is_ad>("from")),
+    _to(this->template declareGenericProperty<ToType, is_ad>("to"))
 {
 }
 
-template <typename T, bool symmetrize>
+template <typename T, bool symmetrize, bool is_ad>
 void
-MandelConverter<T, symmetrize>::initQpStatefulProperties()
+MandelConverter<T, symmetrize, is_ad>::initQpStatefulProperties()
 {
   computeQpProperties();
 }
 
-template <typename T, bool symmetrize>
+template <typename T, bool symmetrize, bool is_ad>
 void
-MandelConverter<T, symmetrize>::computeQpProperties()
+MandelConverter<T, symmetrize, is_ad>::computeQpProperties()
 {
-  _to[_qp] = ToType(_from[_qp]);
+  using GenericToType = Moose::GenericType<ToType, is_ad>;
+  _to[_qp] = GenericToType(_from[_qp]);
 }
 
-template class MandelConverter<RankTwoTensor, true>;
-template class MandelConverter<RankTwoTensor, false>;
-template class MandelConverter<RankFourTensor, true>;
-template class MandelConverter<RankFourTensor, false>;
+template class MandelConverter<RankTwoTensor, true, false>;
+template class MandelConverter<RankTwoTensor, true, true>;
+template class MandelConverter<RankTwoTensor, false, false>;
+template class MandelConverter<RankTwoTensor, false, true>;
+template class MandelConverter<RankFourTensor, true, false>;
+template class MandelConverter<RankFourTensor, true, true>;
+template class MandelConverter<RankFourTensor, false, false>;
+template class MandelConverter<RankFourTensor, false, true>;

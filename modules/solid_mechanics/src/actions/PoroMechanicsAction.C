@@ -32,8 +32,6 @@ PoroMechanicsAction::validParams()
 PoroMechanicsAction::PoroMechanicsAction(const InputParameters & params)
   : QuasiStaticSolidMechanicsPhysics(params)
 {
-  if (_use_ad)
-    paramError("use_ad", "AD not setup for use with PoroMechanicsAction");
 }
 
 void
@@ -49,7 +47,7 @@ PoroMechanicsAction::act()
 
     // all the kernels added below have pore pressure as a coupled variable
     // add this to the kernel's params
-    std::string type("PoroMechanicsCoupling");
+    const std::string type = _use_ad ? "ADPoroMechanicsCoupling" : "PoroMechanicsCoupling";
     InputParameters params = _factory.getValidParams(type);
     VariableName pp_var(getParam<VariableName>("porepressure"));
     params.addCoupledVar("porepressure", "");

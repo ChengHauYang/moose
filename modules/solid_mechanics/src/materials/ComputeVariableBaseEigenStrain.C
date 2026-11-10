@@ -10,11 +10,13 @@
 #include "ComputeVariableBaseEigenStrain.h"
 
 registerMooseObject("SolidMechanicsApp", ComputeVariableBaseEigenStrain);
+registerMooseObject("SolidMechanicsApp", ADComputeVariableBaseEigenStrain);
 
+template <bool is_ad>
 InputParameters
-ComputeVariableBaseEigenStrain::validParams()
+ComputeVariableBaseEigenStrainTempl<is_ad>::validParams()
 {
-  InputParameters params = ComputeEigenstrainBase::validParams();
+  InputParameters params = ComputeEigenstrainBaseTempl<is_ad>::validParams();
   params.addClassDescription("Computes Eigenstrain based on material property tensor base");
   params.addRequiredParam<MaterialPropertyName>("base_tensor_property_name",
                                                 "Name of base tensor property");
@@ -25,20 +27,27 @@ ComputeVariableBaseEigenStrain::validParams()
   return params;
 }
 
-ComputeVariableBaseEigenStrain::ComputeVariableBaseEigenStrain(const InputParameters & parameters)
-  : ComputeEigenstrainBase(parameters),
-    _base_tensor(getMaterialProperty<RealTensorValue>("base_tensor_property_name")),
-    _prefactor(getMaterialProperty<Real>("prefactor"))
+template <bool is_ad>
+ComputeVariableBaseEigenStrainTempl<is_ad>::ComputeVariableBaseEigenStrainTempl(
+    const InputParameters & parameters)
+  : ComputeEigenstrainBaseTempl<is_ad>(parameters),
+    _base_tensor(this->template getGenericMaterialProperty<RealTensorValue, is_ad>(
+        "base_tensor_property_name")),
+    _prefactor(this->template getGenericMaterialProperty<Real, is_ad>("prefactor"))
 {
-  if (isParamValid("offset_tensor"))
-    _offset_tensor.fillFromInputVector(getParam<std::vector<Real>>("offset_tensor"));
+  if (this->isParamValid("offset_tensor"))
+    _offset_tensor.fillFromInputVector(this->template getParam<std::vector<Real>>("offset_tensor"));
   else
     _offset_tensor.zero();
 }
 
+template <bool is_ad>
 void
-ComputeVariableBaseEigenStrain::computeQpEigenstrain()
+ComputeVariableBaseEigenStrainTempl<is_ad>::computeQpEigenstrain()
 {
-  RankTwoTensor base_rank_two_tensor = _base_tensor[_qp];
+  GenericRankTwoTensor<is_ad> base_rank_two_tensor = _base_tensor[_qp];
   _eigenstrain[_qp] = base_rank_two_tensor * _prefactor[_qp] + _offset_tensor;
 }
+
+template class ComputeVariableBaseEigenStrainTempl<false>;
+template class ComputeVariableBaseEigenStrainTempl<true>;

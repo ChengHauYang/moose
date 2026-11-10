@@ -488,4 +488,30 @@
       abs_zero = 1e-6
     []
   []
+  [AD_CZM_outputs]
+    design = 'source/materials/cohesive_zone_model/CZMRealVectorScalar.md source/materials/cohesive_zone_model/CZMRealVectorCartesianComponent.md syntax/Physics/SolidMechanics/CohesiveZone/index.md'
+    issues = '#23855'
+    requirement = "The system shall extract normal and tangent tractions and displacement jumps "
+                  "as well as Cartesian components from the cohesive zone model using the "
+                  "CohesiveZone action, with automatic differentiation"
+    [AD_outputs]
+      type = Exodiff
+      input = 'ad_czm_outputs.i'
+      exodiff = 'ad_czm_outputs.e'
+      cli_args = 'Outputs/file_base=ad_czm_outputs'
+      recover = false
+      detail = "using the AD extraction materials"
+      abs_zero = 1e-6
+      capabilities = 'method!=dbg'
+    []
+    [non_AD_outputs]
+      type = Exodiff
+      input = 'ad_czm_outputs.i'
+      exodiff = 'ad_czm_outputs.e'
+      cli_args = 'Outputs/file_base=ad_czm_outputs Physics/SolidMechanics/CohesiveZone/interface/use_automatic_differentiation=false Materials/czm_mat/type=PureElasticTractionSeparation'
+      recover = false
+      detail = "and the non-AD extraction materials shall produce the same values"
+      abs_zero = 1e-6
+    []
+  []
 []

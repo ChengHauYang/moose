@@ -11,11 +11,13 @@
 #include "Function.h"
 
 registerMooseObject("SolidMechanicsApp", MaterialVectorBodyForce);
+registerMooseObject("SolidMechanicsApp", ADMaterialVectorBodyForce);
 
+template <bool is_ad>
 InputParameters
-MaterialVectorBodyForce::validParams()
+MaterialVectorBodyForceTempl<is_ad>::validParams()
 {
-  InputParameters params = Kernel::validParams();
+  InputParameters params = GenericKernel<is_ad>::validParams();
   params.addClassDescription("Apply a body force vector to the coupled displacement component.");
   params.addParam<FunctionName>(
       "function", "1", "Function to scale the coupled body force vector property");
@@ -26,12 +28,13 @@ MaterialVectorBodyForce::validParams()
   return params;
 }
 
-MaterialVectorBodyForce::MaterialVectorBodyForce(const InputParameters & parameters)
-  : Kernel(parameters),
+template <bool is_ad>
+MaterialVectorBodyForceTempl<is_ad>::MaterialVectorBodyForceTempl(const InputParameters & parameters)
+  : GenericKernel<is_ad>(parameters),
     _component(libMesh::invalid_uint),
-    _body_force(getMaterialProperty<RealVectorValue>("body_force")),
-    _function(getFunction("function")),
-    _alpha(getParam<Real>("hht_alpha"))
+    _body_force(this->template getGenericMaterialProperty<RealVectorValue, is_ad>("body_force")),
+    _function(this->getFunction("function")),
+    _alpha(this->template getParam<Real>("hht_alpha"))
 {
   for (unsigned int i = 0; i < coupledComponents("displacements"); ++i)
     if (_var.number() == getVar("displacements", i)->number())
@@ -42,9 +45,13 @@ MaterialVectorBodyForce::MaterialVectorBodyForce(const InputParameters & paramet
                      "The kernel variable needs to be one of the 'displacements' variables");
 }
 
-Real
-MaterialVectorBodyForce::computeQpResidual()
+template <bool is_ad>
+GenericReal<is_ad>
+MaterialVectorBodyForceTempl<is_ad>::computeQpResidual()
 {
   Real factor = _function.value(_t + _alpha * _dt, _q_point[_qp]);
   return -_body_force[_qp](_component) * _test[_i][_qp] * factor;
 }
+
+template class MaterialVectorBodyForceTempl<false>;
+template class MaterialVectorBodyForceTempl<true>;

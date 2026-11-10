@@ -11,15 +11,17 @@
 
 #include "InterfaceMaterial.h"
 /**
- * This interface material class extract a cartesiona component from a vector materail property
- * defined on acohesive zone
+ * Computes a scalar measure of a vector material property on a cohesive interface. The normal
+ * option returns the normal component, while the tangent option returns the tangential magnitude;
+ * use CZMRealVectorCartesianComponent to extract a Cartesian component instead.
  */
-class CZMRealVectorScalar : public InterfaceMaterial
+template <bool is_ad>
+class CZMRealVectorScalarTempl : public InterfaceMaterial
 {
 public:
   static InputParameters validParams();
 
-  CZMRealVectorScalar(const InputParameters & parameters);
+  CZMRealVectorScalarTempl(const InputParameters & parameters);
 
 protected:
   void computeQpProperties() override;
@@ -35,11 +37,16 @@ protected:
   } _direction;
 
   /// the property created by this material
-  MaterialProperty<Real> & _property;
+  GenericMaterialProperty<Real, is_ad> & _property;
 
   /// the vector material property
-  const MaterialProperty<RealVectorValue> & _vector;
+  const GenericMaterialProperty<RealVectorValue, is_ad> & _vector;
 
   /// the material property defining the czm normal
-  const MaterialProperty<RankTwoTensor> & _czm_rotation;
+  const GenericMaterialProperty<RankTwoTensor, is_ad> & _czm_rotation;
+
+  usingInterfaceMaterialMembers;
 };
+
+using CZMRealVectorScalar = CZMRealVectorScalarTempl<false>;
+using ADCZMRealVectorScalar = CZMRealVectorScalarTempl<true>;

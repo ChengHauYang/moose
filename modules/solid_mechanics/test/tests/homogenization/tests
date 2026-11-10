@@ -14,4 +14,77 @@
     custom_cmp = 'anisoShortFiber.exodiff'
     requirement = 'The system shall compute homogenized elastic constants using the asymptotic expansion homogenization approach and match values for the so-called short fiber problem'
   [../]
+  [longFiber_ad]
+    type = 'Exodiff'
+    input = 'anisoLongFiber.i'
+    exodiff = 'anisoLongFiber_out.e'
+    cli_args = 'Kernels/div_x_xx/type=ADStressDivergenceTensors
+                Kernels/div_y_xx/type=ADStressDivergenceTensors
+                Kernels/div_x_yy/type=ADStressDivergenceTensors
+                Kernels/div_y_yy/type=ADStressDivergenceTensors
+                Kernels/div_x_xy/type=ADStressDivergenceTensors
+                Kernels/div_y_xy/type=ADStressDivergenceTensors
+                Kernels/homo_dx_xx/type=ADAsymptoticExpansionHomogenizationKernel
+                Kernels/homo_dy_xx/type=ADAsymptoticExpansionHomogenizationKernel
+                Kernels/homo_dx_yy/type=ADAsymptoticExpansionHomogenizationKernel
+                Kernels/homo_dy_yy/type=ADAsymptoticExpansionHomogenizationKernel
+                Kernels/homo_dx_xy/type=ADAsymptoticExpansionHomogenizationKernel
+                Kernels/homo_dy_xy/type=ADAsymptoticExpansionHomogenizationKernel
+                Materials/elastic_stress_xx/type=ADComputeLinearElasticStress
+                Materials/elastic_stress_yy/type=ADComputeLinearElasticStress
+                Materials/elastic_stress_xy/type=ADComputeLinearElasticStress
+                Materials/strain_xx/type=ADComputeSmallStrain
+                Materials/strain_yy/type=ADComputeSmallStrain
+                Materials/strain_xy/type=ADComputeSmallStrain
+                Materials/block1/type=ADComputeElasticityTensor
+                Materials/block2/type=ADComputeElasticityTensor
+                Materials/block3/type=ADComputeElasticityTensor
+                Materials/block4/type=ADComputeElasticityTensor
+                Materials/block5/type=ADComputeElasticityTensor
+                Materials/block6/type=ADComputeElasticityTensor
+                Postprocessors/E1111/type=ADAsymptoticExpansionHomogenizationElasticConstants
+                Postprocessors/E2222/type=ADAsymptoticExpansionHomogenizationElasticConstants
+                Postprocessors/E1122/type=ADAsymptoticExpansionHomogenizationElasticConstants
+                Postprocessors/E2211/type=ADAsymptoticExpansionHomogenizationElasticConstants
+                Postprocessors/E1212/type=ADAsymptoticExpansionHomogenizationElasticConstants'
+    requirement = 'The system shall compute the long-fiber homogenized elastic constants with the AD asymptotic-expansion kernels and postprocessors and match the non-AD reference solution'
+    issues = '#6750'
+  []
+  [shortFiber_ad]
+    type = 'Exodiff'
+    input = 'anisoShortFiber.i'
+    exodiff = 'anisoShortFiber_out.e'
+    custom_cmp = 'anisoShortFiber.exodiff'
+    cli_args = 'Kernels/div_x_xx/type=ADStressDivergenceTensors
+                Kernels/div_y_xx/type=ADStressDivergenceTensors
+                Kernels/div_x_yy/type=ADStressDivergenceTensors
+                Kernels/div_y_yy/type=ADStressDivergenceTensors
+                Kernels/div_x_xy/type=ADStressDivergenceTensors
+                Kernels/div_y_xy/type=ADStressDivergenceTensors
+                Kernels/aeh_dx_xx/type=ADAsymptoticExpansionHomogenizationKernel
+                Kernels/aeh_dy_xx/type=ADAsymptoticExpansionHomogenizationKernel
+                Kernels/aeh_dx_yy/type=ADAsymptoticExpansionHomogenizationKernel
+                Kernels/aeh_dy_yy/type=ADAsymptoticExpansionHomogenizationKernel
+                Kernels/aeh_dx_xy/type=ADAsymptoticExpansionHomogenizationKernel
+                Kernels/aeh_dy_xy/type=ADAsymptoticExpansionHomogenizationKernel
+                Materials/elastic_stress_xx/type=ADComputeLinearElasticStress
+                Materials/elastic_stress_yy/type=ADComputeLinearElasticStress
+                Materials/elastic_stress_xy/type=ADComputeLinearElasticStress
+                Materials/strain_xx/type=ADComputeSmallStrain
+                Materials/strain_yy/type=ADComputeSmallStrain
+                Materials/strain_xy/type=ADComputeSmallStrain
+                Materials/block1/type=ADComputeElasticityTensor
+                Materials/block2/type=ADComputeElasticityTensor
+                Materials/block3/type=ADComputeElasticityTensor
+                Materials/block4/type=ADComputeElasticityTensor
+                Materials/block5/type=ADComputeElasticityTensor
+                Materials/block6/type=ADComputeElasticityTensor
+                Postprocessors/E1111/type=ADAsymptoticExpansionHomogenizationElasticConstants
+                Postprocessors/E2222/type=ADAsymptoticExpansionHomogenizationElasticConstants
+                Postprocessors/E1122/type=ADAsymptoticExpansionHomogenizationElasticConstants
+                Postprocessors/E2211/type=ADAsymptoticExpansionHomogenizationElasticConstants
+                Postprocessors/E1212/type=ADAsymptoticExpansionHomogenizationElasticConstants'
+    requirement = 'The system shall compute the short-fiber homogenized elastic constants with the AD asymptotic-expansion kernels and postprocessors and match the non-AD reference solution'
+    issues = '#6750'
+  []
 []

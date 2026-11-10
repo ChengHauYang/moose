@@ -11,9 +11,11 @@
 #include "CohesiveZoneModelTools.h"
 
 registerMooseObject("SolidMechanicsApp", CZMRealVectorScalar);
+registerMooseObject("SolidMechanicsApp", ADCZMRealVectorScalar);
 
+template <bool is_ad>
 InputParameters
-CZMRealVectorScalar::validParams()
+CZMRealVectorScalarTempl<is_ad>::validParams()
 {
   InputParameters params = InterfaceMaterial::validParams();
   params.addClassDescription("Compute the normal or tangent component of a vector quantity defined "
@@ -27,35 +29,42 @@ CZMRealVectorScalar::validParams()
   return params;
 }
 
-CZMRealVectorScalar::CZMRealVectorScalar(const InputParameters & parameters)
+template <bool is_ad>
+CZMRealVectorScalarTempl<is_ad>::CZMRealVectorScalarTempl(const InputParameters & parameters)
   : InterfaceMaterial(parameters),
     _base_name(isParamValid("base_name") && !getParam<std::string>("base_name").empty()
                    ? getParam<std::string>("base_name") + "_"
                    : ""),
-    _direction(getParam<MooseEnum>("direction").getEnum<DirectionType>()),
-    _property(declarePropertyByName<Real>(getParam<MaterialPropertyName>("property_name"))),
-    _vector(getMaterialPropertyByName<RealVectorValue>(_base_name +
-                                                       getParam<std::string>("real_vector_value"))),
-    _czm_rotation(getMaterialPropertyByName<RankTwoTensor>(_base_name + "czm_total_rotation"))
+    _direction(getParam<MooseEnum>("direction").template getEnum<DirectionType>()),
+    _property(this->template declareGenericPropertyByName<Real, is_ad>(
+        getParam<MaterialPropertyName>("property_name"))),
+    _vector(this->template getGenericMaterialPropertyByName<RealVectorValue, is_ad>(
+        _base_name + getParam<std::string>("real_vector_value"))),
+    _czm_rotation(this->template getGenericMaterialPropertyByName<RankTwoTensor, is_ad>(
+        _base_name + "czm_total_rotation"))
 {
 }
 
+template <bool is_ad>
 void
-CZMRealVectorScalar::computeQpProperties()
+CZMRealVectorScalarTempl<is_ad>::computeQpProperties()
 {
-  const RealVectorValue normal = _czm_rotation[_qp] * RealVectorValue(1.0, 0.0, 0.0);
+  const GenericRealVectorValue<is_ad> normal = _czm_rotation[_qp] * RealVectorValue(1.0, 0.0, 0.0);
   switch (_direction)
   {
     case DirectionType::Normal:
       _property[_qp] =
-          CohesiveZoneModelTools::computeNormalComponents(normal, _vector[_qp]) * normal;
+          CohesiveZoneModelTools::computeNormalComponents<is_ad>(normal, _vector[_qp]) * normal;
       break;
     case DirectionType::Tangent:
       _property[_qp] =
-          CohesiveZoneModelTools::computeTangentComponents(normal, _vector[_qp]).norm();
+          CohesiveZoneModelTools::computeTangentComponents<is_ad>(normal, _vector[_qp]).norm();
       break;
     default:
       mooseError("ScalarType type not recognized");
       break;
   }
 }
+
+template class CZMRealVectorScalarTempl<false>;
+template class CZMRealVectorScalarTempl<true>;

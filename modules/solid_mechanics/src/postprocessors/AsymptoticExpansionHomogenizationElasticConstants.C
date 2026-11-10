@@ -11,9 +11,11 @@
 #include "MooseMesh.h"
 
 registerMooseObject("SolidMechanicsApp", AsymptoticExpansionHomogenizationElasticConstants);
+registerMooseObject("SolidMechanicsApp", ADAsymptoticExpansionHomogenizationElasticConstants);
 
+template <bool is_ad>
 InputParameters
-AsymptoticExpansionHomogenizationElasticConstants::validParams()
+AsymptoticExpansionHomogenizationElasticConstantsTempl<is_ad>::validParams()
 {
   InputParameters params = ElementIntegralPostprocessor::validParams();
   params.addClassDescription(
@@ -52,8 +54,9 @@ AsymptoticExpansionHomogenizationElasticConstants::validParams()
   return params;
 }
 
-AsymptoticExpansionHomogenizationElasticConstants::
-    AsymptoticExpansionHomogenizationElasticConstants(const InputParameters & parameters)
+template <bool is_ad>
+AsymptoticExpansionHomogenizationElasticConstantsTempl<is_ad>::
+    AsymptoticExpansionHomogenizationElasticConstantsTempl(const InputParameters & parameters)
   : ElementIntegralPostprocessor(parameters),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _grad({{{{&coupledGradient("dx_xx"),
@@ -74,7 +77,8 @@ AsymptoticExpansionHomogenizationElasticConstants::
             {{(&coupledGradient("dx_xy")),
               (&coupledGradient("dy_xy")),
               (_subproblem.mesh().dimension() == 3 ? &coupledGradient("dz_xy") : &_grad_zero)}}}}),
-    _elasticity_tensor(getMaterialPropertyByName<RankFourTensor>(_base_name + "elasticity_tensor")),
+    _elasticity_tensor(this->template getGenericMaterialPropertyByName<RankFourTensor, is_ad>(
+        _base_name + "elasticity_tensor")),
     _column(getParam<MooseEnum>("column")),
     _row(getParam<MooseEnum>("row")),
     _ik_index({{0, 1, 2, 1, 0, 0}}),
@@ -88,50 +92,60 @@ AsymptoticExpansionHomogenizationElasticConstants::
 {
 }
 
+template <bool is_ad>
 void
-AsymptoticExpansionHomogenizationElasticConstants::initialize()
+AsymptoticExpansionHomogenizationElasticConstantsTempl<is_ad>::initialize()
 {
   _integral_value = 0;
   _volume = 0;
 }
 
+template <bool is_ad>
 void
-AsymptoticExpansionHomogenizationElasticConstants::execute()
+AsymptoticExpansionHomogenizationElasticConstantsTempl<is_ad>::execute()
 {
   _integral_value += computeIntegral();
   _volume += _current_elem_volume;
 }
 
+template <bool is_ad>
 Real
-AsymptoticExpansionHomogenizationElasticConstants::getValue() const
+AsymptoticExpansionHomogenizationElasticConstantsTempl<is_ad>::getValue() const
 {
   return (_integral_value / _volume);
 }
 
+template <bool is_ad>
 void
-AsymptoticExpansionHomogenizationElasticConstants::finalize()
+AsymptoticExpansionHomogenizationElasticConstantsTempl<is_ad>::finalize()
 {
   gatherSum(_integral_value);
   gatherSum(_volume);
 }
 
+template <bool is_ad>
 void
-AsymptoticExpansionHomogenizationElasticConstants::threadJoin(const UserObject & y)
+AsymptoticExpansionHomogenizationElasticConstantsTempl<is_ad>::threadJoin(const UserObject & y)
 {
-  const AsymptoticExpansionHomogenizationElasticConstants & pps =
-      dynamic_cast<const AsymptoticExpansionHomogenizationElasticConstants &>(y);
+  const AsymptoticExpansionHomogenizationElasticConstantsTempl<is_ad> & pps =
+      dynamic_cast<const AsymptoticExpansionHomogenizationElasticConstantsTempl<is_ad> &>(y);
 
   _integral_value += pps._integral_value;
   _volume += pps._volume;
 }
 
+template <bool is_ad>
 Real
-AsymptoticExpansionHomogenizationElasticConstants::computeQpIntegral()
+AsymptoticExpansionHomogenizationElasticConstantsTempl<is_ad>::computeQpIntegral()
 {
-  Real value = 0;
-  for (unsigned p = 0; p < 3; ++p)
-    for (unsigned q = 0; q < 3; ++q)
+  GenericReal<is_ad> value = _elasticity_tensor[_qp](_i, _j, _k, _l);
+  for (const auto p : make_range(3))
+    for (const auto q : make_range(3))
       value += _elasticity_tensor[_qp](_i, _j, p, q) * (*_grad[_column][p])[_qp](q);
 
-  return _elasticity_tensor[_qp](_i, _j, _k, _l) + value;
+  // Postprocessors report values only, so they intentionally discard AD derivatives here.
+  return MetaPhysicL::raw_value(value);
 }
+
+template class AsymptoticExpansionHomogenizationElasticConstantsTempl<false>;
+template class AsymptoticExpansionHomogenizationElasticConstantsTempl<true>;

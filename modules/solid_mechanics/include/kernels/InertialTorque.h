@@ -10,32 +10,37 @@
 #pragma once
 
 #include "TimeKernel.h"
+#include "ADTimeKernel.h"
 #include "Material.h"
 
 // Forward Declarations
 
 /**
- * Computes the inertial torque, which is
- * density * displacement x acceleration
- * (a cross-product is used).  Newmark time
- * integration is used, and parameters are included
- * that allow Rayleigh damping and HHT time integration
+ * Computes one component of the inertial torque density, \f$\rho (\mathbf{u} \times
+ * \mathbf{a})\f$. The acceleration is reconstructed from displacement using Newmark
+ * integration and includes the configured Rayleigh damping and HHT contributions.
  */
-class InertialTorque : public TimeKernel
+template <bool is_ad>
+using InertialTorqueParent = typename std::conditional<is_ad, ADTimeKernel, TimeKernel>::type;
+
+template <bool is_ad>
+class InertialTorqueTempl : public InertialTorqueParent<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  InertialTorque(const InputParameters & parameters);
+  InertialTorqueTempl(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual() override;
+  virtual GenericReal<is_ad> computeQpResidual() override;
+
   virtual Real computeQpJacobian() override;
+
   virtual Real computeQpOffDiagJacobian(unsigned int jvar) override;
 
 private:
   /// density
-  const MaterialProperty<Real> & _density;
+  const GenericMaterialProperty<Real, is_ad> & _density;
 
   /// Newmark beta parameter
   const Real _beta;
@@ -44,7 +49,7 @@ private:
   const Real _gamma;
 
   /// Rayleigh-damping eta parameter
-  const MaterialProperty<Real> & _eta;
+  const GenericMaterialProperty<Real, is_ad> & _eta;
 
   /// HHT alpha parameter
   const Real _alpha;
@@ -63,7 +68,7 @@ private:
   const std::vector<unsigned> _disp_num;
 
   /// Displacements
-  const std::vector<const VariableValue *> _disp;
+  const std::vector<const GenericVariableValue<is_ad> *> _disp;
 
   /// Old value of displacements
   const std::vector<const VariableValue *> _disp_old;
@@ -74,15 +79,22 @@ private:
   /// Old value of accelerations
   const std::vector<const VariableValue *> _accel_old;
 
-  /// Acceleration (instantiating this vector avoids re-creating a new vector every residual calculation)
-  std::vector<Real> _accel;
+  /// Acceleration reconstructed from the current displacement.
+  std::vector<GenericReal<is_ad>> _accel;
 
-  /// Velocity (instantiating this vector avoids re-creating a new vector every residual calculation)
-  std::vector<Real> _vel;
+  /// Velocity reconstructed from the current acceleration.
+  std::vector<GenericReal<is_ad>> _vel;
 
-  /// Derivative of acceleration with respect to displacement
+  /// Derivative of the damped acceleration with respect to displacement for the non-AD Jacobian.
   std::vector<Real> _daccel;
 
-  /// Derivative of velocity with respect to displacement
-  std::vector<Real> _dvel;
+  using InertialTorqueParent<is_ad>::_dt;
+  using InertialTorqueParent<is_ad>::_i;
+  using InertialTorqueParent<is_ad>::_qp;
+  using InertialTorqueParent<is_ad>::_test;
+  using InertialTorqueParent<is_ad>::_phi;
+  using InertialTorqueParent<is_ad>::_var;
 };
+
+using InertialTorque = InertialTorqueTempl<false>;
+using ADInertialTorque = InertialTorqueTempl<true>;
