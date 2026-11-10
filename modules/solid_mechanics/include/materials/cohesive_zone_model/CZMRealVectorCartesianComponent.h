@@ -11,8 +11,7 @@
 
 #include "InterfaceMaterial.h"
 /**
- * This interface material class extract a cartesiona component from a vector materail property
- * defined on acohesive zone
+ * Extracts a specified Cartesian component from a vector material property on a cohesive interface.
  */
 template <bool is_ad>
 class CZMRealVectorCartesianComponentTempl : public InterfaceMaterial
