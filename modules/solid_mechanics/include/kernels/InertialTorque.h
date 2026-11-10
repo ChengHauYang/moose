@@ -64,7 +64,7 @@ private:
   /// Number of displacement variables.  This must be 3
   const unsigned _ndisp;
 
-  /// MOOSE internal variable numbers corresponding to the displacments
+  /// MOOSE internal variable numbers corresponding to the displacements
   const std::vector<unsigned> _disp_num;
 
   /// Displacements
@@ -88,12 +88,6 @@ private:
   /// Derivative of the damped acceleration with respect to displacement for the non-AD Jacobian.
   std::vector<Real> _daccel;
 
-  using InertialTorqueParent<is_ad>::_dt;
-  using InertialTorqueParent<is_ad>::_i;
-  using InertialTorqueParent<is_ad>::_qp;
-  using InertialTorqueParent<is_ad>::_test;
-  using InertialTorqueParent<is_ad>::_phi;
-  using InertialTorqueParent<is_ad>::_var;
 };
 
 using InertialTorque = InertialTorqueTempl<false>;
