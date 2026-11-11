@@ -278,7 +278,7 @@ ki_max = 2.0   # peak applied K_I at t=1 (monotonic ramp K_I(t) = ki_max * t)
     device = 'cpu'
     manage_state_advance = true
     interface = 'ligament'
-    interface_only = true
+    volume = false
     interface_material_inputs = 'interface_displacement_jump'
     derivatives = 'interface_traction interface_displacement_jump dinterface_traction_djump'
   []
