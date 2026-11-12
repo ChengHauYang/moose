@@ -102,6 +102,7 @@ run_step()
         "N=$MESH_N" \
         "DT=$DT" \
         "NUM_STEPS=$NUM_STEPS" \
+        "Outputs/file_base=$prefix" \
         "Outputs/perf_graph_json_file=$prefix.perf.json" \
         "${petsc_args[@]}" \
         --timing \
@@ -122,6 +123,7 @@ run_step()
         "N=$MESH_N" \
         "DT=$DT" \
         "NUM_STEPS=$NUM_STEPS" \
+        "Outputs/file_base=$profile_prefix" \
         "Outputs/perf_graph_json_file=$profile_prefix.perf.json" \
         "${petsc_args[@]}" \
         --timing \
@@ -134,4 +136,5 @@ for step in "${steps[@]}"; do
 done
 
 echo "Done. Per-run wall times in $RESULTS_DIR/*.time, logs (with -ksp_view matrix/vector types and"
-echo "KSP iteration counts) in $RESULTS_DIR/*.log, perf graphs in $RESULTS_DIR/*.perf.json."
+echo "KSP iteration counts) in $RESULTS_DIR/*.log, perf graphs in $RESULTS_DIR/*.perf.json,"
+echo "postprocessor histories in $RESULTS_DIR/*.csv."

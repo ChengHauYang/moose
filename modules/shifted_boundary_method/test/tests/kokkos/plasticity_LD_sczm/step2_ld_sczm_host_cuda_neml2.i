@@ -201,4 +201,5 @@ theta_rad = '${fparse theta * pi / 180}'
 
 [Outputs]
   exodus = true
+  csv = true
 []
