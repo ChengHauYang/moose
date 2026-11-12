@@ -288,10 +288,14 @@ def max_rel_diff(path: Path, ref_path: Path) -> float:
     return worst
 
 
-def nsys_csv(report_path: Path, report_name: str) -> list[dict[str, str]]:
-    """Read one Nsight Systems CSV report from an .nsys-rep file."""
+def nsys_csv(report_path: Path, report_name: str) -> list[dict[str, str]] | None:
+    """Read one Nsight Systems CSV report from an .nsys-rep file.
+
+    Returns the report rows, an empty list when the profile holds no such activity (a measured
+    zero), or None when there is no measurement (no profile, no nsys, or the report failed).
+    """
     if not report_path.exists() or shutil.which("nsys") is None:
-        return []
+        return None
 
     result = subprocess.run(
         ["nsys", "stats", "--report", report_name, "--format", "csv",
@@ -301,16 +305,19 @@ def nsys_csv(report_path: Path, report_name: str) -> list[dict[str, str]]:
         text=True,
     )
 
-    if result.returncode:
-        return []
-
+    # nsys stats exits 0 even for failures such as an unknown report, so the output decides.
+    output = result.stdout + result.stderr
     lines = result.stdout.splitlines()
     header = next(
         (idx for idx, line in enumerate(lines) if "Total Time" in line),
         None,
     )
     if header is None:
-        return []
+        # Nsight Systems 2023.4 prints "SKIPPED: <file> does not contain <kind> data." for a profile
+        # without that activity.
+        if re.search(r"SKIPPED: .* does not contain", output):
+            return []
+        return None
 
     return list(csv.DictReader(io.StringIO("\n".join(lines[header:]))))
 
@@ -323,10 +330,14 @@ def seconds(value: str, header: str) -> float:
     return float(value.replace(",", "")) * scale
 
 
-def report_time(rows: list[dict[str, str]], name_pattern: str | None = None) -> float:
-    """Sum one Nsight Systems report time column, optionally filtered by name."""
+def report_time(rows: list[dict[str, str]] | None, name_pattern: str | None = None) -> float:
+    """Sum one Nsight Systems report time column, optionally filtered by name.
+
+    NaN when there is no measurement (rows is None); zero when the report has no matching row.
+    """
+    if rows is None:
+        return math.nan
     total = 0.0
-    found = False
     for row in rows:
         time_key = next((k for k in row if "Total Time" in k), None)
         if time_key is None:
@@ -337,10 +348,10 @@ def report_time(rows: list[dict[str, str]], name_pattern: str | None = None) -> 
                 continue
         try:
             total += seconds(row[time_key], time_key)
-            found = True
         except (TypeError, ValueError):
-            pass
-    return total if found else math.nan
+            # An unreadable time makes the sum unknown, not smaller.
+            return math.nan
+    return total
 
 
 def mean(values: list[float]) -> float:
@@ -487,21 +498,23 @@ def plot_results(frame: pd.DataFrame, output: Path, title: str = "") -> None:
 
     # --- row 1: GPU activity (kernels + H2D + D2H) + iteration counts ---
     ax = axes[1, 0]
-    # A profiled step without a kernel/copy row did no such GPU work (zero); a step without a
-    # profile has no measurement at all, so its bar is left empty and labeled N/A.
-    profiled = frame["has_nsys_profile"]
-    k_time = frame["cuda_kernel_time_s"].fillna(0.0).where(profiled)
-    h2d_time = frame["h2d_time_s"].fillna(0.0).where(profiled)
-    d2h_time = frame["d2h_time_s"].fillna(0.0).where(profiled)
-    ax.bar(short, k_time.fillna(0.0), label="CUDA kernels")
-    ax.bar(short, h2d_time.fillna(0.0), bottom=k_time.fillna(0.0), label="H2D")
-    ax.bar(short, d2h_time.fillna(0.0), bottom=(k_time + h2d_time).fillna(0.0), label="D2H")
-    for idx in range(len(frame)):
-        if not profiled.iloc[idx]:
+    # collect() leaves a quantity NaN only when it was not measured (no usable profile); a measured
+    # zero stays 0. An unmeasured step gets no bar and an N/A label instead of a zero-height bar.
+    gpu_cols = ["cuda_kernel_time_s", "h2d_time_s", "d2h_time_s"]
+    k_time, h2d_time, d2h_time = (frame[col] for col in gpu_cols)
+    ax.bar(short, k_time, label="CUDA kernels")
+    ax.bar(short, h2d_time, bottom=k_time, label="H2D")
+    ax.bar(short, d2h_time, bottom=k_time + h2d_time, label="D2H")
+    for idx, missing in enumerate(frame[gpu_cols].isna().any(axis=1)):
+        if missing:
             ax.text(idx, 0, "N/A", ha="center", va="bottom", fontsize=9, color="grey")
-    ax.set_title("GPU activity (one Nsight profile run; N/A = not profiled)")
+    # Autoscaling ignores all-NaN bars, which would drop unmeasured steps off the axis; keep every
+    # step on the axis, aligned with the wall-time panel.
+    ax.set_xlim(axes[0, 0].get_xlim())
+    ax.set_title("GPU activity (one Nsight profile run; N/A = not measured)")
     ax.set_ylabel("Seconds")
-    ax.legend()
+    # Step 1 never has tall GPU bars, so the upper left stays clear of the data.
+    ax.legend(loc="upper left")
 
     ax = axes[1, 1]
     ax.plot(short, frame["newton_iterations"], "o-", label="Newton")
