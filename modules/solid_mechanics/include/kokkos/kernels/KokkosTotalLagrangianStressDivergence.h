@@ -31,8 +31,9 @@
  * chain. The residual is unchanged from the unstabilized version: total-mode F-bar's residual
  * add-on lives only in `F_bar_mode = incremental`, which the Kokkos path does not implement.
  *
- * Restrictions: requires exactly 3 displacement components on a 3D mesh, and elements with
- * <= MAX_CACHED_DOF trial DOFs per variable (checked at first launch).
+ * Restrictions: requires one displacement component per mesh dimension, and elements with
+ * <= MAX_CACHED_DOF trial DOFs per variable (checked at first launch). In 2D the trial gradients
+ * have no out-of-plane component, so the 3x3 contractions reduce to the plane-strain terms.
  */
 class KokkosTotalLagrangianStressDivergence : public Moose::Kokkos::KernelGrad
 {

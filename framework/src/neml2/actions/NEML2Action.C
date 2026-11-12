@@ -77,6 +77,11 @@ NEML2Action::validParams()
       "output_backend",
       MooseEnum("moose kokkos", "moose"),
       "Backend used by automatically created NEML2 output material properties");
+  params.addParam<MooseEnum>(
+      "input_backend",
+      MooseEnum("moose kokkos", "moose"),
+      "Backend used by automatically created NEML2 input gatherers. The Kokkos backend supports "
+      "only current-state full rank-two MATERIAL inputs.");
   params.addParam<std::string>(
       "batch_index_generator_name",
       "Name of the NEML2BatchIndexGenerator user object. The default name is "
@@ -84,6 +89,31 @@ NEML2Action::validParams()
       "<block-name> is this action sub-block's name.");
   params.addParam<std::vector<SubdomainName>>(
       "block", {}, "List of blocks (subdomains) where the material model is defined");
+  params.addParam<std::vector<BoundaryName>>(
+      "interface", {}, "List of interfaces where the material model is defined");
+  params.addParam<bool>("interface_only",
+                        false,
+                        "If true, only create the interface material on the boundaries listed in "
+                        "'interface' and skip "
+                        "creating any volume material. Requires 'interface' to be set.");
+  params.addParam<MooseEnum>(
+      "interface_output_side",
+      MooseEnum("both primary neighbor", "both"),
+      "For interface-only output, publish each NEML2 output to both sides, only the "
+      "primary side, or only the neighbor side. Use primary/neighbor with distinct executors to "
+      "avoid duplicate writers to a material-property storage.");
+  // Block materials need no hint: the same material is reinit'd as BLOCK/FACE/NEIGHBOR data and the
+  // gatherer reads the store for where it is. A true InterfaceMaterial instead lives in the
+  // separate INTERFACE_MATERIAL_DATA store, which the native block/face/neighbor selection never
+  // picks. Since this action builds its gatherers on add_user_object -- before materials exist --
+  // it cannot query the warehouse to tell the two apart from a property name alone, so the
+  // interface-material inputs are named here. Per-input so one action can mix both (e.g. 'jump'
+  // from an InterfaceMaterial and 'stiffness' from a block material).
+  params.addParam<std::vector<MaterialPropertyName>>(
+      "interface_material_inputs",
+      {},
+      "MATERIAL inputs supplied by a true InterfaceMaterial (read from interface material data "
+      "instead of the volume/side material data). Ignored for non-MATERIAL inputs.");
   return params;
 }
 
@@ -96,6 +126,10 @@ NEML2Action::NEML2Action(const InputParameters & params)
                             ? getParam<std::string>("batch_index_generator_name")
                             : "neml2_index_" + getParam<std::string>("model") + "_" + name()),
     _block(getParam<std::vector<SubdomainName>>("block")),
+    _interface(getParam<std::vector<BoundaryName>>("interface")),
+    _interface_only(getParam<bool>("interface_only")),
+    _interface_material_inputs(
+        getParam<std::vector<MaterialPropertyName>>("interface_material_inputs")),
     _skip_input_variables(getParam<std::vector<std::string>>("skip_input_variables"))
 {
   NEML2Utils::assertNEML2Enabled();
@@ -172,12 +206,41 @@ NEML2Action::NEML2Action(const InputParameters & params)
 #endif
 }
 
+bool
+NEML2Action::producesMaterialProperty(const MaterialPropertyName & property_name) const
+{
+#ifdef NEML2_ENABLED
+  if (getParam<bool>("auto_output") && contains(_model->output_names(), property_name))
+    return true;
+
+  const auto & derivatives = getParam<std::vector<std::vector<std::string>>>("derivatives");
+  return std::any_of(derivatives.begin(),
+                     derivatives.end(),
+                     [&](const auto & derivative)
+                     { return derivative.size() == 3 && derivative[2] == property_name; });
+#else
+  return false;
+#endif
+}
+
 const NEML2ActionCommon &
 NEML2Action::getCommonAction() const
 {
   auto common_block = _awh.getActions<NEML2ActionCommon>();
   mooseAssert(common_block.size() == 1, "There must exist one and only one common NEML2 action.");
   return *common_block[0];
+}
+
+void
+NEML2Action::addRelationshipManagers(Moose::RelationshipManagerType input_rm_type)
+{
+  // The NEML2 gatherers and batch index generator are DomainUserObjects, which require one layer of
+  // neighbor ghosting (declared in DomainUserObject::validParams) so that neighbor data can be
+  // reinitialized on internal sides in parallel. These user objects are created during the
+  // add_user_object task, which is too late for their relationship managers to attach, so declare
+  // the ghosting here on the action's behalf.
+  auto params = _factory.getValidParams("NEML2BatchIndexGenerator");
+  Action::addRelationshipManagers(input_rm_type, params);
 }
 
 #ifndef NEML2_ENABLED
@@ -209,6 +272,18 @@ NEML2Action::act()
     printSummary();
   }
 
+  // Whether this action is block/interface restricted
+  const bool is_blk = !_block.empty();
+  const bool is_interface = !_interface.empty();
+
+  if (_interface_only)
+  {
+    if (!is_interface)
+      paramError("interface_only",
+                 "'interface_only' is true, but 'interface' is unset. When 'interface_only' is "
+                 "true, 'interface' must list the boundaries on which to create the material.");
+  }
+
   if (_current_task == "add_user_object")
   {
     setupInputMappings(*_model);
@@ -219,7 +294,61 @@ NEML2Action::act()
 
     checkStatefulConsistency(*_model);
 
+    // Every interface_material_inputs entry must be a real MATERIAL input. Otherwise a typo or a
+    // non-MATERIAL name would be silently dropped in addGatherer and revert to the default
+    // volume/side routing, producing wrong results with no error.
+    for (const auto & name : _interface_material_inputs)
+    {
+      const auto it = std::find_if(
+          _inputs.begin(), _inputs.end(), [&](const auto & in) { return in.name == name; });
+      if (it == _inputs.end())
+        paramError("interface_material_inputs", "'", name, "' is not a NEML2 input of this model.");
+      if (it->moose_type != NEML2Utils::MOOSEIOType::MATERIAL)
+        paramError(
+            "interface_material_inputs",
+            "'",
+            name,
+            "' is mapped as ",
+            NEML2Utils::stringify(it->moose_type),
+            ", not MATERIAL; only MATERIAL inputs can be routed to interface material data.");
+    }
+
     printSummary();
+
+    const bool use_kokkos_inputs = getParam<MooseEnum>("input_backend") == "kokkos";
+    if (use_kokkos_inputs)
+    {
+#ifndef MOOSE_KOKKOS_ENABLED
+      paramError("input_backend",
+                 "The Kokkos input backend is unavailable because MOOSE was built "
+                 "without Kokkos support.");
+#else
+      if (!_interface_material_inputs.empty())
+        paramError("input_backend",
+                   "The Kokkos input backend does not support true interface material data. "
+                   "Use block material properties on the interface sides instead.");
+      if (!getParam<std::vector<std::string>>("input_kernels").empty())
+        paramError("input_backend",
+                   "The Kokkos input backend does not support input_kernels in its first "
+                   "current-state material-property implementation.");
+#endif
+    }
+
+    // Kokkos gatherers resolve the generator in their constructor, unlike the host gatherers.
+    // Build it first only for the Kokkos path; preserve the established host construction order.
+    if (use_kokkos_inputs)
+    {
+      const auto type = "NEML2BatchIndexGenerator";
+      auto params = _factory.getValidParams(type);
+      params.applyParameters(parameters());
+      if (is_blk)
+        params.set<std::vector<SubdomainName>>("block") = _block;
+      if (is_interface)
+        params.set<std::vector<BoundaryName>>("interface_boundaries") = _interface;
+      params.set<bool>("interface_only") = _interface_only;
+      params.set<int>("execution_order_group") = -1;
+      _problem->addUserObject(type, _idx_generator_name, params);
+    }
 
     // Create and register a MOOSEToNEML2 gatherer user object, returning its name
     auto addGatherer = [&](const std::string & moose_name,
@@ -230,12 +359,86 @@ NEML2Action::act()
                            const std::string & type_prefix = "")
     {
       auto obj_name = obscureObjectName(moose_name, "moose_to_neml2", suffix, name());
+      // Some inputs keep the host gatherer even under the Kokkos input backend, because they are
+      // not per-QP Kokkos block material data that the Kokkos gatherer can read:
+      //   - TIME and SCALAR inputs are device-neutral scalars (MOOSEQuantityToNEML2 emits an
+      //   unbatched
+      //     at::scalar_tensor that broadcasts over any batch layout). A transient NEML2 model
+      //     always carries the TIME input 't', so this is what lets the Kokkos input backend serve
+      //     such models at all.
+      //   - A state/output initializer reads a user-supplied host material (e.g. a
+      //     GenericConstantRankTwoTensor identity seed) once at INITIAL; it is not a Kokkos
+      //     material property, so the Kokkos gatherer cannot read it, and it is off the
+      //     per-iteration hot path. The host gatherer's batch-row order (element/side visitation)
+      //     need not match the Kokkos gatherer's (NEML2BatchIndexGenerator) because an initializer
+      //     value is spatially constant over the batch, so the per-row seed is
+      //     permutation-invariant. A spatially varying initializer would need a device-side
+      //     gatherer that shares the batch index generator.
+      // The per-QP current-state MATERIAL inputs below still gather device-side.
+      const auto host_gathered = moose_type == NEML2Utils::MOOSEIOType::TIME ||
+                                 moose_type == NEML2Utils::MOOSEIOType::SCALAR ||
+                                 suffix == "state_initializer";
+      if (use_kokkos_inputs && !host_gathered)
+      {
+#ifndef MOOSE_KOKKOS_ENABLED
+        mooseError("Unreachable: Kokkos input backend was rejected during setup.");
+#else
+        const auto symmetric = moose_tensor_type == "SymmetricRankTwoTensor";
+        if (moose_type != NEML2Utils::MOOSEIOType::MATERIAL ||
+            (moose_tensor_type != "RankTwoTensor" && !symmetric) || type_prefix != "" ||
+            suffix != "0" || (_interface_only && symmetric))
+          paramError(
+              "input_backend",
+              "The Kokkos input backend supports only current-state full rank-two MATERIAL inputs "
+              "and symmetric rank-two bulk MATERIAL inputs. Input '",
+              moose_name,
+              "' is mapped as ",
+              NEML2Utils::stringify(moose_type),
+              " ",
+              moose_tensor_type,
+              ".");
+
+        const auto obj_type =
+            _interface_only ? "KokkosInterfaceQuantityToNEML2" : "KokkosQuantityToNEML2";
+        auto obj_params = _factory.getValidParams(obj_type);
+        obj_params.set<std::string>("to_neml2") = neml2_name;
+        obj_params.set<UserObjectName>("batch_index_generator") = _idx_generator_name;
+        if (_interface_only)
+        {
+          obj_params.set<std::vector<BoundaryName>>("boundary") = _interface;
+          obj_params.set<MaterialPropertyName>("primary_from_moose") = moose_name;
+          obj_params.set<MaterialPropertyName>("neighbor_from_moose") = moose_name;
+        }
+        else
+        {
+          if (is_blk)
+            obj_params.set<std::vector<SubdomainName>>("block") = _block;
+          obj_params.set<MaterialPropertyName>("from_moose") = moose_name;
+          obj_params.set<bool>("symmetric") = symmetric;
+        }
+        _problem->addUserObject(obj_type, obj_name, obj_params);
+        return obj_name;
+#endif
+      }
+
       auto obj_type = "MOOSE" + type_prefix + moose_tensor_type + "ToNEML2";
       auto obj_params = _factory.getValidParams(obj_type);
       obj_params.set<std::string>("from_moose") = moose_name;
       obj_params.set<std::string>("to_neml2") = neml2_name;
       obj_params.set<MooseEnum>("quantity_type").assign(static_cast<int>(moose_type));
-      obj_params.set<std::vector<SubdomainName>>("block") = _block;
+      if (is_blk)
+        obj_params.set<std::vector<SubdomainName>>("block") = _block;
+      if (is_interface)
+        obj_params.set<std::vector<BoundaryName>>("interface_boundaries") = _interface;
+      if (_interface_only)
+        obj_params.set<bool>("interface_only") = true;
+      // Only a MATERIAL input listed in 'interface_material_inputs' reads from interface material
+      // data; every other input keeps the default volume/side (block/face-neighbor) source.
+      if (moose_type == NEML2Utils::MOOSEIOType::MATERIAL &&
+          std::find(_interface_material_inputs.begin(),
+                    _interface_material_inputs.end(),
+                    moose_name) != _interface_material_inputs.end())
+        obj_params.set<bool>("from_interface_material") = true;
       _problem->addUserObject(obj_type, obj_name, obj_params);
       return obj_name;
     };
@@ -252,20 +455,27 @@ NEML2Action::act()
                                       std::to_string(input.history_order),
                                       input.history_order == 1 ? "Old" : ""));
 
+    // One gatherer per initialized output reads the per-QP initial value once. It seeds two
+    // independent consumers in the executor: the device-managed old state (only when
+    // manage_state_advance is true) and the output material property's t == 0 initial condition
+    // (always, matching the host NEML2ToMOOSE retriever's moose_material_property_init). Sharing
+    // one gatherer avoids a duplicate element loop over the same material property.
     std::vector<UserObjectName> state_initializers;
-    if (getParam<bool>("manage_state_advance"))
-      for (const auto & [output_name, initial_value] : _initialize_output_values)
-      {
-        const auto output_shapes = shapeMap(_model->output_names(), _model->output_base_shapes());
-        const auto moose_tensor_type = shapeToMooseType(libmesh_map_find(output_shapes, output_name));
-        mooseAssert(!moose_tensor_type.empty(), "Initialized output has an unsupported tensor type");
-        state_initializers.push_back(
-            addGatherer(initial_value,
-                        lagName(output_name, 1),
-                        NEML2Utils::MOOSEIOType::MATERIAL,
-                        moose_tensor_type,
-                        "state_initializer"));
-      }
+    std::vector<UserObjectName> output_initializers;
+    for (const auto & [output_name, initial_value] : _initialize_output_values)
+    {
+      const auto output_shapes = shapeMap(_model->output_names(), _model->output_base_shapes());
+      const auto moose_tensor_type = shapeToMooseType(libmesh_map_find(output_shapes, output_name));
+      mooseAssert(!moose_tensor_type.empty(), "Initialized output has an unsupported tensor type");
+      const auto gatherer = addGatherer(initial_value,
+                                        lagName(output_name, 1),
+                                        NEML2Utils::MOOSEIOType::MATERIAL,
+                                        moose_tensor_type,
+                                        "state_initializer");
+      output_initializers.push_back(gatherer);
+      if (getParam<bool>("manage_state_advance"))
+        state_initializers.push_back(gatherer);
+    }
 
     // Additional NEML2Kernels that provide input data
     for (const auto & kernel_name : getParam<std::vector<std::string>>("input_kernels"))
@@ -286,11 +496,20 @@ NEML2Action::act()
       param_gatherers.push_back(addGatherer(
           param.moose_name, param.neml2_name, param.moose_type, param.moose_tensor_type, "param"));
 
-    // The index generator UO
+    // Host gatherers do not resolve the generator until execution, so preserve their established
+    // construction order. The Kokkos path created it before constructing its gatherers.
+    if (!use_kokkos_inputs)
     {
       auto type = "NEML2BatchIndexGenerator";
       auto params = _factory.getValidParams(type);
       params.applyParameters(parameters());
+      if (is_blk)
+        params.set<std::vector<SubdomainName>>("block") = _block;
+      if (is_interface)
+        params.set<std::vector<BoundaryName>>("interface_boundaries") = _interface;
+      params.set<bool>("interface_only") = _interface_only;
+      // Must precede Kokkos gatherers and the executor (group 0) so device mirrors are ready.
+      params.set<int>("execution_order_group") = -1;
       _problem->addUserObject(type, _idx_generator_name, params);
     }
 
@@ -302,6 +521,7 @@ NEML2Action::act()
       params.set<UserObjectName>("batch_index_generator") = _idx_generator_name;
       params.set<std::vector<UserObjectName>>("gatherers") = gatherers;
       params.set<std::vector<UserObjectName>>("state_initializers") = state_initializers;
+      params.set<std::vector<UserObjectName>>("output_initializers") = output_initializers;
       params.set<std::vector<UserObjectName>>("param_gatherers") = param_gatherers;
       _problem->addUserObject(type, _executor_name, params);
     }
@@ -309,46 +529,131 @@ NEML2Action::act()
 
   if (_current_task == "add_material")
   {
-    // Create and register a NEML2 output material property retriever; `extra` lets each caller
-    // add the bits that are unique to outputs vs. derivatives.
-    const bool use_kokkos = getParam<MooseEnum>("output_backend") == "kokkos";
-    auto addRetriever = [&](const std::string & moose_name,
-                             const std::string & neml2_var,
-                             const std::string & moose_tensor_type,
-                             auto && extra)
+    if (_outputs.empty() && _derivs.empty() && _param_derivs.empty())
     {
-      if (use_kokkos && moose_tensor_type != "SymmetricRankTwoTensor" &&
-          moose_tensor_type != "SymmetricRankFourTensor")
+      setupOutputMappings(*_model);
+      setupDerivativeMappings(*_model);
+      setupParameterDerivativeMappings(*_model);
+    }
+
+    const bool use_kokkos = getParam<MooseEnum>("output_backend") == "kokkos";
+    const auto interface_output_side = getParam<MooseEnum>("interface_output_side");
+    auto addRetriever = [&](const std::string & moose_name,
+                            const std::string & neml2_var,
+                            const std::string & moose_tensor_type,
+                            const std::string & input_derivative = "",
+                            const std::string & parameter_derivative = "")
+    {
+      const bool scalar = moose_tensor_type == "Real";
+      if (use_kokkos && !scalar && moose_tensor_type != "SymmetricRankTwoTensor" &&
+          moose_tensor_type != "SymmetricRankFourTensor" && moose_tensor_type != "RankTwoTensor" &&
+          moose_tensor_type != "RankFourTensor")
         paramError("output_backend",
                    "The Kokkos output backend does not support NEML2 output '",
                    moose_name,
                    "' mapped to ",
                    moose_tensor_type,
-                   ". Only symmetric rank-two and rank-four outputs are supported.");
+                   ". Only scalar, rank-two, and rank-four outputs are supported.");
+      // A scalar maps from a model output only; derivatives are rank-two or rank-four.
+      if (use_kokkos && scalar && (!input_derivative.empty() || !parameter_derivative.empty()))
+        paramError("output_backend",
+                   "The Kokkos output backend cannot map the derivative '",
+                   moose_name,
+                   "' to a scalar material property.");
 
+      const bool full_tensor =
+          moose_tensor_type == "RankTwoTensor" || moose_tensor_type == "RankFourTensor";
+      const bool rank_two =
+          moose_tensor_type == "SymmetricRankTwoTensor" || moose_tensor_type == "RankTwoTensor";
       auto obj_name = obscureObjectName(
           moose_name, use_kokkos ? "neml2_to_kokkos" : "neml2_to_moose", "", name());
       auto obj_type = use_kokkos
-                          ? "NEML2ToKokkos" +
-                                std::string(moose_tensor_type == "SymmetricRankTwoTensor"
-                                                ? "RankTwo"
-                                                : "RankFour") +
+                          ? "NEML2ToKokkos" + std::string(_interface_only ? "Side" : "") +
+                                (scalar ? "Real"
+                                        : std::string(full_tensor ? "Full" : "") +
+                                              std::string(rank_two ? "RankTwo" : "RankFour")) +
                                 "MaterialProperty"
                           : "NEML2ToMOOSE" + moose_tensor_type + "MaterialProperty";
       auto obj_params = _factory.getValidParams(obj_type);
       obj_params.set<UserObjectName>("neml2_executor") = _executor_name;
       obj_params.set<MaterialPropertyName>("to_moose") = moose_name;
       obj_params.set<std::string>("from_neml2") = neml2_var;
-      obj_params.set<std::vector<SubdomainName>>("block") = _block;
+      // In interface_only mode the model is only evaluated at interface QPs (no volume batch
+      // indices), so the retriever must be boundary-restricted to look up side batch indices.
+      if (_interface_only)
+        obj_params.set<std::vector<BoundaryName>>("boundary") = _interface;
+      else
+        obj_params.set<std::vector<SubdomainName>>("block") = _block;
       if (_export_output_targets.count(moose_name))
         obj_params.set<std::vector<OutputName>>("outputs") = _export_output_targets[moose_name];
-      extra(obj_params);
+      if (input_derivative.empty() && parameter_derivative.empty() &&
+          _initialize_output_values.count(moose_name))
+        obj_params.set<MaterialPropertyName>("moose_material_property_init") =
+            _initialize_output_values[moose_name];
+      if (!input_derivative.empty())
+        obj_params.set<std::string>("neml2_input_derivative") = input_derivative;
+      if (!parameter_derivative.empty())
+        obj_params.set<std::string>("neml2_parameter_derivative") = parameter_derivative;
 #ifdef MOOSE_KOKKOS_ENABLED
       if (use_kokkos)
-        _problem->addKokkosMaterial(obj_type, obj_name, obj_params);
+      {
+        if (_interface_only)
+        {
+          if (interface_output_side != "neighbor")
+            _problem->addKokkosMaterial(obj_type, obj_name, obj_params);
+          if (interface_output_side == "primary")
+            return;
+          const auto neighbor_type = "NEML2ToKokkosNeighbor" +
+                                     (scalar ? std::string("Real")
+                                             : std::string(full_tensor ? "Full" : "") +
+                                                   std::string(rank_two ? "RankTwo" : "RankFour")) +
+                                     "MaterialProperty";
+          auto neighbor_params = _factory.getValidParams(neighbor_type);
+          neighbor_params.applyParameters(obj_params);
+          neighbor_params.set<Moose::MaterialDataType>("_material_data_type") =
+              Moose::NEIGHBOR_MATERIAL_DATA;
+          _problem->addKokkosMaterial(neighbor_type, obj_name + "_neighbor", neighbor_params);
+        }
+        else
+          _problem->addKokkosMaterial(obj_type, obj_name, obj_params);
+      }
       else
 #endif
-        _problem->addMaterial(obj_type, obj_name, obj_params);
+      {
+        if (!_interface_only)
+        {
+          _problem->addMaterial(obj_type, obj_name, obj_params);
+          return;
+        }
+
+        // Both sides of a split interface carry their own deformation state, so the model is
+        // evaluated on each and must publish on each. The primary side is an ordinary
+        // boundary-restricted material: it writes BOUNDARY_MATERIAL_DATA during
+        // reinitMaterialsBoundary, which is what an interface consumer's getMaterialProperty
+        // reads.
+        if (interface_output_side != "neighbor")
+          _problem->addMaterial(obj_type, obj_name, obj_params);
+        if (interface_output_side == "primary")
+          return;
+
+        // The neighbor side needs NEIGHBOR_MATERIAL_DATA, which a boundary-restricted material
+        // cannot reach: FEProblemBase::addMaterialHelper only clones the face and neighbor copies
+        // for block-restricted materials, and reinitMaterialsNeighbor only ever runs
+        // block-restricted neighbor objects. Register this copy as an interface material instead.
+        // Every loop that visits an interface -- NonlinearThread::onInterface (and its
+        // h-refinement-mismatch variant), ComputeUserObjectsThread::onInterface, and
+        // ComputeElemAuxBcsThread -- calls reinitMaterialsInterface only after reinitNeighbor and
+        // reinitMaterialsNeighbor, so by then the neighbor element, its face quadrature rule, and
+        // the neighbor material data (resized and swapped) are all valid. Writing
+        // _neighbor_material_props from there is therefore safe, and it mirrors the Kokkos path,
+        // whose neighbor retriever is likewise a boundary-restricted interface material carrying
+        // _material_data_type = NEIGHBOR_MATERIAL_DATA.
+        auto neighbor_params = obj_params;
+        neighbor_params.set<bool>("_neighbor") = true;
+        neighbor_params.set<Moose::MaterialDataType>("_material_data_type") =
+            Moose::NEIGHBOR_MATERIAL_DATA;
+        _problem->addInterfaceMaterial(obj_type, obj_name + "_neighbor", neighbor_params);
+      }
     };
 
     // NEML2ToMOOSE output retrievers
@@ -358,32 +663,16 @@ NEML2Action::act()
         paramError("moose_output_types",
                    "Unsupported type corresponding to the moose output ",
                    output.name);
-      addRetriever(output.name,
-                   output.name,
-                   output.moose_tensor_type,
-                   [&](InputParameters & p)
-                   {
-                     if (_initialize_output_values.count(output.name))
-                       p.set<MaterialPropertyName>("moose_material_property_init") =
-                           _initialize_output_values[output.name];
-                   });
+      addRetriever(output.name, output.name, output.moose_tensor_type);
     }
 
     // NEML2ToMOOSE derivative retrievers
     for (const auto & deriv : _derivs)
-      addRetriever(deriv.name,
-                   deriv.y,
-                   deriv.moose_tensor_type,
-                   [&](InputParameters & p)
-                   { p.set<std::string>("neml2_input_derivative") = deriv.x; });
+      addRetriever(deriv.name, deriv.y, deriv.moose_tensor_type, deriv.x);
 
     // NEML2ToMOOSE parameter-derivative retrievers
     for (const auto & deriv : _param_derivs)
-      addRetriever(deriv.name,
-                   deriv.y,
-                   deriv.moose_tensor_type,
-                   [&](InputParameters & p)
-                   { p.set<std::string>("neml2_parameter_derivative") = deriv.x; });
+      addRetriever(deriv.name, deriv.y, deriv.moose_tensor_type, "", deriv.x);
   }
 }
 
@@ -523,9 +812,16 @@ NEML2Action::setupOutputMappings(const NEML2ModelHandle & model)
     return;
 
   const auto out_shapes = shapeMap(model.output_names(), model.output_base_shapes());
+  const auto & selected_outputs = getParam<std::vector<std::string>>("output_variables");
+  for (const auto & oname : selected_outputs)
+    if (!contains(model.output_names(), oname))
+      paramError("output_variables", "Variable '", oname, "' is not a model output.");
 
   for (const auto & oname : model.output_names())
   {
+    if (!selected_outputs.empty() && !contains(selected_outputs, oname))
+      continue;
+
     const auto mtype = shapeToMooseType(out_shapes.at(oname));
     if (mtype.empty())
       mooseError(

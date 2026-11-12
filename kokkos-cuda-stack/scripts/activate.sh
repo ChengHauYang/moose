@@ -29,7 +29,7 @@ fi
 _activate_dir=$(cd "$(dirname "$_src")" && pwd)
 export MOOSE_DIR="${_activate_dir%/kokkos-cuda-stack/scripts}"
 export STACK_DIR="$MOOSE_DIR/kokkos-cuda-stack"
-export PREFIX="$STACK_DIR/prefix"
+export PREFIX="${MOOSE_CUDA_PREFIX:-$STACK_DIR/prefix}"
 
 # USE-side vars (parallel to env.sh's USE block).
 export PETSC_DIR="$PREFIX"
@@ -55,7 +55,7 @@ export OPAL_PREFIX="$PREFIX"
 # ordering, whatever the caller inherited, and duplicates every entry only
 # once so repeated sourcing is a no-op.
 NEML2_VENV_BIN="$STACK_DIR/neml2-venv/bin"
-MINIFORGE_BIN="/home/chenghau.yang/miniforge/bin"
+MINIFORGE_BIN="${MINIFORGE_BIN:-$HOME/miniforge/bin}"
 
 _head="$PREFIX/bin"
 if [ -x "$NEML2_VENV_BIN/python3" ]; then
@@ -65,7 +65,20 @@ fi
 if [ -x "$MINIFORGE_BIN/python3-config" ]; then
   _head="$_head:$MINIFORGE_BIN"
 fi
-_head="$_head:/usr/local/cuda/bin"
+_head="$_head:${CUDA_DIR:-/usr/local/cuda}/bin"
+# Nsight Systems (see nsys_select.sh): NSYS_BIN, through a shim that never
+# falls back to another install, or a standalone install's bin/ (nsys and
+# nsys-ui only) goes first so it shadows the older nsys in the CUDA toolkit.
+. "$_activate_dir/nsys_select.sh"
+moose_nsys_select || true
+if [ -n "${NSYS_BIN:-}" ]; then
+  export NSYS_BIN
+  _head="$_activate_dir/nsys-shim:$_head"
+elif [ "$NSYS_SOURCE" = standalone ]; then
+  _head="${NSYS_SELECTED%/*}:$_head"
+fi
+_nsys_problem=$(moose_nsys_problem)
+[ -z "$_nsys_problem" ] || echo "[activate.sh] WARNING: $_nsys_problem" >&2
 
 _new_path="$_head"
 _orig_ifs="$IFS"
@@ -82,7 +95,7 @@ done
 set +f
 IFS="$_orig_ifs"
 export PATH="$_new_path"
-unset _head _new_path _orig_ifs _p
+unset _head _new_path _orig_ifs _p _nsys_problem
 
 : "${MOOSE_JOBS:=8}"
 export MOOSE_JOBS

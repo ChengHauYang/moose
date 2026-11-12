@@ -118,12 +118,29 @@ MaterialBase::initializeMaterialRestrictable()
       for (auto elem_id : _mesh.getBoundaryActiveSemiLocalElemIds(boundary))
       {
         const auto elem = _mesh.elemPtr(elem_id);
+        if (elem->processor_id() != processor_id())
+          continue;
 
-        if (elem->processor_id() == processor_id() &&
-            restricted_blocks.find(elem->subdomain_id()) != restricted_blocks.end())
-          for (const auto side :
-               _mesh.getMesh().get_boundary_info().sides_with_boundary_id(elem, boundary))
+        for (const auto side :
+             _mesh.getMesh().get_boundary_info().sides_with_boundary_id(elem, boundary))
+        {
+          if (materialDataType() == Moose::NEIGHBOR_MATERIAL_DATA)
+          {
+            const auto neighbor = elem->neighbor_ptr(side);
+            ContiguousElementID neighbor_eid = libMesh::DofObject::invalid_id;
+            if (neighbor && neighbor != libMesh::remote_elem)
+              neighbor_eid = _mesh.getKokkosMesh()->getContiguousElementID(neighbor);
+            if (neighbor_eid != libMesh::DofObject::invalid_id)
+            {
+              const bool neighbor_in_blocks =
+                  restricted_blocks.find(neighbor->subdomain_id()) != restricted_blocks.end();
+              if (neighbor_in_blocks)
+                element_side_ids.insert({neighbor_eid, neighbor->which_neighbor_am_i(elem)});
+            }
+          }
+          else if (restricted_blocks.find(elem->subdomain_id()) != restricted_blocks.end())
             element_side_ids.insert({_mesh.getKokkosMesh()->getContiguousElementID(elem), side});
+        }
       }
 
     _element_side_ids = element_side_ids;

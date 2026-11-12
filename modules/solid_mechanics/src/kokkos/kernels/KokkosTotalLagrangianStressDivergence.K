@@ -60,8 +60,9 @@ KokkosTotalLagrangianStressDivergence::KokkosTotalLagrangianStressDivergence(
     _gamma_over_3(_stabilize_strain ? getKokkosMaterialProperty<Real, 0>("fbar_gamma_over_3")
                                     : Moose::Kokkos::MaterialProperty<Real, 0>())
 {
-  if (_mesh.dimension() != 3 || _ndisp != 3)
-    paramError("displacements", "Exactly three displacement variables on a 3D mesh are required.");
+  if (_ndisp != _mesh.dimension())
+    paramError("displacements",
+               "The number of displacement variables must match the mesh dimension.");
   if (_component >= _ndisp)
     paramError("component", "The component must identify one of the supplied displacement variables.");
   if (_var.number() != coupled("displacements", _component))

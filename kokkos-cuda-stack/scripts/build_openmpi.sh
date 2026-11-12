@@ -41,8 +41,8 @@ detect_stale_prefix() {
   fi
 }
 
-if [ -x "$PREFIX/bin/ompi_info" ] \
-   && "$PREFIX/bin/ompi_info" | grep -q "opal_built_with_cuda_support:true\|MPI extensions:.*cuda"; then
+if [ "${FORCE_REBUILD:-0}" != 1 ] && [ -x "$PREFIX/bin/ompi_info" ] \
+   && "$PREFIX/bin/ompi_info" | grep -E "opal_built_with_cuda_support:true|MPI extensions:.*cuda" >/dev/null; then
   stale=$(detect_stale_prefix)
   if [ -z "$stale" ]; then
     echo "[build_openmpi] $PREFIX/bin/ompi_info already reports CUDA support; skipping."
@@ -90,15 +90,15 @@ cd "$OMPI_BUILD"
 # $PREFIX/bin/ompi_info output. Do not change without also updating the README.
 "$OMPI_SRC/configure" \
   --prefix="$PREFIX" \
-  --with-cuda=/usr/local/cuda \
+  --with-cuda="$CUDA_DIR" \
   --enable-mpi-fortran=usempi \
   --disable-mpi-cxx \
   --disable-oshmem \
   --without-verbs \
   --without-cma \
-  CC=/usr/bin/gcc-11 \
-  CXX=/usr/bin/g++-11 \
-  FC=/usr/bin/gfortran-9 \
+  CC="$OMPI_CC" \
+  CXX="$OMPI_CXX" \
+  FC="$OMPI_FC" \
   2>&1 | tee -a "$LOG"
 
 make -j "$MOOSE_JOBS" 2>&1 | tee -a "$LOG"

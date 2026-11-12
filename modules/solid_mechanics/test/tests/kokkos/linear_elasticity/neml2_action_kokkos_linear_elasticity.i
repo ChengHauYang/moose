@@ -20,26 +20,17 @@
   [all]
     executor_name = neml2
     model = model
-    input_kernels = neml2_strain
+    input_backend = kokkos
     output_backend = kokkos
     derivatives = 'neml2_stress neml2_strain Jacobian_mult'
   []
 []
 
-[UserObjects]
-  [assembly]
-    type = TorchAssembly
-  []
-  [fe]
-    type = TorchFEInterpolation
-    assembly = assembly
-  []
-  [neml2_strain]
-    type = TorchSmallStrain
-    assembly = assembly
-    fe = fe
-    to_neml2 = neml2_strain
+[Materials]
+  [strain]
+    type = KokkosComputeSmallStrain
     displacements = 'disp_x disp_y'
+    strain = neml2_strain
   []
 []
 
