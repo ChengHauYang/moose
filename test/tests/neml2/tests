@@ -159,6 +159,331 @@
       valgrind = heavy
     []
   []
+  [boundary_restriction]
+    requirement = 'The framework shall be capable of defining NEML2 models on material interfaces'
+    type = Exodiff
+    issues = '#32413'
+    input = 'interface_material.i'
+    exodiff = 'interface_material_out.e'
+    capabilities = 'libtorch & neml2'
+    valgrind = heavy
+    collections = 'SYSTEM'
+  []
+  [boundary_restriction_jacobian]
+    requirement = 'The framework shall compute a correct Jacobian for a NEML2 model defined on a material interface with volume (block) evaluation, using the derivative provided by the NEML2 model.'
+    type = PetscJacobianTester
+    issues = '#32413'
+    input = 'interface_material.i'
+    run_sim = true
+    capabilities = 'libtorch & neml2'
+    collections = 'SYSTEM'
+  []
+  [interface_only_restriction]
+    requirement = 'The framework shall be capable of defining NEML2 models on material interfaces using block material properties without volume-element evaluation.'
+    type = Exodiff
+    issues = '#32413'
+    input = 'interface_only_material.i'
+    exodiff = 'interface_only_material_out.e'
+    capabilities = 'libtorch & neml2'
+    valgrind = heavy
+    collections = 'SYSTEM'
+  []
+  [linear_cohesive_interface]
+    requirement = 'The framework shall be capable of using a NEML2 linear cohesive interface law in a scalar Poisson problem.'
+    type = Exodiff
+    input = 'linear_cohesive_interface.i'
+    exodiff = 'linear_cohesive_interface_out.e'
+    capabilities = 'libtorch & neml2'
+    valgrind = heavy
+    collections = 'SYSTEM'
+  []
+  [interface_material_input_required]
+    requirement = 'The framework shall throw an error when a NEML2 material input supplied by a true interface material is not routed through interface material data, because it is then validated as a block material property that no block supplies.'
+    type = RunException
+    issues = '#32413'
+    input = 'linear_cohesive_interface.i'
+    cli_args = 'NEML2/cohesive/interface_material_inputs='
+    expect_err = "Material property 'jump'.*is not defined on block"
+    capabilities = 'libtorch & neml2'
+    valgrind = none
+    collections = 'SYSTEM'
+  []
+  [interface_material_input_not_found]
+    requirement = 'The framework shall throw an error when a name listed in interface_material_inputs is not a NEML2 input of the model.'
+    type = RunException
+    issues = '#32413'
+    input = 'interface_material.i'
+    cli_args = 'NEML2/source/interface_material_inputs=typo NEML2/source/volume=false'
+    expect_err = "'typo' is not a NEML2 input"
+    capabilities = 'libtorch & neml2'
+    valgrind = none
+    collections = 'SYSTEM'
+  []
+  [interface_material_input_not_material]
+    requirement = 'The framework shall throw an error when a name listed in interface_material_inputs is a NEML2 input that is not mapped as a MATERIAL.'
+    type = RunException
+    issues = '#32413'
+    input = 'interface_material.i'
+    cli_args = 'NEML2/source/interface_material_inputs=u NEML2/source/volume=false'
+    expect_err = "'u' is mapped as .*not MATERIAL"
+    capabilities = 'libtorch & neml2'
+    valgrind = none
+    collections = 'SYSTEM'
+  []
+  [interface_material_input_requires_interface_only]
+    requirement = 'The framework shall throw an error when interface_material_inputs is used with volume or external-boundary evaluation enabled.'
+    type = RunException
+    issues = '#32413'
+    input = 'mixed_source_interface.i'
+    cli_args = "NEML2/cohesive/volume=true"
+    expect_err = "Interface material inputs require an interface-only evaluation domain"
+    capabilities = 'libtorch & neml2'
+    valgrind = none
+    collections = 'SYSTEM'
+  []
+  [linear_cohesive_interface_jacobian]
+    requirement = 'The framework shall compute a correct Jacobian for a NEML2 linear cohesive interface law using the derivative provided by the NEML2 model.'
+    type = PetscJacobianTester
+    issues = '#32413'
+    input = 'linear_cohesive_interface.i'
+    run_sim = true
+    capabilities = 'libtorch & neml2'
+    collections = 'SYSTEM'
+  []
+  [mixed_material_sources]
+    requirement = 'The framework shall route each NEML2 material input to the correct material data store per input, allowing a single model to mix a true interface material input with a block material input evaluated on the interface sides.'
+    type = Exodiff
+    issues = '#32413'
+    input = 'mixed_source_interface.i'
+    exodiff = 'mixed_source_interface_out.e'
+    capabilities = 'libtorch & neml2'
+    valgrind = heavy
+    collections = 'SYSTEM'
+  []
+  [two_sided_block_material]
+    requirement = 'The framework shall read a block material input to a NEML2 interface model independently on the element and neighbor sides of the interface, so that a material differing across the interface produces a different output on each side.'
+    type = Exodiff
+    issues = '#32413'
+    input = 'interface_block_material_two_sided.i'
+    exodiff = 'interface_block_material_two_sided_out.e'
+    capabilities = 'libtorch & neml2'
+    valgrind = heavy
+    collections = 'SYSTEM'
+  []
+  [evaluation_domains]
+    issues = '#32413'
+    collections = 'SYSTEM'
+    requirement = 'The framework shall evaluate stateful NEML2 material properties at independently selected volume, external-boundary, and internal-interface quadrature points while preserving spatially varying quadrature-point data for '
+    [volume]
+      detail = 'volume only.'
+      type = RunApp
+      input = 'evaluation_domains.i'
+      cli_args = "NEML2/domains/boundary= NEML2/domains/interface= Materials/active='B volume_stateful' Postprocessors/active=volume"
+      expect_out = '1\.000000e\+00 \|   2\.000000e\+00'
+      capabilities = 'libtorch & neml2'
+    []
+    [boundary]
+      detail = 'external boundaries only.'
+      type = RunApp
+      input = 'evaluation_domains.i'
+      cli_args = "NEML2/domains/volume=false NEML2/domains/interface= Materials/active='B boundary_stateful' Postprocessors/active=boundary"
+      expect_out = '1\.000000e\+00 \|   1\.500000e\+00'
+      capabilities = 'libtorch & neml2'
+    []
+    [interface]
+      detail = 'internal interfaces only.'
+      type = RunApp
+      input = 'evaluation_domains.i'
+      cli_args = "NEML2/domains/volume=false NEML2/domains/boundary= Materials/active='B interface_stateful' Postprocessors/active=interface"
+      expect_out = '1\.000000e\+00 \|   2\.000000e\+00'
+      capabilities = 'libtorch & neml2'
+    []
+    [volume_boundary]
+      detail = 'volume and external boundaries.'
+      type = RunApp
+      input = 'evaluation_domains.i'
+      cli_args = "NEML2/domains/interface= Materials/active='B volume_stateful boundary_stateful' Postprocessors/active='volume boundary'"
+      expect_out = '1\.000000e\+00 \|   1\.500000e\+00 \|   2\.000000e\+00'
+      capabilities = 'libtorch & neml2'
+    []
+    [volume_interface]
+      detail = 'volume and internal interfaces.'
+      type = RunApp
+      input = 'evaluation_domains.i'
+      cli_args = "NEML2/domains/boundary= Materials/active='B volume_stateful interface_stateful' Postprocessors/active='volume interface'"
+      expect_out = '1\.000000e\+00 \|   2\.000000e\+00 \|   2\.000000e\+00'
+      capabilities = 'libtorch & neml2'
+    []
+    [boundary_interface]
+      detail = 'external boundaries and internal interfaces.'
+      type = RunApp
+      input = 'evaluation_domains.i'
+      cli_args = "NEML2/domains/volume=false Materials/active='B boundary_stateful interface_stateful' Postprocessors/active='boundary interface'"
+      expect_out = '1\.000000e\+00 \|   1\.500000e\+00 \|   2\.000000e\+00'
+      capabilities = 'libtorch & neml2'
+    []
+    [volume_boundary_interface]
+      detail = 'volume, external boundaries, and internal interfaces together.'
+      type = RunApp
+      input = 'evaluation_domains.i'
+      cli_args = "Materials/active='B volume_stateful boundary_stateful interface_stateful' Postprocessors/active='volume boundary interface'"
+      expect_out = '1\.000000e\+00 \|   1\.500000e\+00 \|   2\.000000e\+00 \|   2\.000000e\+00'
+      capabilities = 'libtorch & neml2'
+    []
+    [volume_boundary_interface_parallel]
+      detail = 'all three domains with matching batch layout and gathered-data ordering under MPI and threading.'
+      type = RunApp
+      input = 'evaluation_domains.i'
+      cli_args = "Materials/active='B volume_stateful boundary_stateful interface_stateful' Postprocessors/active='volume boundary interface'"
+      expect_out = '1\.000000e\+00 \|   1\.500000e\+00 \|   2\.000000e\+00 \|   2\.000000e\+00'
+      capabilities = 'libtorch & neml2'
+      min_parallel = 2
+      max_parallel = 2
+      min_threads = 2
+      max_threads = 2
+    []
+    [volume_boundary_interface_stateful]
+      detail = 'all three domains over multiple time steps with the old volume and side values retained independently.'
+      type = RunApp
+      input = 'evaluation_domains.i'
+      cli_args = "Executioner/num_steps=2 ICs/A/function=1 Materials/B/prop_values=t Materials/active='B volume_stateful boundary_stateful interface_stateful' Postprocessors/active='volume boundary interface volume_old boundary_old interface_old'"
+      expect_out = '2\.000000e\+00 \|   3\.000000e\+00 \|   2\.000000e\+00 \|   3\.000000e\+00 \|   2\.000000e\+00 \|   3\.000000e\+00 \|   2\.000000e\+00'
+      capabilities = 'libtorch & neml2'
+    []
+  []
+  [evaluation_domains_exodus]
+    issues = '#32413'
+    collections = 'SYSTEM'
+    requirement = 'The framework shall preserve spatially varying NEML2 outputs in Exodus volume and side fields for visualization and regression comparison when evaluating on '
+    [volume]
+      detail = 'volume only.'
+      type = Exodiff
+      input = 'evaluation_domains_exodus.i'
+      cli_args = "NEML2/domains/boundary= NEML2/domains/interface= AuxKernels/active=volume Outputs/exodus/file_base=evaluation_domains_exodus_volume"
+      exodiff = 'evaluation_domains_exodus_volume.e'
+      capabilities = 'libtorch & neml2'
+    []
+    [boundary]
+      detail = 'external boundaries only.'
+      type = Exodiff
+      input = 'evaluation_domains_exodus.i'
+      cli_args = "NEML2/domains/volume=false NEML2/domains/interface= AuxKernels/active=boundary Outputs/exodus/file_base=evaluation_domains_exodus_boundary"
+      exodiff = 'evaluation_domains_exodus_boundary.e'
+      capabilities = 'libtorch & neml2'
+    []
+    [interface]
+      detail = 'internal interfaces only.'
+      type = Exodiff
+      input = 'evaluation_domains_exodus.i'
+      cli_args = "NEML2/domains/volume=false NEML2/domains/boundary= AuxKernels/active=interface Outputs/exodus/file_base=evaluation_domains_exodus_interface"
+      exodiff = 'evaluation_domains_exodus_interface.e'
+      capabilities = 'libtorch & neml2'
+    []
+    [volume_boundary]
+      detail = 'volume and external boundaries.'
+      type = Exodiff
+      input = 'evaluation_domains_exodus.i'
+      cli_args = "NEML2/domains/interface= AuxKernels/active='volume boundary' Outputs/exodus/file_base=evaluation_domains_exodus_volume_boundary"
+      exodiff = 'evaluation_domains_exodus_volume_boundary.e'
+      capabilities = 'libtorch & neml2'
+    []
+    [volume_interface]
+      detail = 'volume and internal interfaces.'
+      type = Exodiff
+      input = 'evaluation_domains_exodus.i'
+      cli_args = "NEML2/domains/boundary= AuxKernels/active='volume interface' Outputs/exodus/file_base=evaluation_domains_exodus_volume_interface"
+      exodiff = 'evaluation_domains_exodus_volume_interface.e'
+      capabilities = 'libtorch & neml2'
+    []
+    [boundary_interface]
+      detail = 'external boundaries and internal interfaces.'
+      type = Exodiff
+      input = 'evaluation_domains_exodus.i'
+      cli_args = "NEML2/domains/volume=false AuxKernels/active='boundary interface' Outputs/exodus/file_base=evaluation_domains_exodus_boundary_interface"
+      exodiff = 'evaluation_domains_exodus_boundary_interface.e'
+      capabilities = 'libtorch & neml2'
+    []
+    [volume_boundary_interface]
+      detail = 'volume, external boundaries, and internal interfaces together.'
+      type = Exodiff
+      input = 'evaluation_domains_exodus.i'
+      cli_args = "AuxKernels/active='volume boundary interface' Outputs/exodus/file_base=evaluation_domains_exodus_volume_boundary_interface"
+      exodiff = 'evaluation_domains_exodus_volume_boundary_interface.e'
+      capabilities = 'libtorch & neml2'
+    []
+  []
+  [volume_stateful_internal_side]
+    requirement = 'The framework shall permit incidental internal-side reinitialization of a stateful NEML2 material property whose model is evaluated only at volume quadrature points when no side consumer requests that property.'
+    type = RunApp
+    input = 'volume_stateful_internal_side.i'
+    capabilities = 'libtorch & neml2'
+    issues = '#32413'
+    collections = 'SYSTEM'
+  []
+  [evaluation_domain_errors]
+    issues = '#32413'
+    collections = 'SYSTEM'
+    requirement = 'The framework shall reject invalid NEML2 evaluation-domain configurations when '
+    [none]
+      detail = 'all domains are disabled.'
+      type = RunException
+      input = 'evaluation_domains.i'
+      cli_args = 'NEML2/domains/volume=false NEML2/domains/boundary= NEML2/domains/interface='
+      expect_err = 'At least one NEML2 evaluation domain must be enabled'
+      capabilities = 'libtorch & neml2'
+    []
+    [internal_as_boundary]
+      detail = 'an internal sideset is selected as an external boundary.'
+      type = RunException
+      input = 'evaluation_domains.i'
+      cli_args = 'NEML2/domains/volume=false NEML2/domains/boundary=left_block_right_block NEML2/domains/interface= Postprocessors/active='
+      expect_err = 'contains an internal side, but external boundaries must not contain neighbors'
+      capabilities = 'libtorch & neml2'
+    []
+    [external_as_interface]
+      detail = 'an external sideset is selected as an internal interface.'
+      type = RunException
+      input = 'evaluation_domains.i'
+      cli_args = 'NEML2/domains/volume=false NEML2/domains/boundary= NEML2/domains/interface=left Postprocessors/active='
+      expect_err = 'interface boundaries must contain neighbors'
+      capabilities = 'libtorch & neml2'
+    []
+    [unselected_side_access]
+      detail = 'a side consumer requests an output from a volume-only evaluation.'
+      type = RunException
+      input = 'evaluation_domains.i'
+      cli_args = 'NEML2/domains/boundary= NEML2/domains/interface= Postprocessors/active=boundary'
+      expect_err = "requested at side quadrature points outside the NEML2 model's selected boundaries"
+      capabilities = 'libtorch & neml2'
+    []
+    [mixed_topology_as_boundary]
+      detail = 'a sideset containing both external and internal sides is selected as an external boundary.'
+      type = RunException
+      input = 'evaluation_domains.i'
+      cli_args = 'NEML2/domains/volume=false NEML2/domains/boundary=mixed_topology NEML2/domains/interface= Postprocessors/active='
+      expect_err = 'contains an internal side, but external boundaries must not contain neighbors'
+      capabilities = 'libtorch & neml2'
+      valgrind = none
+    []
+    [mixed_topology_as_interface]
+      detail = 'a sideset containing both external and internal sides is selected as an internal interface.'
+      type = RunException
+      input = 'evaluation_domains.i'
+      cli_args = 'NEML2/domains/volume=false NEML2/domains/boundary= NEML2/domains/interface=mixed_topology Postprocessors/active='
+      expect_err = 'contains an external side, but interface boundaries must contain neighbors'
+      capabilities = 'libtorch & neml2'
+      valgrind = none
+    []
+    [boundary_interface_overlap]
+      detail = 'the same boundary is selected as both an external boundary and an internal interface.'
+      type = RunException
+      input = 'evaluation_domains.i'
+      cli_args = 'NEML2/domains/volume=false NEML2/domains/boundary=left NEML2/domains/interface=left Postprocessors/active='
+      expect_err = 'cannot be selected as both external boundaries and internal interfaces'
+      capabilities = 'libtorch & neml2'
+      valgrind = none
+    []
+  []
   [empty]
     requirement = "The framework shall be capable of running custom NEML2 models and handling empty "
                   "input batches without errors."

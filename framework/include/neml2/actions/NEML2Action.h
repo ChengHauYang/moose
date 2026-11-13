@@ -33,6 +33,11 @@ public:
 
   virtual void act() override;
 
+  virtual void addRelationshipManagers(Moose::RelationshipManagerType input_rm_type) override;
+
+  /// Check whether this action produces a given MOOSE material property
+  bool producesProperty(const MaterialPropertyName & name) const;
+
 protected:
   const NEML2ActionCommon & getCommonAction() const;
 
@@ -132,6 +137,18 @@ protected:
 
   /// Blocks this sub-block action applies to
   const std::vector<SubdomainName> _block;
+
+  /// Whether this sub-block action evaluates element-interior quadrature points
+  const bool _volume;
+
+  /// External boundaries this sub-block action applies to
+  const std::vector<BoundaryName> _boundary;
+
+  /// Internal interfaces this sub-block action applies to
+  const std::vector<BoundaryName> _interface;
+
+  /// MATERIAL inputs supplied by a true InterfaceMaterial (read from INTERFACE_MATERIAL_DATA)
+  const std::vector<MaterialPropertyName> _interface_material_inputs;
 
   /// Input variables to skip (i.e., not to set up mappings for)
   std::vector<std::string> _skip_input_variables;

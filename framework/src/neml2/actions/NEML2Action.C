@@ -78,6 +78,26 @@ NEML2Action::validParams()
       "<block-name> is this action sub-block's name.");
   params.addParam<std::vector<SubdomainName>>(
       "block", {}, "List of blocks (subdomains) where the material model is defined");
+  params.addParam<bool>(
+      "volume",
+      true,
+      "Whether to evaluate the material model at element-interior quadrature points");
+  params.addParam<std::vector<BoundaryName>>(
+      "boundary", {}, "External boundaries where the material model is evaluated");
+  params.addParam<std::vector<BoundaryName>>(
+      "interface", {}, "Internal interfaces where the material model is evaluated on both sides");
+  // Block materials need no hint: the same material is reinit'd as BLOCK/FACE/NEIGHBOR data and the
+  // gatherer reads the store for where it is. A true InterfaceMaterial instead lives in the
+  // separate INTERFACE_MATERIAL_DATA store, which the native block/face/neighbor selection never
+  // picks. Since this action builds its gatherers on add_user_object -- before materials exist --
+  // it cannot query the warehouse to tell the two apart from a property name alone, so the
+  // interface-material inputs are named here. Per-input so one action can mix both (e.g. 'jump'
+  // from an InterfaceMaterial and 'stiffness' from a block material).
+  params.addParam<std::vector<MaterialPropertyName>>(
+      "interface_material_inputs",
+      {},
+      "MATERIAL inputs supplied by a true InterfaceMaterial (read from interface material data "
+      "instead of the volume/side material data). Ignored for non-MATERIAL inputs.");
   return params;
 }
 
@@ -90,6 +110,11 @@ NEML2Action::NEML2Action(const InputParameters & params)
                             ? getParam<std::string>("batch_index_generator_name")
                             : "neml2_index_" + getParam<std::string>("model") + "_" + name()),
     _block(getParam<std::vector<SubdomainName>>("block")),
+    _volume(getParam<bool>("volume")),
+    _boundary(getParam<std::vector<BoundaryName>>("boundary")),
+    _interface(getParam<std::vector<BoundaryName>>("interface")),
+    _interface_material_inputs(
+        getParam<std::vector<MaterialPropertyName>>("interface_material_inputs")),
     _skip_input_variables(getParam<std::vector<std::string>>("skip_input_variables"))
 {
   NEML2Utils::assertNEML2Enabled();
@@ -174,11 +199,29 @@ NEML2Action::getCommonAction() const
   return *common_block[0];
 }
 
+void
+NEML2Action::addRelationshipManagers(Moose::RelationshipManagerType input_rm_type)
+{
+  // The NEML2 gatherers and batch index generator are DomainUserObjects, which require one layer of
+  // neighbor ghosting (declared in DomainUserObject::validParams) so that neighbor data can be
+  // reinitialized on internal sides in parallel. These user objects are created during the
+  // add_user_object task, which is too late for their relationship managers to attach, so declare
+  // the ghosting here on the action's behalf.
+  auto params = _factory.getValidParams("NEML2BatchIndexGenerator");
+  Action::addRelationshipManagers(input_rm_type, params);
+}
+
 #ifndef NEML2_ENABLED
 
 void
 NEML2Action::act()
 {
+}
+
+bool
+NEML2Action::producesProperty(const MaterialPropertyName &) const
+{
+  return false;
 }
 
 #else
@@ -203,6 +246,15 @@ NEML2Action::act()
     printSummary();
   }
 
+  const bool is_blk = !_block.empty();
+  const bool is_boundary = !_boundary.empty();
+  const bool is_interface = !_interface.empty();
+
+  if (!_volume && !is_boundary && !is_interface)
+    paramError("volume",
+               "At least one NEML2 evaluation domain must be enabled with 'volume = true', a "
+               "nonempty 'boundary', or a nonempty 'interface'.");
+
   if (_current_task == "add_user_object")
   {
     setupInputMappings(*_model);
@@ -212,6 +264,36 @@ NEML2Action::act()
     setupParameterDerivativeMappings(*_model);
 
     checkStatefulConsistency(*_model);
+
+    // Interface material data exists only in the internal-interface callback and therefore cannot
+    // populate volume or external-boundary entries in the shared batch.
+    if (!_interface_material_inputs.empty() && (_volume || is_boundary))
+      paramError("interface_material_inputs",
+                 "Interface material inputs require an interface-only evaluation domain. Disable "
+                 "'volume' and leave 'boundary' empty, or use block/face material inputs that are "
+                 "available in every selected domain.");
+    if (!_interface_material_inputs.empty() && !is_interface)
+      paramError("interface_material_inputs",
+                 "Interface material inputs require at least one internal sideset in 'interface'.");
+
+    // Every interface_material_inputs entry must be a real MATERIAL input. Otherwise a typo or a
+    // non-MATERIAL name would be silently dropped in addGatherer and revert to the default
+    // volume/side routing, producing wrong results with no error.
+    for (const auto & name : _interface_material_inputs)
+    {
+      const auto it = std::find_if(
+          _inputs.begin(), _inputs.end(), [&](const auto & in) { return in.name == name; });
+      if (it == _inputs.end())
+        paramError("interface_material_inputs", "'", name, "' is not a NEML2 input of this model.");
+      if (it->moose_type != NEML2Utils::MOOSEIOType::MATERIAL)
+        paramError(
+            "interface_material_inputs",
+            "'",
+            name,
+            "' is mapped as ",
+            NEML2Utils::stringify(it->moose_type),
+            ", not MATERIAL; only MATERIAL inputs can be routed to interface material data.");
+    }
 
     printSummary();
 
@@ -229,7 +311,19 @@ NEML2Action::act()
       obj_params.set<std::string>("from_moose") = moose_name;
       obj_params.set<std::string>("to_neml2") = neml2_name;
       obj_params.set<MooseEnum>("quantity_type").assign(static_cast<int>(moose_type));
-      obj_params.set<std::vector<SubdomainName>>("block") = _block;
+      if (is_blk)
+        obj_params.set<std::vector<SubdomainName>>("block") = _block;
+      obj_params.set<bool>("volume") = _volume;
+      obj_params.set<std::vector<BoundaryName>>("external_boundaries") = _boundary;
+      if (is_interface)
+        obj_params.set<std::vector<BoundaryName>>("interface_boundaries") = _interface;
+      // Only a MATERIAL input listed in 'interface_material_inputs' reads from interface material
+      // data; every other input keeps the default volume/side (block/face-neighbor) source.
+      if (moose_type == NEML2Utils::MOOSEIOType::MATERIAL &&
+          std::find(_interface_material_inputs.begin(),
+                    _interface_material_inputs.end(),
+                    moose_name) != _interface_material_inputs.end())
+        obj_params.set<bool>("from_interface_material") = true;
       _problem->addUserObject(obj_type, obj_name, obj_params);
       return obj_name;
     };
@@ -270,6 +364,12 @@ NEML2Action::act()
       auto type = "NEML2BatchIndexGenerator";
       auto params = _factory.getValidParams(type);
       params.applyParameters(parameters());
+      if (is_blk)
+        params.set<std::vector<SubdomainName>>("block") = _block;
+      params.set<bool>("volume") = _volume;
+      params.set<std::vector<BoundaryName>>("external_boundaries") = _boundary;
+      if (is_interface)
+        params.set<std::vector<BoundaryName>>("interface_boundaries") = _interface;
       _problem->addUserObject(type, _idx_generator_name, params);
     }
 
@@ -287,24 +387,45 @@ NEML2Action::act()
 
   if (_current_task == "add_material")
   {
-    // Create and register a NEML2ToMOOSE material property retriever; `extra` lets each caller
-    // add the bits that are unique to outputs vs. derivatives.
+    // Create and register NEML2ToMOOSE material property retrievers; `extra` lets each caller add
+    // the bits that are unique to outputs vs. derivatives. Separate block and boundary materials
+    // make MOOSE's material-property integrity checks enforce the selected evaluation domains.
     auto addRetriever = [&](const std::string & moose_name,
                             const std::string & neml2_var,
                             const std::string & moose_tensor_type,
                             auto && extra)
     {
-      auto obj_name = obscureObjectName(moose_name, "neml2_to_moose", "", name());
-      auto obj_type = "NEML2ToMOOSE" + moose_tensor_type + "MaterialProperty";
-      auto obj_params = _factory.getValidParams(obj_type);
-      obj_params.set<UserObjectName>("neml2_executor") = _executor_name;
-      obj_params.set<MaterialPropertyName>("to_moose") = moose_name;
-      obj_params.set<std::string>("from_neml2") = neml2_var;
-      obj_params.set<std::vector<SubdomainName>>("block") = _block;
-      if (_export_output_targets.count(moose_name))
-        obj_params.set<std::vector<OutputName>>("outputs") = _export_output_targets[moose_name];
-      extra(obj_params);
-      _problem->addMaterial(obj_type, obj_name, obj_params);
+      const auto obj_type = "NEML2ToMOOSE" + moose_tensor_type + "MaterialProperty";
+      auto add = [&](const std::string & suffix, const auto & restrict_retriever)
+      {
+        auto obj_params = _factory.getValidParams(obj_type);
+        obj_params.set<UserObjectName>("neml2_executor") = _executor_name;
+        obj_params.set<MaterialPropertyName>("to_moose") = moose_name;
+        obj_params.set<std::string>("from_neml2") = neml2_var;
+        auto sides = _boundary;
+        sides.insert(sides.end(), _interface.begin(), _interface.end());
+        obj_params.set<std::vector<BoundaryName>>("evaluated_boundaries") = sides;
+        restrict_retriever(obj_params);
+        if (_export_output_targets.count(moose_name))
+          obj_params.set<std::vector<OutputName>>("outputs") = _export_output_targets[moose_name];
+        extra(obj_params);
+        _problem->addMaterial(
+            obj_type, obscureObjectName(moose_name, "neml2_to_moose", suffix, name()), obj_params);
+      };
+
+      if (_volume)
+        add("volume",
+            [&](InputParameters & p) { p.set<std::vector<SubdomainName>>("block") = _block; });
+
+      auto sides = _boundary;
+      sides.insert(sides.end(), _interface.begin(), _interface.end());
+      if (!sides.empty())
+      {
+        std::sort(sides.begin(), sides.end());
+        sides.erase(std::unique(sides.begin(), sides.end()), sides.end());
+        add("side",
+            [&](InputParameters & p) { p.set<std::vector<BoundaryName>>("boundary") = sides; });
+      }
     };
 
     // NEML2ToMOOSE output retrievers
@@ -771,5 +892,20 @@ NEML2Action::getLongestMOOSEName() const
   for (const auto & deriv : _derivs)
     max_moose_name_length = std::max(max_moose_name_length, deriv.name.size());
   return max_moose_name_length;
+}
+
+bool
+NEML2Action::producesProperty(const MaterialPropertyName & name) const
+{
+  for (const auto & out : _outputs)
+    if (out.name == name)
+      return true;
+  for (const auto & deriv : _derivs)
+    if (deriv.name == name)
+      return true;
+  for (const auto & pderiv : _param_derivs)
+    if (pderiv.name == name)
+      return true;
+  return false;
 }
 #endif // NEML2_ENABLED

@@ -197,10 +197,28 @@ NEML2ModelExecutor::initialSetup()
   }
 }
 
-std::size_t
-NEML2ModelExecutor::getBatchIndex(dof_id_type elem_id) const
+bool
+NEML2ModelExecutor::hasBatchSpan(dof_id_type elem_id) const
 {
-  return _batch_index_generator.getBatchIndex(elem_id);
+  return _batch_index_generator.hasBatchSpan(elem_id);
+}
+
+bool
+NEML2ModelExecutor::hasSideBatchSpan(const NEML2BatchIndexGenerator::ElemSide & elem_side) const
+{
+  return _batch_index_generator.hasSideBatchSpan(elem_side);
+}
+
+NEML2BatchIndexGenerator::BatchSpan
+NEML2ModelExecutor::getBatchSpan(dof_id_type elem_id) const
+{
+  return _batch_index_generator.getBatchSpan(elem_id);
+}
+
+NEML2BatchIndexGenerator::BatchSpan
+NEML2ModelExecutor::getSideBatchSpan(const NEML2BatchIndexGenerator::ElemSide & elem_side) const
+{
+  return _batch_index_generator.getSideBatchSpan(elem_side);
 }
 
 void
@@ -371,13 +389,14 @@ NEML2ModelExecutor::advanceState()
   {
     const auto [base_name, lag] = parseLag(name);
     mooseAssert(lag > 0, "Invalid lag for a stateful variable");
-    // cache the value from the current step (favor output over input); the value that feeds
-    // "base~lag" next step is the current "base~(lag-1)" (which is "base" itself for lag == 1).
+    // Save a separate copy because gathered input tensors are rewritten during later evaluations.
+    // Without clone(), the old state would share storage with the current value and be overwritten.
+    // Favor output over input when choosing the current value to save.
     const auto curr_name = lagName(base_name, lag - 1);
     if (_out.count(curr_name))
-      _state_vars[name] = _out.at(curr_name);
+      _state_vars[name] = _out.at(curr_name).clone();
     else if (_in.count(curr_name))
-      _state_vars[name] = _in.at(curr_name);
+      _state_vars[name] = _in.at(curr_name).clone();
     else
       mooseError("Failed to find cached value for old variable: ", name);
   }
@@ -524,6 +543,10 @@ NEML2ModelExecutor::extractOutputs(bool compute_derivative)
                e.what(),
                NEML2Utils::NEML2_help_message);
   }
+
+  // Mark outputs ready as soon as the tensors are populated so downstream material retrieval
+  // during the same execute phase can see the fresh values.
+  _output_ready = true;
 }
 
 void
