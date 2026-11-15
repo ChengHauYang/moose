@@ -92,6 +92,80 @@
     capabilities = 'libtorch & neml2'
     valgrind = none
   []
+  [kokkos_batch_index_map]
+    type = CSVDiff
+    input = kokkos_batch_index_map.i
+    csvdiff = kokkos_batch_index_map_out.csv
+    requirement = 'The framework shall publish generator-defined NEML2 interface batch indices in face-indexed Kokkos storage before Kokkos user objects execute.'
+    design = 'NEML2Action.md'
+    capabilities = 'kokkos & libtorch & neml2'
+    valgrind = none
+  []
+  [kokkos_quantity_to_neml2_bulk]
+    type = CSVDiff
+    input = kokkos_quantity_to_neml2_bulk.i
+    csvdiff = kokkos_quantity_to_neml2_bulk_out.csv
+    requirement = 'The framework shall preserve element and quadrature-point batch row destinations and all nine rank-two tensor components when gathering a spatially varying Kokkos material property into NEML2 inputs, reproducing the analytical weighted contraction pointwise.'
+    design = 'NEML2Action.md'
+    issues = '#31596'
+    capabilities = 'kokkos & libtorch & neml2'
+    valgrind = none
+  []
+  [kokkos_cuda_quantity_to_neml2_bulk]
+    type = CSVDiff
+    input = kokkos_quantity_to_neml2_bulk.i
+    cli_args = 'NEML2/device=cuda'
+    csvdiff = kokkos_quantity_to_neml2_bulk_out.csv
+    requirement = 'The framework shall gather a spatially varying Kokkos material property into NEML2 inputs on the CUDA device, preserving batch row destinations and all nine rank-two tensor components, and reproduce the analytical weighted contraction pointwise through a NEML2-consumed MOOSE output.'
+    design = 'NEML2Action.md'
+    issues = '#31596'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cuda'
+    valgrind = none
+  []
+  [kokkos_interface_quantity_to_neml2]
+    type = CSVDiff
+    input = kokkos_interface_quantity_to_neml2.i
+    csvdiff = kokkos_interface_quantity_to_neml2_out.csv
+    requirement = 'The framework shall write all nine rank-two tensor components for both primary and neighbor sides of a cohesive interface into the correct device buffer rows when gathering Kokkos interface material properties into NEML2 inputs, on CPU and CUDA devices.'
+    design = 'NEML2Action.md'
+    issues = '#31596'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+    valgrind = none
+  []
+  [kokkos_input_backend_restrictions]
+    requirement = 'The framework shall reject unsupported NEML2 Action input mappings when the Kokkos input backend is selected, rather than falling back to MOOSE gatherers.'
+    design = 'NEML2Action.md'
+    issues = '#31596'
+    [non_rank_two]
+      type = RunException
+      input = custom_model.i
+      cli_args = 'NEML2/all/input_backend=kokkos'
+      expect_err = 'The Kokkos input backend supports only current-state full rank-two MATERIAL inputs'
+      detail = 'a non-rank-two input.'
+      capabilities = 'kokkos & libtorch & neml2'
+      valgrind = none
+    []
+    [input_kernel]
+      type = RunException
+      input = kokkos_quantity_to_neml2_bulk.i
+      cli_args = 'NEML2/input_types= NEML2/inputs= NEML2/weighted/input_kernels=F'
+      expect_err = 'The Kokkos input backend does not support input_kernels'
+      detail = 'an input kernel.'
+      capabilities = 'kokkos & libtorch & neml2'
+      valgrind = none
+    []
+    [interface_material]
+      type = RunException
+      input = kokkos_interface_quantity_to_neml2.i
+      cli_args = 'NEML2/weighted/interface_material_inputs=F'
+      expect_err = 'The Kokkos input backend does not support true interface material data'
+      detail = 'a true interface material input.'
+      capabilities = 'kokkos & libtorch & neml2'
+      valgrind = none
+    []
+  []
   [kokkos_interface_retriever]
     requirement = 'The framework shall retrieve symmetric NEML2 output and input derivatives into Kokkos interface material properties on the requested primary and neighbor output sides.'
     design = 'NEML2Action.md NEML2ToKokkosMaterialProperty.md'
