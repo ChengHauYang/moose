@@ -57,6 +57,11 @@ side postprocessor on `left` fails if `volume = true` but `left` is not listed i
 does not reuse volume values on a side, because volume and side quadrature points are at different
 locations.
 
+On an interface, an output is published to both sides: an interface kernel reads the primary side
+with `getMaterialProperty` and the neighbor side with `getNeighborMaterialProperty`. With
+`volume = false`, [!param](/NEML2/interface_output_side) can restrict this to one side, for example
+when two sub-blocks with separate executors provide the two sides.
+
 The NEML2 domain is the set of blocks in [!param](/NEML2/block), or all mesh blocks when
 [!param](/NEML2/block) is empty. MOOSE evaluates a boundary on the element that owns each side (see
 [DomainUserObject side execution](syntax/UserObjects/index.md#domain-user-object-side-execution)).

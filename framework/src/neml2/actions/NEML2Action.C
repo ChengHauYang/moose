@@ -101,6 +101,12 @@ NEML2Action::validParams()
       "Internal interfaces where the material model is evaluated on both sides: the elements on "
       "both sides of each selected side must lie in the NEML2 domain ('block', or all blocks when "
       "empty). Pass 'ANY_BOUNDARY_ID' to select every such sideset.");
+  params.addParam<MooseEnum>(
+      "interface_output_side",
+      MooseEnum("both primary neighbor", "both"),
+      "For interface output with 'volume = false', publish each NEML2 output to both sides, only "
+      "the primary side, or only the neighbor side. Use primary/neighbor with distinct executors "
+      "to avoid duplicate writers to a material-property storage.");
   // Block materials need no hint: the same material is reinit'd as BLOCK/FACE/NEIGHBOR data and the
   // gatherer reads the store for where it is. A true InterfaceMaterial instead lives in the
   // separate INTERFACE_MATERIAL_DATA store, which the native block/face/neighbor selection never
@@ -405,6 +411,8 @@ NEML2Action::act()
 
   if (_current_task == "add_material")
   {
+    const auto interface_output_side = getParam<MooseEnum>("interface_output_side");
+
     // Create and register NEML2ToMOOSE material property retrievers; `extra` lets each caller add
     // the bits that are unique to outputs vs. derivatives. Separate block and boundary materials
     // make MOOSE's material-property integrity checks enforce the selected evaluation domains.
@@ -414,7 +422,7 @@ NEML2Action::act()
                             auto && extra)
     {
       const auto obj_type = "NEML2ToMOOSE" + moose_tensor_type + "MaterialProperty";
-      auto add = [&](const std::string & suffix, const auto & restrict_retriever)
+      auto add = [&](const std::string & suffix, const auto & restrict_retriever, bool neighbor)
       {
         auto obj_params = _factory.getValidParams(obj_type);
         obj_params.set<UserObjectName>("neml2_executor") = _executor_name;
@@ -427,23 +435,55 @@ NEML2Action::act()
         if (_export_output_targets.count(moose_name))
           obj_params.set<std::vector<OutputName>>("outputs") = _export_output_targets[moose_name];
         extra(obj_params);
-        _problem->addMaterial(
-            obj_type, obscureObjectName(moose_name, "neml2_to_moose", suffix, name()), obj_params);
+        const auto obj_name = obscureObjectName(moose_name, "neml2_to_moose", suffix, name());
+        if (neighbor)
+          _problem->addInterfaceMaterial(obj_type, obj_name, obj_params);
+        else
+          _problem->addMaterial(obj_type, obj_name, obj_params);
       };
 
       if (_volume)
-        add("volume",
-            [&](InputParameters & p) { p.set<std::vector<SubdomainName>>("block") = _block; });
+        add(
+            "volume",
+            [&](InputParameters & p) { p.set<std::vector<SubdomainName>>("block") = _block; },
+            false);
+
+      // Without a block retriever, the boundary retriever below is the only writer on the
+      // interface, and interface_output_side selects which interface sides are published
+      const bool publish_primary = _volume || interface_output_side != "neighbor";
+      const bool publish_neighbor = !_volume && is_interface && interface_output_side != "primary";
 
       auto sides = _boundary;
-      sides.insert(sides.end(), _interface.begin(), _interface.end());
+      if (publish_primary)
+        sides.insert(sides.end(), _interface.begin(), _interface.end());
       if (!sides.empty())
       {
         std::sort(sides.begin(), sides.end());
         sides.erase(std::unique(sides.begin(), sides.end()), sides.end());
-        add("side",
-            [&](InputParameters & p) { p.set<std::vector<BoundaryName>>("boundary") = sides; });
+        add(
+            "side",
+            [&](InputParameters & p) { p.set<std::vector<BoundaryName>>("boundary") = sides; },
+            false);
       }
+
+      // The block retriever's neighbor copy covers the neighbor side when volume = true. Otherwise
+      // the neighbor side needs NEIGHBOR_MATERIAL_DATA, which a boundary-restricted material cannot
+      // reach: FEProblemBase::addMaterialHelper only clones the face and neighbor copies for
+      // block-restricted materials, and reinitMaterialsNeighbor only runs block-restricted neighbor
+      // objects. Register this copy as an interface material instead. Every loop that visits an
+      // interface calls reinitMaterialsInterface after reinitNeighbor and reinitMaterialsNeighbor,
+      // so the neighbor element, its face quadrature rule, and the neighbor material data are valid
+      // by then.
+      if (publish_neighbor)
+        add(
+            "neighbor",
+            [&](InputParameters & p)
+            {
+              p.set<std::vector<BoundaryName>>("boundary") = _interface;
+              p.set<bool>("_neighbor") = true;
+              p.set<Moose::MaterialDataType>("_material_data_type") = Moose::NEIGHBOR_MATERIAL_DATA;
+            },
+            true);
     };
 
     // NEML2ToMOOSE output retrievers
