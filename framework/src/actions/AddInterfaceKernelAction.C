@@ -30,5 +30,12 @@ void
 AddInterfaceKernelAction::act()
 {
   if (_current_task == "add_interface_kernel")
-    _problem->addInterfaceKernel(_type, _name, _moose_object_pars);
+  {
+#ifdef MOOSE_KOKKOS_ENABLED
+    if (_moose_object_pars.isKokkosObject())
+      _problem->addKokkosInterfaceKernel(_type, _name, _moose_object_pars);
+    else
+#endif
+      _problem->addInterfaceKernel(_type, _name, _moose_object_pars);
+  }
 }
