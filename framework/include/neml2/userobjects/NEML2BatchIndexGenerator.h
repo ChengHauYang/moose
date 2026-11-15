@@ -11,7 +11,17 @@
 
 #include "DomainUserObject.h"
 
+#ifdef MOOSE_KOKKOS_ENABLED
+#include "KokkosArray.h"
+
+namespace Moose::Kokkos
+{
+class InterfaceFaceCache;
+}
+#endif
+
 #include <map>
+#include <limits>
 
 /**
  * NEML2BatchIndexGenerator iterates over the mesh and generates a map from element ID to batch
@@ -41,6 +51,12 @@ public:
     std::size_t size;
   };
 
+  /// Key of a batch entry in restartable state: (element ID, side), where the side is
+  /// libMesh::invalid_uint for element-interior quadrature points. A pair rather than ElemSide so
+  /// that it can be stored as restartable data.
+  using StateKey = std::pair<dof_id_type, unsigned int>;
+  using StateBatchIndexMap = std::map<StateKey, std::size_t>;
+
   /// Get the current batch index (in almost all cases this is the total batch size)
   std::size_t getBatchIndex() const { return _batch_index; }
 
@@ -56,8 +72,47 @@ public:
   /// Get the batch span for the given element side
   BatchSpan getSideBatchSpan(const ElemSide & elem_side) const;
 
+  /// Get the starting batch index of every volume and side entry, used to remap stateful data
+  StateBatchIndexMap getStateBatchIndexMap() const;
+
   /// Whether the batch is empty
   bool isEmpty() const { return _batch_index == 0; }
+
+  /// Whether the batch index maps must be regenerated
+  bool isOutdated() const { return _outdated; }
+
+  /// Generation of the current Kokkos batch-index mirrors
+  std::size_t mapGeneration() const { return _map_generation; }
+
+#ifdef MOOSE_KOKKOS_ENABLED
+  /// Rebuild and publish the Kokkos batch-index mirrors; called from finalize() after the host
+  /// maps are complete. Requires the Kokkos compilation scope and is defined in the .K file.
+  void updateKokkosMirrors();
+
+  /// Batch indices indexed by Kokkos contiguous element ID
+  const Moose::Kokkos::Array<std::size_t> & kokkosElementBatchIndices() const
+  {
+    return _kokkos_element_batch_indices;
+  }
+
+  /// Primary-side batch indices indexed by Kokkos interface face index
+  const Moose::Kokkos::Array<std::size_t> & kokkosFacePrimaryBatchIndices() const
+  {
+    return _kokkos_face_primary_batch_indices;
+  }
+
+  /// Neighbor-side batch indices indexed by Kokkos interface face index
+  const Moose::Kokkos::Array<std::size_t> & kokkosFaceNeighborBatchIndices() const
+  {
+    return _kokkos_face_neighbor_batch_indices;
+  }
+
+  /// Invalid entry in a Kokkos batch-index mirror
+  static constexpr std::size_t invalidKokkosBatchIndex()
+  {
+    return std::numeric_limits<std::size_t>::max();
+  }
+#endif
 
 protected:
   /// Whether element-interior quadrature points contribute to the batch
@@ -68,6 +123,23 @@ protected:
 
   /// Highest current batch index
   std::size_t _batch_index;
+
+  /// Generation of a complete Kokkos batch-index mirror
+  std::size_t _map_generation = 0;
+
+#ifdef MOOSE_KOKKOS_ENABLED
+  /// Batch indices for volume elements, indexed by contiguous Kokkos element ID
+  Moose::Kokkos::Array<std::size_t> _kokkos_element_batch_indices;
+
+  /// Primary-side batch indices, indexed by cached oriented interface face index
+  Moose::Kokkos::Array<std::size_t> _kokkos_face_primary_batch_indices;
+
+  /// Neighbor-side batch indices, indexed by cached oriented interface face index
+  Moose::Kokkos::Array<std::size_t> _kokkos_face_neighbor_batch_indices;
+
+  /// Shared cache defining the face-indexed interface mirror ordering
+  const Moose::Kokkos::InterfaceFaceCache * _interface_face_cache = nullptr;
+#endif
 
   /// Map from element IDs to batch indices
   std::map<dof_id_type, BatchSpan> _elem_to_batch_index;
