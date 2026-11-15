@@ -104,7 +104,11 @@ retriever never converts between the two, because volume and side quadrature poi
 element interiors and on faces, and the retriever reads the volume or side span that matches the
 current context. With `volume = false`, the action creates one boundary material per output on the
 sorted, deduplicated union of `boundary` and `interface`; a single material avoids declaring the
-same property twice.
+same property twice. A boundary material has no neighbor copy, so for `interface` the action also
+registers an interface material that publishes the neighbor side into the neighbor material data;
+interface loops reinitialize interface materials after the neighbor element and its material data.
+[!param](/NEML2/interface_output_side) selects whether the primary side, the neighbor side, or both
+are published.
 
 +Safety checks.+ A retriever stops with an error if
 
