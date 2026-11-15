@@ -28,28 +28,18 @@ InputParameters
 NEML2ToMOOSEMaterialProperty<T>::validParams()
 {
   auto params = Material::validParams();
+  params += NEML2OutputInterface::validParams();
   params.addClassDescription("Provide an output (or its derivative) from a NEML2 model as a MOOSE "
                              "material property of type " +
                              demangle(typeid(T).name()) + ".");
 
-  params.addRequiredParam<UserObjectName>("neml2_executor",
-                                          "User object managing the execution of the NEML2 model.");
   params.addRequiredParam<MaterialPropertyName>(
       "to_moose",
       "MOOSE material property used to store the NEML2 output variable (or its derivative)");
-  params.addRequiredParam<std::string>("from_neml2", "NEML2 output variable to read from");
   params.addParam<std::vector<BoundaryName>>(
       "evaluated_boundaries",
       {},
       "Boundaries where this NEML2 output is also evaluated at side quadrature points");
-  params.addParam<std::string>(
-      "neml2_input_derivative",
-
-      "If supplied return the derivative of the NEML2 output variable with respect to this");
-  params.addParam<std::string>(
-      "neml2_parameter_derivative",
-      "If supplied return the derivative of the NEML2 output variable with respect to this NEML2 "
-      "model parameter");
   // provide an optional initialization of the moose property (because we don't really know if it is
   // going to become stateful or not)
   params.addParam<MaterialPropertyName>("moose_material_property_init",
@@ -60,27 +50,21 @@ NEML2ToMOOSEMaterialProperty<T>::validParams()
 
 template <typename T>
 NEML2ToMOOSEMaterialProperty<T>::NEML2ToMOOSEMaterialProperty(const InputParameters & params)
-  : Material(params)
+  : Material(params),
+    NEML2OutputInterface(params, *this)
 #ifdef NEML2_ENABLED
     ,
-    _execute_neml2_model(getUserObject<NEML2ModelExecutor>("neml2_executor")),
     _prop(declareProperty<T>(getParam<MaterialPropertyName>("to_moose"))),
     _prop0(isParamValid("moose_material_property_init")
                ? &getMaterialProperty<T>("moose_material_property_init")
                : nullptr),
-    _value(isParamValid("neml2_input_derivative")
-               ? _execute_neml2_model.getOutputDerivative(
-                     getParam<std::string>("from_neml2"),
-                     getParam<std::string>("neml2_input_derivative"))
-               : (isParamValid("neml2_parameter_derivative")
-                      ? _execute_neml2_model.getOutputParameterDerivative(
-                            getParam<std::string>("from_neml2"),
-                            getParam<std::string>("neml2_parameter_derivative"))
-                      : _execute_neml2_model.getOutput(getParam<std::string>("from_neml2")))),
     _evaluated_boundaries(getParam<std::vector<BoundaryName>>("evaluated_boundaries"))
 #endif
 {
   NEML2Utils::assertNEML2Enabled();
+#ifdef NEML2_ENABLED
+  requestNEML2OutputDevice(at::Device(at::kCPU));
+#endif
 }
 
 #ifdef NEML2_ENABLED
@@ -133,7 +117,7 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
     return;
   }
 
-  if (!_execute_neml2_model.outputReady())
+  if (!outputReady())
     return;
 
   const auto elem_side = NEML2BatchIndexGenerator::ElemSide(_current_elem->id(), _current_side);
@@ -175,6 +159,9 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   // axis is present iff the tensor has more dims than the base shape of the MOOSE type T.
   const auto base_ndim = static_cast<int64_t>(NEML2Utils::Layout<T>::shape.size());
   const bool batched = _value.dim() > base_ndim;
+  const auto base_size = NEML2Utils::Layout<T>::strides[0];
+  const auto batch_size = batched ? _value.numel() / base_size : 1;
+  const auto flat_value = batched ? _value.flatten(0, _value.dim() - base_ndim - 1) : _value;
 
   // Fast path: the retrieved output lives on the host (the default output_device) as a contiguous
   // double buffer (see NEML2ModelExecutor::extractOutputs), so copy each element's data with a
@@ -182,8 +169,7 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   // Fall back to the generic tensor copy only when the output was kept on an accelerator.
   if (_value.is_cpu())
   {
-    const Real * data = _value.template data_ptr<Real>();
-    const auto base_size = NEML2Utils::Layout<T>::strides[0];
+    const Real * data = flat_value.template data_ptr<Real>();
     for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
     {
       // The batch-index map can outrun a not-yet-recomputed output/derivative tensor when the set
@@ -193,8 +179,8 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
       // failure and cuts the time step, after which the model re-evaluates on the enlarged batch.
       // The raw memcpy would instead read past the buffer, so guard it: on an out-of-range index
       // fall back to the throwing copy to preserve that cut-back signal.
-      if (batched && static_cast<int64_t>(i + _qp) >= _value.size(0))
-        NEML2Utils::copyTensorToMOOSEData(_value[static_cast<int64_t>(i + _qp)], _prop[_qp]);
+      if (batched && static_cast<int64_t>(i + _qp) >= batch_size)
+        NEML2Utils::copyTensorToMOOSEData(flat_value[static_cast<int64_t>(i + _qp)], _prop[_qp]);
       else
         NEML2Utils::copyBlobToMOOSEData<T>(
             batched ? data + static_cast<std::ptrdiff_t>(i + _qp) * base_size : data, _prop[_qp]);
@@ -202,8 +188,8 @@ NEML2ToMOOSEMaterialProperty<T>::computeProperties()
   }
   else
     for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
-      NEML2Utils::copyTensorToMOOSEData(batched ? _value[static_cast<int64_t>(i + _qp)] : _value,
-                                        _prop[_qp]);
+      NEML2Utils::copyTensorToMOOSEData(
+          batched ? flat_value[static_cast<int64_t>(i + _qp)] : flat_value, _prop[_qp]);
 }
 #endif
 
