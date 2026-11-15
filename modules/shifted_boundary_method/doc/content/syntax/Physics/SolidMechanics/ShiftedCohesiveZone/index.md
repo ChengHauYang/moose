@@ -127,6 +127,37 @@ the continuum stress or tangent consumed by `[Physics/SolidMechanics/ShiftedCohe
 not overlap the cohesive boundary, the action reports a validation error instructing the user to
 either configure `interface` on the NEML2 block or set `directional_correction = false`.
 
+## Total-Lagrangian F-bar id=total-lagrangian-f-bar
+
+For `strain = FINITE` with `directional_correction = true`, `volumetric_locking_correction = true`
+applies the total-mode F-bar correction to the bulk PK1 stress used by the directional correction,
+on both the host non-AD and the Kokkos paths. It is limited to Cartesian coordinates and requires
+`tangent_definition = pk1_wrt_deformation_gradient`. Two-dimensional meshes are treated in plane
+strain: all tensors remain $3 \times 3$ with $U_{zz} = 1$, so the formulation below is the same in
+two and three dimensions. On each side of the interface, the stress is
+
+!equation
+\mathbf{P} = \mathbf{U}\,\mathbf{S}(\mathbf{B}), \qquad
+\mathbf{B} = \left(\frac{\det\mathbf{M}}{\det\mathbf{U}}\right)^{1/3}\mathbf{U},
+
+where $\mathbf{U} = \mathbf{I} + \nabla_X\mathbf{u}$ is the physical deformation gradient,
+$\mathbf{S}$ is the second Piola-Kirchhoff stress, and $\mathbf{M}$ is the average of $\mathbf{U}$
+over the reference volume of the bulk element on that side. The cohesive kinematics and the Nanson
+geometry continue to use $\mathbf{U}$.
+
+[ComputeDeformationGradient](ComputeDeformationGradient.md) or
+[KokkosComputeDeformationGradient](KokkosComputeDeformationGradient.md) with `stabilize_strain = true`
+provides $\mathbf{U}$, $\mathbf{M}$, and $\mathbf{B}$ as the `physical_deformation_gradient`,
+`average_deformation_gradient`, and `deformation_gradient` properties. The constitutive model must
+provide the stress $\mathbf{P}$ as `stress`, its derivative with respect to $\mathbf{U}$ at fixed
+$\mathbf{B}$ as `tangent`, and its derivative with respect to $\mathbf{B}$ at fixed $\mathbf{U}$
+as `stabilized_tangent`. The Jacobian adds the derivative of $\mathbf{B}$ with respect to the
+displacements, including the contribution of $\mathbf{M}$ that couples each interface residual to
+every displacement degree of freedom of the bulk element on the same side. With NEML2, both
+derivatives are requested from a single interface model:
+
+!listing modules/shifted_boundary_method/test/tests/kokkos_shifted_interface/sczm_tl_fbar_common.i block=NEML2
+
 ## Kokkos Implementation Status
 
 The [KokkosSCZMInterfaceKernelSmallStrain](KokkosSCZMInterfaceKernelSmallStrain.md)
