@@ -4,7 +4,8 @@
 
 The Shifted Cohesive Zone Physics creates the interface kernels, displacement-jump and
 global-traction materials, and optional geometry objects needed by the shifted cohesive-zone method
-(SCZM). Small-strain and total-Lagrangian kinematics are supported.
+(SCZM). Small-strain and total-Lagrangian kinematics are supported on the host and, with non-AD
+evaluation in Cartesian coordinates, on the Kokkos path (see [#kokkos-implementation-status]).
 
 For `strain = FINITE`, SCZM Taylor-shifts the displacement jump to the true interface and uses the
 true reference normal for the cohesive frame and Nanson transformation. The deformation gradient
@@ -125,6 +126,53 @@ the continuum stress or tangent consumed by `[Physics/SolidMechanics/ShiftedCohe
 `interface` parameter must include the SCZM `boundary`. If `interface` is omitted or does
 not overlap the cohesive boundary, the action reports a validation error instructing the user to
 either configure `interface` on the NEML2 block or set `directional_correction = false`.
+
+## Kokkos Implementation Status
+
+The [KokkosSCZMInterfaceKernelSmallStrain](KokkosSCZMInterfaceKernelSmallStrain.md)
+implements the traction-jump residual and Jacobian contribution using device material
+properties. It can be instantiated directly with compatible Kokkos property producers.
+The focused tests exercise assembly with a test-only linear traction law.
+
+Set `use_kokkos = true` to create the Kokkos implementation objects. For `strain = SMALL`,
+this instantiates `KokkosSCZMComputeDisplacementJumpSmallStrain`,
+`KokkosCZMComputeGlobalTractionSmallStrain`, and `KokkosSCZMInterfaceKernelSmallStrain`.
+For `strain = FINITE`, it instantiates `KokkosSCZMComputeDisplacementJumpTotalLagrangian`,
+`KokkosSCZMComputeGlobalTractionTotalLagrangian`, and `KokkosSCZMInterfaceKernelTotalLagrangian`.
+The constitutive traction law remains an explicit material; use a compatible Kokkos material
+such as `KokkosPureElasticTractionSeparation`. Kokkos SCZM supports non-AD evaluation with both
+small-strain and total-Lagrangian finite-strain kinematics.
+
+### Directional correction
+
+`directional_correction = true` is supported on the Kokkos path and reproduces the host
+residual and Jacobian, including the zero contribution to the two cross blocks. As on the
+host path, the correction reads the `stress` and `tangent` material properties (see
+"Non-AD tangent definition" above); the action no longer creates or requires a dedicated
+bulk-stress material.
+
+When a `[NEML2]` block produces `stress` or `tangent` for a Kokkos directional correction, it
+must set `output_backend = kokkos`, `volume = false`, and an `interface` that overlaps the SCZM
+`boundary`; the
+action validates this and reports an error on the offending NEML2 block parameter otherwise.
+Both symmetric stress-strain tangents and full $\partial\mathbf{P}/\partial\mathbf{F}$ tangents
+are transferred without changing their tensor layout. For a heterogeneous interface, use two
+`[NEML2]` sub-blocks producing the same property name with `interface_output_side = primary` and
+`interface_output_side = neighbor` respectively.
+
+Non-Cartesian coordinate systems are rejected when `use_kokkos = true` because their
+out-of-plane kinematics are not yet verified for NEML2.
+
+`no_shifted = true` is supported on the Kokkos path as a complete switch. The base cohesive
+traction drops its area correction, its Jacobian uses the natural test functions, the paired
+displacement-jump material omits the gradient contribution to the jump and builds the
+reference rotation from the surrogate face normal, and the directional correction is
+suppressed entirely. Setting `directional_correction = true` alongside it is harmless: the
+correction is simply not applied, matching the host.
+
+These outstanding items mean the Kokkos path is not yet full host parity. Volumetric locking
+correction is available only for total-Lagrangian kinematics, as described in
+[#total-lagrangian-f-bar]. General tangent semantics are still to be implemented.
 
 !syntax parameters /Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction
 

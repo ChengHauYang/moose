@@ -53,10 +53,25 @@ protected:
   /// Returns the generated single-mesh interface manager name.
   UserObjectName interfaceManagerName() const;
 
+  /// Adds Kokkos SCZM interface kernels when requested; otherwise uses the host implementation.
+  void addRequiredCZMInterfaceKernels();
+
+  /// Adds Kokkos SCZM interface materials when requested; otherwise uses the host implementation.
+  void addRequiredCZMInterfaceMaterials();
+
+  /// Adds the Kokkos PK2-to-PK1 converter pair required by directional correction.
+  void addPK2ToPK1InterfaceConverters();
+
+  /// Whether the Action must convert its PK2 input before configuring the kernel.
+  bool needsPK2ToPK1Conversion() const;
+
   /// Sets SCZM-specific parameters on each generated interface kernel.
   void customizeCZMInterfaceKernelParameters(InputParameters & params) const override;
 
   /// Sets SCZM-specific parameters on the generated displacement jump material.
   void customizeCZMDisplacementJumpMaterialParameters(InputParameters & params) const override;
   void customizeCZMGlobalTractionMaterialParameters(InputParameters & params) const override;
+
+  /// Whether the action creates Kokkos SCZM objects.
+  const bool _use_kokkos;
 };
