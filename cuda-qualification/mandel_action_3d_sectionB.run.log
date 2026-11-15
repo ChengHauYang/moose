@@ -1,0 +1,192 @@
+WARNING: CPU IP/backtrace sampling not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+WARNING: CPU context switch tracing not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+Setting Up
+  Finished Setting Up Options                                                            [[33m  1.69 s[39m] [[33m 1371 MB[39m]
+
+[36mNEML2 MATERIAL MODEL SUMMARY BEGIN ********************************************[39m
+NEML2 input file location: /home/chenghau.yang/packages/moose-kokkos/modules/solid_mechanics/test/tests/kokkos/linear_elasticity/elasticity_neml2.i
+NEML2 action path:         NEML2/all
+[36mMaterial model structure ------------------------------------------------------[39m
+NEML2 model inputs:
+  - neml2_strain
+NEML2 model outputs:
+  - neml2_stress
+[36mTransfer between MOOSE and NEML2 ----------------------------------------------[39m
+MOOSE --> NEML2
+  - neml2_strain (MATERIAL)
+MOOSE <-- NEML2
+  - neml2_stress
+  - Jacobian_mult
+[36mNEML2 MATERIAL MODEL SUMMARY END **********************************************[39m
+
+Finished Setting Up                                                                      [[33m  1.72 s[39m] [[33m 1388 MB[39m]
+Framework Information:
+MOOSE Version:           git commit f0a0cd799b on 2026-10-22
+LibMesh Version:         90766057ef390adc9968b529e8ded2a87b0a77c7
+PETSc Version:           3.25.4
+SLEPc Version:           3.25.1
+Libtorch Version:        2.13.0
+Current Time:            Thu Oct 22 17:13:10 2026
+Executable Timestamp:    Thu Oct 22 17:11:33 2026
+
+Input File(s):
+  /home/chenghau.yang/packages/moose-kokkos/modules/solid_mechanics/test/tests/kokkos/linear_elasticity/neml2_action_kokkos_linear_elasticity_3d.i
+
+Command Line Argument(s):
+  --compute-device=cuda
+
+Command Line Input Argument(s):
+  Outputs/exodus=false
+
+Checkpoint:
+  Wall Time Interval:      Every 3600 s
+  Checkpoint:              Outputs/checkpoint
+  # Checkpoints Kept:      2
+  Execute On:              TIMESTEP_END 
+
+Parallelism:
+  Num Processors:          1
+  Num Threads:             1
+
+Mesh: 
+  Parallel Type:           replicated
+  Mesh Dimension:          3
+  Spatial Dimension:       3
+  Nodes:                   27
+  Elems:                   8
+  Num Subdomains:          1
+
+Nonlinear System:
+  Num DOFs:                81
+  Num Local DOFs:          81
+  Variables:               { "disp_x" "disp_y" "disp_z" } 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Execution Information:
+  Executioner:             Transient
+  TimeStepper:             ConstantDT
+  TimeIntegrator(s):       ImplicitEuler
+  Solver Mode:             NEWTON 
+  MOOSE Preconditioner:    SMP 
+
+Currently Executing
+  Performing Initial Setup
+    Computing User Objects
+      Finished Evaluating the NEML2 model                                                [[33m  0.59 s[39m] [[33m 1534 MB[39m]
+    Finished Computing User Objects                                                      [[33m  0.59 s[39m] [[33m 1534 MB[39m]
+  Finished Performing Initial Setup                                                      [[33m  0.60 s[39m] [[33m 1534 MB[39m]
+
+Time Step 0, time = 0
+
+Time Step 1, time = 0.001, dt = 0.001
+ 0 Nonlinear |R| = [32m9.327379e-03[39m
+      0 Linear |R| = [32m9.327379e-03[39m
+      1 Linear |R| = [32m4.827402e-04[39m
+      2 Linear |R| = [32m2.899740e-05[39m
+      3 Linear |R| = [32m4.327674e-06[39m
+      4 Linear |R| = [32m8.703299e-07[39m
+      5 Linear |R| = [32m3.759978e-08[39m
+ 1 Nonlinear |R| = [32m3.759978e-08[39m
+      0 Linear |R| = [32m3.759978e-08[39m
+      1 Linear |R| = [32m3.544813e-09[39m
+      2 Linear |R| = [32m7.027845e-10[39m
+      3 Linear |R| = [32m9.195311e-11[39m
+      4 Linear |R| = [32m1.226678e-11[39m
+      5 Linear |R| = [32m1.154810e-12[39m
+      6 Linear |R| = [32m8.798785e-14[39m
+ 2 Nonlinear |R| = [32m8.798793e-14[39m
+[32m Solve Converged![39m
+
+
+Time Step 2, time = 0.002, dt = 0.001
+ 0 Nonlinear |R| = [32m9.327379e-03[39m
+      0 Linear |R| = [32m9.327379e-03[39m
+      1 Linear |R| = [32m4.827402e-04[39m
+      2 Linear |R| = [32m2.899740e-05[39m
+      3 Linear |R| = [32m4.327674e-06[39m
+      4 Linear |R| = [32m8.703299e-07[39m
+      5 Linear |R| = [32m3.759978e-08[39m
+ 1 Nonlinear |R| = [32m3.759978e-08[39m
+      0 Linear |R| = [32m3.759978e-08[39m
+      1 Linear |R| = [32m3.544813e-09[39m
+      2 Linear |R| = [32m7.027845e-10[39m
+      3 Linear |R| = [32m9.195311e-11[39m
+      4 Linear |R| = [32m1.226678e-11[39m
+      5 Linear |R| = [32m1.154810e-12[39m
+      6 Linear |R| = [32m8.798785e-14[39m
+ 2 Nonlinear |R| = [32m8.798765e-14[39m
+[32m Solve Converged![39m
+
+
+Time Step 3, time = 0.003, dt = 0.001
+ 0 Nonlinear |R| = [32m9.327379e-03[39m
+      0 Linear |R| = [32m9.327379e-03[39m
+      1 Linear |R| = [32m4.827402e-04[39m
+      2 Linear |R| = [32m2.899740e-05[39m
+      3 Linear |R| = [32m4.327674e-06[39m
+      4 Linear |R| = [32m8.703299e-07[39m
+      5 Linear |R| = [32m3.759978e-08[39m
+ 1 Nonlinear |R| = [32m3.759978e-08[39m
+      0 Linear |R| = [32m3.759978e-08[39m
+      1 Linear |R| = [32m3.544813e-09[39m
+      2 Linear |R| = [32m7.027845e-10[39m
+      3 Linear |R| = [32m9.195311e-11[39m
+      4 Linear |R| = [32m1.226678e-11[39m
+      5 Linear |R| = [32m1.154810e-12[39m
+      6 Linear |R| = [32m8.798785e-14[39m
+ 2 Nonlinear |R| = [32m8.798731e-14[39m
+[32m Solve Converged![39m
+
+
+Time Step 4, time = 0.004, dt = 0.001
+ 0 Nonlinear |R| = [32m9.327379e-03[39m
+      0 Linear |R| = [32m9.327379e-03[39m
+      1 Linear |R| = [32m4.827402e-04[39m
+      2 Linear |R| = [32m2.899740e-05[39m
+      3 Linear |R| = [32m4.327674e-06[39m
+      4 Linear |R| = [32m8.703299e-07[39m
+      5 Linear |R| = [32m3.759978e-08[39m
+ 1 Nonlinear |R| = [32m3.759978e-08[39m
+      0 Linear |R| = [32m3.759978e-08[39m
+      1 Linear |R| = [32m3.544813e-09[39m
+      2 Linear |R| = [32m7.027845e-10[39m
+      3 Linear |R| = [32m9.195311e-11[39m
+      4 Linear |R| = [32m1.226678e-11[39m
+      5 Linear |R| = [32m1.154810e-12[39m
+      6 Linear |R| = [32m8.798785e-14[39m
+ 2 Nonlinear |R| = [32m8.798738e-14[39m
+[32m Solve Converged![39m
+
+
+Time Step 5, time = 0.005, dt = 0.001
+ 0 Nonlinear |R| = [32m9.327379e-03[39m
+      0 Linear |R| = [32m9.327379e-03[39m
+      1 Linear |R| = [32m4.827402e-04[39m
+      2 Linear |R| = [32m2.899740e-05[39m
+      3 Linear |R| = [32m4.327674e-06[39m
+      4 Linear |R| = [32m8.703299e-07[39m
+      5 Linear |R| = [32m3.759978e-08[39m
+ 1 Nonlinear |R| = [32m3.759978e-08[39m
+      0 Linear |R| = [32m3.759978e-08[39m
+      1 Linear |R| = [32m3.544813e-09[39m
+      2 Linear |R| = [32m7.027845e-10[39m
+      3 Linear |R| = [32m9.195311e-11[39m
+      4 Linear |R| = [32m1.226678e-11[39m
+      5 Linear |R| = [32m1.154810e-12[39m
+      6 Linear |R| = [32m8.798785e-14[39m
+ 2 Nonlinear |R| = [32m8.798754e-14[39m
+[32m Solve Converged![39m
+
+Finished Executing                                                                       [[33m  0.77 s[39m] [[33m 1550 MB[39m]
+The target application terminated. One or more process it created re-parented.
+Waiting for termination of re-parented processes.
+Use the `--wait` option to modify this behavior.
+Generating '/tmp/user/333475/nsys-report-17ce.qdstrm'
+[1/1] [0%                          ] mandel_action_3d_sectionB.nsys-rep[1/1] [0%                          ] mandel_action_3d_sectionB.nsys-rep[1/1] [10%                         ] mandel_action_3d_sectionB.nsys-rep[1/1] [==20%                       ] mandel_action_3d_sectionB.nsys-rep[1/1] [====25%                     ] mandel_action_3d_sectionB.nsys-rep[1/1] [=====31%                    ] mandel_action_3d_sectionB.nsys-rep[1/1] [===============67%          ] mandel_action_3d_sectionB.nsys-rep[1/1] [====================84%     ] mandel_action_3d_sectionB.nsys-rep[1/1] [========================100%] mandel_action_3d_sectionB.nsys-rep[1/1] [========================100%] mandel_action_3d_sectionB.nsys-rep
+Generated:
+    /home/chenghau.yang/packages/moose-kokkos/cuda-qualification/mandel_action_3d_sectionB.nsys-rep
