@@ -176,7 +176,10 @@ public:
    */
   template <typename T, unsigned int dimension = 0, unsigned int state = 0>
   Moose::Kokkos::MaterialProperty<T, dimension>
-  getKokkosMaterialPropertyByName(const std::string & prop_name_in);
+  getKokkosMaterialPropertyByName(const std::string & prop_name_in)
+  {
+    return getKokkosMaterialPropertyByName<T, dimension, state>(prop_name_in, _material_data);
+  }
   /**
    * Get an old Kokkos material property by property name
    * @tparam T The property data type
@@ -607,6 +610,11 @@ protected:
   virtual void checkMaterialProperty(const std::string & name, const unsigned int state);
 
 #ifdef MOOSE_KOKKOS_ENABLED
+  /** Get a Kokkos material property from the specified material data. */
+  template <typename T, unsigned int dimension = 0, unsigned int state = 0>
+  Moose::Kokkos::MaterialProperty<T, dimension>
+  getKokkosMaterialPropertyByName(const std::string & prop_name_in, MaterialData & material_data);
+
   /**
    * A virtual method that can be overriden by Kokkos objects to insert additional operations in
    * getKokkosMaterialProperty
@@ -998,7 +1006,8 @@ MaterialPropertyInterface::hasKokkosMaterialPropertyByName(const std::string & n
 
 template <typename T, unsigned int dimension, unsigned int state>
 Moose::Kokkos::MaterialProperty<T, dimension>
-MaterialPropertyInterface::getKokkosMaterialPropertyByName(const std::string & prop_name_in)
+MaterialPropertyInterface::getKokkosMaterialPropertyByName(const std::string & prop_name_in,
+                                                           MaterialData & material_data)
 {
   if (!_is_kokkos_object)
     _mi_moose_object.mooseError(
@@ -1029,10 +1038,9 @@ MaterialPropertyInterface::getKokkosMaterialPropertyByName(const std::string & p
   _get_material_property_called = true;
 
   // Call first so that the ID gets registered
-  auto prop = _material_data.getKokkosProperty<T, dimension, state>(prop_name);
+  auto prop = material_data.getKokkosProperty<T, dimension, state>(prop_name);
 
-  // Does the material data used here matter?
-  _material_property_dependencies.insert(_material_data.getPropertyId(prop_name));
+  _material_property_dependencies.insert(material_data.getPropertyId(prop_name));
 
   if constexpr (state == 0)
     addConsumedPropertyName(_mi_moose_object_name, prop_name);

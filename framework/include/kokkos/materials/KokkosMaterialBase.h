@@ -147,6 +147,16 @@ protected:
    * @returns The contiguous element ID - side index pair
    */
   KOKKOS_FUNCTION auto kokkosElementSideID(ThreadID tid) const { return _element_side_ids[tid]; }
+  /**
+   * Get the contiguous ID of the local element across the face of a thread, for neighbor material
+   * property evaluation
+   * @param tid The thread ID
+   * @returns The contiguous element ID
+   */
+  KOKKOS_FUNCTION ContiguousElementID kokkosNeighborElementID(ThreadID tid) const
+  {
+    return _neighbor_element_ids[tid];
+  }
 
   /**
    * Kokkos functor dispatchers
@@ -218,6 +228,11 @@ private:
    * evaluation
    */
   Array<Pair<ContiguousElementID, unsigned int>> _element_side_ids;
+  /**
+   * For neighbor material data, the contiguous ID of the local element across each face in
+   * \p _element_side_ids; empty otherwise
+   */
+  Array<ContiguousElementID> _neighbor_element_ids;
 };
 
 template <typename T, unsigned int dimension>

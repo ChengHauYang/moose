@@ -206,7 +206,9 @@ Material::operator()(NeighborInit, const ThreadID tid, const Derived & material)
 {
   auto [elem, side] = kokkosElementSideID(tid);
 
-  Datum datum(elem, side, kokkosAssembly(), kokkosSystems());
+  // The neighbor-side element may be a ghost, for which the Kokkos mesh has no neighbor table, so
+  // use the counterpart element recorded when the material was set up
+  Datum datum(elem, side, kokkosNeighborElementID(tid), kokkosAssembly(), kokkosSystems());
 
   const unsigned int num_qps = _constant_option == PropertyConstantOption::NONE ? datum.n_qps() : 1;
 
@@ -250,7 +252,7 @@ Material::operator()(NeighborCompute, const ThreadID tid, const Derived & materi
 {
   auto [elem, side] = kokkosElementSideID(tid);
 
-  Datum datum(elem, side, kokkosAssembly(), kokkosSystems());
+  Datum datum(elem, side, kokkosNeighborElementID(tid), kokkosAssembly(), kokkosSystems());
 
   const unsigned int num_qps = _constant_option == PropertyConstantOption::NONE ? datum.n_qps() : 1;
 
