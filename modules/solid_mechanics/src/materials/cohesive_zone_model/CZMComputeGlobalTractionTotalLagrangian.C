@@ -48,7 +48,7 @@ CZMComputeGlobalTractionTotalLagrangian::computeEquilibriumTracionAndDerivatives
   _J = _F[_qp].det();
   _F_inv = _F[_qp].inverse();
 
-  _area_ratio = CohesiveZoneModelTools::computeAreaRatio(_F_inv.transpose(), _J, _normals[_qp]);
+  _area_ratio = CohesiveZoneModelTools::computeAreaRatio(_F_inv.transpose(), _J, referenceNormal());
 
   _traction_global[_qp] = (_czm_total_rotation[_qp] * _interface_traction[_qp]);
   _PK1traction[_qp] = _traction_global[_qp] * _area_ratio;
@@ -57,6 +57,14 @@ CZMComputeGlobalTractionTotalLagrangian::computeEquilibriumTracionAndDerivatives
   computedTPK1dJumpGlobal();
   computeAreaRatioAndDerivatives();
   computedTPK1dF();
+}
+
+RealVectorValue
+CZMComputeGlobalTractionTotalLagrangian::referenceNormal() const
+{
+  // The fitted interface face is the true reference interface, so its face normal is the true
+  // reference normal.
+  return _normals[_qp];
 }
 
 void
@@ -78,8 +86,8 @@ CZMComputeGlobalTractionTotalLagrangian::computeAreaRatioAndDerivatives()
 
   const GenericRankFourTensor<false> dFinv_dF = CohesiveZoneModelTools::computedFinversedF(_F_inv);
 
-  _d_area_ratio_dF =
-      CohesiveZoneModelTools::computeDAreaRatioDF(_F_inv.transpose(), _normals[_qp], _J, dFinv_dF);
+  _d_area_ratio_dF = CohesiveZoneModelTools::computeDAreaRatioDF(
+      _F_inv.transpose(), referenceNormal(), _J, dFinv_dF);
 }
 
 void

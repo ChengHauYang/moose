@@ -25,18 +25,21 @@ bool
 getInheritedVolumetricLockingCorrection(ActionWarehouse & awh)
 {
   const auto quasi_static_physics = awh.getActions<QuasiStaticSolidMechanicsPhysicsBase>();
-  if (quasi_static_physics.empty())
-    return false;
-
   for (const auto * const physics : quasi_static_physics)
-  {
-    const bool has_locking_param = physics->isParamSetByUser("volumetric_locking_correction");
-    if (!has_locking_param)
-      continue;
-
-    if (physics->getParam<bool>("volumetric_locking_correction"))
+    if (physics->isParamSetByUser("volumetric_locking_correction") &&
+        physics->getParam<bool>("volumetric_locking_correction"))
       return true;
-  }
+
+  return false;
+}
+
+bool
+hasInheritedVolumetricLockingCorrectionSetting(ActionWarehouse & awh)
+{
+  const auto quasi_static_physics = awh.getActions<QuasiStaticSolidMechanicsPhysicsBase>();
+  for (const auto * const physics : quasi_static_physics)
+    if (physics->isParamSetByUser("volumetric_locking_correction"))
+      return true;
 
   return false;
 }
@@ -150,6 +153,12 @@ ShiftedCohesiveZoneAction::validParams()
       "Whether to apply volumetric locking correction to the directional correction Jacobian "
       "term in SCZM. If not specified, this value is automatically inherited from the solid "
       "mechanics physics block.");
+  params.addParam<MaterialPropertyName>(
+      "stabilized_tangent",
+      "stabilized_pk1_jacobian",
+      "Name of the derivative of the PK1 stress with respect to the F-bar deformation gradient at "
+      "fixed physical deformation gradient, used by the total-Lagrangian volumetric locking "
+      "correction.");
 
   return params;
 }
@@ -216,7 +225,15 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
       break;
     }
     case Strain::Finite:
-      paramError("strain", "Shifted cohesive zone models currently support only small strain.");
+    {
+      _czm_kernel_name =
+          _use_AD ? "ADSCZMInterfaceKernelTotalLagrangian" : "SCZMInterfaceKernelTotalLagrangian";
+      _disp_jump_provider_name = _use_AD ? "ADSCZMComputeDisplacementJumpTotalLagrangian"
+                                         : "SCZMComputeDisplacementJumpTotalLagrangian";
+      _equilibrium_traction_calculator_name = _use_AD ? "ADSCZMComputeGlobalTractionTotalLagrangian"
+                                                      : "SCZMComputeGlobalTractionTotalLagrangian";
+      break;
+    }
     default:
       mooseError(
           "ShiftedCohesiveZoneAction Error: Invalid kinematic parameter. Allowed values are: "
@@ -436,16 +453,30 @@ ShiftedCohesiveZoneAction::customizeCZMInterfaceKernelParameters(InputParameters
     params.set<UserObjectName>("sbm_distance_uo") = sbmDistanceUserObjectName();
   else if (isParamSetByUser("sbm_distance_uo"))
     params.set<UserObjectName>("sbm_distance_uo") = getParam<UserObjectName>("sbm_distance_uo");
-  if (isParamSetByUser("no_shifted"))
+  if (isParamSetByUser("no_shifted") && params.isParamValid("no_shifted"))
     params.set<bool>("no_shifted") = getParam<bool>("no_shifted");
-  if (isParamSetByUser("directional_correction"))
+  if (params.isParamValid("directional_correction"))
     params.set<bool>("directional_correction") = getParam<bool>("directional_correction");
-  if (isParamSetByUser("stress"))
-    params.set<MaterialPropertyName>("stress") = getParam<MaterialPropertyName>("stress");
-  if (isParamSetByUser("tangent"))
-    params.set<MaterialPropertyName>("tangent") = getParam<MaterialPropertyName>("tangent");
-  if (isParamSetByUser("tangent_definition") && params.isParamValid("tangent_definition"))
-    params.set<MooseEnum>("tangent_definition") = getParam<MooseEnum>("tangent_definition");
+  if (params.isParamValid("stress"))
+    params.set<MaterialPropertyName>("stress") =
+        _strain == Strain::Finite && !isParamSetByUser("stress")
+            ? MaterialPropertyName("pk1_stress")
+            : getParam<MaterialPropertyName>("stress");
+  if (params.isParamValid("tangent"))
+    params.set<MaterialPropertyName>("tangent") =
+        _strain == Strain::Finite && !isParamSetByUser("tangent")
+            ? MaterialPropertyName("pk1_jacobian")
+            : getParam<MaterialPropertyName>("tangent");
+  if (params.isParamValid("stabilized_tangent"))
+    params.set<MaterialPropertyName>("stabilized_tangent") =
+        getParam<MaterialPropertyName>("stabilized_tangent");
+  if (params.isParamValid("tangent_definition"))
+  {
+    if (isParamSetByUser("tangent_definition"))
+      params.set<MooseEnum>("tangent_definition") = getParam<MooseEnum>("tangent_definition");
+    else if (_strain == Strain::Finite)
+      params.set<MooseEnum>("tangent_definition") = "pk1_wrt_deformation_gradient";
+  }
 
   if (params.isParamValid("volumetric_locking_correction"))
   {
@@ -454,7 +485,8 @@ ShiftedCohesiveZoneAction::customizeCZMInterfaceKernelParameters(InputParameters
     {
       params.set<bool>("volumetric_locking_correction") =
           getParam<bool>("volumetric_locking_correction");
-      if (getParam<bool>("volumetric_locking_correction") != inherited_correction)
+      if (hasInheritedVolumetricLockingCorrectionSetting(_awh) &&
+          getParam<bool>("volumetric_locking_correction") != inherited_correction)
         mooseWarning(
             "ShiftedCohesiveZoneAction: 'volumetric_locking_correction' value in "
             "ShiftedCohesiveZone block is different from that in the physics block(s). Make sure "
@@ -469,10 +501,20 @@ void
 ShiftedCohesiveZoneAction::customizeCZMDisplacementJumpMaterialParameters(
     InputParameters & params) const
 {
-  if (getParam<bool>("generate_sbm_distance") || isParamSetByUser("complete_interface_mesh"))
-    params.set<UserObjectName>("sbm_distance_uo") = sbmDistanceUserObjectName();
-  else if (isParamSetByUser("sbm_distance_uo"))
-    params.set<UserObjectName>("sbm_distance_uo") = getParam<UserObjectName>("sbm_distance_uo");
-  if (isParamSetByUser("no_shifted"))
+  if (params.have_parameter<UserObjectName>("sbm_distance_uo"))
+  {
+    if (getParam<bool>("generate_sbm_distance") || isParamSetByUser("complete_interface_mesh"))
+      params.set<UserObjectName>("sbm_distance_uo") = sbmDistanceUserObjectName();
+    else if (isParamSetByUser("sbm_distance_uo"))
+      params.set<UserObjectName>("sbm_distance_uo") = getParam<UserObjectName>("sbm_distance_uo");
+  }
+  if (isParamSetByUser("no_shifted") && params.isParamValid("no_shifted"))
     params.set<bool>("no_shifted") = getParam<bool>("no_shifted");
+}
+
+void
+ShiftedCohesiveZoneAction::customizeCZMGlobalTractionMaterialParameters(
+    InputParameters & params) const
+{
+  customizeCZMDisplacementJumpMaterialParameters(params);
 }
