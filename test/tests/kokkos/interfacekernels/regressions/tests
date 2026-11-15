@@ -1,0 +1,53 @@
+[Tests]
+  design = 'syntax/Kokkos/index.md'
+  issues = '#30655'
+  capabilities = kokkos
+  compute_devices = 'cpu cuda xpu'
+
+  [constant_on_rejected]
+    type = RunException
+    # A working interface input; the CLI argument sets an unsupported constant mode.
+    input = ../interface_material.i
+    cli_args = 'Materials/interface_material/constant_on=ELEMENT'
+    expect_err = 'Kokkos interface materials currently only support constant_on = NONE.'
+    requirement = 'The Kokkos interface material system shall reject constant_on = ELEMENT.'
+  []
+  [double_marked_interface]
+    type = RunException
+    # A working interface input; the CLI arguments add a second sideset generator that marks the
+    # same boundary on the other side of every interface face.
+    input = ../interface_material.i
+    cli_args = 'Mesh/interface_flipped/type=SideSetsBetweenSubdomainsGenerator
+                Mesh/interface_flipped/input=interface
+                Mesh/interface_flipped/primary_block=1
+                Mesh/interface_flipped/paired_block=0
+                Mesh/interface_flipped/new_boundary=interface'
+    expect_err = 'Set it on only one side of each interface face.'
+    requirement = 'The Kokkos interface system shall reject an interface boundary that is set on both sides of an interface face.'
+  []
+  [multi_side_interface]
+    type = PetscJacobianTester
+    input = multi_side_interface.i
+    # Match the finite-difference Jacobian tolerances of the parent interface tests.
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    requirement = 'The Kokkos system shall assemble a consistent interface material Jacobian when a primary element has multiple sides on the same interface boundary.'
+  []
+  [neighbor_material_ghost]
+    type = PetscJacobianTester
+    input = neighbor_material_ghost.i
+    cli_args = '--distributed-mesh'
+    min_parallel = 2
+    max_parallel = 2
+    # Match the finite-difference Jacobian tolerances of the parent interface tests.
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    requirement = 'The Kokkos system shall assemble a consistent interface material Jacobian using neighbor element data, including one-layer ghost neighbors when run on a partitioned mesh.'
+  []
+  [older_state_observable]
+    type = Exodiff
+    input = older_state_observable.i
+    exodiff = older_state_observable_out.e
+    requirement = 'The Kokkos interface material system shall distinguish old and older accepted property states and shall exclude a deterministically rejected trial from accepted history.'
+  []
+[]
