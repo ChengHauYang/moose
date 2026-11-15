@@ -11,23 +11,31 @@
 #include "MOOSEToNEML2.h"
 #include "NEML2Utils.h"
 #include "NonlinearSystemBase.h"
-#include <string>
+#include <algorithm>
 #include <cctype>
+#include <optional>
+#include <string>
+#include <utility>
 
 #ifdef NEML2_ENABLED
 #include <ATen/ATen.h>
 #include "libmesh/id_types.h"
 #include "neml2/csrc/aoti/Exception.h"
 
-// torch::cuda::synchronize() (declared in <torch/cuda.h>, defined in libtorch) does a full device
-// synchronization -- see deviceSynchronize(). We cannot include <torch/cuda.h> here: it lives under
-// torch/csrc/api/include (not necessarily on MOOSE's include path), and the lower-level c10/cuda
-// sync headers transitively include <cuda_runtime.h>, which is not on the include path either.
-// Forward-declare the stable frontend symbol instead; it is resolved from libtorch (always linked)
-// and is present even in a CPU-only torch, where deviceSynchronize() never reaches the call.
+// torch::cuda::synchronize() and torch::xpu::synchronize() (declared in <torch/cuda.h> and
+// <torch/xpu.h>, defined in libtorch) do a full device synchronization -- see deviceSynchronize().
+// We cannot include those headers here: they live under torch/csrc/api/include (not necessarily on
+// MOOSE's include path), and the lower-level c10/cuda sync headers transitively include
+// <cuda_runtime.h>, which is not on the include path either. Forward-declare the stable frontend
+// symbols instead; they are resolved from libtorch (always linked) and are present even in a
+// CPU-only torch, where deviceSynchronize() never reaches the calls.
 namespace torch
 {
 namespace cuda
+{
+void synchronize(int64_t device_index);
+}
+namespace xpu
 {
 void synchronize(int64_t device_index);
 }
@@ -49,9 +57,8 @@ NEML2ModelExecutor::actionParams()
   params.addParam<bool>(
       "manage_state_advance",
       false,
-      "Keep state and forces on the device and advance it to old state and old forces without a "
-      "roundtrip through MOOSE materials. This is only recommended for explicit time integration "
-      "or when absolutely no restepping occurs (e.g. failed timesteps).");
+      "Keep state and forces on the device and advance them to old state and old forces without a "
+      "roundtrip through MOOSE materials. State is advanced only after a successful timestep.");
   params.addParam<bool>(
       "dump_inputs_on_failure",
       false,
@@ -79,12 +86,24 @@ NEML2ModelExecutor::validParams()
       {},
       "List of MOOSE*ToNEML2 user objects gathering MOOSE data as NEML2 input variables");
   params.addParam<std::vector<UserObjectName>>(
+      "state_initializers",
+      {},
+      "List of MOOSE*ToNEML2 user objects gathering initial values for device-managed state");
+  params.addParam<std::vector<UserObjectName>>(
+      "output_initializers",
+      {},
+      "List of MOOSE*ToNEML2 user objects gathering the t == 0 initial value of output material "
+      "properties. Gathered independently of manage_state_advance; a gatherer may also appear in "
+      "state_initializers, in which case one gather serves both the device old state and the "
+      "output "
+      "material initialization.");
+  params.addParam<std::vector<UserObjectName>>(
       "param_gatherers",
       {},
       "List of MOOSE*ToNEML2 user objects gathering MOOSE data as NEML2 model parameters");
 
-  // The executor evaluates on EXEC_LINEAR (residual), EXEC_NONLINEAR (Jacobian) and, for on-device
-  // state advance, EXEC_TIMESTEP_END.
+  // The executor evaluates on EXEC_LINEAR (residual), EXEC_NONLINEAR (Jacobian), and timestep end
+  // to stage on-device state until the timestep is known to be accepted.
   ExecFlagEnum execute_options = MooseUtils::getDefaultExecFlagEnum();
   execute_options = {EXEC_INITIAL, EXEC_LINEAR, EXEC_NONLINEAR, EXEC_TIMESTEP_END};
   params.set<ExecFlagEnum>("execute_on") = execute_options;
@@ -103,6 +122,17 @@ NEML2ModelExecutor::NEML2ModelExecutor(const InputParameters & params)
     // No derivative retained yet -> nothing stale; the retriever's undefined-derivative path (zero
     // fill) covers the first steps. Only an actual batch resize (meshChanged) makes it invalid.
     _derivative_valid(true),
+    _state_vars(declareRestartableData<std::map<std::string, at::Tensor>>("state_vars")),
+    _pending_state_vars(
+        declareRestartableData<std::map<std::string, at::Tensor>>("pending_state_vars")),
+    _state_batch_indices(declareRestartableData<NEML2BatchIndexGenerator::StateBatchIndexMap>(
+        "state_batch_indices")),
+    _pending_state_batch_indices(
+        declareRestartableData<NEML2BatchIndexGenerator::StateBatchIndexMap>(
+            "pending_state_batch_indices")),
+    _pending_state_t_step(declareRestartableData<int>("pending_state_t_step", 0)),
+    _state_committed(declareRestartableData<bool>("state_committed", false)),
+    _state_remap_pending(false),
     _error_message(""),
     _num_failed_dumps(0)
 #endif
@@ -112,6 +142,10 @@ NEML2ModelExecutor::NEML2ModelExecutor(const InputParameters & params)
 
   // add user object dependencies by name (the UOs do not need to exist yet for this)
   for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("gatherers"))
+    _depend_uo.insert(gatherer_name);
+  for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("state_initializers"))
+    _depend_uo.insert(gatherer_name);
+  for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("output_initializers"))
     _depend_uo.insert(gatherer_name);
   for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("param_gatherers"))
     _depend_uo.insert(gatherer_name);
@@ -139,6 +173,34 @@ NEML2ModelExecutor::initialSetup()
 
     addGatheredVariable(gatherer_name, uo.NEML2Name());
     _gatherers.push_back(&uo);
+  }
+
+  for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("state_initializers"))
+  {
+    const auto & uo = getUserObjectByName<MOOSEToNEML2>(gatherer_name, /*is_dependency=*/false);
+    const auto [base_name, lag] = parseLag(uo.NEML2Name());
+    if (!_manage_state_advance || lag == 0)
+      paramError("state_initializers",
+                 "The state initializer target `",
+                 uo.NEML2Name(),
+                 "` must be an old variable with manage_state_advance = true.");
+    _state_initializers.push_back(&uo);
+  }
+
+  for (const auto & gatherer_name : getParam<std::vector<UserObjectName>>("output_initializers"))
+  {
+    const auto & uo = getUserObjectByName<MOOSEToNEML2>(gatherer_name, /*is_dependency=*/false);
+    // The gatherer targets the lag-1 old variable (it is shared with the state initializer), but an
+    // output initial condition is keyed by the un-lagged output name, which is what a retriever
+    // requests. Require an actual model output so a misconfiguration is caught here rather than
+    // silently never matching a retriever.
+    const auto [base_name, _] = parseLag(uo.NEML2Name());
+    if (!contains(model().output_names(), base_name))
+      paramError("output_initializers",
+                 "The output initializer target `",
+                 uo.NEML2Name(),
+                 "` does not name a model output.");
+    _output_initializers.push_back(&uo);
   }
 
   // deal with user object provided model parameters
@@ -192,7 +254,7 @@ NEML2ModelExecutor::initialSetup()
     const auto & in_shapes = model().input_base_shapes();
     const auto opts = at::TensorOptions().dtype(at::kDouble).device(device());
     for (const auto i : index_range(in_names))
-      if (parseLag(in_names[i]).second > 0)
+      if (parseLag(in_names[i]).second > 0 && !_state_vars.count(in_names[i]))
         _state_vars[in_names[i]] = at::zeros(in_shapes[i], opts);
   }
 }
@@ -266,20 +328,26 @@ NEML2ModelExecutor::meshChanged()
   // recomputes it before any retriever reads it.
   _derivative_valid = false;
   if (_manage_state_advance)
-    mooseError("The mesh changed while `manage_state_advance = true` for NEML2 model executor '",
-               name(),
-               "'. This mode requires a fixed mesh because state history is cached on the device.");
+    _state_remap_pending = true;
 }
 
 void
 NEML2ModelExecutor::execute()
 {
-  // Nothing to recompute at EXEC_TIMESTEP_END: the value, parameter derivatives, and input Jacobian
-  // are all retained from the solve (see below), so output/coupling consumers read the retained
-  // tensors. The only job here is the optional on-device state advance after a converged step.
+  // A larger timestep number proves that the previous trial was accepted. A cutback retries the
+  // same timestep number, so it replaces the pending trial without modifying committed old state.
+  if (_manage_state_advance && !_pending_state_vars.empty() && _t_step > _pending_state_t_step)
+    commitState();
+
+  if (_state_remap_pending && !_batch_index_generator.isOutdated())
+    remapState();
+
+  // Nothing to recompute at timestep end: values and derivatives are retained from solve(). Stage
+  // the converged trial here; it is committed only when MOOSE advances to the next timestep.
   if (_current_execute_flag == EXEC_TIMESTEP_END)
   {
-    if (_manage_state_advance && _fe_problem.solverSystemConverged(/*sys_num=*/0))
+    if (_manage_state_advance && !_state_remap_pending && !_batch_index_generator.isEmpty() &&
+        _fe_problem.solverSystemConverged(/*sys_num=*/0))
       advanceState();
     return;
   }
@@ -301,23 +369,16 @@ NEML2ModelExecutor::execute()
 
   fillInputs();
 
-  if (_t_step > 0)
   {
-    // Compute the (comparatively expensive) input Jacobian only when MOOSE is assembling the
-    // Jacobian -- currentlyComputingJacobian() is set for a Jacobian evaluation, the automatic-
-    // scaling Jacobian, and a combined residual-and-Jacobian evaluation. A pure residual evaluation
-    // (line search, damping, JFNK residuals) takes the value-only path. (We cannot key off the
-    // residual flag: the tagged residual path never sets currentlyComputingResidual().) Consumers
-    // reading the input derivative at EXEC_TIMESTEP_END therefore see the last Jacobian's value.
-    // Parameter derivatives are handled separately in solve()/extractOutputs(): because they are
-    // typically consumed as outputs (e.g. inverse-optimization sensitivities), they are evaluated
-    // on every pass so they are always current.
+    // Compute input derivatives whenever a consumer retrieves one. Kokkos residual-and-Jacobian
+    // assembly can execute this user object only on EXEC_LINEAR, before the Jacobian pass, so a
+    // derivative retriever must receive a current tangent from that evaluation. Models without a
+    // derivative consumer remain on the value-only path.
     //
     // Also recompute when the retained input derivative is no longer valid for the current batch
     // (e.g. after a mesh change resized the batch); otherwise a residual sweep would reuse a stale,
     // wrongly-sized derivative tensor and a retriever would index out of range.
-    const bool compute_derivative = _fe_problem.currentlyComputingJacobian() || !_derivative_valid;
-
+    const bool compute_derivative = !_retrieved_derivatives.empty() || !_derivative_valid;
     auto success = solve(compute_derivative);
     if (success)
     {
@@ -333,6 +394,8 @@ NEML2ModelExecutor::deviceSynchronize()
 {
   if (device().is_cuda())
     torch::cuda::synchronize(device().index());
+  else if (device().is_xpu())
+    torch::xpu::synchronize(device().index());
 }
 
 void
@@ -343,8 +406,28 @@ NEML2ModelExecutor::fillInputs()
   {
     for (const auto & uo : _gatherers)
       uo->insertInto(_in);
+    if (_manage_state_advance && !_state_committed)
+      for (const auto & uo : _state_initializers)
+        uo->insertInto(_state_vars);
     for (const auto & uo : _param_gatherers)
       uo->insertInto(_model_params);
+
+    // Output material initial conditions are needed only at t == 0, when a retriever seeds its
+    // output material property (moose_material_property_init) before the first solve has produced
+    // an output. Gather them here so they are ready for the retrievers in the same evaluation pass
+    // (fillInputs runs before the material compute that calls getOutputInitializer). Keyed by the
+    // un-lagged output name and placed on the output device, matching how retrievers read outputs.
+    // This is independent of manage_state_advance and of the device old-state seeding above, so one
+    // shared gatherer can serve both without either role disturbing the other.
+    if (_t_step == 0)
+    {
+      _output_init_tensors.clear();
+      for (const auto & uo : _output_initializers)
+      {
+        const auto base_name = parseLag(uo->NEML2Name()).first;
+        _output_init_tensors[base_name] = uo->gatheredData().to(output_device()).contiguous();
+      }
+    }
 
     // Cold-start in-place-updated unknowns at zero (see initialSetup): a base-shaped zero broadcast
     // over the batch, re-injected on every evaluation so the return-map initial guess is 0 each
@@ -352,19 +435,90 @@ NEML2ModelExecutor::fillInputs()
     for (const auto & [name, val] : _zero_seed_vars)
       _in[name] = val;
 
-    if (_manage_state_advance && _t_step > 0)
+    if (_manage_state_advance)
       for (const auto & [name, val] : _state_vars)
         if (val.defined())
           _in[name] = val;
 
-    // Send input variables to the compute device
+    // Check if the trailing dimensions of a tensor match the expected base shape
+    // (verifying that all dimensions after the batch dimensions match).
+    auto trailing_shape_matches =
+        [](const at::Tensor & tensor, const std::vector<int64_t> & base_shape)
+    {
+      const auto base_dim = static_cast<int64_t>(base_shape.size());
+      if (tensor.dim() < base_dim)
+        return false;
+      for (const auto d : make_range(base_dim))
+        if (tensor.size(tensor.dim() - base_dim + d) != base_shape[d])
+          return false;
+      return true;
+    };
+
+    // Infer the active 2D batch shape [nelem, nqp] from input tensors (_in).
+    // Kokkos GPU execution uses a 2D batch layout [nelem, nqp]. We inspect the inputs to find
+    // one whose leading dimensions (excluding its base shape) form this 2D batch.
+    std::optional<std::pair<int64_t, int64_t>> active_batch_shape;
+    const auto & in_names = model().input_names();
+    const auto & in_shapes = model().input_base_shapes();
+    for (const auto i : index_range(in_names))
+    {
+      const auto it = _in.find(in_names[i]);
+      if (it == _in.end() || !it->second.defined())
+        continue;
+
+      const auto & tensor = it->second;
+      const auto & base_shape = in_shapes[i];
+      if (!trailing_shape_matches(tensor, base_shape))
+        continue;
+
+      const auto base_dim = static_cast<int64_t>(base_shape.size());
+      if (tensor.dim() - base_dim == 2)
+      {
+        active_batch_shape = {tensor.size(0), tensor.size(1)};
+        break;
+      }
+    }
+
+    // Match a flat gathered batch to the active element-QP layout only when its complete shape
+    // agrees with the model's expected base shape.
+    auto reshape_flat_batch =
+        [&](const at::Tensor & tensor, const std::vector<int64_t> & base_shape)
+    {
+      if (active_batch_shape)
+      {
+        const auto base_dim = static_cast<int64_t>(base_shape.size());
+        const auto [nelem, nqp] = *active_batch_shape;
+        if (tensor.dim() == base_dim + 1 && tensor.size(0) == nelem * nqp &&
+            trailing_shape_matches(tensor, base_shape))
+        {
+          std::vector<int64_t> reshaped_shape = {nelem, nqp};
+          reshaped_shape.insert(reshaped_shape.end(), base_shape.begin(), base_shape.end());
+          return tensor.reshape(reshaped_shape);
+        }
+      }
+      return tensor;
+    };
+
+    // Send input variables to the compute device, reshaping flat gathered inputs to match any
+    // element-QP batch inferred from an FE-interpolated input.
+    for (const auto i : index_range(in_names))
+    {
+      const auto it = _in.find(in_names[i]);
+      if (it != _in.end() && it->second.defined())
+        it->second = reshape_flat_batch(it->second, in_shapes[i]);
+    }
     for (auto & [var, val] : _in)
       val = val.to(device());
 
-    // Push the gathered model parameters into the NEML2 model (on the compute device) so the
-    // subsequent evaluation and its parameter Jacobian use the MOOSE-provided values.
+    // Push model parameters to the compute device with the same batch-layout normalization.
+    const auto & param_shapes = model().parameter_base_shapes();
     for (auto & [pname, pval] : _model_params)
+    {
+      const auto param_it = param_shapes.find(pname);
+      if (param_it != param_shapes.end())
+        pval = reshape_flat_batch(pval, param_it->second);
       model().set_parameter(pname, pval.to(device()));
+    }
     _model_params.clear();
 
     // The H2D copies above are asynchronous on CUDA; block so this phase's time reflects the
@@ -385,21 +539,111 @@ NEML2ModelExecutor::advanceState()
   if (!_manage_state_advance || _t_step == 0)
     return;
 
+  _pending_state_vars.clear();
   for (const auto & [name, val] : _state_vars)
   {
     const auto [base_name, lag] = parseLag(name);
     mooseAssert(lag > 0, "Invalid lag for a stateful variable");
+    // The value that feeds "base~lag" next step is the current "base~(lag-1)" (which is "base"
+    // itself for lag == 1). Prefer an output because a model may update an input in place.
     // Save a separate copy because gathered input tensors are rewritten during later evaluations.
     // Without clone(), the old state would share storage with the current value and be overwritten.
-    // Favor output over input when choosing the current value to save.
     const auto curr_name = lagName(base_name, lag - 1);
     if (_out.count(curr_name))
-      _state_vars[name] = _out.at(curr_name).clone();
+      _pending_state_vars[name] = _out.at(curr_name).clone();
     else if (_in.count(curr_name))
-      _state_vars[name] = _in.at(curr_name).clone();
+      _pending_state_vars[name] = _in.at(curr_name).clone();
     else
       mooseError("Failed to find cached value for old variable: ", name);
   }
+
+  _pending_state_batch_indices = _batch_index_generator.getStateBatchIndexMap();
+  _pending_state_t_step = _t_step;
+}
+
+void
+NEML2ModelExecutor::commitState()
+{
+  _state_vars = std::move(_pending_state_vars);
+  _state_batch_indices = std::move(_pending_state_batch_indices);
+  _pending_state_vars.clear();
+  _pending_state_batch_indices.clear();
+  _state_committed = true;
+}
+
+void
+NEML2ModelExecutor::remapState()
+{
+  const auto new_indices = _batch_index_generator.getStateBatchIndexMap();
+
+  // Before the first state advance, state variables are base-shaped zeros that NEML2 broadcasts.
+  // There is no committed batch to remap yet.
+  if (!_state_committed || _state_vars.empty())
+  {
+    _state_remap_pending = false;
+    return;
+  }
+
+  using StateKey = NEML2BatchIndexGenerator::ElemSide;
+  std::map<std::size_t, StateKey> old_offsets;
+  std::map<std::size_t, StateKey> new_offsets;
+  for (const auto & [key, offset] : _state_batch_indices)
+    old_offsets[offset] = key;
+  for (const auto & [key, offset] : new_indices)
+    new_offsets[offset] = key;
+
+  const auto batchSize =
+      [](const auto & offsets, const std::size_t offset, const std::size_t total_batch_size)
+  {
+    const auto next = offsets.upper_bound(offset);
+    return next == offsets.end() ? total_batch_size - offset : next->first - offset;
+  };
+
+  const auto & input_names = model().input_names();
+  const auto & input_shapes = model().input_base_shapes();
+  const auto new_batch_size = _batch_index_generator.getBatchIndex();
+  for (auto & [name, state] : _state_vars)
+  {
+    const auto name_it = std::find(input_names.begin(), input_names.end(), name);
+    mooseAssert(name_it != input_names.end(), "State variable is not a model input");
+    const auto base_ndim =
+        static_cast<int64_t>(input_shapes[std::distance(input_names.begin(), name_it)].size());
+    if (state.dim() == base_ndim)
+      continue;
+    mooseAssert(state.dim() == base_ndim + 1, "State variable has an unexpected batch shape");
+
+    const auto old_batch_size = state.size(0);
+    auto sizes = state.sizes().vec();
+    sizes[0] = new_batch_size;
+    auto remapped = state.new_zeros(sizes);
+
+    for (auto new_it = new_indices.begin(); new_it != new_indices.end(); ++new_it)
+    {
+      const auto old_it = _state_batch_indices.find(new_it->first);
+      if (old_it == _state_batch_indices.end())
+        continue;
+
+      const auto old_qp = batchSize(old_offsets, old_it->second, old_batch_size);
+      const auto new_qp = batchSize(new_offsets, new_it->second, new_batch_size);
+      if (old_qp != new_qp)
+        mooseError("Cannot remap NEML2 state for element side (",
+                   new_it->first.first,
+                   ", ",
+                   new_it->first.second,
+                   ") after its number of quadrature points changed from ",
+                   old_qp,
+                   " to ",
+                   new_qp,
+                   ".");
+
+      remapped.narrow(0, new_it->second, new_qp).copy_(state.narrow(0, old_it->second, old_qp));
+    }
+
+    state = std::move(remapped);
+  }
+
+  _state_batch_indices = new_indices;
+  _state_remap_pending = false;
 }
 
 bool
@@ -491,11 +735,11 @@ void
 NEML2ModelExecutor::extractOutputs(bool compute_derivative)
 {
   TIME_SECTION(
-      "NEML2::extractOutputs", 1, "Copying NEML2 outputs and derivatives back to the host");
+      "NEML2::extractOutputs", 1, "Copying NEML2 outputs and derivatives to the output device");
   try
   {
-    // retrieve outputs. The D2H copies to output_device() (host) below are synchronous, so with
-    // solve()'s post-compute sync in place this phase's time reflects the transfer alone.
+    // Retrieve outputs on the device requested by their consumers. Transfers use blocking
+    // at::Tensor::to calls, so this phase's time reflects the transfer alone.
     // .contiguous() so the consuming NEML2ToMOOSEMaterialProperty can read the batch with a plain
     // per-element memcpy off data_ptr() instead of per-qp at::Tensor ops.
     for (auto & [y, target] : _retrieved_outputs)
@@ -619,6 +863,23 @@ NEML2ModelExecutor::getOutput(const std::string & output_name) const
     mooseError("Trying to retrieve a non-existent NEML2 output variable '", output_name, "'.");
 
   return _retrieved_outputs[output_name];
+}
+
+bool
+NEML2ModelExecutor::hasOutputInitializer(const std::string & output_name) const
+{
+  return _output_init_tensors.count(output_name) > 0;
+}
+
+const at::Tensor &
+NEML2ModelExecutor::getOutputInitializer(const std::string & output_name) const
+{
+  const auto it = _output_init_tensors.find(output_name);
+  if (it == _output_init_tensors.end())
+    mooseError("No initial value was gathered for NEML2 output variable '",
+               output_name,
+               "'. This should be guarded by hasOutputInitializer().");
+  return it->second;
 }
 
 const at::Tensor &

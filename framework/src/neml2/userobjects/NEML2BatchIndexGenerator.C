@@ -9,6 +9,10 @@
 
 #include "NEML2BatchIndexGenerator.h"
 
+#ifdef MOOSE_KOKKOS_ENABLED
+#include "FEProblemBase.h"
+#endif
+
 registerMooseObject("MooseApp", NEML2BatchIndexGenerator);
 
 InputParameters
@@ -40,6 +44,17 @@ NEML2BatchIndexGenerator::validParams()
 NEML2BatchIndexGenerator::NEML2BatchIndexGenerator(const InputParameters & params)
   : DomainUserObject(params), _volume(getParam<bool>("volume")), _outdated(true)
 {
+#ifdef MOOSE_KOKKOS_ENABLED
+  if (!_interface_bnd_ids.empty())
+  {
+    _fe_problem.mesh().getKokkosMesh()->setNeedsElementSideGeometry();
+    _fe_problem.addKokkosMeshInitializationHook(
+        [this]()
+        {
+          _interface_face_cache = _fe_problem.getKokkosInterfaceFaceCache(_interface_bnd_ids, this);
+        });
+  }
+#endif
 }
 
 void
@@ -130,7 +145,25 @@ NEML2BatchIndexGenerator::threadJoin(const UserObject & uo)
 void
 NEML2BatchIndexGenerator::finalize()
 {
+  if (!_outdated)
+    return;
+
+#ifdef MOOSE_KOKKOS_ENABLED
+  updateKokkosMirrors();
+#endif
+
   _outdated = false;
+}
+
+NEML2BatchIndexGenerator::StateBatchIndexMap
+NEML2BatchIndexGenerator::getStateBatchIndexMap() const
+{
+  StateBatchIndexMap indices;
+  for (const auto & [elem_id, span] : _elem_to_batch_index)
+    indices.emplace(StateKey(elem_id, libMesh::invalid_uint), span.begin);
+  for (const auto & [elem_side, span] : _elemside_to_batch_index)
+    indices.emplace(StateKey(std::get<0>(elem_side), std::get<1>(elem_side)), span.begin);
+  return indices;
 }
 
 bool
