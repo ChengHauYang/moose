@@ -107,6 +107,10 @@ Mesh::initMap()
         {
           _maps->ghost_elem_id_mapping[neighbor] = _num_local_elems + _num_ghost_elems++;
           elem_types.emplace(neighbor->type(), neighbor->p_level());
+
+          for (auto & node : neighbor->node_ref_range())
+            if (node.processor_id() != _mesh.processor_id())
+              ghost_nodes.insert(&node);
         }
       }
 
@@ -247,6 +251,15 @@ Mesh::initElement()
     for (const auto node : elem->node_index_range())
       _nodes(node, eid) = getContiguousNodeID(elem->node_ptr(node));
   }
+
+  for (const auto & [ghost_elem, ghost_eid] : _maps->ghost_elem_id_mapping)
+    for (const auto node : ghost_elem->node_index_range())
+    {
+      const auto node_id = getContiguousNodeID(ghost_elem->node_ptr(node));
+      if (node_id >= num_nodes)
+        mooseError("Invalid Kokkos node ID while caching ghost element connectivity.");
+      _nodes(node, ghost_eid) = node_id;
+    }
 
   for (const auto boundary : _mesh.meshBoundaryIds())
     _boundary_nodes[getContiguousBoundaryID(boundary)].copySet<false, true>(

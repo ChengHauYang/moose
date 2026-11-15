@@ -11,6 +11,8 @@
 
 #include "FEProblemBase.h"
 
+#include <map>
+
 namespace Moose::Kokkos
 {
 
@@ -68,6 +70,7 @@ MaterialBase::MaterialBase(const MaterialBase & object)
 {
   _element_ids = object._element_ids;
   _element_side_ids = object._element_side_ids;
+  _neighbor_element_ids = object._neighbor_element_ids;
 }
 
 void
@@ -113,20 +116,55 @@ MaterialBase::initializeMaterialRestrictable()
                           std::back_inserter(boundaries));
 
     std::set<Pair<ContiguousElementID, unsigned int>> element_side_ids;
+    // For neighbor material data, the local element across each neighbor-side face. It is known
+    // here, whereas the Kokkos mesh caches neighbors only for local elements and the neighbor-side
+    // element may be a ghost.
+    std::map<Pair<ContiguousElementID, unsigned int>, ContiguousElementID> neighbor_side_elements;
 
     for (auto boundary : boundaries)
       for (auto elem_id : _mesh.getBoundaryActiveSemiLocalElemIds(boundary))
       {
         const auto elem = _mesh.elemPtr(elem_id);
+        if (elem->processor_id() != processor_id())
+          continue;
 
-        if (elem->processor_id() == processor_id() &&
-            restricted_blocks.find(elem->subdomain_id()) != restricted_blocks.end())
-          for (const auto side :
-               _mesh.getMesh().get_boundary_info().sides_with_boundary_id(elem, boundary))
+        for (const auto side :
+             _mesh.getMesh().get_boundary_info().sides_with_boundary_id(elem, boundary))
+        {
+          if (materialDataType() == Moose::NEIGHBOR_MATERIAL_DATA)
+          {
+            const auto neighbor = elem->neighbor_ptr(side);
+            ContiguousElementID neighbor_eid = libMesh::DofObject::invalid_id;
+            if (neighbor && neighbor != libMesh::remote_elem)
+              neighbor_eid = _mesh.getKokkosMesh()->getContiguousElementID(neighbor);
+            if (neighbor_eid != libMesh::DofObject::invalid_id)
+            {
+              const bool neighbor_in_blocks =
+                  restricted_blocks.find(neighbor->subdomain_id()) != restricted_blocks.end();
+              if (neighbor_in_blocks)
+                neighbor_side_elements[{neighbor_eid, neighbor->which_neighbor_am_i(elem)}] =
+                    _mesh.getKokkosMesh()->getContiguousElementID(elem);
+            }
+          }
+          else if (restricted_blocks.find(elem->subdomain_id()) != restricted_blocks.end())
             element_side_ids.insert({_mesh.getKokkosMesh()->getContiguousElementID(elem), side});
+        }
       }
 
-    _element_side_ids = element_side_ids;
+    if (materialDataType() == Moose::NEIGHBOR_MATERIAL_DATA)
+    {
+      std::vector<Pair<ContiguousElementID, unsigned int>> neighbor_sides;
+      std::vector<ContiguousElementID> neighbor_elements;
+      for (const auto & [neighbor_side, elem] : neighbor_side_elements)
+      {
+        neighbor_sides.push_back(neighbor_side);
+        neighbor_elements.push_back(elem);
+      }
+      _element_side_ids = neighbor_sides;
+      _neighbor_element_ids = neighbor_elements;
+    }
+    else
+      _element_side_ids = element_side_ids;
   }
 }
 
