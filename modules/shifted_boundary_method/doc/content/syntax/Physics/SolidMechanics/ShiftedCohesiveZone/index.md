@@ -4,7 +4,12 @@
 
 The Shifted Cohesive Zone Physics creates the interface kernels, displacement-jump and
 global-traction materials, and optional geometry objects needed by the shifted cohesive-zone method
-(SCZM). Only small-strain kinematics are currently supported.
+(SCZM). Small-strain and total-Lagrangian kinematics are supported.
+
+For `strain = FINITE`, SCZM Taylor-shifts the displacement jump to the true interface and uses the
+true reference normal for the cohesive frame and Nanson transformation. The deformation gradient
+is averaged across the surrogate interface but is not Taylor-shifted; displacement basis orders
+above `SECOND` therefore produce a warning about the accuracy limitation of this approximation.
 
 Setting up an SCZM problem involves two independent choices:
 
