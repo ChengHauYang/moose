@@ -133,6 +133,7 @@ ShiftedCohesiveZoneAction::validParams()
                         "Relative face-matching tolerance for the single-mesh interface manager.");
 
   params.addParam<bool>("no_shifted", false, "Disable shifted terms.");
+  params.addParam<bool>("use_kokkos", false, "Create Kokkos SCZM objects.");
   params.addParam<bool>("directional_correction", true, "Add the directional correction terms.");
   params.addParam<MaterialPropertyName>(
       "stress", "stress", "Name of the stress tensor material property for small strain SCZM.");
@@ -142,11 +143,13 @@ ShiftedCohesiveZoneAction::validParams()
                                         "strain SCZM.");
   params.addParam<MooseEnum>(
       "tangent_definition",
-      MooseEnum("auto stress_wrt_strain pk1_wrt_deformation_gradient", "auto"),
+      MooseEnum("auto stress_wrt_strain pk1_wrt_deformation_gradient pk2_wrt_deformation_gradient",
+                "auto"),
       "Mathematical definition of the tangent material property. 'auto' recognizes the standard "
       "Jacobian_mult property as d(stress)/d(strain) and pk1_jacobian as d(PK1)/d(F). Select "
       "'stress_wrt_strain' or 'pk1_wrt_deformation_gradient' explicitly for a custom tangent "
-      "property; use the latter only when the property is known to be d(PK1)/d(F).");
+      "property; select 'pk2_wrt_deformation_gradient' to convert PK2 input for Kokkos directional "
+      "correction.");
   params.addParam<bool>(
       "volumetric_locking_correction",
       false,
@@ -164,7 +167,7 @@ ShiftedCohesiveZoneAction::validParams()
 }
 
 ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & params)
-  : CohesiveZoneAction(params)
+  : CohesiveZoneAction(params), _use_kokkos(getParam<bool>("use_kokkos"))
 {
   const bool generate_distance = getParam<bool>("generate_sbm_distance");
   const bool has_distance_uo = isParamSetByUser("sbm_distance_uo");
@@ -210,28 +213,41 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
                "This parameter applies only to the non-AD SCZM interface kernel. The AD kernel "
                "differentiates the residual automatically.");
 
+  if (_use_kokkos && _use_AD)
+    paramError("use_automatic_differentiation",
+               "Kokkos SCZM currently supports only non-AD objects.");
+
   switch (_strain)
   {
     case Strain::Small:
     {
-      _czm_kernel_name =
-          _use_AD ? "ADSCZMInterfaceKernelSmallStrain" : "SCZMInterfaceKernelSmallStrain";
+      _czm_kernel_name = _use_kokkos ? "KokkosSCZMInterfaceKernelSmallStrain"
+                                     : (_use_AD ? "ADSCZMInterfaceKernelSmallStrain"
+                                                : "SCZMInterfaceKernelSmallStrain");
       // For SCZM, we just need to evaulate the displacement jump correctly on the true interface.
       // After that, the local and global traction calculations remain the same as standard CZM.
-      _disp_jump_provider_name = _use_AD ? "ADSCZMComputeDisplacementJumpSmallStrain"
-                                         : "SCZMComputeDisplacementJumpSmallStrain";
+      _disp_jump_provider_name = _use_kokkos ? "KokkosSCZMComputeDisplacementJumpSmallStrain"
+                                             : (_use_AD ? "ADSCZMComputeDisplacementJumpSmallStrain"
+                                                        : "SCZMComputeDisplacementJumpSmallStrain");
       _equilibrium_traction_calculator_name =
-          _use_AD ? "ADCZMComputeGlobalTractionSmallStrain" : "CZMComputeGlobalTractionSmallStrain";
+          _use_kokkos ? "KokkosCZMComputeGlobalTractionSmallStrain"
+                      : (_use_AD ? "ADCZMComputeGlobalTractionSmallStrain"
+                                 : "CZMComputeGlobalTractionSmallStrain");
       break;
     }
     case Strain::Finite:
     {
-      _czm_kernel_name =
-          _use_AD ? "ADSCZMInterfaceKernelTotalLagrangian" : "SCZMInterfaceKernelTotalLagrangian";
-      _disp_jump_provider_name = _use_AD ? "ADSCZMComputeDisplacementJumpTotalLagrangian"
-                                         : "SCZMComputeDisplacementJumpTotalLagrangian";
-      _equilibrium_traction_calculator_name = _use_AD ? "ADSCZMComputeGlobalTractionTotalLagrangian"
-                                                      : "SCZMComputeGlobalTractionTotalLagrangian";
+      _czm_kernel_name = _use_kokkos ? "KokkosSCZMInterfaceKernelTotalLagrangian"
+                                     : (_use_AD ? "ADSCZMInterfaceKernelTotalLagrangian"
+                                                : "SCZMInterfaceKernelTotalLagrangian");
+      _disp_jump_provider_name = _use_kokkos
+                                     ? "KokkosSCZMComputeDisplacementJumpTotalLagrangian"
+                                     : (_use_AD ? "ADSCZMComputeDisplacementJumpTotalLagrangian"
+                                                : "SCZMComputeDisplacementJumpTotalLagrangian");
+      _equilibrium_traction_calculator_name =
+          _use_kokkos ? "KokkosSCZMComputeGlobalTractionTotalLagrangian"
+                      : (_use_AD ? "ADSCZMComputeGlobalTractionTotalLagrangian"
+                                 : "SCZMComputeGlobalTractionTotalLagrangian");
       break;
     }
     default:
@@ -244,6 +260,13 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
 void
 ShiftedCohesiveZoneAction::act()
 {
+  if (_current_task == "validate_coordinate_systems" && _use_kokkos)
+    for (const auto subdomain : _problem->mesh().meshSubdomains())
+      if (_problem->getCoordSystem(subdomain) != Moose::COORD_XYZ)
+        paramError("use_kokkos",
+                   "Kokkos SCZM directional correction currently supports only Cartesian "
+                   "coordinate systems.");
+
   // Consistency check: ndisp must match mesh dimension
   if (_ndisp != _mesh->dimension())
     paramError("displacements", "Number of displacements must match problem dimension.");
@@ -303,6 +326,16 @@ ShiftedCohesiveZoneAction::act()
         if (!neml2_action->producesProperty(neml2_property_name))
           continue;
 
+        // The Kokkos interface kernel reads device material properties only
+        if (_use_kokkos && neml2_action->getParam<MooseEnum>("output_backend") != "kokkos")
+          neml2_action->paramError(
+              "output_backend",
+              "The material property '",
+              neml2_property_name,
+              "' produced by this NEML2 block is required on the cohesive interface by a Kokkos "
+              "[Physics/SolidMechanics/ShiftedCohesiveZone]. Set 'output_backend = kokkos' or set "
+              "'directional_correction = false' in the ShiftedCohesiveZone block.");
+
         const bool interface_set = neml2_action->isParamSetByUser("interface");
         const auto & interfaces = neml2_action->getParam<std::vector<BoundaryName>>("interface");
 
@@ -350,7 +383,11 @@ ShiftedCohesiveZoneAction::act()
   else if (_current_task == "add_interface_kernel")
     addRequiredCZMInterfaceKernels();
   else if (_current_task == "add_master_action_material")
+  {
+    if (needsPK2ToPK1Conversion())
+      addPK2ToPK1InterfaceConverters();
     addRequiredCZMInterfaceMaterials();
+  }
 
   // optional, add required outputs
   actOutputGeneration();
@@ -444,6 +481,129 @@ ShiftedCohesiveZoneAction::addSBMDistanceUserObjects()
 
   _problem->addUserObject(
       "BoundaryShortestDistanceToSurface", sbmDistanceUserObjectName(), distance_params);
+}
+
+bool
+ShiftedCohesiveZoneAction::needsPK2ToPK1Conversion() const
+{
+  return getParam<bool>("directional_correction") && !getParam<bool>("no_shifted") &&
+         getParam<MooseEnum>("tangent_definition") == "pk2_wrt_deformation_gradient";
+}
+
+void
+ShiftedCohesiveZoneAction::addPK2ToPK1InterfaceConverters()
+{
+  if (!_use_kokkos)
+    paramError("use_kokkos",
+               "Automatic PK2-to-PK1 conversion for directional correction is not yet supported "
+               "on the CPU path.");
+
+#ifdef MOOSE_KOKKOS_ENABLED
+  // For large-deformation models, NEML2 provides PK2 stress and dPK2/dF on both sides
+  // of the interface. Convert them to PK1 stress and dPK1/dF for the SCZM directional correction.
+  const auto pk1_stress = _name + "_pk1_stress";
+  const auto pk1_jacobian = _name + "_pk1_jacobian";
+  const auto add_converter =
+      [this, &pk1_stress, &pk1_jacobian](const std::string & type, const std::string & suffix)
+  {
+    auto params = _factory.getValidParams(type);
+    params.set<std::vector<BoundaryName>>("boundary") = _boundary;
+    params.set<std::vector<VariableName>>("displacements") = _displacements;
+    params.set<MaterialPropertyName>("custom_pk2_stress") =
+        getParam<MaterialPropertyName>("stress");
+    params.set<MaterialPropertyName>("custom_pk2_jacobian") =
+        getParam<MaterialPropertyName>("tangent");
+    params.set<MaterialPropertyName>("pk1_stress") = pk1_stress;
+    params.set<MaterialPropertyName>("dpk1_d_grad_u") = pk1_jacobian;
+    _problem->addKokkosMaterial(type, _name + "_pk2_to_pk1_" + suffix, params);
+  };
+  add_converter("KokkosInterfaceComputeLagrangianStressCustomPK2", "primary");
+  add_converter("KokkosNeighborComputeLagrangianStressCustomPK2", "neighbor");
+#else
+  mooseError("Kokkos SCZM was requested, but this MOOSE build does not enable Kokkos.");
+#endif
+}
+
+void
+ShiftedCohesiveZoneAction::addRequiredCZMInterfaceKernels()
+{
+  if (!_use_kokkos)
+  {
+    CohesiveZoneAction::addRequiredCZMInterfaceKernels();
+    return;
+  }
+
+#ifdef MOOSE_KOKKOS_ENABLED
+  for (const auto i : make_range(_ndisp))
+  {
+    const auto unique_kernel_name = _czm_kernel_name + "_" + _name + "_" + Moose::stringify(i);
+    auto params = _factory.getValidParams(_czm_kernel_name);
+
+    params.set<unsigned int>("component") = i;
+    params.set<NonlinearVariableName>("variable") = _displacements[i];
+    params.set<std::vector<VariableName>>("neighbor_var") = {_displacements[i]};
+    params.set<std::vector<VariableName>>("displacements") = _displacements;
+    params.set<std::vector<BoundaryName>>("boundary") = _boundary;
+    params.set<std::string>("base_name") = _base_name;
+    customizeCZMInterfaceKernelParameters(params);
+    if (needsPK2ToPK1Conversion())
+    {
+      params.set<MaterialPropertyName>("stress") = _name + "_pk1_stress";
+      params.set<MaterialPropertyName>("tangent") = _name + "_pk1_jacobian";
+      params.set<MooseEnum>("tangent_definition") = "pk1_wrt_deformation_gradient";
+    }
+
+    std::string save_in_side;
+    std::vector<AuxVariableName> save_in_var_names;
+    if (_save_in_primary.size() == _ndisp || _save_in_secondary.size() == _ndisp)
+    {
+      prepareSaveInInputs(save_in_var_names, save_in_side, _save_in_primary, _save_in_secondary, i);
+      params.set<std::vector<AuxVariableName>>("save_in") = save_in_var_names;
+      params.set<MultiMooseEnum>("save_in_var_side") = save_in_side;
+    }
+    if (_diag_save_in_primary.size() == _ndisp || _diag_save_in_secondary.size() == _ndisp)
+    {
+      prepareSaveInInputs(
+          save_in_var_names, save_in_side, _diag_save_in_primary, _diag_save_in_secondary, i);
+      params.set<std::vector<AuxVariableName>>("diag_save_in") = save_in_var_names;
+      params.set<MultiMooseEnum>("diag_save_in_var_side") = save_in_side;
+    }
+
+    _problem->addKokkosInterfaceKernel(_czm_kernel_name, unique_kernel_name, params);
+  }
+#else
+  mooseError("Kokkos SCZM was requested, but this MOOSE build does not enable Kokkos.");
+#endif
+}
+
+void
+ShiftedCohesiveZoneAction::addRequiredCZMInterfaceMaterials()
+{
+  if (!_use_kokkos)
+  {
+    CohesiveZoneAction::addRequiredCZMInterfaceMaterials();
+    return;
+  }
+
+#ifdef MOOSE_KOKKOS_ENABLED
+  auto params = _factory.getValidParams(_disp_jump_provider_name);
+  params.set<std::vector<BoundaryName>>("boundary") = _boundary;
+  params.set<std::vector<VariableName>>("displacements") = _displacements;
+  params.set<std::string>("base_name") = _base_name;
+  customizeCZMDisplacementJumpMaterialParameters(params);
+  _problem->addKokkosMaterial(
+      _disp_jump_provider_name, _disp_jump_provider_name + "_" + _name, params);
+
+  params = _factory.getValidParams(_equilibrium_traction_calculator_name);
+  params.set<std::vector<BoundaryName>>("boundary") = _boundary;
+  params.set<std::string>("base_name") = _base_name;
+  customizeCZMGlobalTractionMaterialParameters(params);
+  _problem->addKokkosMaterial(_equilibrium_traction_calculator_name,
+                              _equilibrium_traction_calculator_name + "_" + _name,
+                              params);
+#else
+  mooseError("Kokkos SCZM was requested, but this MOOSE build does not enable Kokkos.");
+#endif
 }
 
 void

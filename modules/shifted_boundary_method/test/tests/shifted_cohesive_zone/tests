@@ -341,6 +341,14 @@
       expect_err = "'volumetric_locking_correction' value in ShiftedCohesiveZone block is different"
       detail = 'if explicitly specified volumetric locking correction settings differ between shifted cohesive zone and solid mechanics Physics blocks.'
     []
+    [kokkos_ad_rejected]
+      type = RunException
+      input = 'angled_sczm_total_lagrangian.i'
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm/use_kokkos=true '
+                 'Physics/SolidMechanics/ShiftedCohesiveZone/czm/use_automatic_differentiation=true'
+      expect_err = 'Kokkos SCZM currently supports only non-AD objects.'
+      detail = 'if Kokkos execution is requested with automatic differentiation.'
+    []
     [surface_meshes_without_generation]
       type = RunException
       input = 'rectangle_sczm_tri_material.i'
