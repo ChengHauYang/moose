@@ -1,0 +1,207 @@
+[Tests]
+  issues = '#30655'
+  design = 'NEML2ModelExecutor.md KokkosQuantityToNEML2.md MOOSEQuantityToNEML2.md TorchDeformationGradient.md KokkosComputeLagrangianStressCustomPK2.md KokkosTotalLagrangianStressDivergence.md'
+
+  [device_material_parameter_gather]
+    type = Exodiff
+    input = 'neml2_action_kokkos_material_parameter.i'
+    cli_args = 'Outputs/file_base=neml2_action_cpu_input_out'
+    exodiff = 'neml2_action_cpu_input_out.e'
+    requirement = 'When Torch/Kokkos inputs use an element-QP 2D batch, the system shall allow a host MOOSE material property to be supplied as a NEML2 model parameter with the same batch shape and produce the reference thermo-elastic solution.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu'
+  []
+
+  [deformation_gradient]
+    type = CSVDiff
+    input = 'deformation_gradient.i'
+    csvdiff = 'deformation_gradient_out.csv'
+    requirement = 'The system shall provide all nine components of the deformation gradient computed from three scalar displacement variables to a NEML2 model without symmetrizing or permuting tensor components.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+  []
+
+  [deformation_gradient_padding]
+    type = CSVDiff
+    input = 'deformation_gradient_padding.i'
+    csvdiff = 'deformation_gradient_padding_out.csv'
+    requirement = 'The system shall represent a deformation gradient formed from fewer than three scalar displacement variables as a three-dimensional tensor with zero missing displacement gradients and an identity contribution in every spatial direction.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+  []
+
+  [full_tensor_bridge]
+    type = CSVDiff
+    input = 'full_tensor_bridge.i'
+    csvdiff = 'full_tensor_bridge_out.csv'
+    requirement = 'The system shall transfer every component of full nonsymmetric rank-two NEML2 outputs and their full rank-four derivatives to Kokkos material properties without Mandel conversion or index permutation, and convert PK2 stress to PK1 stress.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+    allow_test_objects = true
+  []
+
+  [total_lagrangian_jacobian_stabilized]
+    type = PetscJacobianTester
+    input = 'total_lagrangian_jacobian_stabilized.i'
+    ratio_tol = 1e-7
+    difference_tol = 1e-3
+    requirement = 'The system shall assemble a consistent full displacement Jacobian, including the cross-quadrature-point coupling from the total-mode F-bar element average, in the Kokkos total-Lagrangian NEML2 path.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+  []
+
+  [fbar_cp_jacobian]
+    type = PetscJacobianTester
+    input = 'fbar_cp_jacobian.i'
+    run_sim = true
+    ratio_tol = 5E-5
+    # difference_tol is on the ABSOLUTE Frobenius difference (not the ratio). The stateful CP
+    # model produces stress magnitudes ~1e5, so |J - Jfd| is of order (1e-7 relative) * 1e5 ~ 1e-2.
+    # The relative ratio is 5-6e-8, well under `ratio_tol = 5e-5`.
+    difference_tol = 1e0
+    requirement = 'The Kokkos total-Lagrangian F-bar Jacobian shall be finite-difference consistent when driving the stateful exact-kinematics crystal-plasticity NEML2 model on a nonuniform-F configuration, including the cross-quadrature-point element-average coupling. Uses `run_sim = true` so the CP return map runs through the full nonlinear solve at physically reasonable iterates (parallel to the host `exact_kinematics_jacobian` test).'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+  []
+
+  [fbar_kokkos_vs_host]
+    type = CSVDiff
+    input = 'fbar_kokkos_vs_host.i'
+    csvdiff = 'fbar_kokkos_vs_host_out.csv'
+    requirement = 'The Kokkos F-bar total-mode path shall reproduce the host `Physics/SolidMechanics/QuasiStatic volumetric_locking_correction = true` (total F-bar) solution at every interior displacement sample, at every time step, on a nonuniform-deformation exact-kinematics crystal-plasticity problem. The gold CSV was produced by running `fbar_kokkos_vs_host_reference.i` (host reference; not run automatically because it needs no --compute-device flag) at branch HEAD.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+  []
+
+  [fbar_patch_test]
+    type = CSVDiff
+    input = 'fbar_patch_test.i'
+    cli_args = 'STABILIZE=true'
+    csvdiff = 'fbar_patch_test_out.csv'
+    requirement = 'The Kokkos F-bar total-mode path shall reproduce the exact applied linear displacement field on a homogeneous patch (F_ust constant across quadrature points, gamma_bar = 1 identically).'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+  []
+
+  [exact_kinematics_stabilized]
+    type = Exodiff
+    input = 'exact_kinematics_stabilized.i'
+    exodiff = 'exact_kinematics_stabilized_out.e'
+    requirement = 'The Kokkos F-bar (total-mode) total-Lagrangian path shall reproduce the unstabilized-Kokkos exact-kinematics crystal-plasticity solution wherever the two happen to coincide, and shall itself converge cleanly under a stateful crystal-plasticity NEML2 model on both CPU and CUDA.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+    heavy = true
+  []
+
+  [exact_kinematics_stabilized_rollback]
+    type = Exodiff
+    input = 'exact_kinematics_stabilized_rollback.i'
+    exodiff = 'exact_kinematics_stabilized_out.e'
+    expect_out = 'causing a time step cutback by marking the current step as failed'
+    requirement = 'The Kokkos F-bar total-mode path shall discard trial device-managed NEML2 state when a failed solve is retried with a smaller timestep, matching the unstabilized rollback behavior on the same stateful crystal-plasticity problem.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+    heavy = true
+    prereq = exact_kinematics_stabilized
+  []
+
+  [nearly_incompressible]
+    type = CSVDiff
+    input = 'nearly_incompressible.i'
+    cli_args = 'Executioner/num_steps=1'
+    csvdiff = 'nearly_incompressible_out.csv'
+    requirement = 'The Kokkos F-bar total-mode path shall reproduce the host `Physics/SolidMechanics/QuasiStatic volumetric_locking_correction = true` solution on a nearly-incompressible (nu=0.49) shear-loaded linear-hex mesh, where volumetric locking is measurable (the unstabilized Kokkos path gives an ~8% smaller cross-shear displacement in the same setup).'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+  []
+
+  [fbar_2d]
+    requirement = 'The system shall solve a two-dimensional plane-strain total-Lagrangian problem on a non-affine quadrilateral mesh with full three-dimensional NEML2 PK2 stress and tangent'
+    [host]
+      type = CSVDiff
+      input = 'fbar_2d_host.i'
+      csvdiff = 'fbar_2d_out.csv'
+      detail = 'through the host total-Lagrangian kernels with the total-mode F-bar correction,'
+      capabilities = 'libtorch & neml2'
+      compute_devices = 'cpu cuda'
+    []
+    [kokkos]
+      type = CSVDiff
+      input = 'fbar_2d.i'
+      csvdiff = 'fbar_2d_out.csv'
+      detail = 'through the Kokkos total-Lagrangian kernels with the total-mode F-bar correction, matching the host solution,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda'
+      prereq = 'fbar_2d/host'
+    []
+    [off_host]
+      type = CSVDiff
+      input = 'fbar_2d_host.i'
+      cli_args = 'fbar=false Outputs/file_base=fbar_2d_off_out'
+      csvdiff = 'fbar_2d_off_out.csv'
+      detail = 'through the host total-Lagrangian kernels without the F-bar correction,'
+      capabilities = 'libtorch & neml2'
+      compute_devices = 'cpu cuda'
+    []
+    [off_kokkos]
+      type = CSVDiff
+      input = 'fbar_2d.i'
+      cli_args = 'fbar=false Outputs/file_base=fbar_2d_off_out'
+      csvdiff = 'fbar_2d_off_out.csv'
+      detail = 'through the Kokkos total-Lagrangian kernels without the F-bar correction, matching the host solution,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda'
+      prereq = 'fbar_2d/off_host'
+    []
+    [jacobian]
+      type = PetscJacobianTester
+      input = 'fbar_2d.i'
+      cli_args = 'Executioner/num_steps=1 Executioner/automatic_scaling=false Outputs/csv=false'
+      ratio_tol = 1e-7
+      detail = 'with a consistent Kokkos Jacobian, including the out-of-plane tangent terms and the cross-quadrature-point coupling of the F-bar element average, and'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda'
+    []
+    [off_jacobian]
+      type = PetscJacobianTester
+      input = 'fbar_2d.i'
+      cli_args = 'fbar=false Executioner/num_steps=1 Executioner/automatic_scaling=false Outputs/csv=false'
+      ratio_tol = 1e-7
+      detail = 'with a consistent Kokkos Jacobian without the F-bar correction.'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda'
+    []
+  []
+
+  [total_lagrangian_jacobian]
+    type = PetscJacobianTester
+    input = 'total_lagrangian_jacobian.i'
+    ratio_tol = 1e-7
+    difference_tol = 1e-3
+    requirement = 'The system shall assemble the consistent diagonal and off-diagonal Jacobian of a Kokkos total-Lagrangian stress divergence using full NEML2 PK2 stress derivatives.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+  []
+
+  [exact_kinematics]
+    type = Exodiff
+    input = 'exact_kinematics.i'
+    exodiff = 'exact_kinematics_out.e'
+    requirement = 'The Kokkos total-Lagrangian path shall reproduce the unstabilized host stateful NEML2 exact-kinematics crystal-plasticity solution.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+    heavy = true
+  []
+
+  [exact_kinematics_rollback]
+    type = Exodiff
+    input = 'exact_kinematics_rollback.i'
+    exodiff = 'exact_kinematics_out.e'
+    expect_out = 'causing a time step cutback by marking the current step as failed'
+    requirement = 'The Kokkos total-Lagrangian path shall discard trial device-managed NEML2 state when a failed solve is retried with a smaller timestep.'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda'
+    heavy = true
+    prereq = exact_kinematics
+  []
+[]
