@@ -1,0 +1,79 @@
+[Tests]
+  issues = '#33666 #30655'
+  design = 'syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md KokkosSCZMInterfaceKernelSmallStrain.md KokkosInterfaceQuantityToNEML2.md BoundaryShortestDistanceToSurface.md KokkosTotalLagrangianStressDivergence.md'
+
+  [host]
+    type = Exodiff
+    input = 'ld_sczm_host.i'
+    exodiff = 'ld_sczm_host_out.e'
+    capabilities = 'libtorch & neml2'
+    compute_devices = cpu
+    recover = false
+    requirement = 'The system shall solve a three-dimensional finite-deformation crystal-plasticity bulk problem coupled to a shifted cohesive-zone interface on a planar surrogate boundary with PK1 directional correction on the host.'
+  []
+
+  [host_neml2_cuda]
+    type = Exodiff
+    input = 'ld_sczm_host.i'
+    cli_args = 'NEML2/bulk/device=cuda NEML2/interface/device=cuda Outputs/file_base=ld_sczm_host_neml2_cuda_out'
+    # The gold is a symlink to ld_sczm_host_out.e.
+    exodiff = 'ld_sczm_host_neml2_cuda_out.e'
+    custom_cmp = 'ld_sczm.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    recover = false
+    requirement = 'The system shall reproduce the three-dimensional host finite-deformation crystal-plasticity and shifted cohesive-zone solution when both the bulk and interface NEML2 models are evaluated on the CUDA device and assembled on the host.'
+  []
+
+  [kokkos]
+    type = Exodiff
+    input = 'ld_sczm_kokkos.i'
+    # The gold is a symlink to ld_sczm_host_out.e.
+    exodiff = 'ld_sczm_kokkos_out.e'
+    custom_cmp = 'ld_sczm.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    # Disjoint interface neighbor links from BreakMeshByBlockGenerator are not reconstructed during checkpoint recovery.
+    recover = false
+    requirement = 'The system shall reproduce the three-dimensional host finite-deformation crystal-plasticity and shifted cohesive-zone solution using Kokkos total-Lagrangian bulk assembly, KokkosSCZMInterfaceKernelSmallStrain, and KokkosInterfaceQuantityToNEML2 with CPU NEML2 evaluation.'
+  []
+
+  [kokkos_neml2_cuda]
+    type = Exodiff
+    input = 'ld_sczm_kokkos.i'
+    cli_args = 'NEML2/bulk/device=cuda NEML2/interface/device=cuda -vec_type standard -nl0_mat_type aij Outputs/file_base=ld_sczm_kokkos_neml2_cuda_out'
+    # The gold is a symlink to ld_sczm_host_out.e.
+    exodiff = 'ld_sczm_kokkos_neml2_cuda_out.e'
+    custom_cmp = 'ld_sczm.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    recover = false
+    requirement = 'The system shall reproduce the three-dimensional host finite-deformation crystal-plasticity and shifted cohesive-zone solution when the bulk and interface NEML2 updates and Kokkos assembly run on the CUDA device with host PETSc linear algebra.'
+  []
+
+  [kokkos_aijkokkos]
+    type = Exodiff
+    input = 'ld_sczm_kokkos.i'
+    cli_args = 'NEML2/bulk/device=cuda NEML2/interface/device=cuda -vec_type kokkos -nl0_mat_type aijkokkos -hypre_umpire_device_pool_size 256 Outputs/file_base=ld_sczm_kokkos_aijkokkos_out'
+    # The gold is a symlink to ld_sczm_host_out.e.
+    exodiff = 'ld_sczm_kokkos_aijkokkos_out.e'
+    custom_cmp = 'ld_sczm.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    recover = false
+    requirement = 'The system shall reproduce the three-dimensional host finite-deformation crystal-plasticity and shifted cohesive-zone solution when the bulk and interface NEML2 updates, Kokkos assembly, and PETSc AIJKOKKOS solve all run on the CUDA device.'
+  []
+
+  [kokkos_mathypre]
+    type = Exodiff
+    input = 'ld_sczm_kokkos.i'
+    cli_args = 'NEML2/bulk/device=cuda NEML2/interface/device=cuda Executioner/off_diagonals_in_auto_scaling=false -vec_type cuda -nl0_mat_type hypre -hypre_umpire_device_pool_size 256 Outputs/file_base=ld_sczm_kokkos_mathypre_out'
+    # The gold is a symlink to ld_sczm_host_out.e.
+    exodiff = 'ld_sczm_kokkos_mathypre_out.e'
+    custom_cmp = 'ld_sczm.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    recover = false
+    requirement = 'The system shall reproduce the three-dimensional host finite-deformation crystal-plasticity and shifted cohesive-zone solution when the bulk and interface NEML2 updates, Kokkos assembly, and PETSc MATHYPRE solve all run on the CUDA device.'
+  []
+[]
