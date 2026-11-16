@@ -1,0 +1,60 @@
+[Tests]
+  issues = '#30655'
+  design = 'KokkosStressDivergence.md TorchSmallStrain.md NEML2ToKokkosMaterialProperty.md KokkosDirichletBC.md NEML2Action.md'
+
+  [host]
+    type = Exodiff
+    input = 'perfect_plasticity_3d_host.i'
+    exodiff = 'perfect_plasticity_3d_host_out.e'
+    capabilities = 'libtorch & neml2'
+    compute_devices = cpu
+    requirement = 'The system shall solve a three-dimensional small-deformation J2 perfect-plasticity problem on the host using a NEML2 constitutive model evaluated on the CPU.'
+  []
+
+  [host_neml2_cuda]
+    type = Exodiff
+    input = 'perfect_plasticity_3d_host.i'
+    cli_args = 'NEML2/all/device=cuda Outputs/file_base=perfect_plasticity_3d_host_neml2_cuda_out'
+    # The gold is a symlink to perfect_plasticity_3d_host_out.e.
+    exodiff = 'perfect_plasticity_3d_host_neml2_cuda_out.e'
+    custom_cmp = 'perfect_plasticity_3d.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    requirement = 'The system shall reproduce the three-dimensional host small-deformation J2 perfect-plasticity solution when the NEML2 constitutive update is evaluated on the CUDA device and assembled on the host.'
+  []
+
+  [kokkos]
+    type = Exodiff
+    input = 'perfect_plasticity_3d_kokkos.i'
+    # The gold is a symlink to perfect_plasticity_3d_host_out.e.
+    exodiff = 'perfect_plasticity_3d_kokkos_out.e'
+    custom_cmp = 'perfect_plasticity_3d.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    requirement = 'The system shall reproduce the three-dimensional host small-deformation J2 perfect-plasticity solution using TorchSmallStrain, Kokkos material bridges, KokkosStressDivergence, and KokkosDirichletBC with CPU NEML2 evaluation.'
+  []
+
+  [kokkos_neml2_cuda]
+    type = Exodiff
+    input = 'perfect_plasticity_3d_kokkos.i'
+    cli_args = 'NEML2/all/device=cuda -vec_type standard -nl0_mat_type aij Outputs/file_base=perfect_plasticity_3d_kokkos_neml2_cuda_out'
+    # The gold is a symlink to perfect_plasticity_3d_host_out.e.
+    exodiff = 'perfect_plasticity_3d_kokkos_neml2_cuda_out.e'
+    custom_cmp = 'perfect_plasticity_3d.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    requirement = 'The system shall reproduce the three-dimensional host small-deformation J2 perfect-plasticity solution when both the NEML2 constitutive update and the Kokkos assembly run on the CUDA device with host PETSc linear algebra.'
+  []
+
+  [kokkos_full_gpu]
+    type = Exodiff
+    input = 'perfect_plasticity_3d_kokkos.i'
+    cli_args = 'NEML2/all/device=cuda -vec_type kokkos -nl0_mat_type aijkokkos Outputs/file_base=perfect_plasticity_3d_kokkos_full_gpu_out'
+    # The gold is a symlink to perfect_plasticity_3d_host_out.e.
+    exodiff = 'perfect_plasticity_3d_kokkos_full_gpu_out.e'
+    custom_cmp = 'perfect_plasticity_3d.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    requirement = 'The system shall reproduce the three-dimensional host small-deformation J2 perfect-plasticity solution when the NEML2 constitutive update, Kokkos assembly, and PETSc AIJKOKKOS solve all run on the CUDA device.'
+  []
+[]
