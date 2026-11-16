@@ -1,0 +1,23 @@
+# Reference mesh coordinates are identical between the host and Kokkos inputs.
+COORDINATES absolute 1.e-12
+
+# Both inputs execute the same fixed ConstantDT schedule (dt = 1e-3, 5 steps).
+TIME STEPS relative 1.e-12 floor 1.e-14
+
+# Host and Kokkos evaluate identical PointValue postprocessors on the converged disp_x field;
+# floor 1.e-12 accommodates linear-solver roundoff at the zero initial condition.
+GLOBAL VARIABLES relative 1.e-8 floor 1.e-12
+	ux_center
+	ux_right
+
+# Host and Kokkos assemble identical double-precision plane-strain J2 plasticity residuals
+# and tangents; floor 1.e-12 accommodates direct-solver roundoff at clamped boundary nodes.
+NODAL VARIABLES relative 1.e-8 floor 1.e-12
+	disp_x
+	disp_y
+
+# No ELEMENT VARIABLES
+
+# No NODESET VARIABLES
+
+# No SIDESET VARIABLES
