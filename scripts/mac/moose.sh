@@ -34,6 +34,8 @@ Commands:
                                  Run regression tests (without compiling)
   unit [target] [pattern] [...]  Run C++ GoogleTest unit tests (default: framework)
   verify [scope] [-j N] [--raw]  Compile the required target, then test it
+  compare <file1> <file2> [...]  Compare Exodus or CSV output
+  logstat <log...> [--verbose]   Summarize solver convergence
   all [-j N] [--raw]             Init, compile all, and test all
   precheck                       Install this clone's pre-commit hook
   help                           Show this message
@@ -431,6 +433,10 @@ case "$COMMAND" in
         ;;
     precheck)
         exec "$SCRIPT_DIR/init_precheck.sh" "$@"
+        ;;
+    compare|logstat)
+        moose_mac_activate
+        exec python3 "$SCRIPT_DIR/../harness/cli.py" "$COMMAND" "$@"
         ;;
     *)
         moose_mac_die "Unknown command '$COMMAND'. Run './scripts/mac/moose.sh --help'."

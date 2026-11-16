@@ -230,3 +230,12 @@ not govern unrelated conversations or prescribe the user's conversational style.
 ---
 
 **These guidelines are working if:** diffs are as small as the design allows, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+## Harness Utilities
+
+Shared utilities live in `scripts/harness/` and are exposed by both `scripts/mac/moose.sh` and `scripts/cuda/moose_cuda.sh`:
+
+- `compare <file1> <file2> [--cmp spec] [--verbose]` -- numerical comparison for Exodus/CSV. Reports max abs/rel per variable, worst variable/timestep, reference magnitude. With `--cmp`, delegates to MOOSE's exodiff/csvdiff for authoritative pass/fail. Exit status is nonzero for differences, incompatibility, or errors unless `--cmp` accepts the files.
+- `logstat <log...> [--verbose]` -- solver convergence summary (timesteps, Newton/linear/SNES iterations, final residual, retries, status). One line per run; failed, unknown, or incomplete runs return nonzero. `CONVERGED` requires application-exit output (the MOOSE performance graph, PETSc's unused-option report, or `-log_view`) after the last solve; otherwise a fully converged log reports `UNCONFIRMED` (nonzero), since a log cut between timesteps looks the same. A mooseError banner (`*** ERROR ***`) reports `MOOSE_ERROR` with the message under `--verbose`. A TestHarness log is judged by its per-test results and final `N passed, M skipped, K failed` line (`TEST_PASSED`, `TEST_FAILED`, `SKIPPED`, `NO_TESTS`, or `UNCONFIRMED` without the final line).
+
+Use `compare` for output validation, `logstat` for solver diagnostics. Request detail with `--verbose`. Reuse these before writing temporary diagnostic scripts.

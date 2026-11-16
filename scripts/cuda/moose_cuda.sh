@@ -18,6 +18,8 @@ Usage: ./scripts/cuda/moose_cuda.sh <command> [args] [options]
   run <target> <input.i> [args...]     Run with --compute-device=cuda unless overridden
   test <scope> [regex] [-j N] [args]   Run existing TestHarness, default 1 job
   verify <scope> [regex] [-j N]        Compile required executable and test
+  compare <file1> <file2> [options]    Compare Exodus or CSV output
+  logstat <log...> [--verbose]         Summarize solver convergence
   benchmark                           Run profiler / benchmark explicitly
   all [-j N] [--no-neml2]             init -> compile -> test (no benchmark)
 
@@ -371,6 +373,9 @@ main() {
       init
       compile solid_mechanics "$MOOSE_JOBS"
       test_scope solid_mechanics '' "$TEST_JOBS" ;;
+    compare|logstat)
+      cuda_runtime_env
+      python3 "$SCRIPT_DIR/../harness/cli.py" "$cmd" "$@" ;;
     *) cuda_die "Unknown command: $cmd (try --help)" ;;
   esac
 }
