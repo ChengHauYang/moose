@@ -1,0 +1,30 @@
+# Reference mesh coordinates are identical between the host and Kokkos inputs.
+COORDINATES absolute 1.e-12
+
+# Both inputs execute the same fixed ConstantDT schedule (dt = 5e-3, 3 steps).
+TIME STEPS relative 1.e-12 floor 1.e-14
+
+# Host and Kokkos evaluate identical volume reductions on disp_x and slip_hardening;
+# floor 1.e-12 accommodates roundoff at the zero initial condition.
+GLOBAL VARIABLES relative 1.e-8 floor 1.e-12
+	avg_disp_x_block1
+	avg_slip_hardening
+	max_slip_hardening
+
+# Host and Kokkos assemble identical double-precision total-Lagrangian F-bar crystal-plasticity
+# bulk and total-Lagrangian shifted cohesive-zone interface residuals and Jacobians; floor 1.e-12
+# accommodates BoomerAMG/GMRES roundoff at clamped boundary nodes.
+NODAL VARIABLES relative 1.e-8 floor 1.e-12
+	disp_x
+	disp_y
+	disp_z
+
+# Host MaterialRealAux and KokkosMaterialRealAux project the same converged per-QP
+# slip_hardening property onto CONSTANT MONOMIAL elements; floor 1.e-12 accommodates
+# zero initial plastic hardening.
+ELEMENT VARIABLES relative 1.e-8 floor 1.e-12
+	slip_hardening_elem
+
+# No NODESET VARIABLES
+
+# No SIDESET VARIABLES

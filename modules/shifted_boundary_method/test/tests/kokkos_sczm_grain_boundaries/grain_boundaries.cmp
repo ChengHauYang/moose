@@ -1,0 +1,25 @@
+# Reference mesh coordinates are identical between the host and Kokkos inputs.
+COORDINATES absolute 1.e-12
+
+# Both inputs execute the same fixed ConstantDT schedule (dt = 0.25, 4 steps).
+TIME STEPS relative 1.e-12 floor 1.e-14
+
+# Host and Kokkos evaluate identical volume reductions on disp_x (grain 4) and slip_hardening;
+# floor 1.e-12 accommodates roundoff at the zero initial condition.
+GLOBAL VARIABLES relative 1.e-8 floor 1.e-12
+	avg_disp_x_grain4
+	avg_slip_hardening
+	max_slip_hardening
+
+# Host and Kokkos assemble identical double-precision plane-strain crystal-plasticity bulk
+# and polycrystalline grain-boundary SCZM residuals and Jacobians; floor 1.e-12 accommodates
+# BoomerAMG/GMRES roundoff at clamped boundary nodes.
+NODAL VARIABLES relative 1.e-8 floor 1.e-12
+	disp_x
+	disp_y
+
+# No ELEMENT VARIABLES
+
+# No NODESET VARIABLES
+
+# No SIDESET VARIABLES
