@@ -199,7 +199,8 @@
     design = 'NEML2Action.md NEML2ToKokkosMaterialProperty.md'
     issues = '#31596'
     # The gold is the host NEML2ToMOOSERealMaterialProperty result. The host variant runs first and
-    # all variants share one output file, so they are prereq-chained to serialize that file.
+    # all variants share one output file, so the host and cpu variants are prereq-chained to serialize
+    # that file.
     [host]
       detail = 'with the host backend (the reference the Kokkos backend is checked against),'
       type = CSVDiff
@@ -224,7 +225,8 @@
       input = 'kokkos_scalar_output.i'
       cli_args = 'NEML2/device=cuda'
       csvdiff = 'kokkos_scalar_output_out.csv'
-      prereq = 'kokkos_scalar_output/cpu'
+      # No prereq: the TestHarness runs one compute device per invocation, so the host and cpu
+      # variants are always skipped when this one runs, and a prereq on them would skip it too.
       capabilities = 'kokkos & libtorch & neml2'
       compute_devices = 'cuda'
       valgrind = none
