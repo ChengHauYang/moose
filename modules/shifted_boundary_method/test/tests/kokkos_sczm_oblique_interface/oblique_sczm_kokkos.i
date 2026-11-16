@@ -259,7 +259,13 @@ theta_rad = '${fparse theta * pi / 180}'
   dt = ${DT}
   num_steps = ${NUM_STEPS}
   residual_and_jacobian_together = true
-  nl_abs_tol = 1e-10
+  # Regold only from a host (CPU) solve at these tolerances, checked against a direct (LU) solve.
+  # Tight nonlinear tolerances make the result independent of where Newton stops. A tight l_tol
+  # removes the differences that the host and device BoomerAMG defaults (CPU vs GPU matrix types)
+  # would otherwise leave in each Newton update, so all variants match the same gold.
+  nl_rel_tol = 1e-12
+  nl_abs_tol = 1e-12
+  l_tol = 1e-10
 []
 
 [Postprocessors]
