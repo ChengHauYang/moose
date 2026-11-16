@@ -1,0 +1,166 @@
+[Tests]
+  issues = '#33666 #30655'
+  design = 'modules/shifted_boundary_method/grain_boundary_case.md SubdomainGrainIDGenerator.md SBMInterfaceManager.md BoundaryShortestDistanceToSurface.md KokkosSCZMInterfaceKernelSmallStrain.md KokkosSCZMInterfaceKernelTotalLagrangian.md'
+
+  [host]
+    type = Exodiff
+    input = 'grain_boundaries_host.i'
+    exodiff = 'grain_boundaries_host_out.e'
+    capabilities = 'libtorch & neml2'
+    compute_devices = cpu
+    mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
+    recover = false
+    requirement = 'The system shall solve a two-dimensional plane-strain finite-deformation crystal-plasticity problem across five polycrystalline grains coupled to shifted cohesive zones on seven grain boundaries on the host.'
+  []
+
+  [host_neml2_cuda]
+    type = Exodiff
+    input = 'grain_boundaries_host.i'
+    cli_args = 'NEML2/bulk/device=cuda NEML2/interface/device=cuda Outputs/file_base=grain_boundaries_host_neml2_cuda_out'
+    # The gold is a symlink to grain_boundaries_host_out.e.
+    exodiff = 'grain_boundaries_host_neml2_cuda_out.e'
+    custom_cmp = 'grain_boundaries.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    mesh_mode = REPLICATED
+    recover = false
+    requirement = 'The system shall reproduce the two-dimensional polycrystalline host crystal-plasticity and grain-boundary shifted cohesive-zone solution when both the bulk and interface NEML2 models are evaluated on the CUDA device and assembled on the host.'
+  []
+
+  [kokkos]
+    type = Exodiff
+    input = 'grain_boundaries_kokkos.i'
+    # The gold is a symlink to grain_boundaries_host_out.e.
+    exodiff = 'grain_boundaries_kokkos_out.e'
+    custom_cmp = 'grain_boundaries.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    mesh_mode = REPLICATED
+    recover = false
+    requirement = 'The system shall reproduce the two-dimensional polycrystalline host crystal-plasticity and grain-boundary shifted cohesive-zone solution using Kokkos total-Lagrangian bulk assembly, KokkosSCZMInterfaceKernelSmallStrain, and KokkosInterfaceQuantityToNEML2 with CPU NEML2 evaluation.'
+  []
+
+  [kokkos_neml2_cuda]
+    type = Exodiff
+    input = 'grain_boundaries_kokkos.i'
+    cli_args = 'NEML2/bulk/device=cuda NEML2/interface/device=cuda -vec_type standard -nl0_mat_type aij Outputs/file_base=grain_boundaries_kokkos_neml2_cuda_out'
+    # The gold is a symlink to grain_boundaries_host_out.e.
+    exodiff = 'grain_boundaries_kokkos_neml2_cuda_out.e'
+    custom_cmp = 'grain_boundaries.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    mesh_mode = REPLICATED
+    recover = false
+    requirement = 'The system shall reproduce the two-dimensional polycrystalline host crystal-plasticity and grain-boundary shifted cohesive-zone solution when the bulk and interface NEML2 updates and Kokkos assembly run on the CUDA device with host PETSc linear algebra.'
+  []
+
+  [kokkos_aijkokkos]
+    type = Exodiff
+    input = 'grain_boundaries_kokkos.i'
+    cli_args = 'NEML2/bulk/device=cuda NEML2/interface/device=cuda -vec_type kokkos -nl0_mat_type aijkokkos -hypre_umpire_device_pool_size 256 Outputs/file_base=grain_boundaries_kokkos_aijkokkos_out'
+    # The gold is a symlink to grain_boundaries_host_out.e.
+    exodiff = 'grain_boundaries_kokkos_aijkokkos_out.e'
+    custom_cmp = 'grain_boundaries.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    mesh_mode = REPLICATED
+    recover = false
+    requirement = 'The system shall reproduce the two-dimensional polycrystalline host crystal-plasticity and grain-boundary shifted cohesive-zone solution when the bulk and interface NEML2 updates, Kokkos assembly, and PETSc AIJKOKKOS solve all run on the CUDA device.'
+  []
+
+  [kokkos_mathypre]
+    type = Exodiff
+    input = 'grain_boundaries_kokkos.i'
+    cli_args = 'NEML2/bulk/device=cuda NEML2/interface/device=cuda Executioner/off_diagonals_in_auto_scaling=false -vec_type cuda -nl0_mat_type hypre -hypre_umpire_device_pool_size 256 Outputs/file_base=grain_boundaries_kokkos_mathypre_out'
+    # The gold is a symlink to grain_boundaries_host_out.e.
+    exodiff = 'grain_boundaries_kokkos_mathypre_out.e'
+    custom_cmp = 'grain_boundaries.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    mesh_mode = REPLICATED
+    recover = false
+    requirement = 'The system shall reproduce the two-dimensional polycrystalline host crystal-plasticity and grain-boundary shifted cohesive-zone solution when the bulk and interface NEML2 updates, Kokkos assembly, and PETSc MATHYPRE solve all run on the CUDA device.'
+  []
+
+  [fbar_host]
+    type = Exodiff
+    input = 'grain_boundaries_host.i fbar_on_host.i'
+    cli_args = 'Outputs/file_base=grain_boundaries_fbar_host_out'
+    exodiff = 'grain_boundaries_fbar_host_out.e'
+    capabilities = 'libtorch & neml2'
+    compute_devices = cpu
+    mesh_mode = REPLICATED
+    recover = false
+    requirement = 'The system shall solve a two-dimensional plane-strain polycrystalline crystal-plasticity and total-Lagrangian shifted cohesive-zone problem with total-mode F-bar volumetric locking correction enabled in the bulk and on the grain boundaries on the host.'
+  []
+
+  [fbar_host_neml2_cuda]
+    type = Exodiff
+    input = 'grain_boundaries_host.i fbar_on_host.i'
+    cli_args = 'NEML2/bulk/device=cuda NEML2/interface/device=cuda Outputs/file_base=grain_boundaries_fbar_host_neml2_cuda_out'
+    # The gold is a symlink to grain_boundaries_fbar_host_out.e.
+    exodiff = 'grain_boundaries_fbar_host_neml2_cuda_out.e'
+    custom_cmp = 'grain_boundaries.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    mesh_mode = REPLICATED
+    recover = false
+    requirement = 'The system shall reproduce the two-dimensional polycrystalline total-mode F-bar host crystal-plasticity and grain-boundary shifted cohesive-zone solution when both the bulk and interface NEML2 models are evaluated on the CUDA device and assembled on the host.'
+  []
+
+  [fbar_kokkos]
+    type = Exodiff
+    input = 'grain_boundaries_kokkos.i fbar_on_kokkos.i'
+    cli_args = 'Outputs/file_base=grain_boundaries_fbar_kokkos_out'
+    # The gold is a symlink to grain_boundaries_fbar_host_out.e.
+    exodiff = 'grain_boundaries_fbar_kokkos_out.e'
+    custom_cmp = 'grain_boundaries.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    mesh_mode = REPLICATED
+    recover = false
+    requirement = 'The system shall reproduce the two-dimensional polycrystalline total-mode F-bar host crystal-plasticity and grain-boundary shifted cohesive-zone solution using Kokkos total-Lagrangian F-bar bulk assembly and KokkosSCZMInterfaceKernelTotalLagrangian with CPU NEML2 evaluation.'
+  []
+
+  [fbar_kokkos_neml2_cuda]
+    type = Exodiff
+    input = 'grain_boundaries_kokkos.i fbar_on_kokkos.i'
+    cli_args = 'NEML2/bulk/device=cuda NEML2/interface/device=cuda -vec_type standard -nl0_mat_type aij Outputs/file_base=grain_boundaries_fbar_kokkos_neml2_cuda_out'
+    # The gold is a symlink to grain_boundaries_fbar_host_out.e.
+    exodiff = 'grain_boundaries_fbar_kokkos_neml2_cuda_out.e'
+    custom_cmp = 'grain_boundaries.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    mesh_mode = REPLICATED
+    recover = false
+    requirement = 'The system shall reproduce the two-dimensional polycrystalline total-mode F-bar host crystal-plasticity and grain-boundary shifted cohesive-zone solution when the bulk and interface NEML2 updates and Kokkos assembly run on the CUDA device with host PETSc linear algebra.'
+  []
+
+  [fbar_kokkos_aijkokkos]
+    type = Exodiff
+    input = 'grain_boundaries_kokkos.i fbar_on_kokkos.i'
+    cli_args = 'NEML2/bulk/device=cuda NEML2/interface/device=cuda -vec_type kokkos -nl0_mat_type aijkokkos -hypre_umpire_device_pool_size 256 Outputs/file_base=grain_boundaries_fbar_kokkos_aijkokkos_out'
+    # The gold is a symlink to grain_boundaries_fbar_host_out.e.
+    exodiff = 'grain_boundaries_fbar_kokkos_aijkokkos_out.e'
+    custom_cmp = 'grain_boundaries.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    mesh_mode = REPLICATED
+    recover = false
+    requirement = 'The system shall reproduce the two-dimensional polycrystalline total-mode F-bar host crystal-plasticity and grain-boundary shifted cohesive-zone solution when the bulk and interface NEML2 updates, Kokkos assembly, and PETSc AIJKOKKOS solve all run on the CUDA device.'
+  []
+
+  [fbar_kokkos_mathypre]
+    type = Exodiff
+    input = 'grain_boundaries_kokkos.i fbar_on_kokkos.i'
+    cli_args = 'NEML2/bulk/device=cuda NEML2/interface/device=cuda Executioner/off_diagonals_in_auto_scaling=false -vec_type cuda -nl0_mat_type hypre -hypre_umpire_device_pool_size 256 Outputs/file_base=grain_boundaries_fbar_kokkos_mathypre_out'
+    # The gold is a symlink to grain_boundaries_fbar_host_out.e.
+    exodiff = 'grain_boundaries_fbar_kokkos_mathypre_out.e'
+    custom_cmp = 'grain_boundaries.cmp'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    mesh_mode = REPLICATED
+    recover = false
+    requirement = 'The system shall reproduce the two-dimensional polycrystalline total-mode F-bar host crystal-plasticity and grain-boundary shifted cohesive-zone solution when the bulk and interface NEML2 updates, Kokkos assembly, and PETSc MATHYPRE solve all run on the CUDA device.'
+  []
+[]
