@@ -12,27 +12,31 @@
 #include "Material.h"
 #include "RankTwoTensorForward.h"
 
-class ComputeSurfaceTensionKKS : public Material
+template <bool is_ad>
+class ComputeSurfaceTensionKKSTempl : public Material
 {
 public:
   static InputParameters validParams();
 
-  ComputeSurfaceTensionKKS(const InputParameters & parameters);
+  ComputeSurfaceTensionKKSTempl(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties() override;
 
   /// Order parameter
-  const VariableValue & _v;
+  const GenericVariableValue<is_ad> & _v;
   /// Gradient of order parameter
-  const VariableGradient & _grad_v;
+  const GenericVariableGradient<is_ad> & _grad_v;
 
   /// Material property for gradient energy coefficient
-  const MaterialProperty<Real> & _kappa;
+  const GenericMaterialProperty<Real, is_ad> & _kappa;
   /// Material property for barrier function
-  const MaterialProperty<Real> & _g;
+  const GenericMaterialProperty<Real, is_ad> & _g;
   /// double well height parameter
   Real _w;
 
-  MaterialProperty<RankTwoTensor> & _planar_stress;
+  GenericMaterialProperty<RankTwoTensor, is_ad> & _planar_stress;
 };
+
+using ComputeSurfaceTensionKKS = ComputeSurfaceTensionKKSTempl<false>;
+using ADComputeSurfaceTensionKKS = ComputeSurfaceTensionKKSTempl<true>;

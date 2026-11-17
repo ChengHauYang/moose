@@ -16,9 +16,11 @@
 #include "SymmetricRankFourTensor.h"
 
 registerMooseObject("SolidMechanicsApp", WaveSpeed);
+registerMooseObject("SolidMechanicsApp", ADWaveSpeed);
 
+template <bool is_ad>
 InputParameters
-WaveSpeed::validParams()
+WaveSpeedTempl<is_ad>::validParams()
 {
   InputParameters params = Material::validParams();
   params.addClassDescription("Calculate the wave speed as $E / \\sqrt{\\rho}$ where $E$ is the "
@@ -31,17 +33,23 @@ WaveSpeed::validParams()
   return params;
 }
 
-WaveSpeed::WaveSpeed(const InputParameters & parameters)
+template <bool is_ad>
+WaveSpeedTempl<is_ad>::WaveSpeedTempl(const InputParameters & parameters)
   : Material(parameters),
-    _wave_speed(declareProperty<Real>("wave_speed")),
-    _material_density(getMaterialPropertyByName<Real>("density")),
-    _effective_stiffness(getMaterialPropertyByName<Real>("effective_stiffness"))
+    _wave_speed(this->template declareGenericProperty<Real, is_ad>("wave_speed")),
+    _material_density(this->template getGenericMaterialPropertyByName<Real, is_ad>("density")),
+    _effective_stiffness(
+        this->template getGenericMaterialPropertyByName<Real, is_ad>("effective_stiffness"))
 {
 }
 
+template <bool is_ad>
 void
-WaveSpeed::computeQpProperties()
+WaveSpeedTempl<is_ad>::computeQpProperties()
 {
   // Effective stiffness is sqrt(equivalent_youngs_modulus)
-  _wave_speed[_qp] = _effective_stiffness[_qp] / std::sqrt(_material_density[_qp]);
+  _wave_speed[_qp] = _effective_stiffness[_qp] / sqrt(_material_density[_qp]);
 }
+
+template class WaveSpeedTempl<false>;
+template class WaveSpeedTempl<true>;
