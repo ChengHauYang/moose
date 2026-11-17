@@ -1,5 +1,11 @@
 [Tests]
   issues = '#33415'
+  [cosserat_moment_balancing]
+    type = PetscJacobianTester
+    input = cosserat_moment_balancing.i
+    requirement = 'The system shall preserve displacement and Cosserat-rotation derivatives through small Cosserat strain and linear elastic stress into force and moment residuals.'
+    design = 'source/kernels/MomentBalancing.md source/materials/ComputeCosseratSmallStrain.md source/materials/ComputeCosseratLinearElasticStress.md'
+  []
   [eigenstrain_from_initial_stress]
     type = PetscJacobianTester
     input = eigenstrain_from_initial_stress.i
