@@ -18,12 +18,13 @@
  * ComputePlasticHeatEnergy computes stress * (plastic_strain - plastic_strain_old)
  * and, if currentlyComputingJacobian, then the derivative of this quantity wrt total strain
  */
-class ComputePlasticHeatEnergy : public DerivativeMaterialInterface<Material>
+template <bool is_ad>
+class ComputePlasticHeatEnergyTempl : public DerivativeMaterialInterface<Material>
 {
 public:
   static InputParameters validParams();
 
-  ComputePlasticHeatEnergy(const InputParameters & parameters);
+  ComputePlasticHeatEnergyTempl(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties() override;
@@ -32,23 +33,26 @@ protected:
   const std::string _base_name;
 
   /// plastic strain
-  const MaterialProperty<RankTwoTensor> & _plastic_strain;
+  const GenericMaterialProperty<RankTwoTensor, is_ad> & _plastic_strain;
 
   /// old value of plastic strain
   const MaterialProperty<RankTwoTensor> & _plastic_strain_old;
 
   /// stress
-  const MaterialProperty<RankTwoTensor> & _stress;
+  const GenericMaterialProperty<RankTwoTensor, is_ad> & _stress;
 
-  /// d(stress)/d(total strain)
-  const MaterialProperty<RankFourTensor> & _Jacobian_mult;
+  /// d(stress)/d(total strain), used by the non-AD implementation
+  const MaterialProperty<RankFourTensor> * const _Jacobian_mult;
 
-  /// elasticity tensor
-  const MaterialProperty<RankFourTensor> & _elasticity_tensor;
+  /// Elasticity tensor, used by the non-AD implementation
+  const MaterialProperty<RankFourTensor> * const _elasticity_tensor;
 
-  /// computed property: stress * (plastic_strain - plastic_strain_old) / dt
-  MaterialProperty<Real> & _plastic_heat;
+  /// Computed property: stress * (plastic_strain - plastic_strain_old) / dt
+  GenericMaterialProperty<Real, is_ad> & _plastic_heat;
 
-  /// d(plastic_heat)/d(total strain)
-  MaterialProperty<RankTwoTensor> & _dplastic_heat_dstrain;
+  /// d(plastic_heat)/d(total strain), used by the non-AD implementation
+  MaterialProperty<RankTwoTensor> * const _dplastic_heat_dstrain;
 };
+
+using ComputePlasticHeatEnergy = ComputePlasticHeatEnergyTempl<false>;
+using ADComputePlasticHeatEnergy = ComputePlasticHeatEnergyTempl<true>;
