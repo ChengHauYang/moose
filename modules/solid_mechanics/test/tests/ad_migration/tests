@@ -1,5 +1,11 @@
 [Tests]
   issues = '#33415'
+  [eigenstrain_from_initial_stress]
+    type = PetscJacobianTester
+    input = eigenstrain_from_initial_stress.i
+    requirement = 'The system shall preserve elasticity-tensor derivatives through the symmetric inverse used to convert initial stress to eigenstrain and into each Cartesian displacement residual.'
+    design = 'source/materials/ComputeEigenstrainFromInitialStress.md'
+  []
   [interface_stress]
     type = PetscJacobianTester
     input = interface_stress.i
