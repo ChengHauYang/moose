@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "Kernel.h"
+#include "GenericKernel.h"
 #include "RankTwoTensorForward.h"
 #include "RankFourTensorForward.h"
 
@@ -23,26 +23,29 @@
  * to form the equilibrium equations for the
  * Cosserat moment-stress.
  */
-class MomentBalancing : public Kernel
+template <bool is_ad>
+class MomentBalancingTempl : public GenericKernel<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  MomentBalancing(const InputParameters & parameters);
+  MomentBalancingTempl(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
-  virtual Real computeQpJacobian();
-  virtual Real computeQpOffDiagJacobian(unsigned int jvar);
+  virtual GenericReal<is_ad> computeQpResidual() override;
+
+  virtual Real computeQpJacobian() override;
+
+  virtual Real computeQpOffDiagJacobian(unsigned int jvar) override;
 
   /// the stress tensor (not the moment stress) at the quad-point.
-  const MaterialProperty<RankTwoTensor> & _stress;
+  const GenericMaterialProperty<RankTwoTensor, is_ad> & _stress;
 
   /**
    * d(stress tensor)/(d strain tensor)
    * Here strain_ij = grad_j disp_i + epsilon_ijk * wc_k
    */
-  const MaterialProperty<RankFourTensor> & _Jacobian_mult;
+  const MaterialProperty<RankFourTensor> * const _Jacobian_mult;
 
   /// The Kernel computes epsilon_{component j k}*stress_{j k}
   const unsigned int _component;
@@ -58,4 +61,15 @@ protected:
 
   /// the moose variable numbers for the displacements
   std::vector<unsigned int> _disp_var;
+
+  using GenericKernel<is_ad>::_i;
+  using GenericKernel<is_ad>::_qp;
+  using GenericKernel<is_ad>::_test;
+  using GenericKernel<is_ad>::_phi;
+  using GenericKernel<is_ad>::_grad_phi;
+  using GenericKernel<is_ad>::_var;
+  using GenericKernel<is_ad>::_mesh;
 };
+
+using MomentBalancing = MomentBalancingTempl<false>;
+using ADMomentBalancing = MomentBalancingTempl<true>;
