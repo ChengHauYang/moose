@@ -14,6 +14,7 @@
 // MOOSE includes
 #include "RankTwoTensor.h"
 #include "RankThreeTensor.h"
+#include "SymmetricRankFourTensorImplementation.h"
 #include "MooseEnum.h"
 #include "MooseException.h"
 #include "MooseUtils.h"
@@ -280,7 +281,7 @@ template <typename T>
 RankFourTensorTempl<T>
 RankFourTensorTempl<T>::invSymm() const
 {
-  mooseError("The invSymm operation calls to LAPACK and only supports plain Real type tensors.");
+  return RankFourTensorTempl<T>(SymmetricRankFourTensorTempl<T>(*this).invSymm());
 }
 
 template <>

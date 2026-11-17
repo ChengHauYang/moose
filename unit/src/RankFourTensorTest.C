@@ -97,7 +97,35 @@ TEST_F(RankFourTensorTest, invSymm2)
   a(1, 2, 2, 2) = a(2, 1, 2, 2) = 0.1;
 
   RankFourTensor iSymmetric = RankFourTensor(RankFourTensor::initIdentitySymmetricFour);
-  EXPECT_NEAR(0, (iSymmetric - a.invSymm() * a).L2norm(), 1E-5);
+  const auto inverse = a.invSymm();
+  EXPECT_NEAR(0, (iSymmetric - inverse * a).L2norm(), 1E-5);
+
+  ADRankFourTensor ad_a = a;
+  const auto ad_inverse = MetaPhysicL::raw_value(ad_a.invSymm());
+  EXPECT_NEAR(0, (inverse - ad_inverse).L2norm(), 1E-9);
+}
+
+TEST_F(RankFourTensorTest, ADInvSymmDerivatives)
+{
+  ADReal lambda = 1.0;
+  Moose::derivInsert(lambda.derivatives(), 0, 1.0);
+  const ADReal mu = 3.0;
+  const ADRankFourTensor ad_tensor({lambda, mu}, ADRankFourTensor::symmetric_isotropic);
+  const auto ad_inverse = ad_tensor.invSymm();
+
+  // This step balances second-order central-difference truncation and floating-point roundoff.
+  constexpr Real epsilon = 1e-6;
+  const RankFourTensor plus({1.0 + epsilon, 3.0}, RankFourTensor::symmetric_isotropic);
+  const RankFourTensor minus({1.0 - epsilon, 3.0}, RankFourTensor::symmetric_isotropic);
+  const auto finite_difference = (plus.invSymm() - minus.invSymm()) / (2.0 * epsilon);
+
+  for (const auto i : make_range(RankFourTensor::N))
+    for (const auto j : make_range(RankFourTensor::N))
+      for (const auto k : make_range(RankFourTensor::N))
+        for (const auto l : make_range(RankFourTensor::N))
+          EXPECT_NEAR(ad_inverse(i, j, k, l).derivatives()[0],
+                      finite_difference(i, j, k, l),
+                      1e-7);
 }
 
 TEST_F(RankFourTensorTest, ADConversion)
