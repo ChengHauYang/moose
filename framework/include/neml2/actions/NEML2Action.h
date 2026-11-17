@@ -152,6 +152,12 @@ protected:
   /// Internal interfaces this sub-block action applies to
   std::vector<BoundaryName> _interface;
 
+  /// Sidesets in 'interface' whose primary (element) side lies in the NEML2 domain
+  std::vector<BoundaryName> _interface_primary_sides;
+
+  /// Sidesets in 'interface' whose neighbor side lies in the NEML2 domain
+  std::vector<BoundaryName> _interface_neighbor_sides;
+
   /// Whether 'boundary' and 'interface' have been resolved and validated against the mesh
   bool _domains_resolved = false;
 

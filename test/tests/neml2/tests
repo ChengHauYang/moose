@@ -365,6 +365,29 @@
       collections = 'SYSTEM'
     []
   []
+  [interface_heterogeneous]
+    requirement = 'The framework shall evaluate NEML2 models from sub-blocks with disjoint blocks on an interface between their blocks, each on the side in its own block with the inputs of that side, and publish each output and derivative to that side only,'
+    issues = '#33198'
+    design = 'NEML2/index.md NEML2Action.md NEML2BatchIndexGenerator.md MOOSEQuantityToNEML2.md'
+    collections = 'SYSTEM'
+    [primary]
+      detail = 'when the first block lies on the primary side of the interface sideset, and'
+      type = CSVDiff
+      input = 'interface_heterogeneous.i'
+      csvdiff = 'interface_heterogeneous_out.csv'
+      capabilities = 'libtorch & neml2'
+    []
+    [flipped]
+      detail = 'when the first block lies on the neighbor side of the interface sideset.'
+      type = CSVDiff
+      input = 'interface_heterogeneous.i'
+      cli_args = 'interface=B_A A_side=secondary B_side=primary'
+      csvdiff = 'interface_heterogeneous_out.csv'
+      # Shares the output file and gold of 'primary'
+      prereq = 'interface_heterogeneous/primary'
+      capabilities = 'libtorch & neml2'
+    []
+  []
   [interface_only_two_sided_jacobian]
     requirement = 'The framework shall compute a correct Jacobian for a NEML2 model evaluated only on a split interface and consumed on both the primary and neighbor side, covering the element-element, element-neighbor, neighbor-element, and neighbor-neighbor couplings.'
     type = PetscJacobianTester
@@ -754,20 +777,30 @@
       valgrind = none
     []
     [interface_without_internal_sides_error]
-      detail = 'reporting an error when an interface sideset has no side whose two elements are both in the NEML2 domain, and'
+      detail = 'reporting an error when an interface sideset has no internal side with an element in the NEML2 domain, and'
       type = RunException
       input = 'block_restricted_boundary.i'
       cli_args = 'NEML2/domains/interface=right'
-      expect_err = "Sideset 'right' has no internal interface sides in the NEML2 domain"
+      expect_err = "Sideset 'right' has no internal side with an element in the NEML2 domain"
       capabilities = 'libtorch & neml2'
       valgrind = none
     []
-    [subdomain_edge_interface_error]
-      detail = 'reporting an error directing the user to boundary when an interface sideset has a side whose other element lies outside the NEML2 domain.'
-      type = RunException
+    [subdomain_edge_interface]
+      detail = 'evaluating an interface sideset whose other element lies outside the NEML2 domain on the side inside the domain only, reproducing the boundary solution, and'
+      type = Exodiff
       input = 'block_restricted_boundary.i'
       cli_args = 'NEML2/domains/boundary=left NEML2/domains/interface=left_block_right_block'
-      expect_err = "has a side whose other element is outside the NEML2 domain; use 'boundary' for the edge of a block-restricted domain"
+      exodiff = 'block_restricted_boundary_out.e'
+      # Shares the output file and gold of 'evaluate'
+      prereq = 'block_restricted_boundary/evaluate'
+      capabilities = 'libtorch & neml2'
+    []
+    [mixed_orientation_interface_error]
+      detail = 'reporting an error when an interface sideset has the NEML2 domain on the primary side of some sides and on the neighbor side of others.'
+      type = RunException
+      input = 'block_restricted_boundary.i'
+      cli_args = 'Mesh/reversed/type=SideSetsBetweenSubdomainsGenerator Mesh/reversed/input=interface Mesh/reversed/new_boundary=left_block_right_block Mesh/reversed/primary_block=right_block Mesh/reversed/paired_block=left_block Mesh/final_generator=reversed NEML2/domains/boundary=left NEML2/domains/interface=left_block_right_block'
+      expect_err = "Sideset 'left_block_right_block' mixes sides with the NEML2 domain on the primary element and sides with the domain on the neighbor element"
       capabilities = 'libtorch & neml2'
       valgrind = none
     []

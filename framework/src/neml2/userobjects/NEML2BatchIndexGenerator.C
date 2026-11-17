@@ -108,20 +108,29 @@ NEML2BatchIndexGenerator::executeOnInterface()
   if (!_outdated)
     return;
 
+  // Only the sides whose element lies in the NEML2 domain are batched, so an interface between
+  // the domain and another block is evaluated on the domain side alone. MOOSEQuantityToNEML2
+  // applies the same filter, keeping the gathered rows aligned with these batch indices.
   const auto * neighbor_elem = _current_elem->neighbor_ptr(_current_side);
   const auto n_qp = qPoints().size();
-  const auto elem_side = ElemSide(_current_elem->id(), _current_side);
-  const auto [it, inserted] =
-      _elemside_to_batch_index.emplace(elem_side, BatchSpan{_batch_index, n_qp});
-  if (inserted)
-    _batch_index += n_qp;
+  if (hasBlocks(_current_elem->subdomain_id()))
+  {
+    const auto elem_side = ElemSide(_current_elem->id(), _current_side);
+    const auto [it, inserted] =
+        _elemside_to_batch_index.emplace(elem_side, BatchSpan{_batch_index, n_qp});
+    if (inserted)
+      _batch_index += n_qp;
+  }
 
-  const auto neighbor_side = neighbor_elem->which_neighbor_am_i(_current_elem);
-  const auto neighbor_elem_side = ElemSide(neighbor_elem->id(), neighbor_side);
-  const auto [neighbor_it, neighbor_inserted] =
-      _elemside_to_batch_index.emplace(neighbor_elem_side, BatchSpan{_batch_index, n_qp});
-  if (neighbor_inserted)
-    _batch_index += n_qp;
+  if (hasBlocks(neighbor_elem->subdomain_id()))
+  {
+    const auto neighbor_side = neighbor_elem->which_neighbor_am_i(_current_elem);
+    const auto neighbor_elem_side = ElemSide(neighbor_elem->id(), neighbor_side);
+    const auto [neighbor_it, neighbor_inserted] =
+        _elemside_to_batch_index.emplace(neighbor_elem_side, BatchSpan{_batch_index, n_qp});
+    if (neighbor_inserted)
+      _batch_index += n_qp;
+  }
 }
 
 void
