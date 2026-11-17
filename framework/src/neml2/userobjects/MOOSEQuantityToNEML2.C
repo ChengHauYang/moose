@@ -215,15 +215,18 @@ MOOSEQuantityToNEML2<T, state>::executeOnInterface()
   const auto neighbor_source =
       _from_interface_material ? DataSource::Interface : DataSource::NeighborSide;
 
+  // Gather only the sides that NEML2BatchIndexGenerator batches: those whose element lies in the
+  // NEML2 domain
   const auto elem_side = ElemSide(_current_elem->id(), _current_side);
-  if (_visited_elem_sides.insert(elem_side).second)
+  if (hasBlocks(_current_elem->subdomain_id()) && _visited_elem_sides.insert(elem_side).second)
     for (unsigned int qp = 0; qp < qRule().n_points(); qp++)
       _buffer.emplace_back(qpData(qp, elem_source));
 
   const auto * neighbor_elem = _current_elem->neighbor_ptr(_current_side);
   const auto neighbor_side = neighbor_elem->which_neighbor_am_i(_current_elem);
   const auto neighbor_elem_side = ElemSide(neighbor_elem->id(), neighbor_side);
-  if (_visited_elem_sides.insert(neighbor_elem_side).second)
+  if (hasBlocks(neighbor_elem->subdomain_id()) &&
+      _visited_elem_sides.insert(neighbor_elem_side).second)
     for (unsigned int qp = 0; qp < qRule().n_points(); qp++)
       _buffer.emplace_back(qpData(qp, neighbor_source));
 }

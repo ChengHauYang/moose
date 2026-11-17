@@ -15,8 +15,8 @@ stores where the location starts in the batch (`begin`) and how many quadrature 
 
 - element ID to span, for element interiors (only when [!param](/UserObjects/NEML2BatchIndexGenerator/volume) is `true`);
 - `(element ID, side)` to span, for sides on the selected `boundaries` (on the element in the domain
-  that owns each side) and on both sides of the selected `interface_boundaries` (where the elements
-  on both sides lie in the domain). See
+  that owns each side) and on each side of the selected `interface_boundaries` whose element lies
+  in the domain. See
   [evaluation domains](syntax/NEML2/index.md#domains) and
   [DomainUserObject side execution](syntax/UserObjects/index.md#domain-user-object-side-execution).
 

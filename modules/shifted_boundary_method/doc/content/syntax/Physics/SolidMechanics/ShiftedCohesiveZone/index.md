@@ -188,8 +188,9 @@ must set `output_backend = kokkos`, `volume = false`, and an `interface` that ov
 action validates this and reports an error on the offending NEML2 block parameter otherwise.
 Both symmetric stress-strain tangents and full $\partial\mathbf{P}/\partial\mathbf{F}$ tangents
 are transferred without changing their tensor layout. For a heterogeneous interface, use two
-`[NEML2]` sub-blocks producing the same property name with `interface_output_side = primary` and
-`interface_output_side = neighbor` respectively.
+`[NEML2]` sub-blocks producing the same property name, each restricted with `block` to the bulk
+block on its side of the interface (see
+[different models across an interface](syntax/NEML2/index.md#heterogeneous-interface)).
 
 Non-Cartesian coordinate systems are rejected when `use_kokkos = true` because their
 out-of-plane kinematics are not yet verified for NEML2.

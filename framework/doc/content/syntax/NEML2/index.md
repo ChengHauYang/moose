@@ -57,10 +57,10 @@ side postprocessor on `left` fails if `volume = true` but `left` is not listed i
 does not reuse volume values on a side, because volume and side quadrature points are at different
 locations.
 
-On an interface, an output is published to both sides: an interface kernel reads the primary side
-with `getMaterialProperty` and the neighbor side with `getNeighborMaterialProperty`. With
-`volume = false`, [!param](/NEML2/interface_output_side) can restrict this to one side, for example
-when two sub-blocks with separate executors provide the two sides.
+On an interface, an output is published to each evaluated side (see the table below): an interface
+kernel reads the primary side with `getMaterialProperty` and the neighbor side with
+`getNeighborMaterialProperty`. With `volume = false`, [!param](/NEML2/interface_output_side) can
+restrict this to one side.
 
 The NEML2 domain is the set of blocks in [!param](/NEML2/block), or all mesh blocks when
 [!param](/NEML2/block) is empty. MOOSE evaluates a boundary on the element that owns each side (see
@@ -70,11 +70,13 @@ Each side of a selected sideset is one of four cases, which each parameter accep
 | Side of the sideset                                                      | `boundary`              | `interface`           |
 | :----------------------------------------------------------------------- | :---------------------- | :-------------------- |
 | 1. Owner in the NEML2 domain, no other element (external boundary)       | Owner side evaluated    | Rejected              |
-| 2. Owner in the NEML2 domain, other element outside it                   | Owner side evaluated    | Rejected              |
+| 2. Owner in the NEML2 domain, other element outside it                   | Owner side evaluated    | Owner side evaluated  |
 | 3. Owner and other element both in the NEML2 domain                      | Owner side evaluated    | Both sides evaluated  |
-| 4. Owner outside the NEML2 domain, other element inside it (reversed)    | Rejected                | Rejected              |
+| 4. Owner outside the NEML2 domain, other element inside it (reversed)    | Rejected                | Other side evaluated  |
 
-Every side of an `interface` sideset must be case 3. The same sideset cannot be listed in both
+An `interface` sideset is evaluated, and its outputs published, only on the sides whose element lies
+in the NEML2 domain. Every side of an `interface` sideset must be the same one of cases 2, 3, and 4,
+so that each output is published to a definite side. The same sideset cannot be listed in both
 `boundary` and `interface`.
 
 Case 3 in `boundary` is a special use. Only the owning element's side is evaluated, so NEML2 outputs
@@ -85,9 +87,10 @@ interface kernel. List the sideset in `interface` to evaluate both sides.
 
 When a `[NEML2]` sub-block is restricted to a subset of subdomains via [!param](/NEML2/block), an
 internal sideset along the edge between the NEML2 block and a neighboring block outside
-[!param](/NEML2/block) bounds the NEML2 domain (case 2). List such a sideset in
-[!param](/NEML2/boundary), not [!param](/NEML2/interface): only the side inside the NEML2 domain has
-the NEML2 model and is evaluated.
+[!param](/NEML2/block) bounds the NEML2 domain (case 2). Only the side inside the NEML2 domain has
+the NEML2 model and is evaluated. List such a sideset in [!param](/NEML2/boundary) when the outputs
+are consumed by boundary objects, or in [!param](/NEML2/interface) when they are consumed by
+interface objects (see [#heterogeneous-interface]).
 
 Every side of a `boundary` sideset must be owned by an element inside [!param](/NEML2/block). If a
 sideset is oriented the other way (case 4), `NEML2Action` rejects it during setup rather than
@@ -112,6 +115,37 @@ The input below restricts the NEML2 model to `left_block` and evaluates it in th
 `left_block_right_block`:
 
 !listing test/tests/neml2/block_restricted_boundary.i block=Mesh NEML2
+
+### Different models across an interface id=heterogeneous-interface
+
+Two sub-blocks with disjoint [!param](/NEML2/block) can provide the two sides of an interface
+between their blocks, for example an elastic model in `A` and a plastic model in `B`. List the same
+sideset in [!param](/NEML2/interface) of both sub-blocks with `volume = false`. Each sub-block
+evaluates the interface only on the sides in its own block, so its model sees only its own inputs,
+and publishes its outputs only to those sides; the two sub-blocks therefore write disjoint sides
+and [!param](/NEML2/interface_output_side) is not needed. A stateful model keeps its state only on
+its own sides.
+
+```
+[NEML2]
+  [A]
+    block = A
+    volume = false
+    interface = A_B
+    ...
+  []
+  [B]
+    block = B
+    volume = false
+    interface = A_B
+    ...
+  []
+[]
+```
+
+Either orientation of `A_B` works, but every side of it must have `A` on the same side, as the
+directional block-pair sidesets from [BreakMeshByBlockGenerator.md] and the sidesets from
+[SideSetsBetweenSubdomainsGenerator.md] do.
 
 ### Selecting every sideset id=any-boundary-id
 

@@ -109,15 +109,17 @@ NEML2Action::validParams()
   params.addParam<std::vector<BoundaryName>>(
       "interface",
       {},
-      "Internal interfaces where the material model is evaluated on both sides: the elements on "
-      "both sides of each selected side must lie in the NEML2 domain ('block', or all blocks when "
-      "empty). Pass 'ANY_BOUNDARY_ID' to select every such sideset.");
+      "Internal interfaces where the material model is evaluated on each side whose element lies "
+      "in the NEML2 domain ('block', or all blocks when empty): both sides when both elements do, "
+      "otherwise the one side in the domain. Within a sideset, the domain must be on the same "
+      "side(s) of every side. Pass 'ANY_BOUNDARY_ID' to select every sideset whose sides all have "
+      "both elements in the domain.");
   params.addParam<MooseEnum>(
       "interface_output_side",
       MooseEnum("both primary neighbor", "both"),
-      "For interface output with 'volume = false', publish each NEML2 output to both sides, only "
-      "the primary side, or only the neighbor side. Use primary/neighbor with distinct executors "
-      "to avoid duplicate writers to a material-property storage.");
+      "For interface output with 'volume = false', publish each NEML2 output to every evaluated "
+      "side, only the primary side, or only the neighbor side. Use primary/neighbor with distinct "
+      "executors to avoid duplicate writers to a material-property storage.");
   // Block materials need no hint: the same material is reinit'd as BLOCK/FACE/NEIGHBOR data and the
   // gatherer reads the store for where it is. A true InterfaceMaterial instead lives in the
   // separate INTERFACE_MATERIAL_DATA store, which the native block/face/neighbor selection never
@@ -594,7 +596,7 @@ NEML2Action::act()
       // An interface-only model has no volume batch entries, so the retriever must be
       // boundary-restricted to look up side batch indices.
       if (interface_only)
-        obj_params.set<std::vector<BoundaryName>>("boundary") = _interface;
+        obj_params.set<std::vector<BoundaryName>>("boundary") = _interface_primary_sides;
       else
         obj_params.set<std::vector<SubdomainName>>("block") = _block;
       if (_export_output_targets.count(moose_name))
@@ -616,13 +618,16 @@ NEML2Action::act()
         return;
       }
 
-      if (interface_output_side != "neighbor")
+      // Each interface side is published only where it was evaluated, i.e. where its element lies
+      // in the NEML2 domain
+      if (interface_output_side != "neighbor" && !_interface_primary_sides.empty())
         _problem->addKokkosMaterial(obj_type, obj_name, obj_params);
-      if (interface_output_side == "primary")
+      if (interface_output_side == "primary" || _interface_neighbor_sides.empty())
         return;
       const auto neighbor_type = "NEML2ToKokkosNeighbor" + kind + "MaterialProperty";
       auto neighbor_params = _factory.getValidParams(neighbor_type);
       neighbor_params.applyParameters(obj_params);
+      neighbor_params.set<std::vector<BoundaryName>>("boundary") = _interface_neighbor_sides;
       neighbor_params.set<Moose::MaterialDataType>("_material_data_type") =
           Moose::NEIGHBOR_MATERIAL_DATA;
       _problem->addKokkosMaterial(neighbor_type, obj_name + "_neighbor", neighbor_params);
@@ -672,13 +677,16 @@ NEML2Action::act()
             false);
 
       // Without a block retriever, the boundary retriever below is the only writer on the
-      // interface, and interface_output_side selects which interface sides are published
+      // interface, and interface_output_side selects which interface sides are published. Each
+      // interface side is published only where it was evaluated, i.e. where its element lies in
+      // the NEML2 domain.
       const bool publish_primary = _volume || interface_output_side != "neighbor";
-      const bool publish_neighbor = !_volume && is_interface && interface_output_side != "primary";
+      const bool publish_neighbor =
+          !_volume && !_interface_neighbor_sides.empty() && interface_output_side != "primary";
 
       auto sides = _boundary;
       if (publish_primary)
-        sides.insert(sides.end(), _interface.begin(), _interface.end());
+        sides.insert(sides.end(), _interface_primary_sides.begin(), _interface_primary_sides.end());
       if (!sides.empty())
       {
         std::sort(sides.begin(), sides.end());
@@ -702,7 +710,7 @@ NEML2Action::act()
             "neighbor",
             [&](InputParameters & p)
             {
-              p.set<std::vector<BoundaryName>>("boundary") = _interface;
+              p.set<std::vector<BoundaryName>>("boundary") = _interface_neighbor_sides;
               p.set<bool>("_neighbor") = true;
               p.set<Moose::MaterialDataType>("_material_data_type") = Moose::NEIGHBOR_MATERIAL_DATA;
             },
@@ -1381,18 +1389,46 @@ NEML2Action::resolveAndValidateEvaluationDomains()
                  bname,
                  "' contains an external side, but interface boundaries must contain neighbors; "
                  "use 'boundary' instead.");
-    if (has_sub || has_rev)
+    if (!has_iface && !has_sub && !has_rev)
       paramError("interface",
                  "Sideset '",
                  bname,
-                 "' has a side whose other element is outside the NEML2 domain; use 'boundary' for "
-                 "the edge of a block-restricted domain.");
-    if (!has_iface)
-      paramError("interface",
-                 "Sideset '",
-                 bname,
-                 "' has no internal interface sides in the NEML2 domain.");
+                 "' has no internal side with an element in the NEML2 domain.");
+
+    // Each interface side is evaluated on the sides whose element lies in the domain: both sides
+    // when both elements do, otherwise the one side in the domain. That lets two sub-blocks with
+    // different models and disjoint 'block's share an interface. The domain side must be the same
+    // on every side of a sideset so that each output is published to a definite side.
+    if (has_iface + has_sub + has_rev > 1)
+      paramError(
+          "interface",
+          "Sideset '",
+          bname,
+          "' mixes sides with the NEML2 domain on ",
+          has_iface ? "both elements" : "the primary element",
+          " and sides with the domain on ",
+          has_rev ? "the neighbor element" : "the primary element",
+          ". Every side of an interface sideset must have the NEML2 domain on the same side; "
+          "use the block-pair sidesets from BreakMeshByBlockGenerator or rebuild the sideset "
+          "with SideSetsBetweenSubdomainsGenerator.");
+
+    if (has_iface || has_sub)
+      _interface_primary_sides.push_back(bname);
+    if (has_iface || has_rev)
+      _interface_neighbor_sides.push_back(bname);
   }
+
+  if (_interface.empty())
+    return;
+  const auto & interface_output_side = getParam<MooseEnum>("interface_output_side");
+  if (interface_output_side == "primary" && _interface_primary_sides.empty())
+    paramError("interface_output_side",
+               "No sideset in 'interface' has its primary side in the NEML2 domain, so there is "
+               "nothing to publish on the primary side.");
+  if (interface_output_side == "neighbor" && _interface_neighbor_sides.empty())
+    paramError("interface_output_side",
+               "No sideset in 'interface' has its neighbor side in the NEML2 domain, so there is "
+               "nothing to publish on the neighbor side.");
 }
 
 void
