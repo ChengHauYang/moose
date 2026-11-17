@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "Kernel.h"
+#include "GenericKernel.h"
 
 // Forward Declarations
 class Function;
@@ -21,18 +21,24 @@ class Function;
  * the surface.
  */
 
-class OutOfPlanePressure : public Kernel
+template <bool is_ad>
+class OutOfPlanePressureTempl : public GenericKernel<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  OutOfPlanePressure(const InputParameters & parameters);
+  OutOfPlanePressureTempl(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
+  virtual GenericReal<is_ad> computeQpResidual() override;
 
 private:
   const PostprocessorValue * const _postprocessor;
   const Function & _function;
   const Real _factor;
+
+  usingGenericKernelMembers;
 };
+
+using OutOfPlanePressure = OutOfPlanePressureTempl<false>;
+using ADOutOfPlanePressure = OutOfPlanePressureTempl<true>;

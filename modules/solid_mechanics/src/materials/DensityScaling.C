@@ -11,9 +11,11 @@
 #include "libmesh/utility.h"
 
 registerMooseObject("SolidMechanicsApp", DensityScaling);
+registerMooseObject("SolidMechanicsApp", ADDensityScaling);
 
+template <bool is_ad>
 InputParameters
-DensityScaling::validParams()
+DensityScalingTempl<is_ad>::validParams()
 {
   InputParameters params = Material::validParams();
   params.addClassDescription(
@@ -44,24 +46,31 @@ DensityScaling::validParams()
   return params;
 }
 
-DensityScaling::DensityScaling(const InputParameters & parameters)
+template <bool is_ad>
+DensityScalingTempl<is_ad>::DensityScalingTempl(const InputParameters & parameters)
   : Material(parameters),
-    _desired_time_step(getParam<Real>("desired_time_step")),
-    _density_scaled(declareProperty<Real>(getParam<MaterialPropertyName>("scaled_density"))),
-    _additional_density(
-        declareProperty<Real>(getParam<MaterialPropertyName>("additional_density"))),
-    _material_density(getMaterialProperty<Real>("true_density")),
-    _sqrt_effective_stiffness(getMaterialPropertyByName<Real>("effective_stiffness")),
-    _safety_factor(getParam<Real>("safety_factor"))
+    _desired_time_step(this->template getParam<Real>("desired_time_step")),
+    _density_scaled(this->template declareGenericProperty<Real, is_ad>(
+        this->template getParam<MaterialPropertyName>("scaled_density"))),
+    _additional_density(this->template declareGenericProperty<Real, is_ad>(
+        this->template getParam<MaterialPropertyName>("additional_density"))),
+    _material_density(this->template getGenericMaterialProperty<Real, is_ad>("true_density")),
+    _sqrt_effective_stiffness(
+        this->template getGenericMaterialPropertyByName<Real, is_ad>("effective_stiffness")),
+    _safety_factor(this->template getParam<Real>("safety_factor"))
 {
 }
 
+template <bool is_ad>
 void
-DensityScaling::computeQpProperties()
+DensityScalingTempl<is_ad>::computeQpProperties()
 {
-  const Real stable_density = Utility::pow<2>(_sqrt_effective_stiffness[_qp] * _desired_time_step /
-                                              _safety_factor / _current_elem->hmin());
+  const GenericReal<is_ad> stable_density = Utility::pow<2>(
+      _sqrt_effective_stiffness[_qp] * _desired_time_step / _safety_factor / _current_elem->hmin());
 
   _density_scaled[_qp] = std::max(stable_density, _material_density[_qp]);
   _additional_density[_qp] = _density_scaled[_qp] - _material_density[_qp];
 }
+
+template class DensityScalingTempl<false>;
+template class DensityScalingTempl<true>;

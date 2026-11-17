@@ -11,9 +11,11 @@
 #include "RankTwoTensor.h"
 
 registerMooseObject("SolidMechanicsApp", ComputeInterfaceStress);
+registerMooseObject("SolidMechanicsApp", ADComputeInterfaceStress);
 
+template <bool is_ad>
 InputParameters
-ComputeInterfaceStress::validParams()
+ComputeInterfaceStressTempl<is_ad>::validParams()
 {
   InputParameters params = Material::validParams();
   params.addClassDescription(
@@ -38,52 +40,54 @@ ComputeInterfaceStress::validParams()
   return params;
 }
 
-ComputeInterfaceStress::ComputeInterfaceStress(const InputParameters & parameters)
+template <bool is_ad>
+ComputeInterfaceStressTempl<is_ad>::ComputeInterfaceStressTempl(const InputParameters & parameters)
   : Material(parameters),
     _nvar(coupledComponents("v")),
     _grad_v(_nvar),
-    _op_range(getParam<std::vector<Real>>("op_range")),
-    _stress(getParam<std::vector<Real>>("stress")),
-    _planar_stress(
-        declareProperty<RankTwoTensor>(getParam<MaterialPropertyName>("planar_stress_name")))
+    _op_range(this->template getParam<std::vector<Real>>("op_range")),
+    _stress(this->template getParam<std::vector<Real>>("stress")),
+    _planar_stress(this->template declareGenericProperty<RankTwoTensor, is_ad>(
+        this->template getParam<MaterialPropertyName>("planar_stress_name")))
 {
   if (_stress.size() == 1)
     _stress.assign(_nvar, _stress[0]);
   if (_stress.size() != _nvar)
-    paramError("stress", "Supply either one single stress or one per order parameter");
+    this->paramError("stress", "Supply either one single stress or one per order parameter");
 
   if (_op_range.size() == 1)
     _op_range.assign(_nvar, _op_range[0]);
   if (_op_range.size() != _nvar)
-    paramError("op_range", "Supply either one single op_range or one per order parameter");
+    this->paramError("op_range", "Supply either one single op_range or one per order parameter");
 
-  for (MooseIndex(_grad_v) i = 0; i < _nvar; ++i)
+  for (const auto i : index_range(_grad_v))
   {
-    _grad_v[i] = &coupledGradient("v", i);
+    _grad_v[i] = &this->coupledGenericGradient<is_ad>("v", i);
     _stress[i] /= _op_range[i];
   }
 }
 
+template <bool is_ad>
 void
-ComputeInterfaceStress::computeQpProperties()
+ComputeInterfaceStressTempl<is_ad>::computeQpProperties()
 {
   auto & S = _planar_stress[_qp];
   S.zero();
 
   // loop over interface variables
-  for (MooseIndex(_grad_v) i = 0; i < _nvar; ++i)
+  for (const auto i : index_range(_grad_v))
   {
     // compute norm square of the order parameter gradient
-    const Real grad_norm_sq = (*_grad_v[i])[_qp].norm_sq();
+    const GenericReal<is_ad> grad_norm_sq = (*_grad_v[i])[_qp].norm_sq();
 
     // gradient square is zero -> no interface -> no interfacial stress contribution
-    if (grad_norm_sq < libMesh::TOLERANCE)
+    if (MetaPhysicL::raw_value(grad_norm_sq) < libMesh::TOLERANCE)
       continue;
 
-    const Real nx = (*_grad_v[i])[_qp](0);
-    const Real ny = (*_grad_v[i])[_qp](1);
-    const Real nz = (*_grad_v[i])[_qp](2);
-    const Real s = _stress[i] / std::sqrt(grad_norm_sq);
+    const GenericReal<is_ad> nx = (*_grad_v[i])[_qp](0);
+    const GenericReal<is_ad> ny = (*_grad_v[i])[_qp](1);
+    const GenericReal<is_ad> nz = (*_grad_v[i])[_qp](2);
+    const GenericReal<is_ad> s = _stress[i] / sqrt(grad_norm_sq);
 
     S(0, 0) += (ny * ny + nz * nz) * s;
     S(0, 1) += -nx * ny * s;
@@ -98,3 +102,6 @@ ComputeInterfaceStress::computeQpProperties()
   S(2, 0) = S(0, 2);
   S(2, 1) = S(1, 2);
 }
+
+template class ComputeInterfaceStressTempl<false>;
+template class ComputeInterfaceStressTempl<true>;

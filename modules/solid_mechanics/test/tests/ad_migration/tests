@@ -1,0 +1,120 @@
+[Tests]
+  issues = '#33415'
+  [interface_stress]
+    type = PetscJacobianTester
+    input = interface_stress.i
+    requirement = 'The system shall preserve derivatives of interfacial stress with respect to each coupled order-parameter gradient in all three Cartesian displacement residuals.'
+    design = 'source/materials/ComputeInterfaceStress.md'
+  []
+  [surface_tension]
+    type = PetscJacobianTester
+    input = surface_tension.i
+    requirement = 'The system shall preserve derivatives of KKS surface tension through the order-parameter gradient and variable-dependent barrier and gradient-energy properties in the Cartesian displacement residuals.'
+    design = 'source/materials/ComputeSurfaceTensionKKS.md'
+  []
+  [multiphase_stress]
+    type = PetscJacobianTester
+    input = multiphase_stress.i
+    requirement = 'The system shall differentiate a mixture of AD phase stresses with respect to displacements and both nonlinear switching-function variables without requiring non-AD phase tangents.'
+    design = 'source/materials/MultiPhaseStressMaterial.md'
+  []
+  [out_of_plane_pressure]
+    requirement = 'The system shall apply the same prescribed out-of-plane pressure with AD and non-AD kernels, including function, scale-factor, and optional postprocessor inputs.'
+    design = 'source/kernels/OutOfPlanePressure.md'
+    [function]
+      type = CSVDiff
+      input = out_of_plane_pressure.i
+      csvdiff = out_of_plane_pressure_out.csv
+      detail = 'using a function and scale factor with the non-AD kernel'
+    []
+    [function_ad]
+      type = CSVDiff
+      input = out_of_plane_pressure.i
+      csvdiff = out_of_plane_pressure_out.csv
+      cli_args = 'Kernels/reaction/type=ADReaction Kernels/pressure/type=ADOutOfPlanePressure'
+      detail = 'using a function and scale factor with the AD kernel'
+    []
+    [postprocessor]
+      type = CSVDiff
+      input = out_of_plane_pressure.i
+      csvdiff = out_of_plane_pressure_out.csv
+      cli_args = 'Kernels/pressure/factor=3 Kernels/pressure/postprocessor=load'
+      detail = 'including a postprocessor multiplier with the non-AD kernel'
+    []
+    [postprocessor_ad]
+      type = CSVDiff
+      input = out_of_plane_pressure.i
+      csvdiff = out_of_plane_pressure_out.csv
+      cli_args = 'Kernels/reaction/type=ADReaction Kernels/pressure/type=ADOutOfPlanePressure
+                  Kernels/pressure/factor=3 Kernels/pressure/postprocessor=load'
+      detail = 'including a postprocessor multiplier with the AD kernel'
+    []
+  []
+  [density_scaling]
+    requirement = 'The system shall preserve density-scaling derivatives through the inertial residual and the additional-density property for both branches of the density maximum.'
+    design = 'source/materials/DensityScaling.md'
+    [scaled]
+      type = PetscJacobianTester
+      input = density_scaling.i
+      detail = 'when the stable density exceeds the true density'
+    []
+    [unscaled]
+      type = PetscJacobianTester
+      input = density_scaling.i
+      # Keep the stable density well below the true density, away from the max kink.
+      cli_args = 'Materials/scaling/desired_time_step=0.001'
+      detail = 'when the true density exceeds the stable density'
+    []
+  []
+  [wave_speed]
+    type = PetscJacobianTester
+    input = wave_speed.i
+    requirement = 'The system shall preserve wave-speed derivatives with respect to nonlinear density and effective-stiffness inputs when projecting the AD property to a field variable.'
+    design = 'source/materials/WaveSpeed.md'
+  []
+  [inclusion_properties]
+    type = CSVDiff
+    input = inclusion_properties.i
+    csvdiff = inclusion_properties_out.csv
+    requirement = 'The system shall provide AD-compatible analytical inclusion stress, strain, and energy outputs that agree with the non-AD values inside and outside an elliptical inclusion.'
+    design = 'source/materials/InclusionProperties.md'
+  []
+  [multiphase_stress_non_ad]
+    type = PetscJacobianTester
+    input = multiphase_stress.i
+    cli_args = 'Kernels/x/type=StressDivergenceTensors
+                Kernels/y/type=StressDivergenceTensors
+                Kernels/z/type=StressDivergenceTensors
+                Materials/strain/type=ComputeSmallStrain
+                Materials/elasticity/type=ComputeIsotropicElasticityTensor
+                Materials/stress/type=ComputeLinearElasticStress
+                Materials/strain_b/type=ComputeSmallStrain
+                Materials/elasticity_b/type=ComputeIsotropicElasticityTensor
+                Materials/stress_b/type=ComputeLinearElasticStress
+                Materials/weight_a/type=ParsedMaterial
+                Materials/weight_a/expression=0.25
+                Materials/weight_b/type=ParsedMaterial
+                Materials/weight_b/expression=0.75
+                Materials/mixed/type=MultiPhaseStressMaterial'
+    requirement = 'The system shall retain the non-AD displacement Jacobian of a mixture of distinct elastic phases with constant switching functions.'
+    design = 'source/materials/MultiPhaseStressMaterial.md'
+  []
+  [density_wave_values]
+    requirement = 'The system shall compute the same scaled density, additional density, and wave speed from prescribed density and effective stiffness with AD and non-AD materials.'
+    design = 'source/materials/DensityScaling.md source/materials/WaveSpeed.md'
+    [non_ad]
+      type = CSVDiff
+      input = density_wave_values.i
+      csvdiff = density_wave_values_out.csv
+      detail = 'using the non-AD properties'
+    []
+    [ad]
+      type = CSVDiff
+      input = density_wave_values.i
+      csvdiff = density_wave_values_out.csv
+      cli_args = 'Materials/constants/type=ADGenericConstantMaterial
+                  Materials/scaling/type=ADDensityScaling Materials/speed/type=ADWaveSpeed'
+      detail = 'using the AD properties and AD-aware material output'
+    []
+  []
+[]

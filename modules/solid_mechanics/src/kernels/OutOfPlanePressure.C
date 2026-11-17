@@ -11,11 +11,13 @@
 #include "Function.h"
 
 registerMooseObject("SolidMechanicsApp", OutOfPlanePressure);
+registerMooseObject("SolidMechanicsApp", ADOutOfPlanePressure);
 
+template <bool is_ad>
 InputParameters
-OutOfPlanePressure::validParams()
+OutOfPlanePressureTempl<is_ad>::validParams()
 {
-  InputParameters params = Kernel::validParams();
+  InputParameters params = GenericKernel<is_ad>::validParams();
 
   params.addClassDescription("Apply pressure in the out-of-plane direction in 2D plane stress or "
                              "generalized plane strain models ");
@@ -28,17 +30,20 @@ OutOfPlanePressure::validParams()
   return params;
 }
 
-OutOfPlanePressure::OutOfPlanePressure(const InputParameters & parameters)
-  : Kernel(parameters),
-    _postprocessor(
-        parameters.isParamValid("postprocessor") ? &getPostprocessorValue("postprocessor") : NULL),
-    _function(getFunction("function")),
-    _factor(getParam<Real>("factor"))
+template <bool is_ad>
+OutOfPlanePressureTempl<is_ad>::OutOfPlanePressureTempl(const InputParameters & parameters)
+  : GenericKernel<is_ad>(parameters),
+    _postprocessor(parameters.isParamValid("postprocessor")
+                       ? &this->getPostprocessorValue("postprocessor")
+                       : NULL),
+    _function(this->getFunction("function")),
+    _factor(this->template getParam<Real>("factor"))
 {
 }
 
-Real
-OutOfPlanePressure::computeQpResidual()
+template <bool is_ad>
+GenericReal<is_ad>
+OutOfPlanePressureTempl<is_ad>::computeQpResidual()
 {
   Real val = _factor;
 
@@ -49,3 +54,6 @@ OutOfPlanePressure::computeQpResidual()
 
   return val * _test[_i][_qp];
 }
+
+template class OutOfPlanePressureTempl<false>;
+template class OutOfPlanePressureTempl<true>;

@@ -17,23 +17,27 @@
  * This object can be used, for example, in contact algorithms for
  * explicit dynamics.
  */
-class WaveSpeed : public Material
+template <bool is_ad>
+class WaveSpeedTempl : public Material
 {
 public:
   static InputParameters validParams();
 
-  WaveSpeed(const InputParameters & parameters);
+  WaveSpeedTempl(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties();
 
 private:
   /// The wave speed material generated here
-  MaterialProperty<Real> & _wave_speed;
+  GenericMaterialProperty<Real, is_ad> & _wave_speed;
 
   /// Density of the material
-  const MaterialProperty<Real> & _material_density;
+  const GenericMaterialProperty<Real, is_ad> & _material_density;
 
   /// Effective stiffness of element: function of material properties and element size
-  const MaterialProperty<Real> & _effective_stiffness;
+  const GenericMaterialProperty<Real, is_ad> & _effective_stiffness;
 };
+
+using WaveSpeed = WaveSpeedTempl<false>;
+using ADWaveSpeed = WaveSpeedTempl<true>;

@@ -11,9 +11,11 @@
 #include "libmesh/utility.h"
 
 registerMooseObject("SolidMechanicsApp", InclusionProperties);
+registerMooseObject("SolidMechanicsApp", ADInclusionProperties);
 
+template <bool is_ad>
 InputParameters
-InclusionProperties::validParams()
+InclusionPropertiesTempl<is_ad>::validParams()
 {
   InputParameters params = Material::validParams();
   params.addClassDescription("Calculate quantities used to define the analytical elasticity "
@@ -35,16 +37,20 @@ InclusionProperties::validParams()
   return params;
 }
 
-InclusionProperties::InclusionProperties(const InputParameters & parameters)
+template <bool is_ad>
+InclusionPropertiesTempl<is_ad>::InclusionPropertiesTempl(const InputParameters & parameters)
   : Material(parameters),
-    _a(getParam<Real>("a")),
-    _b(getParam<Real>("b")),
-    _lambda(getParam<Real>("lambda")),
-    _mu(getParam<Real>("mu")),
-    _misfit(getParam<std::vector<Real>>("misfit_strains")),
-    _stress(declareProperty<RankTwoTensor>(getParam<MaterialPropertyName>("stress_name"))),
-    _strain(declareProperty<RankTwoTensor>(getParam<MaterialPropertyName>("strain_name"))),
-    _elastic_energy(declareProperty<Real>(getParam<MaterialPropertyName>("energy_name")))
+    _a(this->template getParam<Real>("a")),
+    _b(this->template getParam<Real>("b")),
+    _lambda(this->template getParam<Real>("lambda")),
+    _mu(this->template getParam<Real>("mu")),
+    _misfit(this->template getParam<std::vector<Real>>("misfit_strains")),
+    _stress(this->template declareGenericProperty<RankTwoTensor, is_ad>(
+        this->template getParam<MaterialPropertyName>("stress_name"))),
+    _strain(this->template declareGenericProperty<RankTwoTensor, is_ad>(
+        this->template getParam<MaterialPropertyName>("strain_name"))),
+    _elastic_energy(this->template declareGenericProperty<Real, is_ad>(
+        this->template getParam<MaterialPropertyName>("energy_name")))
 {
   if (_misfit.size() != 2)
     mooseError("Supply 2 misfit_strains in order eps_11, eps_22 in InclusionProperties.");
@@ -54,8 +60,9 @@ InclusionProperties::InclusionProperties(const InputParameters & parameters)
   precomputeInteriorProperties();
 }
 
+template <bool is_ad>
 void
-InclusionProperties::computeQpProperties()
+InclusionPropertiesTempl<is_ad>::computeQpProperties()
 {
   Real x = _q_point[_qp](0);
   Real y = _q_point[_qp](1);
@@ -156,8 +163,12 @@ InclusionProperties::computeQpProperties()
   }
 }
 
+template class InclusionPropertiesTempl<false>;
+template class InclusionPropertiesTempl<true>;
+
+template <bool is_ad>
 void
-InclusionProperties::precomputeInteriorProperties()
+InclusionPropertiesTempl<is_ad>::precomputeInteriorProperties()
 {
   Real t = _b / _a;
   Real T11 = 1 + 2 / t;

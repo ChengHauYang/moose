@@ -16,20 +16,24 @@
  * Calculates an Extra-Stress tensor that lies in the plane of an interface
  * defined by the gradient of an order parameter.
  */
-class ComputeInterfaceStress : public Material
+template <bool is_ad>
+class ComputeInterfaceStressTempl : public Material
 {
 public:
   static InputParameters validParams();
 
-  ComputeInterfaceStress(const InputParameters & parameters);
+  ComputeInterfaceStressTempl(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties() override;
 
   std::size_t _nvar;
-  std::vector<const VariableGradient *> _grad_v;
+  std::vector<const GenericVariableGradient<is_ad> *> _grad_v;
   std::vector<Real> _op_range;
   std::vector<Real> _stress;
 
-  MaterialProperty<RankTwoTensor> & _planar_stress;
+  GenericMaterialProperty<RankTwoTensor, is_ad> & _planar_stress;
 };
+
+using ComputeInterfaceStress = ComputeInterfaceStressTempl<false>;
+using ADComputeInterfaceStress = ComputeInterfaceStressTempl<true>;
