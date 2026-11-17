@@ -4,6 +4,13 @@ set -eo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/moose_mac_common.sh"
 
+moose_mac_guard test "$@"
+
+run_reported_tests()
+{
+    python3 "$SCRIPT_DIR/../harness/control.py" test "$SCOPE" "$@"
+}
+
 SCOPE="${1:-all}"
 if [[ $# -gt 0 ]]; then shift; fi
 EXTRA_ARGS=("$@")
@@ -28,6 +35,7 @@ done
 PARSED_ARGS=()
 RE_PATTERN=""
 for arg in ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}; do
+    [[ "$arg" == "--failed" ]] && arg="--failed-tests"
     if [[ $has_re -eq 0 && -z "$RE_PATTERN" && "$arg" != -* ]]; then
         RE_PATTERN="$arg"
         PARSED_ARGS+=("--re" "$RE_PATTERN")
@@ -57,7 +65,7 @@ run_framework_kokkos()
     echo "Command   : ./run_tests -j$JOBS --compute-device=cpu ${run_args[*]:-}"
     echo
 
-    ./run_tests -j"$JOBS" --compute-device=cpu \
+    run_reported_tests ./run_tests -j"$JOBS" --compute-device=cpu \
         ${run_args[@]+"${run_args[@]}"}
 
     moose_mac_section "Framework Kokkos tests: 2 MPI ranks distributed mesh"
@@ -65,7 +73,7 @@ run_framework_kokkos()
     echo "Command   : ./run_tests -j$JOBS -p2 --distributed-mesh --compute-device=cpu ${run_args[*]:-}"
     echo
 
-    ./run_tests -j"$JOBS" -p2 --distributed-mesh --compute-device=cpu \
+    run_reported_tests ./run_tests -j"$JOBS" -p2 --distributed-mesh --compute-device=cpu \
         ${run_args[@]+"${run_args[@]}"}
 }
 
@@ -90,7 +98,7 @@ run_sczm()
     echo "Command   : ./run_tests -j$JOBS --compute-device=cpu ${run_args[*]:-}"
     echo
 
-    ./run_tests -j"$JOBS" --compute-device=cpu \
+    run_reported_tests ./run_tests -j"$JOBS" --compute-device=cpu \
         ${run_args[@]+"${run_args[@]}"}
 
     local default_re_p2='kokkos_shifted_interface'
@@ -103,7 +111,7 @@ run_sczm()
     echo "Command   : ./run_tests -j$JOBS -p2 --distributed-mesh --compute-device=cpu ${run_args_p2[*]:-}"
     echo
 
-    ./run_tests -j"$JOBS" -p2 --distributed-mesh --compute-device=cpu \
+    run_reported_tests ./run_tests -j"$JOBS" -p2 --distributed-mesh --compute-device=cpu \
         ${run_args_p2[@]+"${run_args_p2[@]}"}
 }
 
@@ -128,7 +136,7 @@ run_neml2_aoti()
     echo "Command   : CXX=/usr/bin/clang++ ./run_tests -j$JOBS --compute-device=cpu ${run_args[*]:-}"
     echo
 
-    CXX=/usr/bin/clang++ ./run_tests -j"$JOBS" --compute-device=cpu \
+    CXX=/usr/bin/clang++ run_reported_tests ./run_tests -j"$JOBS" --compute-device=cpu \
         ${run_args[@]+"${run_args[@]}"}
 }
 
@@ -153,7 +161,7 @@ run_neml2()
     echo "Command   : ./run_tests -j$JOBS ${run_args[*]:-}"
     echo
 
-    ./run_tests -j"$JOBS" \
+    run_reported_tests ./run_tests -j"$JOBS" \
         ${run_args[@]+"${run_args[@]}"}
 }
 
@@ -177,7 +185,7 @@ run_module_tests()
     echo "Command   : ./run_tests -j$JOBS --compute-device=cpu ${PARSED_ARGS[*]:-}"
     echo
 
-    ./run_tests -j"$JOBS" --compute-device=cpu \
+    run_reported_tests ./run_tests -j"$JOBS" --compute-device=cpu \
         ${PARSED_ARGS[@]+"${PARSED_ARGS[@]}"}
 }
 

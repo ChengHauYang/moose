@@ -35,7 +35,7 @@ moose_mac_locate_repo()
     local script_dir
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-    MOOSE_DIR="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || true)"
+    MOOSE_DIR="${MOOSE_HARNESS_ROOT:-$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || true)}"
 
     if [[ -z "${MOOSE_DIR:-}" ]]; then
         MOOSE_DIR="$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null || true)"
@@ -45,7 +45,20 @@ moose_mac_locate_repo()
         moose_mac_die "Could not locate MOOSE repository root. Run from inside a MOOSE checkout or place scripts under <repo>/scripts."
     fi
 
+    MOOSE_DIR="$(cd "$MOOSE_DIR" && pwd -P)"
     export MOOSE_DIR
+}
+
+moose_mac_guard()
+{
+    local operation="$1"
+    shift
+    moose_mac_locate_repo
+    if [[ "${MOOSE_HARNESS_LOCK_ROOT:-}" == "$MOOSE_DIR" &&
+          -n "${MOOSE_HARNESS_LOCK_FD:-}" && -e "/dev/fd/$MOOSE_HARNESS_LOCK_FD" ]]; then
+        return
+    fi
+    exec python3 "$SCRIPT_DIR/../harness/control.py" guard "$MOOSE_DIR" "$operation" bash "$0" "$@"
 }
 
 moose_mac_neml2_mode()
@@ -68,7 +81,7 @@ moose_mac_neml2_mode()
 
 moose_mac_local_neml2_site()
 {
-    echo "$MOOSE_DIR/framework/contrib/neml2/build/installed"
+    echo "${MOOSE_NEML2_SITE:-$MOOSE_DIR/framework/contrib/neml2/build/installed}"
 }
 
 moose_mac_local_neml2_dir()
@@ -145,26 +158,6 @@ moose_mac_effective_neml2_backend()
     fi
 
     echo "local"
-}
-
-moose_mac_default_build_jobs()
-{
-    # Budget for two independent builds and leave one performance core per
-    # build unclaimed for the OS and other work. MOOSE unity translation units
-    # that pull in libtorch/NEML2/Kokkos headers can peak around 2-3 GB each,
-    # so the RAM cap allows 6 GB/job across two builds.
-    local pcores mem_gb core_cap ram_cap jobs
-    pcores="$(sysctl -n hw.perflevel0.logicalcpu 2>/dev/null || true)"
-    [[ -n "$pcores" && "$pcores" -gt 0 ]] || pcores="$(sysctl -n hw.ncpu 2>/dev/null || echo 4)"
-    mem_gb=$(( $(sysctl -n hw.memsize 2>/dev/null || echo 8589934592) / 1073741824 ))
-    core_cap=$(( pcores / 2 - 1 ))
-    ram_cap=$(( mem_gb / 6 ))
-    (( core_cap < 1 )) && core_cap=1
-    (( ram_cap < 1 )) && ram_cap=1
-
-    jobs="$core_cap"
-    (( jobs > ram_cap )) && jobs="$ram_cap"
-    echo "$jobs"
 }
 
 # Echo a usable ccache binary, or nothing when ccache is unavailable or not
@@ -282,12 +275,14 @@ moose_mac_ccache_misses()
 
 moose_mac_env_exports()
 {
+    # Defaults travel with the harness, including when targeting an older worktree.
+    source "$SCRIPT_DIR/harness.conf"
     export PATH="$CONDA_PREFIX/bin:$PATH"
     export LIBMESH_DIR="$CONDA_PREFIX"
     export WASP_DIR="$CONDA_PREFIX"
     export METHOD="${METHOD:-opt}"
-    export JOBS="${JOBS:-8}"
-    export BUILD_JOBS="${BUILD_JOBS:-$(moose_mac_default_build_jobs)}"
+    export JOBS="${JOBS:-$MOOSE_DEFAULT_JOBS}"
+    export BUILD_JOBS="${BUILD_JOBS:-$MOOSE_DEFAULT_JOBS}"
 
     local local_site
     local_site="$(moose_mac_local_neml2_site)"
@@ -352,8 +347,8 @@ moose_mac_print_env()
     echo "CONDA_PREFIX=${CONDA_PREFIX:-}"
     echo "SDKROOT=${SDKROOT:-}"
     echo "METHOD=${METHOD:-opt}"
-    echo "BUILD_JOBS=${BUILD_JOBS:-5}"
-    echo "JOBS=${JOBS:-8}"
+    echo "BUILD_JOBS=${BUILD_JOBS:-$MOOSE_DEFAULT_JOBS}"
+    echo "JOBS=${JOBS:-$MOOSE_DEFAULT_JOBS}"
     echo "NEML2_MODE=$(moose_mac_neml2_mode)"
     echo
     echo "CC=${CC:-}"

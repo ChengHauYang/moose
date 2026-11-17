@@ -1,3 +1,14 @@
+# This file is part of the MOOSE framework
+# https://mooseframework.inl.gov
+#
+# All rights reserved, see COPYRIGHT for full restrictions
+# https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#
+# Licensed under LGPL 2.1, please see LICENSE for details
+# https://www.gnu.org/licenses/lgpl-2.1.html
+
+"""Compare CSV and Exodus output with explicit difference reporting."""
+
 import csv
 import math
 import os
@@ -6,12 +17,16 @@ import shutil
 import subprocess
 import sys
 
-
-REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+REPO = os.environ.get(
+    "MOOSE_HARNESS_ROOT",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")),
+)
 FLOAT = r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?"
 
 
 class CompareError(Exception):
+    """Report unavailable tools or incompatible comparison inputs."""
+
     pass
 
 
@@ -30,6 +45,29 @@ def _exodiff():
     if executable:
         return executable
     raise CompareError("exodiff is unavailable; compile the framework first")
+
+
+def run_exodiff(args):
+    """Run exodiff with TestHarness defaults and caller overrides."""
+    # Match FileTester.validParams: relative tolerance 5.5e-6 and zero floor 1e-10.
+    # Explicit exodiff options follow these defaults so callers can override them.
+    try:
+        return subprocess.call(
+            [
+                _exodiff(),
+                "-m",
+                "-F",
+                "1e-10",
+                "-t",
+                "5.5e-6",
+                *args.options,
+                args.file1,
+                args.file2,
+            ]
+        )
+    except (OSError, CompareError) as error:
+        print("exodiff: ERROR %s" % error)
+        return 2
 
 
 def _kind(path):
@@ -109,7 +147,8 @@ def _csv_stats(file1, file2):
             if value1 is None or value2 is None:
                 if value1 != value2:
                     raise CompareError(
-                        "CSV variable %s has incompatible text at row %d" % (name, row_index)
+                        "CSV variable %s has incompatible text at row %d"
+                        % (name, row_index)
                     )
                 continue
             compared = True
@@ -182,7 +221,9 @@ def _exodiff_variables(output):
     variables = set()
     in_section = False
     for line in output.splitlines():
-        if re.match(r"(?:Global|Nodal|Element|Nodeset|Sideset) variables to be compared:", line):
+        if re.match(
+            r"(?:Global|Nodal|Element|Nodeset|Sideset) variables to be compared:", line
+        ):
             in_section = True
             continue
         if in_section and not line.strip():
@@ -241,7 +282,9 @@ def _print_exodus_summary(file1, file2, verbose):
     relative_rc, relative_output = _run(
         [executable, "-relative", "-tolerance", "0", file1, file2]
     )
-    variables = _exodiff_variables(absolute_output) | _exodiff_variables(relative_output)
+    variables = _exodiff_variables(absolute_output) | _exodiff_variables(
+        relative_output
+    )
     absolute = _exodiff_differences(absolute_output)
     relative = _exodiff_differences(relative_output)
     variables.update(absolute)
@@ -310,6 +353,7 @@ def _authoritative_exodus(file1, file2, comparison_file, verbose):
 
 
 def run_compare(args):
+    """Report differences and apply optional authoritative comparison criteria."""
     try:
         if not os.path.isfile(args.file1):
             raise CompareError("file not found: %s" % args.file1)

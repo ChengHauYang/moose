@@ -4,6 +4,8 @@ set -eo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/moose_mac_common.sh"
 
+moose_mac_guard compile "$@"
+
 TARGET="solid_mechanics"
 RAW_FLAG=0
 
