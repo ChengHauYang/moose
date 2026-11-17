@@ -334,6 +334,10 @@ NEML2ModelExecutor::meshChanged()
 void
 NEML2ModelExecutor::execute()
 {
+  // Ranks with no local batch have no inputs, outputs, or state to advance.
+  if (_batch_index_generator.isEmpty())
+    return;
+
   // A larger timestep number proves that the previous trial was accepted. A cutback retries the
   // same timestep number, so it replaces the pending trial without modifying committed old state.
   if (_manage_state_advance && !_pending_state_vars.empty() && _t_step > _pending_state_t_step)
@@ -351,10 +355,6 @@ NEML2ModelExecutor::execute()
       advanceState();
     return;
   }
-
-  // If the batch is empty, we do not need to do anything
-  if (_batch_index_generator.isEmpty())
-    return;
 
   // Pin libtorch's intra-op thread count to this model's setting for the duration of the
   // evaluation, then restore it. MOOSE runs its element loops with libMesh threads and sets
