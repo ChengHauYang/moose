@@ -713,16 +713,23 @@
     capabilities = 'kokkos & libtorch & neml2'
     compute_devices = cuda
   []
-  # The Jacobian is checked at every Newton iteration of every step, so the later steps consume an
-  # advanced plastic state. ||J||_F is about 3.8e5. The crystal-plasticity tangent differs from the
-  # finite-difference Jacobian by a ratio of about 2e-6 to 7e-6 independently of F-bar: the error
-  # grows linearly with the time step, is the same with F-bar disabled, and matches the ratio of up
-  # to 8e-6 of the bulk crystal-plasticity Jacobian test in solid_mechanics.
+  # Each finite-difference Jacobian costs one residual evaluation per DOF, so the Jacobian tests run
+  # a reduced problem. On the 2x1x1 mesh (48 DOFs) both interface elements touch the loaded faces,
+  # so the interface already flows plastically at the first check. -snes_lag_jacobian 100 exceeds
+  # the Newton iterations of a step, so PETSc rebuilds, and checks, the Jacobian only at the first
+  # iteration of each of the two steps: the first from the initial state Fp = I and the second
+  # from the plastic state the first step leaves. ||J||_F is about 1.4e5. The crystal-plasticity
+  # tangent differs from the finite-difference Jacobian by a ratio of about 2e-6 to 7e-6
+  # independently of F-bar: the error grows linearly with the time step, is the same with F-bar
+  # disabled, and matches the ratio of up to 8e-6 of the bulk crystal-plasticity Jacobian test in
+  # solid_mechanics.
   [sczm_tl_fbar_cp_host_jacobian]
     type = PetscJacobianTester
     input = 'sczm_tl_fbar_host.i sczm_tl_fbar_cp.i'
     cli_args = "Materials/bulk_elasticity_tensor/youngs_modulus=1e5 "
-               "Materials/bulk_elasticity_tensor/poissons_ratio=0.25"
+               "Materials/bulk_elasticity_tensor/poissons_ratio=0.25 "
+               "Mesh/gen/nx=2 Mesh/gen/ny=1 Mesh/gen/nz=1 Executioner/num_steps=2 "
+               "-snes_lag_jacobian 100"
     run_sim = true
     ratio_tol = 2e-5
     difference_tol = 10
@@ -732,6 +739,8 @@
   [sczm_tl_fbar_cp_kokkos_jacobian]
     type = PetscJacobianTester
     input = 'sczm_tl_fbar_kokkos.i sczm_tl_fbar_cp.i'
+    cli_args = "Mesh/gen/nx=2 Mesh/gen/ny=1 Mesh/gen/nz=1 Executioner/num_steps=2 "
+               "-snes_lag_jacobian 100"
     run_sim = true
     ratio_tol = 2e-5
     difference_tol = 10
@@ -742,7 +751,9 @@
   [sczm_tl_fbar_cp_kokkos_jacobian_cuda]
     type = PetscJacobianTester
     input = 'sczm_tl_fbar_kokkos.i sczm_tl_fbar_cp.i'
-    cli_args = 'NEML2/device=cuda'
+    cli_args = "NEML2/device=cuda "
+               "Mesh/gen/nx=2 Mesh/gen/ny=1 Mesh/gen/nz=1 Executioner/num_steps=2 "
+               "-snes_lag_jacobian 100"
     run_sim = true
     ratio_tol = 2e-5
     difference_tol = 10
