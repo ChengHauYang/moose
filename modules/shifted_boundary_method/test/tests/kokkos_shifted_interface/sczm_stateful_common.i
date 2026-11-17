@@ -87,10 +87,14 @@
     type = ParsedFunction
     expression = '(x - 1.1) * sin(1.047198) - (y - 0.25) * cos(1.047198)'
   []
+  # Almost all of the applied displacement opens the interface (stiffness 10 and 8) and only a
+  # small part strains the bulk, so a peak of 1 is needed for the radial-return model (E = 1e5,
+  # yield stress 100) to yield, around t = 0.3. Unloading to 0.2 is elastic and keeps the plastic
+  # strain.
   [loading]
     type = PiecewiseLinear
     x = '0 0.5 1'
-    y = '0 0.01 0.002'
+    y = '0 1 0.2'
   []
 []
 
