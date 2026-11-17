@@ -12,6 +12,12 @@
     requirement = 'The system shall preserve elasticity-tensor derivatives through the symmetric inverse used to convert initial stress to eigenstrain and into each Cartesian displacement residual.'
     design = 'source/materials/ComputeEigenstrainFromInitialStress.md'
   []
+  [plastic_heat_energy]
+    type = PetscJacobianTester
+    input = plastic_heat_energy.i
+    requirement = 'The system shall preserve displacement derivatives through AD plastic strain and stress when assembling plastic heat in the thermal residual.'
+    design = 'source/materials/ComputePlasticHeatEnergy.md source/kernels/PlasticHeatEnergy.md'
+  []
   [interface_stress]
     type = PetscJacobianTester
     input = interface_stress.i
