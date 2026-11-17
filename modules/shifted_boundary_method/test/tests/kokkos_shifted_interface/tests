@@ -24,8 +24,11 @@
     type = Exodiff
     input = sczm_stateful_kokkos.i
     exodiff = sczm_stateful_kokkos_out.e
+    # Here and in sczm_hetero_plastic: the smallest nodal values (uy about 1e-4 of the peak
+    # displacement) differ by round-off of about 1e-12 between serial and distributed runs, up to
+    # 2.5e-8 relative. The yielding changes the displacements by 5e-4 relative or more.
     abs_zero = 1e-8
-    rel_err = 1e-8
+    rel_err = 1e-6
     recover = false
     requirement = 'The Kokkos shifted cohesive-zone formulation shall execute a stateful NEML2 radial-return loading and unloading trajectory in serial while advancing history only after converged timesteps.'
     capabilities = 'kokkos & libtorch & neml2'
@@ -36,7 +39,7 @@
     input = sczm_stateful_kokkos.i
     exodiff = sczm_stateful_kokkos_out.e
     abs_zero = 1e-8
-    rel_err = 1e-8
+    rel_err = 1e-6
     min_parallel = 2
     max_parallel = 2
     mesh_mode = distributed
@@ -51,7 +54,7 @@
     cli_args = 'NEML2/device=cuda'
     exodiff = sczm_stateful_kokkos_out.e
     abs_zero = 1e-8
-    rel_err = 1e-8
+    rel_err = 1e-6
     recover = false
     requirement = 'The Kokkos shifted cohesive-zone formulation shall execute a stateful NEML2 radial-return loading and unloading trajectory in serial on the CUDA device, advancing history only after converged timesteps and reproducing the reference solution.'
     capabilities = 'kokkos & libtorch & neml2'
@@ -63,7 +66,7 @@
     cli_args = 'NEML2/device=cuda'
     exodiff = sczm_stateful_kokkos_out.e
     abs_zero = 1e-8
-    rel_err = 1e-8
+    rel_err = 1e-6
     min_parallel = 2
     max_parallel = 2
     mesh_mode = distributed
@@ -281,6 +284,57 @@
     requirement = 'The Kokkos SCZM directional correction shall assemble Jacobian entries that are the exact derivative of its residual for both interface sides with independently configured bulk properties supplied through NEML2, where the NEML2 batch index is keyed by the primary quadrature point and the neighbor-side property is written to the corresponding neighbor storage quadrature point, and shall contribute no correction to the cross blocks.'
     capabilities = 'kokkos & libtorch & neml2'
     compute_devices = 'cpu cuda xpu'
+  []
+  [sczm_hetero_plastic]
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall consume the bulk stress and tangent of two NEML2 models restricted to the blocks on either side of the interface, an elastic one and a stateful radial-return one, each evaluated with the strain of its own side and keeping history only on its own side, through a loading and unloading trajectory that yields the stateful side'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    [neighbor]
+      type = Exodiff
+      input = sczm_hetero_plastic_kokkos.i
+      exodiff = sczm_hetero_plastic_kokkos_out.e
+      abs_zero = 1e-8
+      rel_err = 1e-6
+      recover = false
+      detail = 'with the stateful model on the neighbor side,'
+    []
+    [primary]
+      type = Exodiff
+      input = sczm_hetero_plastic_kokkos.i
+      cli_args = 'NEML2/constitutive/block=0 NEML2/elastic/block=1 Outputs/file_base=sczm_hetero_plastic_swapped_kokkos_out'
+      exodiff = sczm_hetero_plastic_swapped_kokkos_out.e
+      abs_zero = 1e-8
+      rel_err = 1e-6
+      recover = false
+      detail = 'with the stateful model on the primary side,'
+    []
+    [jacobian]
+      type = PetscJacobianTester
+      input = sczm_hetero_plastic_kokkos.i
+      # The tester takes one unconverged ksponly step per timestep, so the states it checks are not
+      # those of the simulated trajectory. Through t = 0.25 they stay elastic, and the two sides
+      # have different elastic tangents (E = 2e5 and 1e5), so assigning a model's tangent to the
+      # other side's row fails the finite-difference comparison. plastic_jacobian checks the
+      # plastic tangent on the converged trajectory.
+      cli_args = 'Executioner/end_time=0.25'
+      ratio_tol = 1e-7
+      difference_tol = 1e-7
+      detail = 'with a Jacobian consistent with the residual on both sides while both are elastic, and'
+    []
+    [plastic_jacobian]
+      type = PetscJacobianTester
+      input = sczm_hetero_plastic_kokkos.i
+      # Run the converged Newton solve to the load peak, where block 1 has yielded (from t = 0.3),
+      # and check only the final Jacobian: the first iteration of a plastic step evaluates the
+      # previous converged state, which lies on the yield surface where the residual is not
+      # differentiable. Away from it the finite-difference error is truncation error proportional
+      # to the perturbation (3.8e-6 at the default sqrt(machine epsilon), 2.4e-7 at 1e-9).
+      cli_args = 'Executioner/end_time=0.5 -snes_test_err 1e-9'
+      run_sim = true
+      only_final_jacobian = true
+      ratio_tol = 1e-6
+      detail = 'with a Jacobian consistent with the residual on both sides after the stateful side yields.'
+    []
   []
   [sczm_angled_kokkos_volumetric_locking]
     type = Exodiff
