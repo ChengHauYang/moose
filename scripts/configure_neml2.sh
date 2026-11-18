@@ -170,7 +170,38 @@ elif checkouts:
 
   # PIP_USER=0: never fall back to a user-site install outside the environment
   if [[ ${#install_dirs[@]} -gt 0 ]]; then
-    PIP_USER=0 "${PIP_EXE[@]}" install "${install_dirs[@]}" \
+    # CMake treats a relative CMAKE_AR or CMAKE_RANLIB as relative to the source directory, even
+    # when the executable is available on PATH. Conda exports AR and RANLIB as command names, so
+    # pass their resolved paths last to override any relative definitions inherited in CMAKE_ARGS.
+    local dependency_cmake_args="${CMAKE_ARGS:-}" tool value path path_dir quoted_path cmake_var
+    for tool in AR RANLIB; do
+      value=${!tool:-}
+      [[ -z "$value" ]] && continue
+
+      # type -P ignores aliases and functions, neither of which CMake can use as an archiver.
+      # A relative path containing '/' is not searched on PATH, so handle it separately.
+      if [[ "$value" == */* ]]; then
+        path=$value
+      else
+        path=$(type -P -- "$value") || path=
+      fi
+      if [[ -n "$path" && "$path" != /* ]]; then
+        path_dir=$(cd -P -- "$(dirname -- "$path")" 2> /dev/null && pwd) || path_dir=
+        [[ -n "$path_dir" ]] && path="$path_dir/$(basename -- "$path")"
+      fi
+      if [[ "$path" != /* || ! -f "$path" || ! -x "$path" ]]; then
+        echo "ERROR: Cannot resolve $tool=$value to an executable absolute path" >&2
+        return 1
+      fi
+
+      # CMAKE_ARGS is parsed as a shell-style command line by the Python build backend.
+      quoted_path=${path//\'/\'\\\'\'}
+      [[ "$tool" == AR ]] && cmake_var=CMAKE_AR || cmake_var=CMAKE_RANLIB
+      dependency_cmake_args+=" -D${cmake_var}='${quoted_path}'"
+    done
+
+    PIP_USER=0 CMAKE_ARGS="$dependency_cmake_args" \
+      "${PIP_EXE[@]}" install "${install_dirs[@]}" \
       --no-index \
       --no-deps \
       --no-build-isolation \
