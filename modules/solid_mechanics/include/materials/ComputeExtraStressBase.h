@@ -13,15 +13,16 @@
 #include "RankTwoTensor.h"
 
 /**
- * ComputeExtraStressBase is the base class for extra_stress, which is added to stress
+ * ComputeExtraStressBaseTempl is the base class for extra_stress, which is added to stress
  * calculated by the material's constitutive model
  */
-class ComputeExtraStressBase : public Material
+template <bool is_ad>
+class ComputeExtraStressBaseTempl : public Material
 {
 public:
   static InputParameters validParams();
 
-  ComputeExtraStressBase(const InputParameters & parameters);
+  ComputeExtraStressBaseTempl(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties();
@@ -31,5 +32,8 @@ protected:
   const std::string _base_name;
   std::string _extra_stress_name;
 
-  MaterialProperty<RankTwoTensor> & _extra_stress;
+  GenericMaterialProperty<RankTwoTensor, is_ad> & _extra_stress;
 };
+
+using ComputeExtraStressBase = ComputeExtraStressBaseTempl<false>;
+using ADComputeExtraStressBase = ComputeExtraStressBaseTempl<true>;

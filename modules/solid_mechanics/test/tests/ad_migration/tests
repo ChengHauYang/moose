@@ -136,6 +136,13 @@
     []
   []
 
+  [extra_stress]
+    type = PetscJacobianTester
+    input = extra_stress.i
+    requirement = 'The system shall preserve independent nonlinear-variable derivatives through AD prefactor-scaled and van der Waals gas extra stresses when adding them to the elastic stress residual.'
+    design = 'source/materials/ADComputeExtraStressConstant.md source/materials/ADComputeExtraStressVDWGas.md'
+  []
+
   [strain_energy_density]
     requirement = 'The system shall preserve displacement derivatives through AD stress and strain into the AD strain energy density'
     design = 'source/materials/StrainEnergyDensity.md'
