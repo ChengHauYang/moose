@@ -9,8 +9,9 @@
 
 #include "ComputeExtraStressBase.h"
 
+template <bool is_ad>
 InputParameters
-ComputeExtraStressBase::validParams()
+ComputeExtraStressBaseTempl<is_ad>::validParams()
 {
   InputParameters params = Material::validParams();
   params.addParam<std::string>("base_name",
@@ -20,16 +21,22 @@ ComputeExtraStressBase::validParams()
   return params;
 }
 
-ComputeExtraStressBase::ComputeExtraStressBase(const InputParameters & parameters)
+template <bool is_ad>
+ComputeExtraStressBaseTempl<is_ad>::ComputeExtraStressBaseTempl(const InputParameters & parameters)
   : Material(parameters),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _extra_stress_name(_base_name + "extra_stress"),
-    _extra_stress(declareProperty<RankTwoTensor>(_base_name + "extra_stress"))
+    _extra_stress(
+        this->template declareGenericProperty<RankTwoTensor, is_ad>(_base_name + "extra_stress"))
 {
 }
 
+template <bool is_ad>
 void
-ComputeExtraStressBase::computeQpProperties()
+ComputeExtraStressBaseTempl<is_ad>::computeQpProperties()
 {
   computeQpExtraStress();
 }
+
+template class ComputeExtraStressBaseTempl<false>;
+template class ComputeExtraStressBaseTempl<true>;

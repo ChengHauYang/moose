@@ -15,17 +15,25 @@
  * Computes a constant extra stress that is added to the stress calculated
  * by the constitutive model
  */
-class ComputeExtraStressConstant : public ComputeExtraStressBase
+template <bool is_ad>
+class ComputeExtraStressConstantTempl : public ComputeExtraStressBaseTempl<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  ComputeExtraStressConstant(const InputParameters & parameters);
+  ComputeExtraStressConstantTempl(const InputParameters & parameters);
 
 protected:
   virtual void computeQpExtraStress();
 
-  const MaterialProperty<Real> & _prefactor;
+  const GenericMaterialProperty<Real, is_ad> & _prefactor;
 
   RankTwoTensor _extra_stress_tensor;
+
+  using ExtraStressBase = ComputeExtraStressBaseTempl<is_ad>;
+  using ExtraStressBase::_extra_stress;
+  using ExtraStressBase::_qp;
 };
+
+using ComputeExtraStressConstant = ComputeExtraStressConstantTempl<false>;
+using ADComputeExtraStressConstant = ComputeExtraStressConstantTempl<true>;

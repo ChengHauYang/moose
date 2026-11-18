@@ -24,7 +24,11 @@ ADComputeStressBaseTempl<R2>::validParams()
   params.addParam<std::vector<MaterialPropertyName>>(
       "extra_stress_names",
       std::vector<MaterialPropertyName>(),
-      "Material property names of rank two tensors to be added to the stress.");
+      "Non-AD material property names of rank two tensors to be added to the stress.");
+  params.addParam<std::vector<MaterialPropertyName>>(
+      "ad_extra_stress_names",
+      std::vector<MaterialPropertyName>(),
+      "AD material property names of rank two tensors to be added to the stress.");
   return params;
 }
 
@@ -35,7 +39,8 @@ ADComputeStressBaseTempl<R2>::ADComputeStressBaseTempl(const InputParameters & p
     _mechanical_strain(getADMaterialProperty<R2>(_base_name + "mechanical_strain")),
     _stress(declareADProperty<R2>(_base_name + "stress")),
     _elastic_strain(declareADProperty<R2>(_base_name + "elastic_strain")),
-    _extra_stresses(getParam<std::vector<MaterialPropertyName>>("extra_stress_names").size())
+    _extra_stresses(getParam<std::vector<MaterialPropertyName>>("extra_stress_names").size()),
+    _ad_extra_stresses(getParam<std::vector<MaterialPropertyName>>("ad_extra_stress_names").size())
 {
   if (getParam<bool>("use_displaced_mesh"))
     mooseError("The stress calculator needs to run on the undisplaced mesh.");
@@ -44,6 +49,11 @@ ADComputeStressBaseTempl<R2>::ADComputeStressBaseTempl(const InputParameters & p
       getParam<std::vector<MaterialPropertyName>>("extra_stress_names");
   for (MooseIndex(_extra_stresses) i = 0; i < _extra_stresses.size(); ++i)
     _extra_stresses[i] = &getMaterialProperty<R2>(extra_stress_names[i]);
+
+  const std::vector<MaterialPropertyName> ad_extra_stress_names =
+      getParam<std::vector<MaterialPropertyName>>("ad_extra_stress_names");
+  for (MooseIndex(_ad_extra_stresses) i = 0; i < _ad_extra_stresses.size(); ++i)
+    _ad_extra_stresses[i] = &getADMaterialProperty<R2>(ad_extra_stress_names[i]);
 }
 
 template <typename R2>
@@ -63,6 +73,8 @@ ADComputeStressBaseTempl<R2>::computeQpProperties()
   // Add in extra stress
   for (MooseIndex(_extra_stresses) i = 0; i < _extra_stresses.size(); ++i)
     _stress[_qp] += (*_extra_stresses[i])[_qp];
+  for (MooseIndex(_ad_extra_stresses) i = 0; i < _ad_extra_stresses.size(); ++i)
+    _stress[_qp] += (*_ad_extra_stresses[i])[_qp];
 }
 
 template class ADComputeStressBaseTempl<RankTwoTensor>;

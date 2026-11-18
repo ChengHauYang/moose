@@ -48,8 +48,11 @@ protected:
   ADMaterialProperty<R2> & _stress;
   ADMaterialProperty<R2> & _elastic_strain;
 
-  /// Extra stress tensors
+  /// Non-AD extra stress tensors
   std::vector<const MaterialProperty<R2> *> _extra_stresses;
+
+  /// AD extra stress tensors
+  std::vector<const ADMaterialProperty<R2> *> _ad_extra_stresses;
 
   /// initial stress components
   std::vector<const Function *> _initial_stress_fcn;
