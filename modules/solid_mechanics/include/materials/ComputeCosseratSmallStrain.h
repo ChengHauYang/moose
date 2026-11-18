@@ -39,12 +39,12 @@ protected:
   /// Grad(Cosserat rotation)
   const std::vector<const GenericVariableGradient<is_ad> *> _grad_wc;
 
-  using Parent = std::conditional_t<is_ad, ADComputeStrainBase, ComputeStrainBase>;
-  using Parent::_eigenstrains;
-  using Parent::_grad_disp;
-  using Parent::_mechanical_strain;
-  using Parent::_qp;
-  using Parent::_total_strain;
+  using StrainBase = std::conditional_t<is_ad, ADComputeStrainBase, ComputeStrainBase>;
+  using StrainBase::_eigenstrains;
+  using StrainBase::_grad_disp;
+  using StrainBase::_mechanical_strain;
+  using StrainBase::_qp;
+  using StrainBase::_total_strain;
 };
 
 using ComputeCosseratSmallStrain = ComputeCosseratSmallStrainTempl<false>;

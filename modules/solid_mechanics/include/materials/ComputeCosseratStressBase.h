@@ -40,8 +40,8 @@ protected:
   /// Derivative of couple-stress with respect to curvature
   MaterialProperty<RankFourTensor> * const _Jacobian_mult_couple;
 
-  using Parent = std::conditional_t<is_ad, ADComputeStressBase, ComputeStressBase>;
-  using Parent::_qp;
+  using StressBase = std::conditional_t<is_ad, ADComputeStressBase, ComputeStressBase>;
+  using StressBase::_qp;
 };
 
 using ComputeCosseratStressBase = ComputeCosseratStressBaseTempl<false>;

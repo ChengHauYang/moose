@@ -21,7 +21,7 @@ template <bool is_ad>
 InputParameters
 ComputeCosseratSmallStrainTempl<is_ad>::validParams()
 {
-  InputParameters params = Parent::validParams();
+  InputParameters params = StrainBase::validParams();
   params.addClassDescription("Compute small Cosserat strains");
   params.addRequiredCoupledVar("Cosserat_rotations", "The 3 Cosserat rotation variables");
   return params;
@@ -30,7 +30,7 @@ ComputeCosseratSmallStrainTempl<is_ad>::validParams()
 template <bool is_ad>
 ComputeCosseratSmallStrainTempl<is_ad>::ComputeCosseratSmallStrainTempl(
     const InputParameters & parameters)
-  : Parent(parameters),
+  : StrainBase(parameters),
     _curvature(this->template declareGenericProperty<RankTwoTensor, is_ad>("curvature")),
     _nrots(this->coupledComponents("Cosserat_rotations")),
     _wc(this->template coupledGenericValues<is_ad>("Cosserat_rotations")),
