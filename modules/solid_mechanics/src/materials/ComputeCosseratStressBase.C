@@ -13,7 +13,7 @@ template <bool is_ad>
 InputParameters
 ComputeCosseratStressBaseTempl<is_ad>::validParams()
 {
-  InputParameters params = Parent::validParams();
+  InputParameters params = StressBase::validParams();
   params.addClassDescription("Compute stress and couple stress in the Cosserat situation");
   return params;
 }
@@ -21,7 +21,7 @@ ComputeCosseratStressBaseTempl<is_ad>::validParams()
 template <bool is_ad>
 ComputeCosseratStressBaseTempl<is_ad>::ComputeCosseratStressBaseTempl(
     const InputParameters & parameters)
-  : Parent(parameters),
+  : StressBase(parameters),
     _curvature(this->template getGenericMaterialPropertyByName<RankTwoTensor, is_ad>("curvature")),
     _elastic_flexural_rigidity_tensor(
         this->template getMaterialPropertyByName<RankFourTensor>(
@@ -38,7 +38,7 @@ template <bool is_ad>
 void
 ComputeCosseratStressBaseTempl<is_ad>::initQpStatefulProperties()
 {
-  Parent::initQpStatefulProperties();
+  StressBase::initQpStatefulProperties();
   _stress_couple[_qp].zero();
 }
 
