@@ -44,7 +44,8 @@ StrainEnergyDensityTempl<is_ad>::StrainEnergyDensityTempl(const InputParameters 
   : DerivativeMaterialInterface<Material>(parameters),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _stress_name(getParam<std::string>("stress_name")),
-    _strain_energy_density(declareProperty<Real>(_base_name + "strain_energy_density")),
+    _strain_energy_density(
+        this->template declareGenericProperty<Real, is_ad>(_base_name + "strain_energy_density")),
     _strain_energy_density_old(getMaterialPropertyOld<Real>(_base_name + "strain_energy_density")),
     _stress(getGenericMaterialProperty<RankTwoTensor, is_ad>(_base_name + _stress_name)),
     _stress_old(getMaterialPropertyOld<RankTwoTensor>(_base_name + _stress_name)),
@@ -86,15 +87,13 @@ StrainEnergyDensityTempl<is_ad>::computeQpProperties()
   if (_strain_increment)
     _strain_energy_density[_qp] =
         _strain_energy_density_old[_qp] +
-        MetaPhysicL::raw_value(_stress[_qp])
-                .doubleContraction(MetaPhysicL::raw_value(_strain_increment[_qp])) /
-            2.0 +
-        _stress_old[_qp].doubleContraction(MetaPhysicL::raw_value(_strain_increment[_qp])) / 2.0;
+        _stress[_qp].doubleContraction(_strain_increment[_qp]) / 2.0 +
+        GenericRankTwoTensor<is_ad>(_stress_old[_qp])
+            .doubleContraction(_strain_increment[_qp]) /
+        2.0;
   else
     _strain_energy_density[_qp] =
-        MetaPhysicL::raw_value(_stress[_qp])
-            .doubleContraction((MetaPhysicL::raw_value(_mechanical_strain[_qp]))) /
-        2.0;
+        _stress[_qp].doubleContraction(_mechanical_strain[_qp]) / 2.0;
 }
 
 template class StrainEnergyDensityTempl<false>;

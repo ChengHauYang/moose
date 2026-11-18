@@ -135,4 +135,27 @@
       detail = 'using the AD properties and AD-aware material output'
     []
   []
+
+  [strain_energy_density]
+    requirement = 'The system shall preserve displacement derivatives through AD stress and strain into the AD strain energy density'
+    design = 'source/materials/StrainEnergyDensity.md'
+    [total]
+      type = PetscJacobianTester
+      input = strain_energy_density.i
+      detail = 'for a total strain formulation.'
+    []
+    [incremental]
+      type = PetscJacobianTester
+      input = strain_energy_density.i
+      cli_args = 'Materials/strain/type=ADComputeIncrementalStrain
+                  Materials/strain_energy_density/incremental=true'
+      detail = 'for an incremental strain formulation.'
+    []
+  []
+  [sum_tensor_increments]
+    type = PetscJacobianTester
+    input = sum_tensor_increments.i
+    requirement = 'The system shall preserve both independent nonlinear-variable derivatives when summing two AD tensor increments into an AD tensor property.'
+    design = 'source/materials/SumTensorIncrements.md'
+  []
 []
