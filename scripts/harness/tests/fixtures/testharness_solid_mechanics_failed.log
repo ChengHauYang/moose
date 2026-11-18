@@ -1,0 +1,92 @@
+Parsing application capabilities... 1.48 seconds
+test:kokkos/crystal_plasticity_ld.host .................................... [cuda not in compute devices] SKIP
+test:kokkos/crystal_plasticity_ld.kokkos .................................. [cuda not in compute devices] SKIP
+test:kokkos/perfect_plasticity_3d.kokkos .................................. [cuda not in compute devices] SKIP
+test:kokkos/perfect_plasticity_3d.host .................................... [cuda not in compute devices] SKIP
+test:kokkos/perfect_plasticity_2d.kokkos .................................. [cuda not in compute devices] SKIP
+test:kokkos/perfect_plasticity_2d.host .................................... [cuda not in compute devices] SKIP
+test:kokkos/crystal_plasticity_ld.host_neml2_cuda ......................................................... OK
+test:kokkos/perfect_plasticity_3d.host_neml2_cuda .................................................... RUNNING
+test:kokkos/perfect_plasticity_3d.host_neml2_cuda .............................................. [FINISHED] OK
+test:kokkos/perfect_plasticity_2d.host_neml2_cuda ......................................................... OK
+test:kokkos/crystal_plasticity_ld.kokkos_neml2_cuda ....................................................... OK
+test:kokkos/perfect_plasticity_3d.kokkos_neml2_cuda .................................................. RUNNING
+test:kokkos/perfect_plasticity_3d.kokkos_neml2_cuda ............................................ [FINISHED] OK
+test:kokkos/perfect_plasticity_2d.kokkos_neml2_cuda ....................................................... OK
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu: Time Step 1, time = 0.001, dt = 0.001
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu: Performing automatic scaling calculation
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:  0 Nonlinear |R| = 3.000000e-03
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       0 Linear |R| = 3.000000e-03
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       1 Linear |R| = 7.171190e-04
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       2 Linear |R| = 7.018645e-05
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       3 Linear |R| = 2.208157e-05
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       4 Linear |R| = 1.263296e-05
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       5 Linear |R| = 2.767607e-06
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       6 Linear |R| = 1.022028e-06
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       7 Linear |R| = 3.816537e-07
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       8 Linear |R| = 1.192188e-07
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       9 Linear |R| = 5.189230e-08
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:      10 Linear |R| = 1.297388e-08
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:  1 Nonlinear |R| = 2.788794e-05
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       0 Linear |R| = 2.788794e-05
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       1 Linear |R| = 7.361039e-06
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       2 Linear |R| = 3.229436e-06
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       3 Linear |R| = 1.557200e-06
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       4 Linear |R| = 9.544404e-07
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       5 Linear |R| = 3.554575e-07
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       6 Linear |R| = 1.516903e-07
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       7 Linear |R| = 5.824996e-08
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       8 Linear |R| = 2.986244e-08
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       9 Linear |R| = 1.596919e-08
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:      10 Linear |R| = 7.442242e-09
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:      11 Linear |R| = 4.284266e-09
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:      12 Linear |R| = 1.818758e-09
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:      13 Linear |R| = 8.013638e-10
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:      14 Linear |R| = 3.580585e-10
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:      15 Linear |R| = 1.501521e-10
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:  2 Nonlinear |R| = 9.486412e-08
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       0 Linear |R| = 9.486412e-08
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       1 Linear |R| = 5.000780e-08
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       2 Linear |R| = 2.120928e-08
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       3 Linear |R| = 1.226032e-08
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       4 Linear |R| = 5.623439e-09
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       5 Linear |R| = 2.218015e-09
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       6 Linear |R| = 9.598534e-10
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       7 Linear |R| = 4.908472e-10
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       8 Linear |R| = 2.293361e-10
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:       9 Linear |R| = 1.164229e-10
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:      10 Linear |R| = 6.419436e-11
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:      11 Linear |R| = 2.744051e-11
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:      12 Linear |R| = 1.235589e-11
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:      13 Linear |R| = 5.843333e-12
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:      14 Linear |R| = 2.653652e-12
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:      15 Linear |R| = 1.466792e-12
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:      16 Linear |R| = 5.692198e-13
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:  3 Nonlinear |R| = 4.307933e-12
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:  Solve Converged!
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:   --------- Time step 6, 5.0000000e-03 ~ 5.0000000e-03, rel diff:  0.00000e+00 ---------
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu: Global variables:
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu: Nodal variables:
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu: exodiff: Files are different
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu: Tester failed, reason: EXODIFF
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu: ################################################################################
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu: End tester output
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu:
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu ........................................... FAILED (EXODIFF)
+test:kokkos/perfect_plasticity_3d.kokkos_full_gpu .................................................... RUNNING
+test:kokkos/perfect_plasticity_3d.kokkos_full_gpu .............................................. [FINISHED] OK
+test:kokkos/perfect_plasticity_2d.kokkos_full_gpu ......................................................... OK
+
+Failed Tests:
+--------------------------------------------------------------------------------------------------------------
+test:kokkos/crystal_plasticity_ld.kokkos_full_gpu ........................................... FAILED (EXODIFF)
+
+--------------------------------------------------------------------------------------------------------------
+Ran 9 tests in 96.3 seconds. Average test time 9.6 seconds, maximum test time 16.1 seconds.
+8 passed, 6 skipped, 1 FAILED
