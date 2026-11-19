@@ -259,6 +259,8 @@ public:
   nonlocalCouplingEntries(const THREAD_ID tid, const unsigned int nl_sys_num);
   const std::vector<std::pair<MooseVariableFieldBase *, MooseVariableScalar *>> &
   fieldScalarCouplingEntries(const THREAD_ID tid, const unsigned int nl_sys_num) const;
+  const std::vector<std::pair<MooseVariableScalar *, MooseVariableFieldBase *>> &
+  scalarFieldCouplingEntries(const THREAD_ID tid, const unsigned int nl_sys_num) const;
 
   virtual bool hasVariable(const std::string & var_name) const override;
   // NOTE: hasAuxiliaryVariable defined in parent class

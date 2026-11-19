@@ -7355,6 +7355,12 @@ FEProblemBase::fieldScalarCouplingEntries(const THREAD_ID tid, const unsigned in
   return _assembly[tid][nl_sys]->fieldScalarCouplingEntries();
 }
 
+const std::vector<std::pair<MooseVariableScalar *, MooseVariableFieldBase *>> &
+FEProblemBase::scalarFieldCouplingEntries(const THREAD_ID tid, const unsigned int nl_sys) const
+{
+  return _assembly[tid][nl_sys]->scalarFieldCouplingEntries();
+}
+
 void
 FEProblemBase::init()
 {

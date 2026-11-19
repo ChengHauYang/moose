@@ -78,6 +78,15 @@ public:
   {
     return _scalar_coupling[var];
   }
+  /**
+   * Get the list of field variable numbers coupled to the rows of a scalar variable
+   * @param var The scalar variable number
+   * @returns The list of field variable numbers coupled to the scalar variable rows
+   */
+  KOKKOS_FUNCTION const Array<unsigned int> & getScalarFieldCoupling(unsigned int var) const
+  {
+    return _scalar_field_coupling[var];
+  }
 
   /**
    * Check whether a local DOF index is associated with a nodal BC for an extra matrix tag
@@ -427,6 +436,10 @@ private:
   Array<Array<unsigned int>> _field_coupling;
   Array<Array<unsigned int>> _scalar_coupling;
   ///@}
+  /**
+   * Field variable numbers coupled to the rows of each scalar variable
+   */
+  Array<Array<unsigned int>> _scalar_field_coupling;
 
   /**
    * Per-matrix-tag local-plus-ghost DOF masks for nodal BC coverage

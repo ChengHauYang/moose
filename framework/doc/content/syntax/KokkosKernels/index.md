@@ -123,6 +123,35 @@ Using an array variable here makes it cumbersome to access the flux solution of 
 All other Kokkos-MOOSE residual objects such as [BCs](syntax/KokkosBCs/index.md) and [NodalKernels](syntax/KokkosNodalKernels/index.md), including those using automatic differentiation (AD), also support operating on multiple variables with the same restrictions.
 Vector variable objects currently support only a single variable.
 
+## Scalar Variable Rows id=kokkos_kernel_scalar
+
+Analogously to the original MOOSE `KernelScalarBase`, deriving from `Moose::Kokkos::KernelScalarBase<Base>`, where `Base` is `Moose::Kokkos::Kernel` or a class derived from it, lets a kernel also contribute to the rows of the coupled scalar variable given by the `scalar_variable` parameter.
+The derived class can define the following hooks, which return quadrature point integrands:
+
+```cpp
+// Scalar residual entry h
+template <typename Derived>
+KOKKOS_FUNCTION Real computeQpScalarResidual(const unsigned int h,
+                                             const unsigned int qp,
+                                             AssemblyDatum & datum) const;
+// Derivative of the scalar residual h with respect to the scalar DOF m
+template <typename Derived>
+KOKKOS_FUNCTION Real computeQpScalarJacobian(const unsigned int h,
+                                             const unsigned int m,
+                                             const unsigned int qp,
+                                             AssemblyDatum & datum) const;
+// Derivative of the scalar residual h with respect to the DOF j of the field variable jvar
+template <typename Derived>
+KOKKOS_FUNCTION Real computeQpScalarOffDiagJacobian(const unsigned int h,
+                                                    const unsigned int j,
+                                                    const unsigned int jvar,
+                                                    const unsigned int qp,
+                                                    AssemblyDatum & datum) const;
+```
+
+The scalar residual and the scalar-scalar Jacobian are reduced over the elements before being added to the few scalar DOF entries, which avoids the contention of atomically adding every quadrature point contribution to the same addresses.
+The scalar-field Jacobian is called for every field variable coupled to the scalar variable rows by the coupling matrix, so a full [SMP](SingleMatrixPreconditioner.md) preconditioner is usually required, and the hook should return zero for the field variables it does not depend on.
+
 ## Optimized Kernel Objects id=kokkos_kernel_optimized
 
 [Similarly to the original MOOSE](syntax/Kernels/index.md#optimized), Kokkos-MOOSE provides `Moose::Kokkos::KernelValue` and `Moose::Kokkos::KernelGrad` for creating an optimized kernel by factoring out test functions in residual and Jacobian calculations.
