@@ -734,7 +734,8 @@ QuasiStaticSolidMechanicsPhysics::actEigenstrainNames()
     }
 
     // Account for reduced eigenstrains and CompositeEigenstrains
-    if (mat_name == "ComputeReducedOrderEigenstrain")
+    if (mat_name == "ComputeReducedOrderEigenstrain" ||
+        mat_name == "ADComputeReducedOrderEigenstrain")
     {
       auto input_eigenstrain_names =
           mat_params.get<std::vector<MaterialPropertyName>>("input_eigenstrain_names");

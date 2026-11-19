@@ -157,6 +157,22 @@
     design = 'source/materials/ADComplianceSensitivity.md'
   []
 
+  [reduced_order_eigenstrain]
+    requirement = 'The system shall preserve nonlinear eigenstrain derivatives through reduced-order projection into the Cartesian displacement residuals'
+    design = 'source/materials/ADComputeReducedOrderEigenstrain.md'
+    [volume_average]
+      type = PetscJacobianTester
+      input = reduced_order_eigenstrain.i
+      detail = 'for volume averaging on first-order elements.'
+    []
+    [linear_projection]
+      type = PetscJacobianTester
+      input = reduced_order_eigenstrain.i
+      cli_args = 'Mesh/second_order=true Variables/disp_x/order=SECOND Variables/disp_y/order=SECOND'
+      detail = 'for linear least-squares projection on second-order elements.'
+    []
+  []
+
   [strain_energy_density]
     requirement = 'The system shall preserve displacement derivatives through AD stress and strain into the AD strain energy density'
     design = 'source/materials/StrainEnergyDensity.md'
