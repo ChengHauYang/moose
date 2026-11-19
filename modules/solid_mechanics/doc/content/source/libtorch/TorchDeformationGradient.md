@@ -12,6 +12,11 @@ from one to three scalar Cartesian displacement variables and supplies it as a N
 Missing displacement components have zero gradient, while the three-dimensional identity term is
 retained.
 
+With [!param](/UserObjects/TorchDeformationGradient/macro_gradient), the current value of the
+homogenization macro gradient scalar variable is mapped to tensor components through
+[!param](/UserObjects/TorchDeformationGradient/constraint_types) and added to $F$ after the F-bar
+correction, as in the host [ComputeLagrangianStrain](ComputeLagrangianStrain.md).
+
 ## Limitations
 
 - The formulation uses gradients on the reference mesh.

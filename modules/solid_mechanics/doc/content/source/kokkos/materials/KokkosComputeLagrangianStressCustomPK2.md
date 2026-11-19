@@ -18,6 +18,16 @@ one scalar Cartesian displacement variable per reference mesh dimension. On a tw
 the deformation gradient is the plane-strain tensor with $F_{zz} = 1$, and all tensors remain
 $3 \times 3$.
 
+A homogenization gradient $H$ listed in
+[!param](/Materials/KokkosComputeLagrangianStressCustomPK2/homogenization_gradient_names) is added to
+the deformation gradient of the PK1 wrap, $P = (F + H) S$, while the F-bar chain acts on the
+displacement-only $F$, as in the host
+[ComputeLagrangianStressCustomPK2](ComputeLagrangianStressCustomPK2.md). With
+`stabilize_strain = true`, the material then also publishes the PK1 tangent without the F-bar factor,
+[!param](/Materials/KokkosComputeLagrangianStressCustomPK2/dpk1_bypass_fbar), which is the
+derivative with respect to $H$ used by
+[KokkosHomogenizedTotalLagrangianStressDivergence](KokkosHomogenizedTotalLagrangianStressDivergence.md).
+
 `KokkosInterfaceComputeLagrangianStressCustomPK2` and
 `KokkosNeighborComputeLagrangianStressCustomPK2` provide the same conversion in the primary and
 neighbor interface material-property domains, respectively. They require a boundary restriction and

@@ -9,6 +9,7 @@
 #ifdef NEML2_ENABLED
 
 #include "TorchDeformationGradient.h"
+#include "TorchMacroGradient.h"
 
 registerMooseObject("SolidMechanicsApp", TorchDeformationGradient);
 
@@ -32,12 +33,30 @@ TorchDeformationGradient::validParams()
       "default preserves the original unstabilized behavior. Pair with the matching "
       "`stabilize_strain = true` option on `KokkosComputeLagrangianStressCustomPK2` and "
       "`KokkosTotalLagrangianStressDivergence` for a consistent Jacobian.");
+  params.addCoupledVar("macro_gradient",
+                       "Homogenization macro gradient scalar variable added to the deformation "
+                       "gradient after the F-bar correction.");
+  params.addParam<MultiMooseEnum>(
+      "constraint_types",
+      Homogenization::constraintType,
+      "Homogenization constraint types, in column-major order, which map the macro gradient "
+      "components to tensor components. Required with macro_gradient.");
   return params;
 }
 
 TorchDeformationGradient::TorchDeformationGradient(const InputParameters & parameters)
-  : TorchPreKernel(parameters), _stabilize_strain(getParam<bool>("stabilize_strain"))
+  : TorchPreKernel(parameters),
+    _stabilize_strain(getParam<bool>("stabilize_strain")),
+    _macro_gradient(isCoupledScalar("macro_gradient") ? getScalarVar("macro_gradient", 0)
+                                                      : nullptr),
+    _macro_gradient_indices(_macro_gradient ? Homogenization::constraintIndices(
+                                                  getParam<MultiMooseEnum>("constraint_types"))
+                                            : std::vector<std::pair<unsigned int, unsigned int>>())
 {
+  if (_macro_gradient && _macro_gradient->order() != _macro_gradient_indices.size())
+    paramError("constraint_types",
+               "The number of constraints must equal the order of the macro gradient variable.");
+
   const auto & disp_vars = getParam<std::vector<NonlinearVariableName>>("displacements");
   if (disp_vars.size() < 1 || disp_vars.size() > 3)
     paramError("displacements",
@@ -61,9 +80,16 @@ TorchDeformationGradient::forward()
   // uses the host's 3x3 cube-root volume ratio unchanged.
   const auto F_ust = at::stack({dux, duy, duz}, -2) + at::eye(3, dux.options());
 
+  // The macro gradient is added after the F-bar correction, as in the host
+  // ComputeLagrangianStrainBase
+  const auto H =
+      _macro_gradient
+          ? Homogenization::macroGradient(*_macro_gradient, _macro_gradient_indices, dux.options())
+          : at::zeros({3, 3}, dux.options());
+
   if (!_stabilize_strain)
   {
-    _output = F_ust;
+    _output = F_ust + H;
     return;
   }
 
@@ -107,7 +133,7 @@ TorchDeformationGradient::forward()
   const auto ratio = det_F_avg.unsqueeze(-1) / det_F_ust;                  // (nelem, nqp)
   const auto gamma = at::sign(ratio) * at::pow(at::abs(ratio), 1.0 / 3.0); // (nelem, nqp)
 
-  _output = gamma.unsqueeze(-1).unsqueeze(-1) * F_ust; // (nelem, nqp, 3, 3)
+  _output = gamma.unsqueeze(-1).unsqueeze(-1) * F_ust + H; // (nelem, nqp, 3, 3)
 }
 
 #endif // NEML2_ENABLED
