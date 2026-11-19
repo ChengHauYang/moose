@@ -150,6 +150,13 @@
     design = 'source/materials/ADCompositeEigenstrain.md source/materials/ADCompositeElasticityTensor.md'
   []
 
+  [compliance_sensitivity]
+    type = PetscJacobianTester
+    input = compliance_sensitivity.i
+    requirement = 'The system shall preserve design-density and displacement derivatives through AD elasticity, stress, strain energy density, and compliance sensitivity into the projected sensitivity residual.'
+    design = 'source/materials/ADComplianceSensitivity.md'
+  []
+
   [strain_energy_density]
     requirement = 'The system shall preserve displacement derivatives through AD stress and strain into the AD strain energy density'
     design = 'source/materials/StrainEnergyDensity.md'
