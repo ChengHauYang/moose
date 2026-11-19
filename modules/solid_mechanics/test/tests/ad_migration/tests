@@ -143,6 +143,13 @@
     design = 'source/materials/ADComputeExtraStressConstant.md source/materials/ADComputeExtraStressVDWGas.md'
   []
 
+  [composite_tensors]
+    type = PetscJacobianTester
+    input = composite_tensors.i
+    requirement = 'The system shall preserve independent nonlinear-variable derivatives through weighted AD eigenstrain and elasticity tensor composites into the Cartesian displacement residuals.'
+    design = 'source/materials/ADCompositeEigenstrain.md source/materials/ADCompositeElasticityTensor.md'
+  []
+
   [strain_energy_density]
     requirement = 'The system shall preserve displacement derivatives through AD stress and strain into the AD strain energy density'
     design = 'source/materials/StrainEnergyDensity.md'

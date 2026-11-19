@@ -21,19 +21,28 @@
  * The generic logic that computes a weighted sum of tensors is located in the
  * templated base class CompositeTensorBase.
  */
-class CompositeElasticityTensor : public CompositeTensorBase<RankFourTensor, Material>
+template <bool is_ad>
+class CompositeElasticityTensorTempl : public CompositeTensorBase<RankFourTensor, Material, is_ad>
 {
 public:
   static InputParameters validParams();
 
-  CompositeElasticityTensor(const InputParameters & parameters);
+  CompositeElasticityTensorTempl(const InputParameters & parameters);
 
 protected:
-  void computeQpProperties();
+  void computeQpProperties() override;
 
   /// Base name of the material system
   const std::string _base_name;
   const std::string _M_name;
 
-  MaterialProperty<RankFourTensor> & _M;
+  GenericMaterialProperty<RankFourTensor, is_ad> & _M;
+
+  using CompositeTensorBase<RankFourTensor, Material, is_ad>::_num_comp;
+  using CompositeTensorBase<RankFourTensor, Material, is_ad>::_tensor_names;
+  using CompositeTensorBase<RankFourTensor, Material, is_ad>::computeQpTensorProperties;
+  using CompositeTensorBase<RankFourTensor, Material, is_ad>::initializeDerivativeProperties;
 };
+
+using CompositeElasticityTensor = CompositeElasticityTensorTempl<false>;
+using ADCompositeElasticityTensor = CompositeElasticityTensorTempl<true>;

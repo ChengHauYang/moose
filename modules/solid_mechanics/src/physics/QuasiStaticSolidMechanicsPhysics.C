@@ -741,7 +741,7 @@ QuasiStaticSolidMechanicsPhysics::actEigenstrainNames()
       remove_reduced_set.insert(input_eigenstrain_names.begin(), input_eigenstrain_names.end());
     }
     // Account for CompositeEigenstrains
-    if (mat_name == "CompositeEigenstrain")
+    if (mat_name == "CompositeEigenstrain" || mat_name == "ADCompositeEigenstrain")
     {
       auto remove_list = mat_params.get<std::vector<MaterialPropertyName>>("tensors");
       for (auto i : remove_list)
