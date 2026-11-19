@@ -12,21 +12,24 @@
 #include "DenseMatrix.h"
 #include "ComputeEigenstrainBase.h"
 #include "RankTwoTensor.h"
+#include "MooseTypes.h"
 
 // libmesh includes
 #include "libmesh/dense_vector.h"
 
+// Forward Declarations
 class Assembly;
 class InputParameters;
 class MooseObject;
 class SubProblem;
 
-class ComputeReducedOrderEigenstrain : public ComputeEigenstrainBase
+template <bool is_ad>
+class ComputeReducedOrderEigenstrainTempl : public ComputeEigenstrainBaseTempl<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  ComputeReducedOrderEigenstrain(const InputParameters & parameters);
+  ComputeReducedOrderEigenstrainTempl(const InputParameters & parameters);
 
   void initQpStatefulProperties();
   void computeProperties();
@@ -43,7 +46,7 @@ private:
   void prepareEigenstrain();
 
   std::vector<MaterialPropertyName> _input_eigenstrain_names;
-  std::vector<const MaterialProperty<RankTwoTensor> *> _eigenstrains;
+  std::vector<const GenericMaterialProperty<RankTwoTensor, is_ad> *> _eigenstrains;
 
   SubProblem & _subproblem;
   /// Number of columns in A matrix (1 plus mesh dimension)
@@ -51,19 +54,24 @@ private:
   /// Whether the mesh is made of second order elements
   const bool _second_order;
   /// The sum of all eigenstrains at each integration point
-  std::vector<RankTwoTensor> _eigsum;
+  std::vector<GenericRankTwoTensor<is_ad>> _eigsum;
   /// The (num q points x ncols) array for the least squares.  Holds 1, xcoor, ycoor, zcoor.
   DenseMatrix<Real> _A;
   /// The b array holding the unique eigenstrain components for each integration point.
-  std::vector<DenseVector<Real>> _b;
+  std::vector<GenericDenseVector<is_ad>> _b;
   /// Transpose of A
   DenseMatrix<Real> _AT;
+  /// Inverse of A transpose times A
+  DenseMatrix<Real> _A_inverse;
   /// Transpose of A times b.
-  DenseVector<Real> _ATb;
+  GenericDenseVector<is_ad> _ATb;
   /// The solution vector for each unique component of the adjusted eigenstrain
-  std::vector<DenseVector<Real>> _x;
+  std::vector<GenericDenseVector<is_ad>> _x;
   /// Vector to hold the adjusted strain as computed with _x
-  std::vector<Real> _vals;
+  std::vector<GenericReal<is_ad>> _vals;
   /// Filled with _vals and subracted from strain
-  RankTwoTensor _adjusted_eigenstrain;
+  GenericRankTwoTensor<is_ad> _adjusted_eigenstrain;
 };
+
+using ComputeReducedOrderEigenstrain = ComputeReducedOrderEigenstrainTempl<false>;
+using ADComputeReducedOrderEigenstrain = ComputeReducedOrderEigenstrainTempl<true>;
