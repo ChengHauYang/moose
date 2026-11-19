@@ -505,6 +505,27 @@ SystemBase::augmentSendList(std::vector<dof_id_type> & send_list)
       }
     }
   }
+
+#ifdef MOOSE_KOKKOS_ENABLED
+  // Kokkos assembly accumulates into the ghost entries of the send list and applies the DoF
+  // constraints of every semilocal DoF locally, so the dependencies of every constrained ghost
+  // DoF must be ghosted too. libMesh adds them only for the DoFs on local elements, which misses
+  // ghost DoFs that are there for other reasons, e.g. the neighbor DoFs of an interface kernel
+  // across a broken mesh (with periodic constraints those DoFs can be constrained).
+  if (_fe_problem.hasKokkosResidualObjects())
+  {
+    const auto & constraints = dof_map.get_dof_constraints();
+    if (!constraints.empty())
+    {
+      const auto n_ghost = send_list.size();
+      for (std::size_t i = 0; i < n_ghost; ++i)
+        if (const auto it = constraints.find(send_list[i]); it != constraints.end())
+          for (const auto & [dependency, weight] : it->second)
+            if (!dof_map.local_index(dependency))
+              send_list.push_back(dependency);
+    }
+  }
+#endif
 }
 
 /**
