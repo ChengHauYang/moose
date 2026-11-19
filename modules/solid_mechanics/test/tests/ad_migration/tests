@@ -157,6 +157,21 @@
     design = 'source/materials/ADComplianceSensitivity.md'
   []
 
+  [global_strain]
+    requirement = 'The system shall preserve displacement and global-strain derivatives through AD global strain, stress, and the global-strain scalar residual.'
+    design = 'source/scalarkernels/ADGlobalStrain.md source/materials/ADComputeGlobalStrain.md source/userobjects/ADGlobalStrainUserObject.md'
+    [two_dimensional]
+      type = PetscJacobianTester
+      input = global_strain.i
+      detail = 'for the two-dimensional Action-created AD global-strain chain, including periodic scalar-row derivatives.'
+    []
+    [one_dimensional]
+      type = PetscJacobianTester
+      input = global_strain_1d.i
+      detail = 'for distributed-mesh and threaded coverage of the AD global-strain chain.'
+    []
+  []
+
   [reduced_order_eigenstrain]
     requirement = 'The system shall preserve nonlinear eigenstrain derivatives through reduced-order projection into the Cartesian displacement residuals'
     design = 'source/materials/ADComputeReducedOrderEigenstrain.md'

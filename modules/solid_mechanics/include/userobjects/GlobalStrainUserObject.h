@@ -11,48 +11,48 @@
 
 #include "ElementUserObject.h"
 #include "GlobalStrainUserObjectInterface.h"
-
 #include "RankTwoTensor.h"
 #include "RankFourTensor.h"
+#include "MooseTypes.h"
 
-class GlobalStrainUserObject : public ElementUserObject, public GlobalStrainUserObjectInterface
+template <bool is_ad>
+class GlobalStrainUserObjectTempl : public ElementUserObject,
+                                    public GlobalStrainUserObjectInterfaceTempl<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  GlobalStrainUserObject(const InputParameters & parameters);
+  GlobalStrainUserObjectTempl(const InputParameters & parameters);
 
-  void initialize() override;
-  void execute() override;
-  void threadJoin(const UserObject & uo) override;
-  void finalize() override;
-  virtual const RankTwoTensor & getResidual() const override;
-  virtual const RankFourTensor & getJacobian() const override;
-  virtual const VectorValue<bool> & getPeriodicDirections() const override;
+  virtual void initialize() override;
+  virtual void execute() override;
+  virtual void threadJoin(const UserObject & uo) override;
+  virtual void finalize() override;
 
-  /**
-   * Calculate additional applied stresses
-   */
-  virtual void computeAdditionalStress() {}
+  virtual const GenericRankTwoTensor<is_ad> & getResidual() const override { return _residual; }
+  virtual const GenericRankFourTensor<is_ad> & getJacobian() const override { return _jacobian; }
+  virtual const VectorValue<bool> & getPeriodicDirections() const override { return _periodic_dir; }
 
 protected:
-  /// Base name of the material system
+  virtual void computeAdditionalStress() {}
+
   const std::string _base_name;
 
-  const MaterialProperty<RankFourTensor> & _dstress_dstrain;
+  const GenericMaterialProperty<RankTwoTensor, is_ad> & _stress;
 
-  /// The stress tensor
-  const MaterialProperty<RankTwoTensor> & _stress;
+  const MaterialProperty<RankFourTensor> * _dstress_dstrain;
 
-  RankTwoTensor _applied_stress_tensor;
-  RankTwoTensor _residual;
-  RankFourTensor _jacobian;
+  GenericRankTwoTensor<is_ad> _residual;
+  GenericRankFourTensor<is_ad> _jacobian;
 
   const unsigned int _dim;
 
-  /// Displacement variables
   const std::vector<const MooseVariableFieldBase *> _disp_var;
 
-  /// Variable numbers of the displacement variables
   VectorValue<bool> _periodic_dir;
+
+  RankTwoTensor _applied_stress_tensor;
 };
+
+using GlobalStrainUserObject = GlobalStrainUserObjectTempl<false>;
+using ADGlobalStrainUserObject = GlobalStrainUserObjectTempl<true>;

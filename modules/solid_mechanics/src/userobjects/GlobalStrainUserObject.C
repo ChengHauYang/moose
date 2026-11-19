@@ -10,11 +10,18 @@
 #include "GlobalStrainUserObject.h"
 
 #include "libmesh/quadrature.h"
+#include "libmesh/dof_map.h"
+#include "metaphysicl/parallel_numberarray.h"
+#include "metaphysicl/parallel_dualnumber.h"
+#include "metaphysicl/parallel_semidynamicsparsenumberarray.h"
+#include "libmesh/parallel_algebra.h"
 
 registerMooseObject("SolidMechanicsApp", GlobalStrainUserObject);
+registerMooseObject("SolidMechanicsApp", ADGlobalStrainUserObject);
 
+template <bool is_ad>
 InputParameters
-GlobalStrainUserObject::validParams()
+GlobalStrainUserObjectTempl<is_ad>::validParams()
 {
   InputParameters params = ElementUserObject::validParams();
   params.addClassDescription(
@@ -29,15 +36,19 @@ GlobalStrainUserObject::validParams()
   return params;
 }
 
-GlobalStrainUserObject::GlobalStrainUserObject(const InputParameters & parameters)
+template <bool is_ad>
+GlobalStrainUserObjectTempl<is_ad>::GlobalStrainUserObjectTempl(const InputParameters & parameters)
   : ElementUserObject(parameters),
-    GlobalStrainUserObjectInterface(),
+    GlobalStrainUserObjectInterfaceTempl<is_ad>(),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
-    _dstress_dstrain(getMaterialProperty<RankFourTensor>(_base_name + "Jacobian_mult")),
-    _stress(getMaterialProperty<RankTwoTensor>(_base_name + "stress")),
+    _stress(this->template getGenericMaterialProperty<RankTwoTensor, is_ad>(_base_name + "stress")),
+    _dstress_dstrain(
+        is_ad ? nullptr
+              : &this->template getMaterialProperty<RankFourTensor>(_base_name + "Jacobian_mult")),
     _dim(_mesh.dimension()),
-    _disp_var(getFieldVars("displacements")),
-    _periodic_dir()
+    _disp_var(this->getFieldVars("displacements")),
+    _periodic_dir(),
+    _applied_stress_tensor()
 {
   for (unsigned int dir = 0; dir < _dim; ++dir)
   {
@@ -56,66 +67,72 @@ GlobalStrainUserObject::GlobalStrainUserObject(const InputParameters & parameter
     _applied_stress_tensor.zero();
 }
 
+template <bool is_ad>
 void
-GlobalStrainUserObject::initialize()
+GlobalStrainUserObjectTempl<is_ad>::initialize()
 {
   _residual.zero();
   _jacobian.zero();
 }
 
+template <bool is_ad>
 void
-GlobalStrainUserObject::execute()
+GlobalStrainUserObjectTempl<is_ad>::execute()
 {
   computeAdditionalStress();
 
-  for (unsigned int _qp = 0; _qp < _qrule->n_points(); _qp++)
+  for (unsigned int _qp = 0; _qp < _qrule->n_points(); ++_qp)
   {
-    // residual, integral of stress components
     _residual += _JxW[_qp] * _coord[_qp] * (_stress[_qp] - _applied_stress_tensor);
 
-    // diagonal jacobian, integral of elasticity tensor components
-    _jacobian += _JxW[_qp] * _coord[_qp] * _dstress_dstrain[_qp];
+    if (!is_ad && _dstress_dstrain)
+      _jacobian += _JxW[_qp] * _coord[_qp] * (*_dstress_dstrain)[_qp];
   }
 }
 
+template <bool is_ad>
 void
-GlobalStrainUserObject::threadJoin(const UserObject & uo)
+GlobalStrainUserObjectTempl<is_ad>::threadJoin(const UserObject & uo)
 {
-  const auto & pstuo = cast_ref<const GlobalStrainUserObject &>(uo);
+  const auto & pstuo = cast_ref<const GlobalStrainUserObjectTempl<is_ad> &>(uo);
   _residual += pstuo._residual;
   _jacobian += pstuo._jacobian;
 }
 
+template <bool is_ad>
 void
-GlobalStrainUserObject::finalize()
+GlobalStrainUserObjectTempl<is_ad>::finalize()
 {
-  std::vector<Real> residual(9);
-  std::vector<Real> jacobian(81);
+  if constexpr (is_ad)
+  {
+    // Apply local column constraints before reducing derivatives to the scalar-DOF owner.
+    const auto & constraints = _sys.dofMap().get_dof_constraints();
+    for (unsigned int i = 0; i < 3; ++i)
+      for (unsigned int j = 0; j < 3; ++j)
+      {
+        auto & derivatives = _residual(i, j).derivatives();
+        const auto indices = derivatives.nude_indices();
+        for (const auto dof : indices)
+          if (const auto constraint = constraints.find(dof); constraint != constraints.end())
+          {
+            const auto derivative = derivatives[dof];
+            derivatives[dof] = 0;
+            for (const auto & [master_dof, coefficient] : constraint->second)
+              derivatives.insert(master_dof) += coefficient * derivative;
+          }
+      }
+  }
 
-  std::copy(&_residual(0, 0), &_residual(0, 0) + 9, residual.begin());
-  std::copy(&_jacobian(0, 0, 0, 0), &_jacobian(0, 0, 0, 0) + 81, jacobian.begin());
+  for (unsigned int i = 0; i < 3; ++i)
+    for (unsigned int j = 0; j < 3; ++j)
+      this->comm().sum(_residual(i, j));
 
-  gatherSum(residual);
-  gatherSum(jacobian);
-
-  std::copy(residual.begin(), residual.end(), &_residual(0, 0));
-  std::copy(jacobian.begin(), jacobian.end(), &_jacobian(0, 0, 0, 0));
+  for (unsigned int i = 0; i < 3; ++i)
+    for (unsigned int j = 0; j < 3; ++j)
+      for (unsigned int k = 0; k < 3; ++k)
+        for (unsigned int l = 0; l < 3; ++l)
+          this->comm().sum(_jacobian(i, j, k, l));
 }
 
-const RankTwoTensor &
-GlobalStrainUserObject::getResidual() const
-{
-  return _residual;
-}
-
-const RankFourTensor &
-GlobalStrainUserObject::getJacobian() const
-{
-  return _jacobian;
-}
-
-const VectorValue<bool> &
-GlobalStrainUserObject::getPeriodicDirections() const
-{
-  return _periodic_dir;
-}
+template class GlobalStrainUserObjectTempl<false>;
+template class GlobalStrainUserObjectTempl<true>;
