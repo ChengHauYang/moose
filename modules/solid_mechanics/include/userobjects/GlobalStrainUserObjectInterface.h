@@ -10,16 +10,29 @@
 #pragma once
 
 #include "UserObject.h"
+#include "MooseTypes.h"
 #include "RankTwoTensor.h"
 #include "RankFourTensor.h"
-/**
- * This class provides interface for extracting the periodic directions, residual, and jacobian
- * values from UserObjects associated with global strain calculation
- */
-class GlobalStrainUserObjectInterface
+
+class GlobalStrainPeriodicDirectionInterface
 {
 public:
-  virtual const RankTwoTensor & getResidual() const = 0;
-  virtual const RankFourTensor & getJacobian() const = 0;
   virtual const VectorValue<bool> & getPeriodicDirections() const = 0;
 };
+
+/**
+ * Interface for extracting the periodic directions, residual, and (for the
+ * non-AD legacy path) Jacobian values from UserObjects associated with global
+ * strain calculation.  The residual and Jacobian storage are generic so that
+ * the AD path preserves derivatives.
+ */
+template <bool is_ad>
+class GlobalStrainUserObjectInterfaceTempl : public GlobalStrainPeriodicDirectionInterface
+{
+public:
+  virtual const GenericRankTwoTensor<is_ad> & getResidual() const = 0;
+  virtual const GenericRankFourTensor<is_ad> & getJacobian() const = 0;
+};
+
+using GlobalStrainUserObjectInterface = GlobalStrainUserObjectInterfaceTempl<false>;
+using ADGlobalStrainUserObjectInterface = GlobalStrainUserObjectInterfaceTempl<true>;

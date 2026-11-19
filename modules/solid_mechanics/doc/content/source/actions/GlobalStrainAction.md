@@ -16,6 +16,8 @@ This action simplifies the input file syntax for global strain calculation requi
 
 - [Global Strain Material](/ComputeGlobalStrain.md): Calculates the global strain components from the scalar variable
 
+When `use_automatic_differentiation = true`, the action instead creates `ADGlobalStrainUserObject`, `ADGlobalStrain`, and `ADComputeGlobalStrain`.
+
 ### AuxVariables
 
 - [Global Displacement AuxVariables](/GlobalDisplacementAux.md): Creates AuxVariables for each additional displacement components

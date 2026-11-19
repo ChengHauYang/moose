@@ -12,18 +12,18 @@
 #include "Material.h"
 #include "RankTwoTensorForward.h"
 
-// Forward Declarations
-class GlobalStrainUserObjectInterface;
+#include "GlobalStrainUserObjectInterface.h"
 
 /**
  * ComputeGlobalStrain calculates the global strain tensor from the scalar variables
  */
-class ComputeGlobalStrain : public Material
+template <bool is_ad>
+class ComputeGlobalStrainTempl : public Material
 {
 public:
   static InputParameters validParams();
 
-  ComputeGlobalStrain(const InputParameters & parameters);
+  ComputeGlobalStrainTempl(const InputParameters & parameters);
 
 protected:
   virtual void initQpStatefulProperties() override;
@@ -32,10 +32,10 @@ protected:
 
   /// Base name prepended to material property name
   const std::string _base_name;
-  const VariableValue & _scalar_global_strain;
-  MaterialProperty<RankTwoTensor> & _global_strain;
+  const GenericVariableValue<is_ad> & _scalar_global_strain;
+  GenericMaterialProperty<RankTwoTensor, is_ad> & _global_strain;
 
-  const GlobalStrainUserObjectInterface & _pst;
+  const GlobalStrainUserObjectInterfaceTempl<is_ad> & _pst;
   const VectorValue<bool> & _periodic_dir;
 
   const unsigned int _dim;
@@ -43,3 +43,6 @@ protected:
   /// Number of displacement variables
   const unsigned int _ndisp;
 };
+
+using ComputeGlobalStrain = ComputeGlobalStrainTempl<false>;
+using ADComputeGlobalStrain = ComputeGlobalStrainTempl<true>;

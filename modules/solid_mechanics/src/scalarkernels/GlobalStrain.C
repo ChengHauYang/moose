@@ -18,11 +18,13 @@
 #include "RankFourTensor.h"
 
 registerMooseObject("SolidMechanicsApp", GlobalStrain);
+registerMooseObject("SolidMechanicsApp", ADGlobalStrain);
 
+template <bool is_ad>
 InputParameters
-GlobalStrain::validParams()
+GlobalStrainTempl<is_ad>::validParams()
 {
-  InputParameters params = ScalarKernel::validParams();
+  InputParameters params = Parent::validParams();
   params.addClassDescription("Scalar Kernel to solve for the global strain");
   params.addRequiredParam<UserObjectName>("global_strain_uo",
                                           "The name of the GlobalStrainUserObject");
@@ -30,54 +32,90 @@ GlobalStrain::validParams()
   return params;
 }
 
-GlobalStrain::GlobalStrain(const InputParameters & parameters)
-  : ScalarKernel(parameters),
-    _pst(getUserObject<GlobalStrainUserObjectInterface>("global_strain_uo")),
+template <bool is_ad>
+GlobalStrainTempl<is_ad>::GlobalStrainTempl(const InputParameters & parameters)
+  : Parent(parameters),
+    _pst(this->template getUserObject<GlobalStrainUserObjectInterfaceTempl<is_ad>>(
+        "global_strain_uo")),
     _pst_residual(_pst.getResidual()),
-    _pst_jacobian(_pst.getJacobian()),
     _periodic_dir(_pst.getPeriodicDirections()),
-    _components(_var.order()),
-    _dim(_mesh.dimension())
+    _components(this->_var.order()),
+    _dim(this->_mesh.dimension())
 {
-  if ((_dim == 1 && _var.order() != FIRST) || (_dim == 2 && _var.order() != THIRD) ||
-      (_dim == 3 && _var.order() != SIXTH))
+  if ((_dim == 1 && this->_var.order() != FIRST) || (_dim == 2 && this->_var.order() != THIRD) ||
+      (_dim == 3 && this->_var.order() != SIXTH))
     mooseError("PerdiodicStrain ScalarKernel is only compatible with scalar variables of order "
                "FIRST in 1D, THIRD in 2D, and SIXTH in 3D. Please change the order of the scalar"
                "variable according to the mesh dimension.");
-
-  assignComponentIndices(_var.order());
+  assignComponentIndices(this->_var.order());
 }
 
+template <bool is_ad>
 void
-GlobalStrain::computeResidual()
+GlobalStrainTempl<is_ad>::reinit()
 {
-  prepareVectorTag(_assembly, _var.number());
-  for (_i = 0; _i < _local_re.size(); ++_i)
+  if constexpr (is_ad)
+    Parent::reinit();
+}
+
+template <bool is_ad>
+void
+GlobalStrainTempl<is_ad>::computeResidual()
+{
+  if constexpr (is_ad)
+    Parent::computeResidual();
+  else
   {
-    if (_periodic_dir(_components[_i].first) || _periodic_dir(_components[_i].second))
-      _local_re(_i) += _pst_residual(_components[_i].first, _components[_i].second);
+    this->prepareVectorTag(this->_assembly, this->_var.number());
+    for (this->_i = 0; this->_i < this->_local_re.size(); ++this->_i)
+      this->_local_re(this->_i) += computeQpResidual();
+    this->accumulateTaggedLocalResidual();
   }
-  accumulateTaggedLocalResidual();
 }
 
+template <bool is_ad>
 void
-GlobalStrain::computeJacobian()
+GlobalStrainTempl<is_ad>::computeJacobian()
 {
-  prepareMatrixTag(_assembly, _var.number(), _var.number());
-  for (_i = 0; _i < _local_ke.m(); ++_i)
-    for (_j = 0; _j < _local_ke.m(); ++_j)
-      // periodic direction check is not done for jacobian calculations to avoid zero pivot error
-      _local_ke(_i, _j) += _pst_jacobian(_components[_i].first,
-                                         _components[_i].second,
-                                         _components[_j].first,
-                                         _components[_j].second);
-  accumulateTaggedLocalMatrix();
+  if constexpr (is_ad)
+    Parent::computeJacobian();
+  else
+  {
+    this->prepareMatrixTag(this->_assembly, this->_var.number(), this->_var.number());
+    for (this->_i = 0; this->_i < this->_local_ke.m(); ++this->_i)
+      for (this->_j = 0; this->_j < this->_local_ke.m(); ++this->_j)
+        // Periodic direction check is not done for Jacobian calculations to avoid zero pivot error.
+        this->_local_ke(this->_i, this->_j) += _pst.getJacobian()(_components[this->_i].first,
+                                                                  _components[this->_i].second,
+                                                                  _components[this->_j].first,
+                                                                  _components[this->_j].second);
+    this->accumulateTaggedLocalMatrix();
+  }
 }
 
+template <bool is_ad>
 void
-GlobalStrain::assignComponentIndices(Order order)
+GlobalStrainTempl<is_ad>::computeOffDiagJacobian(unsigned int jvar)
 {
-  switch (order)
+  if constexpr (is_ad)
+    Parent::computeOffDiagJacobian(jvar);
+}
+
+template <bool is_ad>
+GenericReal<is_ad>
+GlobalStrainTempl<is_ad>::computeQpResidual()
+{
+  if (_periodic_dir(_components[this->_i].first) || _periodic_dir(_components[this->_i].second))
+    return _pst_residual(_components[this->_i].first, _components[this->_i].second);
+
+  return 0.0;
+}
+
+template <bool is_ad>
+void
+GlobalStrainTempl<is_ad>::assignComponentIndices(Order var_order)
+{
+  switch (var_order)
   {
     case 1:
       _components[0].first = 0;
@@ -113,3 +151,6 @@ GlobalStrain::assignComponentIndices(Order order)
                  "order scalar variables.");
   }
 }
+
+template class GlobalStrainTempl<false>;
+template class GlobalStrainTempl<true>;

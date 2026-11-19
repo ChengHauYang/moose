@@ -13,7 +13,7 @@
 #include "ADRankTwoTensorForward.h"
 
 // Forward Declarations
-class GlobalStrainUserObjectInterface;
+class GlobalStrainPeriodicDirectionInterface;
 
 class GlobalDisplacementAux : public AuxKernel
 {
@@ -32,7 +32,7 @@ protected:
 
   bool _output_global_disp;
 
-  const GlobalStrainUserObjectInterface & _pst;
+  const GlobalStrainPeriodicDirectionInterface & _pst;
   const VectorValue<bool> & _periodic_dir;
   const Point _ref_point;
 
