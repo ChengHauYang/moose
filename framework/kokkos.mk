@@ -102,9 +102,9 @@ else ifneq ($(PETSC_HAVE_HIP),)
   KOKKOS_ARCH       := $(KOKKOS_HIP_ARCH_$(HIP_ARCH))
   KOKKOS_COMPILER   := HIPCC
   KOKKOS_CXX         = $(HIP_COMPILER)
-  KOKKOS_CXXFLAGS    = --offload-arch=$(HIP_ARCH) -x hip $(CXXFLAGS) $(libmesh_CXXFLAGS)
+  KOKKOS_CXXFLAGS    = --offload-arch=$(HIP_ARCH) -x hip $(CXXFLAGS) $(libmesh_CXXFLAGS) -I${MPICH_DIR}/include
   KOKKOS_CPPFLAGS    = $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) ${ADDITIONAL_KOKKOS_CPPFLAGS}
-  KOKKOS_LDFLAGS     = --offload-arch=$(HIP_ARCH)
+  KOKKOS_LDFLAGS     = --offload-arch=$(HIP_ARCH) -L${MPICH_DIR}/lib -lmpi ${CRAY_XPMEM_POST_LINK_OPTS} -lxpmem ${PE_MPICH_GTL_DIR_amd_gfx90a} ${PE_MPICH_GTL_LIBS_amd_gfx90a}
   # hipcc (clang) lowers OpenMP pragmas to LLVM runtime calls (__kmpc_*), which the GNU libgomp
   # linked through libMesh does not provide, so link the OpenMP runtime clang compiled against
   KOKKOS_LDFLAGS    += $(filter -fopenmp%,$(KOKKOS_CXXFLAGS))
