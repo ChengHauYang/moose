@@ -105,6 +105,9 @@ else ifneq ($(PETSC_HAVE_HIP),)
   KOKKOS_CXXFLAGS    = --offload-arch=$(HIP_ARCH) -x hip $(CXXFLAGS) $(libmesh_CXXFLAGS)
   KOKKOS_CPPFLAGS    = $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) ${ADDITIONAL_KOKKOS_CPPFLAGS}
   KOKKOS_LDFLAGS     = --offload-arch=$(HIP_ARCH)
+  # hipcc (clang) lowers OpenMP pragmas to LLVM runtime calls (__kmpc_*), which the GNU libgomp
+  # linked through libMesh does not provide, so link the OpenMP runtime clang compiled against
+  KOKKOS_LDFLAGS    += $(filter -fopenmp%,$(KOKKOS_CXXFLAGS))
 else ifneq ($(PETSC_HAVE_SYCL),)
   KOKKOS_DEVICE     := SYCL
   KOKKOS_ARCH       := $(KOKKOS_SYCL_ARCH_$(SYCL_ARCH))
