@@ -17,12 +17,13 @@
  * Construct a global strain from the phase strains in a manner that is consistent
  * with the construction of the global elastic energy by DerivativeMultiPhaseMaterial.
  */
-class MultiPhaseStressMaterial : public Material
+template <bool is_ad>
+class MultiPhaseStressMaterialTempl : public Material
 {
 public:
   static InputParameters validParams();
 
-  MultiPhaseStressMaterial(const InputParameters & parameters);
+  MultiPhaseStressMaterialTempl(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties();
@@ -34,11 +35,11 @@ protected:
   unsigned int _n_phase;
 
   /// switching functions
-  std::vector<const MaterialProperty<Real> *> _h_eta;
+  std::vector<const GenericMaterialProperty<Real, is_ad> *> _h_eta;
 
   // phase material properties
   std::vector<std::string> _phase_base;
-  std::vector<const MaterialProperty<RankTwoTensor> *> _phase_stress;
+  std::vector<const GenericMaterialProperty<RankTwoTensor, is_ad> *> _phase_stress;
   std::vector<const MaterialProperty<RankFourTensor> *> _dphase_stress_dstrain;
 
   // global material properties
@@ -47,6 +48,11 @@ protected:
   const std::string _base_name;
 
   /// The stress tensor
-  MaterialProperty<RankTwoTensor> & _stress;
-  MaterialProperty<RankFourTensor> & _dstress_dstrain;
+  GenericMaterialProperty<RankTwoTensor, is_ad> & _stress;
+
+  /// Non-AD tangent; AD consumers differentiate the stress property directly.
+  MaterialProperty<RankFourTensor> * const _dstress_dstrain;
 };
+
+using MultiPhaseStressMaterial = MultiPhaseStressMaterialTempl<false>;
+using ADMultiPhaseStressMaterial = MultiPhaseStressMaterialTempl<true>;

@@ -10,29 +10,42 @@
 #pragma once
 
 #include "ComputeStrainBase.h"
+#include "ADComputeStrainBase.h"
 
 /**
- * ComputeCosseratSmallStrain defines Cossserat strain tensor, assuming small strains.
+ * ComputeCosseratSmallStrain defines Cosserat strain tensor, assuming small strains.
  */
-class ComputeCosseratSmallStrain : public ComputeStrainBase
+template <bool is_ad>
+class ComputeCosseratSmallStrainTempl
+  : public std::conditional_t<is_ad, ADComputeStrainBase, ComputeStrainBase>
 {
 public:
   static InputParameters validParams();
 
-  ComputeCosseratSmallStrain(const InputParameters & parameters);
+  ComputeCosseratSmallStrainTempl(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties() override;
 
-  /// the Cosserat curvature strain: curvature_ij = nabla_j CosseratRotation_i
-  MaterialProperty<RankTwoTensor> & _curvature;
+  /// The Cosserat curvature strain: curvature_ij = nabla_j CosseratRotation_i
+  GenericMaterialProperty<RankTwoTensor, is_ad> & _curvature;
 
-  /// the number of Cosserat rotation variables supplied by the user (must be 3 in current implementation)
+  /// The number of Cosserat rotation variables supplied by the user (must be 3)
   const unsigned int _nrots;
 
   /// The Cosserat rotations
-  const std::vector<const VariableValue *> _wc;
+  const std::vector<const GenericVariableValue<is_ad> *> _wc;
 
   /// Grad(Cosserat rotation)
-  const std::vector<const VariableGradient *> _grad_wc;
+  const std::vector<const GenericVariableGradient<is_ad> *> _grad_wc;
+
+  using StrainBase = std::conditional_t<is_ad, ADComputeStrainBase, ComputeStrainBase>;
+  using StrainBase::_eigenstrains;
+  using StrainBase::_grad_disp;
+  using StrainBase::_mechanical_strain;
+  using StrainBase::_qp;
+  using StrainBase::_total_strain;
 };
+
+using ComputeCosseratSmallStrain = ComputeCosseratSmallStrainTempl<false>;
+using ADComputeCosseratSmallStrain = ComputeCosseratSmallStrainTempl<true>;

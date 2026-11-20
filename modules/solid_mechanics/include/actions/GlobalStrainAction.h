@@ -27,4 +27,6 @@ protected:
 
   std::vector<SubdomainName> _block_names;
   std::set<SubdomainID> _block_ids;
+
+  const bool _use_ad;
 };

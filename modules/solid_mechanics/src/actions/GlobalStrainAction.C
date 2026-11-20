@@ -46,6 +46,8 @@ GlobalStrainAction::validParams()
   params.addParam<std::string>("base_name", "Material property base name");
   params.addParam<std::vector<SubdomainName>>(
       "block", {}, "The block id where this variable lives");
+  params.addParam<bool>(
+      "use_automatic_differentiation", false, "Whether to use automatic differentiation");
 
   return params;
 }
@@ -56,7 +58,8 @@ GlobalStrainAction::GlobalStrainAction(const InputParameters & params)
     _aux_disp(getParam<std::vector<AuxVariableName>>("auxiliary_displacements")),
     _global_disp(getParam<std::vector<AuxVariableName>>("global_displacements")),
     _block_names(getParam<std::vector<SubdomainName>>("block")),
-    _block_ids()
+    _block_ids(),
+    _use_ad(getParam<bool>("use_automatic_differentiation"))
 {
   if (_aux_disp.size() != _disp.size())
     mooseError("Number of auxiliary displacement variables should be equal to the number of "
@@ -79,7 +82,7 @@ GlobalStrainAction::act()
   //
   if (_current_task == "add_user_object")
   {
-    std::string uo_type = "GlobalStrainUserObject";
+    std::string uo_type = _use_ad ? "ADGlobalStrainUserObject" : "GlobalStrainUserObject";
     InputParameters params = _factory.getValidParams(uo_type);
     params.applyParameters(parameters());
     params.set<bool>("use_displaced_mesh") = false;
@@ -93,7 +96,7 @@ GlobalStrainAction::act()
   //
   else if (_current_task == "add_scalar_kernel")
   {
-    std::string sk_type = "GlobalStrain";
+    std::string sk_type = _use_ad ? "ADGlobalStrain" : "GlobalStrain";
     InputParameters params = _factory.getValidParams(sk_type);
     params.applyParameters(parameters());
     params.set<bool>("use_displaced_mesh") = false;
@@ -108,7 +111,7 @@ GlobalStrainAction::act()
   //
   else if (_current_task == "add_material")
   {
-    std::string mat_type = "ComputeGlobalStrain";
+    std::string mat_type = _use_ad ? "ADComputeGlobalStrain" : "ComputeGlobalStrain";
     InputParameters params = _factory.getValidParams(mat_type);
     params.applyParameters(parameters(), {"scalar_global_strain"});
     params.set<bool>("use_displaced_mesh") = false;

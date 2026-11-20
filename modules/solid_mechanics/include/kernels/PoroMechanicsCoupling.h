@@ -9,35 +9,42 @@
 
 #pragma once
 
-#include "Kernel.h"
+#include "GenericKernel.h"
 
 // Forward Declarations
 
 /**
- * PoroMechanicsCoupling computes -coefficient*porepressure*grad_test[component]
+ * Adds the pore-pressure contribution \f$-B p \nabla \psi_c\f$ to a displacement equation,
+ * where \f$B\f$ is the Biot coefficient and \f$c\f$ selects the displacement component.
  */
-class PoroMechanicsCoupling : public Kernel
+template <bool is_ad>
+class PoroMechanicsCouplingTempl : public GenericKernel<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  PoroMechanicsCoupling(const InputParameters & parameters);
+  PoroMechanicsCouplingTempl(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
+  virtual GenericReal<is_ad> computeQpResidual() override;
 
-  virtual Real computeQpJacobian();
+  virtual Real computeQpJacobian() override;
 
-  virtual Real computeQpOffDiagJacobian(unsigned int jvar);
+  virtual Real computeQpOffDiagJacobian(unsigned int jvar) override;
 
 private:
   /// Biot coefficient
-  const MaterialProperty<Real> & _coefficient;
+  const GenericMaterialProperty<Real, is_ad> & _coefficient;
 
-  const VariableValue & _porepressure;
+  const GenericVariableValue<is_ad> & _porepressure;
 
   unsigned int _porepressure_var_num;
 
   /// An integer corresponding to the direction this kernel acts in
   unsigned int _component;
+
+  usingGenericKernelMembers;
 };
+
+using PoroMechanicsCoupling = PoroMechanicsCouplingTempl<false>;
+using ADPoroMechanicsCoupling = PoroMechanicsCouplingTempl<true>;

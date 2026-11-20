@@ -17,12 +17,13 @@
  * The initial stress is defined in terms of Functions, which may be
  * multiplied by optional AuxVariables
  */
-class ComputeEigenstrainFromInitialStress : public ComputeEigenstrainBase
+template <bool is_ad>
+class ComputeEigenstrainFromInitialStressTempl : public ComputeEigenstrainBaseTempl<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  ComputeEigenstrainFromInitialStress(const InputParameters & parameters);
+  ComputeEigenstrainFromInitialStressTempl(const InputParameters & parameters);
 
 protected:
   virtual void computeQpEigenstrain() override;
@@ -31,7 +32,7 @@ protected:
   const std::string _base_name;
 
   /// elasticity tensor used to convert stress to strain
-  const MaterialProperty<RankFourTensor> & _elasticity_tensor;
+  const GenericMaterialProperty<RankFourTensor, is_ad> & _elasticity_tensor;
 
   ///Stores the total eigenstrain in the previous step
   const MaterialProperty<RankTwoTensor> & _eigenstrain_old;
@@ -45,3 +46,6 @@ protected:
   /// AuxVariables defining the initial stress
   const std::vector<const VariableValue *> _ini_aux;
 };
+
+using ComputeEigenstrainFromInitialStress = ComputeEigenstrainFromInitialStressTempl<false>;
+using ADComputeEigenstrainFromInitialStress = ComputeEigenstrainFromInitialStressTempl<true>;

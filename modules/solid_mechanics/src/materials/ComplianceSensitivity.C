@@ -10,11 +10,13 @@
 #include "ComplianceSensitivity.h"
 
 registerMooseObject("SolidMechanicsApp", ComplianceSensitivity);
+registerMooseObject("SolidMechanicsApp", ADComplianceSensitivity);
 
+template <bool is_ad>
 InputParameters
-ComplianceSensitivity::validParams()
+ComplianceSensitivityTempl<is_ad>::validParams()
 {
-  InputParameters params = StrainEnergyDensity::validParams();
+  InputParameters params = StrainEnergyDensityTempl<is_ad>::validParams();
   params.addClassDescription("Computes compliance sensitivity needed for SIMP method.");
   params.addRequiredCoupledVar("design_density", "Design density variable name.");
   params.addRequiredParam<MaterialPropertyName>("youngs_modulus",
@@ -23,21 +25,26 @@ ComplianceSensitivity::validParams()
   return params;
 }
 
-ComplianceSensitivity::ComplianceSensitivity(const InputParameters & parameters)
-  : StrainEnergyDensity(parameters),
-    _sensitivity(declareProperty<Real>(_base_name + "sensitivity")),
-    _design_density(coupledValue("design_density")),
-    _design_density_name(coupledName("design_density", 0)),
-    _dEdp(getMaterialPropertyDerivativeByName<Real>(
-        getParam<MaterialPropertyName>("youngs_modulus"), _design_density_name)),
-    _youngs_modulus(getMaterialProperty<Real>(getParam<MaterialPropertyName>("youngs_modulus")))
+template <bool is_ad>
+ComplianceSensitivityTempl<is_ad>::ComplianceSensitivityTempl(const InputParameters & parameters)
+  : StrainEnergyDensityTempl<is_ad>(parameters),
+    _sensitivity(this->template declareGenericProperty<Real, is_ad>(_base_name + "sensitivity")),
+    _design_density(this->template coupledGenericValue<is_ad>("design_density")),
+    _design_density_name(this->coupledName("design_density", 0)),
+    _dEdp(this->template getGenericMaterialProperty<Real, is_ad>(this->derivativePropertyNameFirst(
+        this->template getParam<MaterialPropertyName>("youngs_modulus"), _design_density_name))),
+    _youngs_modulus(this->template getGenericMaterialProperty<Real, is_ad>("youngs_modulus"))
 {
 }
 
+template <bool is_ad>
 void
-ComplianceSensitivity::computeQpProperties()
+ComplianceSensitivityTempl<is_ad>::computeQpProperties()
 {
   // Call the parent class's method to compute the strain energy density
-  StrainEnergyDensity::computeQpProperties();
+  StrainEnergyDensityTempl<is_ad>::computeQpProperties();
   _sensitivity[_qp] = -_dEdp[_qp] * _strain_energy_density[_qp] / _youngs_modulus[_qp];
 }
+
+template class ComplianceSensitivityTempl<false>;
+template class ComplianceSensitivityTempl<true>;

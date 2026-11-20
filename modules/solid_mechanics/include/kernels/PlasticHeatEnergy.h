@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "Kernel.h"
+#include "GenericKernel.h"
 #include "RankTwoTensor.h"
 
 // Forward Declarations
@@ -18,33 +18,46 @@
  * Provides a heat source from plastic deformation:
  * coeff * stress * plastic_strain_rate
  */
-class PlasticHeatEnergy : public Kernel
+template <bool is_ad>
+class PlasticHeatEnergyTempl : public GenericKernel<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  PlasticHeatEnergy(const InputParameters & parameters);
+  PlasticHeatEnergyTempl(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual() override;
+  virtual GenericReal<is_ad> computeQpResidual() override;
+
   virtual Real computeQpJacobian() override;
+
   virtual Real computeQpOffDiagJacobian(unsigned int jvar) override;
 
   /// coefficient of stress * plastic_strain_rate
-  Real _coeff;
+  const Real _coeff;
 
   /// optional parameter that allows multiple mechanics models to be defined
   const std::string _base_name;
 
   /// stress * plastic_strain_rate
-  const MaterialProperty<Real> & _plastic_heat;
+  const GenericMaterialProperty<Real, is_ad> & _plastic_heat;
 
-  /// d(plastic_heat)/d(total_strain)
-  const MaterialProperty<RankTwoTensor> & _dplastic_heat_dstrain;
+  /// d(plastic_heat)/d(total_strain), used by the non-AD implementation
+  const MaterialProperty<RankTwoTensor> * const _dplastic_heat_dstrain;
 
   /// umber of coupled displacement variables
-  unsigned int _ndisp;
+  const unsigned int _ndisp;
 
   /// MOOSE variable number for the displacement variables
   std::vector<unsigned int> _disp_var;
+
+  using GenericKernel<is_ad>::_i;
+  using GenericKernel<is_ad>::_qp;
+  using GenericKernel<is_ad>::_test;
+  using GenericKernel<is_ad>::_phi;
+  using GenericKernel<is_ad>::_grad_phi;
+  using GenericKernel<is_ad>::_var;
 };
+
+using PlasticHeatEnergy = PlasticHeatEnergyTempl<false>;
+using ADPlasticHeatEnergy = PlasticHeatEnergyTempl<true>;
