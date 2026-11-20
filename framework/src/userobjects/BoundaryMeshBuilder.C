@@ -11,6 +11,8 @@
 #include "MooseMesh.h"
 #include "MeshGeneratorSystem.h"
 
+#include "libmesh/unstructured_mesh.h"
+
 registerMooseObject("MooseApp", BoundaryMeshBuilder);
 
 InputParameters
@@ -21,9 +23,18 @@ BoundaryMeshBuilder::validParams()
       "Owns a saved boundary mesh and the SurfaceElement wrappers built from it, "
       "for use by point-containment and distance user objects.");
 
-  params.addRequiredParam<MeshGeneratorName>(
+  params.addParam<MeshGeneratorName>(
       "boundary_mesh",
-      "The name of the boundary mesh saved via the MeshGenerator's `save_with_name` parameter.");
+      "The name of the boundary mesh saved via the MeshGenerator's `save_with_name` parameter. "
+      "Mutually exclusive with 'boundary_meshes'.");
+  params.addParam<std::vector<MeshGeneratorName>>(
+      "boundary_meshes",
+      "Names of per-subdomain boundary meshes saved via `save_with_name`, one per subdomain. Each "
+      "is stamped with the subdomain ID in the parallel 'subdomain_ids' list and stitched into one "
+      "boundary mesh. Mutually exclusive with 'boundary_mesh'.");
+  params.addParam<std::vector<subdomain_id_type>>(
+      "subdomain_ids",
+      "Subdomain ID to stamp onto each mesh in 'boundary_meshes', in the same order.");
 
   params.addParam<bool>(
       "check_watertightness",
@@ -35,10 +46,35 @@ BoundaryMeshBuilder::validParams()
 
 BoundaryMeshBuilder::BoundaryMeshBuilder(const InputParameters & parameters)
   : GeneralUserObject(parameters),
-    _bnd_mesh_name(getParam<MeshGeneratorName>("boundary_mesh")),
+    // The list form takes precedence; the single-mesh name is only consumed when
+    // the list is empty. getParam("boundary_mesh") resolves through the rename
+    // alias when a subclass has renamed that parameter.
+    _bnd_mesh_names(isParamValid("boundary_meshes")
+                        ? getParam<std::vector<MeshGeneratorName>>("boundary_meshes")
+                        : std::vector<MeshGeneratorName>()),
+    _bnd_mesh_name(_bnd_mesh_names.empty() ? getParam<MeshGeneratorName>("boundary_mesh")
+                                           : MeshGeneratorName()),
+    _subdomain_ids(isParamValid("subdomain_ids")
+                       ? getParam<std::vector<subdomain_id_type>>("subdomain_ids")
+                       : std::vector<subdomain_id_type>()),
     _check_watertightness(getParam<bool>("check_watertightness")),
     _dim_embedding_mesh(_fe_problem.mesh().dimension() /*MooseMesh*/)
 {
+  const bool has_list = !_bnd_mesh_names.empty();
+  if (has_list)
+  {
+    if (!isParamValid("subdomain_ids"))
+      paramError("subdomain_ids", "'subdomain_ids' is required with 'boundary_meshes'.");
+    if (_bnd_mesh_names.size() != _subdomain_ids.size())
+      paramError("subdomain_ids",
+                 "'subdomain_ids' must have one entry per mesh in 'boundary_meshes' (",
+                 _bnd_mesh_names.size(),
+                 " meshes, ",
+                 _subdomain_ids.size(),
+                 " ids).");
+  }
+  else if (isParamValid("subdomain_ids"))
+    paramError("subdomain_ids", "'subdomain_ids' is only valid with 'boundary_meshes'.");
 }
 
 void
@@ -46,7 +82,10 @@ BoundaryMeshBuilder::initialSetup()
 {
   // A saved mesh has single-retrieval semantics: getSavedMesh() std::move()s it
   // out and errors on a second retrieval. This builder is the sole owner.
-  _mesh = _app.getMeshGeneratorSystem().getSavedMesh(_bnd_mesh_name);
+  if (_bnd_mesh_names.empty())
+    _mesh = _app.getMeshGeneratorSystem().getSavedMesh(_bnd_mesh_name);
+  else
+    _mesh = assembleFromPerSubdomainMeshes();
 
   // A saved mesh produced by a MeshGenerator may be unprepared, leaving
   // mesh_dimension() stale and element neighbor links unset. Prepare it so the
@@ -76,6 +115,41 @@ BoundaryMeshBuilder::initialSetup()
     else
       mooseInfo("The mesh is not watertight. It may not be suitable for In-Out tests.");
   }
+}
+
+std::unique_ptr<MeshBase>
+BoundaryMeshBuilder::assembleFromPerSubdomainMeshes()
+{
+  auto & mesh_system = _app.getMeshGeneratorSystem();
+
+  // Retrieve the first saved mesh as the accumulator and stamp its subdomain ID.
+  // getSavedMesh() std::move()s each mesh out, so each name is consumed once.
+  auto combined = mesh_system.getSavedMesh(_bnd_mesh_names[0]);
+  auto * accumulator = dynamic_cast<UnstructuredMesh *>(combined.get());
+  if (!accumulator)
+    paramError("boundary_meshes", _bnd_mesh_names[0], " is not an unstructured mesh.");
+  for (auto * elem : accumulator->element_ptr_range())
+    elem->subdomain_id() = _subdomain_ids[0];
+
+  // Stamp and stitch the remaining meshes into the accumulator. ID offsets keep
+  // element/node IDs from colliding across the independently numbered meshes.
+  for (const auto i : make_range(std::size_t(1), _bnd_mesh_names.size()))
+  {
+    auto other = mesh_system.getSavedMesh(_bnd_mesh_names[i]);
+    auto * other_mesh = dynamic_cast<UnstructuredMesh *>(other.get());
+    if (!other_mesh)
+      paramError("boundary_meshes", _bnd_mesh_names[i], " is not an unstructured mesh.");
+    for (auto * elem : other_mesh->element_ptr_range())
+      elem->subdomain_id() = _subdomain_ids[i];
+
+    accumulator->copy_nodes_and_elements(*other_mesh,
+                                         /*skip_find_neighbors=*/false,
+                                         accumulator->max_elem_id(),
+                                         accumulator->max_node_id(),
+                                         accumulator->parallel_max_unique_id());
+  }
+
+  return combined;
 }
 
 void

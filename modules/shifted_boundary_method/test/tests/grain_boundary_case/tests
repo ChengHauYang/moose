@@ -63,6 +63,75 @@
     requirement = 'The system shall associate each surrogate boundary with a user-selected saved '
                   'surface mesh.'
   []
+  [grain_boundary_sczm_separate_grains]
+    type = 'CSVDiff'
+    input = 'grain_boundary_sczm_separate_grains.i'
+    csvdiff = 'grain_boundary_sczm_separate_grains_csv.csv'
+    mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
+    recover = false
+    requirement = 'The system shall solve a shifted cohesive zone problem on a polycrystalline '
+                  'grain structure assembled from one separately loaded watertight shell per grain, '
+                  'matching the single complete boundary mesh.'
+  []
+  [grain_boundary_sczm_separate_grains_list]
+    type = 'CSVDiff'
+    input = 'grain_boundary_sczm_separate_grains_list.i'
+    csvdiff = 'grain_boundary_sczm_separate_grains_list_csv.csv'
+    mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
+    recover = false
+    requirement = 'The system shall assemble the complete boundary mesh from per-grain watertight '
+                  'shells supplied directly to the interface manager, matching the combined '
+                  'single-mesh result.'
+  []
+  [grain_boundary_sczm_separate_interfaces_aligned]
+    type = 'CSVDiff'
+    input = 'grain_boundary_sczm_separate_interfaces_aligned.i'
+    csvdiff = 'grain_boundary_sczm_separate_interfaces_aligned_csv.csv'
+    rel_err = 1e-10
+    mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
+    recover = false
+    requirement = 'The system shall solve a shifted cohesive zone problem using one surface mesh '
+                  'per already-formed grain interface, matching the complete boundary mesh result '
+                  'to floating-point precision.'
+  []
+  [grain_boundary_sczm_3d_one_file]
+    type = 'CSVDiff'
+    input = 'grain_boundary_sczm_3d_one_file.i'
+    csvdiff = 'grain_boundary_sczm_3d_one_file_csv.csv'
+    mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
+    recover = false
+    requirement = 'The system shall solve a three-dimensional shifted cohesive zone problem on a '
+                  'tetrahedral multi-grain structure whose interfaces are determined from one '
+                  'complete boundary mesh.'
+  []
+  [grain_boundary_sczm_3d_separate_grains]
+    type = 'CSVDiff'
+    input = 'grain_boundary_sczm_3d_separate_grains.i'
+    csvdiff = 'grain_boundary_sczm_3d_separate_grains_csv.csv'
+    mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
+    recover = false
+    requirement = 'The system shall solve the three-dimensional problem from one separately loaded '
+                  'watertight shell per grain, matching the single complete boundary mesh.'
+  []
+  [grain_boundary_sczm_3d_separate_grains_list]
+    type = 'CSVDiff'
+    input = 'grain_boundary_sczm_3d_separate_grains_list.i'
+    csvdiff = 'grain_boundary_sczm_3d_separate_grains_list_csv.csv'
+    mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
+    recover = false
+    requirement = 'The system shall assemble the three-dimensional complete boundary mesh from '
+                  'per-grain watertight shells supplied directly to the interface manager, matching '
+                  'the combined single-mesh result.'
+  []
+  [grain_boundary_sczm_3d_separate_interfaces]
+    type = 'CSVDiff'
+    input = 'grain_boundary_sczm_3d_separate_interfaces.i'
+    csvdiff = 'grain_boundary_sczm_3d_separate_interfaces_csv.csv'
+    mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
+    recover = false
+    requirement = 'The system shall solve the three-dimensional problem using one surface mesh per '
+                  'already-formed grain interface, matching the complete boundary mesh result.'
+  []
   [error_tests]
     requirement = 'The system shall throw an error '
     [invalid_leaf_max_size]
@@ -137,6 +206,22 @@
       expect_err = 'maps to an interface not detected by the manager.'
       mesh_mode = REPLICATED
       detail = 'if partially overlapping interface faces are found in a nonconformal complete interface mesh.'
+    []
+    [both_complete_interface_forms]
+      type = RunException
+      input = 'grain_boundary_sczm_separate_grains_list.i'
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/complete_interface_mesh=grain1_shell'
+      expect_err = "Specify only one of 'complete_interface_mesh' and 'complete_interface_meshes'."
+      mesh_mode = REPLICATED
+      detail = 'if both the single complete interface mesh and the per-grain mesh list are given.'
+    []
+    [interface_subdomain_id_count]
+      type = RunException
+      input = 'grain_boundary_sczm_separate_grains_list.i'
+      cli_args = "Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/interface_subdomain_ids='1 2 3 4'"
+      expect_err = "'interface_subdomain_ids' must have one entry per mesh in 'complete_interface_meshes'."
+      mesh_mode = REPLICATED
+      detail = 'if the number of subdomain IDs does not match the number of per-grain meshes.'
     []
   []
 []

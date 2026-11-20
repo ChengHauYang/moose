@@ -30,6 +30,14 @@
  * it under their own name instead of overriding this hook, so that
  * surfaceElementSet() still returns a correct whole-mesh set for any caller
  * that requests it via a BoundaryMeshBuilder reference.
+ *
+ * The boundary mesh may be supplied either as one saved mesh (`boundary_mesh`)
+ * that already carries the per-subdomain grouping, or as a list of saved
+ * per-subdomain meshes (`boundary_meshes`) each tagged with the subdomain ID in
+ * the parallel `subdomain_ids` list. The list form stamps each mesh's elements
+ * with its subdomain ID and stitches them into one owned mesh, which is
+ * equivalent to combining the meshes with SubdomainIDGenerator + CombinerGenerator
+ * upstream.
  */
 class BoundaryMeshBuilder : public GeneralUserObject
 {
@@ -72,8 +80,21 @@ protected:
   /// The whole-mesh SurfaceElementSet, lazily cached on first use.
   mutable std::unique_ptr<SurfaceElementSet> _set;
 
-  /// The name of a mesh saved via a MeshGenerator's `save_with_name` parameter.
+  /// Retrieve the saved per-subdomain meshes named in `boundary_meshes`, stamp
+  /// each with its subdomain ID from `subdomain_ids`, and stitch them into one
+  /// owned mesh. Used in place of retrieving a single `boundary_mesh`.
+  std::unique_ptr<MeshBase> assembleFromPerSubdomainMeshes();
+
+  /// Names of saved per-subdomain meshes (list form), parallel to _subdomain_ids.
+  /// Declared before _bnd_mesh_name so the latter can key off whether it is empty.
+  const std::vector<MeshGeneratorName> _bnd_mesh_names;
+
+  /// The name of a single mesh saved via a MeshGenerator's `save_with_name`
+  /// parameter, or empty when the per-subdomain list form is used instead.
   const MeshGeneratorName _bnd_mesh_name;
+
+  /// Subdomain ID stamped onto each mesh in _bnd_mesh_names.
+  const std::vector<subdomain_id_type> _subdomain_ids;
 
   /// Whether to check watertightness of the mesh (informational only).
   const bool _check_watertightness;
