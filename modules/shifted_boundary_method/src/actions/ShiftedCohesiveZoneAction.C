@@ -124,6 +124,15 @@ ShiftedCohesiveZoneAction::validParams()
       "complete_interface_mesh",
       "Saved surface mesh containing the complete boundary of each subdomain. Setting this "
       "parameter automatically creates one interface manager and distance user object.");
+  params.addParam<std::vector<MeshGeneratorName>>(
+      "complete_interface_meshes",
+      "Saved watertight boundary mesh for each grain, one per grain, with the matching grain "
+      "subdomain ID in 'interface_subdomain_ids'. The interface manager stitches them into the "
+      "complete boundary mesh, equivalent to combining them upstream with SubdomainIDGenerator + "
+      "CombinerGenerator. Mutually exclusive with 'complete_interface_mesh'.");
+  params.addParam<std::vector<subdomain_id_type>>(
+      "interface_subdomain_ids",
+      "Grain subdomain ID for each mesh in 'complete_interface_meshes', in the same order.");
   params.addParam<std::vector<std::vector<SubdomainID>>>(
       "interface_subdomain_pairs",
       {},
@@ -171,22 +180,46 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
 {
   const bool generate_distance = getParam<bool>("generate_sbm_distance");
   const bool has_distance_uo = isParamSetByUser("sbm_distance_uo");
-  const bool has_complete_interface_mesh = isParamSetByUser("complete_interface_mesh");
+  const bool has_single_mesh = isParamSetByUser("complete_interface_mesh");
+  const bool has_mesh_list = isParamSetByUser("complete_interface_meshes");
+  // The single-mesh and per-grain-list forms both drive the interface manager.
+  const bool uses_manager = has_single_mesh || has_mesh_list;
+
+  if (has_single_mesh && has_mesh_list)
+    paramError("complete_interface_meshes",
+               "Specify only one of 'complete_interface_mesh' and 'complete_interface_meshes'.");
+
   if (static_cast<unsigned int>(generate_distance) + static_cast<unsigned int>(has_distance_uo) +
-          static_cast<unsigned int>(has_complete_interface_mesh) >
+          static_cast<unsigned int>(uses_manager) >
       1)
     paramError("sbm_distance_uo",
                "Specify only one of 'sbm_distance_uo', 'generate_sbm_distance', and "
-               "'complete_interface_mesh'.");
+               "'complete_interface_mesh'/'complete_interface_meshes'.");
+
+  if (has_mesh_list)
+  {
+    if (!isParamSetByUser("interface_subdomain_ids"))
+      paramError("interface_subdomain_ids",
+                 "'interface_subdomain_ids' is required with 'complete_interface_meshes'.");
+    if (getParam<std::vector<MeshGeneratorName>>("complete_interface_meshes").size() !=
+        getParam<std::vector<subdomain_id_type>>("interface_subdomain_ids").size())
+      paramError("interface_subdomain_ids",
+                 "'interface_subdomain_ids' must have one entry per mesh in "
+                 "'complete_interface_meshes'.");
+  }
+  else if (isParamSetByUser("interface_subdomain_ids"))
+    paramError("interface_subdomain_ids",
+               "This parameter is only valid with 'complete_interface_meshes'.");
 
   if (!generate_distance && isParamSetByUser("surface_meshes"))
     paramError("surface_meshes", "This parameter is only valid with 'generate_sbm_distance=true'.");
   if (!generate_distance && isParamSetByUser("check_surface_watertightness"))
     paramError("check_surface_watertightness",
                "This parameter is only valid with 'generate_sbm_distance=true'.");
-  if (!has_complete_interface_mesh && isParamSetByUser("interface_matching_tolerance"))
+  if (!uses_manager && isParamSetByUser("interface_matching_tolerance"))
     paramError("interface_matching_tolerance",
-               "This parameter is only valid with 'complete_interface_mesh'.");
+               "This parameter is only valid with 'complete_interface_mesh'/"
+               "'complete_interface_meshes'.");
 
   if (generate_distance)
   {
@@ -198,10 +231,11 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
       paramError("surface_meshes", "Each saved surface mesh may only be used once.");
   }
 
-  if (!has_complete_interface_mesh && isParamSetByUser("interface_subdomain_pairs"))
+  if (!uses_manager && isParamSetByUser("interface_subdomain_pairs"))
     paramError("interface_subdomain_pairs",
-               "This parameter is only valid with 'complete_interface_mesh'.");
-  if (has_complete_interface_mesh && isParamSetByUser("interface_subdomain_pairs") &&
+               "This parameter is only valid with 'complete_interface_mesh'/"
+               "'complete_interface_meshes'.");
+  if (uses_manager && isParamSetByUser("interface_subdomain_pairs") &&
       getParam<std::vector<std::vector<SubdomainID>>>("interface_subdomain_pairs").size() !=
           _boundary.size())
     paramError("interface_subdomain_pairs", "Provide exactly one subdomain pair per boundary.");
@@ -378,7 +412,7 @@ ShiftedCohesiveZoneAction::act()
   if (_current_task == "add_function" && getParam<bool>("generate_sbm_distance"))
     addSBMDistanceFunctions();
   else if (_current_task == "add_user_object" &&
-           (getParam<bool>("generate_sbm_distance") || isParamSetByUser("complete_interface_mesh")))
+           (getParam<bool>("generate_sbm_distance") || usesInterfaceManager()))
     addSBMDistanceUserObjects();
   else if (_current_task == "add_interface_kernel")
     addRequiredCZMInterfaceKernels();
@@ -430,6 +464,13 @@ ShiftedCohesiveZoneAction::interfaceManagerName() const
   return name() + "_interface_manager";
 }
 
+bool
+ShiftedCohesiveZoneAction::usesInterfaceManager() const
+{
+  return isParamSetByUser("complete_interface_mesh") ||
+         isParamSetByUser("complete_interface_meshes");
+}
+
 void
 ShiftedCohesiveZoneAction::addSBMDistanceFunctions()
 {
@@ -450,11 +491,21 @@ ShiftedCohesiveZoneAction::addSBMDistanceUserObjects()
   distance_params.set<int>("execution_order_group") = 0;
   distance_params.set<ExecFlagEnum>("execute_on") = EXEC_INITIAL;
 
-  if (isParamSetByUser("complete_interface_mesh"))
+  if (usesInterfaceManager())
   {
     auto manager_params = _factory.getValidParams("SBMInterfaceManager");
-    manager_params.set<MeshGeneratorName>("complete_interface_mesh") =
-        getParam<MeshGeneratorName>("complete_interface_mesh");
+    if (isParamSetByUser("complete_interface_mesh"))
+      manager_params.set<MeshGeneratorName>("complete_interface_mesh") =
+          getParam<MeshGeneratorName>("complete_interface_mesh");
+    else
+    {
+      // Per-grain list form: the manager stitches the shells itself. These are
+      // the base BoundaryMeshBuilder parameter names (not renamed by the manager).
+      manager_params.set<std::vector<MeshGeneratorName>>("boundary_meshes") =
+          getParam<std::vector<MeshGeneratorName>>("complete_interface_meshes");
+      manager_params.set<std::vector<subdomain_id_type>>("subdomain_ids") =
+          getParam<std::vector<subdomain_id_type>>("interface_subdomain_ids");
+    }
     manager_params.set<Real>("tolerance") = getParam<Real>("interface_matching_tolerance");
     _problem->addUserObject("SBMInterfaceManager", interfaceManagerName(), manager_params);
     distance_params.set<UserObjectName>("manager") = interfaceManagerName();
@@ -609,7 +660,7 @@ ShiftedCohesiveZoneAction::addRequiredCZMInterfaceMaterials()
 void
 ShiftedCohesiveZoneAction::customizeCZMInterfaceKernelParameters(InputParameters & params) const
 {
-  if (getParam<bool>("generate_sbm_distance") || isParamSetByUser("complete_interface_mesh"))
+  if (getParam<bool>("generate_sbm_distance") || usesInterfaceManager())
     params.set<UserObjectName>("sbm_distance_uo") = sbmDistanceUserObjectName();
   else if (isParamSetByUser("sbm_distance_uo"))
     params.set<UserObjectName>("sbm_distance_uo") = getParam<UserObjectName>("sbm_distance_uo");
@@ -663,7 +714,7 @@ ShiftedCohesiveZoneAction::customizeCZMDisplacementJumpMaterialParameters(
 {
   if (params.have_parameter<UserObjectName>("sbm_distance_uo"))
   {
-    if (getParam<bool>("generate_sbm_distance") || isParamSetByUser("complete_interface_mesh"))
+    if (getParam<bool>("generate_sbm_distance") || usesInterfaceManager())
       params.set<UserObjectName>("sbm_distance_uo") = sbmDistanceUserObjectName();
     else if (isParamSetByUser("sbm_distance_uo"))
       params.set<UserObjectName>("sbm_distance_uo") = getParam<UserObjectName>("sbm_distance_uo");

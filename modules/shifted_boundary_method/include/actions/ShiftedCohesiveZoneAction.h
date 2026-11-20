@@ -53,6 +53,10 @@ protected:
   /// Returns the generated single-mesh interface manager name.
   UserObjectName interfaceManagerName() const;
 
+  /// Whether the action drives the interface manager, i.e. the user supplied
+  /// either a single complete interface mesh or a per-grain mesh list.
+  bool usesInterfaceManager() const;
+
   /// Adds Kokkos SCZM interface kernels when requested; otherwise uses the host implementation.
   void addRequiredCZMInterfaceKernels();
 
