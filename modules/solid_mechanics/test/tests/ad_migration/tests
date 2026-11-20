@@ -158,17 +158,17 @@
   []
 
   [global_strain]
-    requirement = 'The system shall preserve displacement and global-strain derivatives through AD global strain, stress, and the global-strain scalar residual.'
+    requirement = 'The system shall preserve derivatives between displacement and global strain through the AD strain, stress, and scalar residual calculations.'
     design = 'source/scalarkernels/ADGlobalStrain.md source/materials/ADComputeGlobalStrain.md source/userobjects/ADGlobalStrainUserObject.md'
     [two_dimensional]
       type = PetscJacobianTester
       input = global_strain.i
-      detail = 'for the two-dimensional Action-created AD global-strain chain, including periodic scalar-row derivatives.'
+      detail = 'when the two-dimensional global-strain action automatically creates all objects needed for automatic differentiation.'
     []
     [one_dimensional]
       type = PetscJacobianTester
       input = global_strain_1d.i
-      detail = 'for distributed-mesh and threaded coverage of the AD global-strain chain.'
+      detail = 'during distributed-mesh and threaded execution of the one-dimensional AD global-strain calculation.'
     []
   []
 
