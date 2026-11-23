@@ -47,6 +47,26 @@ By default, the `LineElement` Action sets up the kernels, strain materials, disp
 
 !listing modules/solid_mechanics/test/tests/beam/action/2_block_common.i block=Physics/SolidMechanics/LineElement/QuasiStatic
 
+### Automatic differentiation for beams
+
+Set [!param](/Physics/SolidMechanics/LineElement/QuasiStatic/LineElementAction/use_automatic_differentiation)
+to enable automatic differentiation for beams with small strains, small rotations, and no inertia.
+Use elastic coefficients and cross-section properties that are independent of the current nonlinear
+unknowns.
+For a model with multiple beam blocks, set this option in the common block so all beams use the
+same differentiation mode for their shared material property names.
+The action supplies the strain material, the force and moment material, and the balance equations
+for the beam. Define the elastic properties and any eigenstrains in `[Materials]` and connect
+eigenstrains with [!param](/Physics/SolidMechanics/LineElement/QuasiStatic/LineElementAction/eigenstrain_names).
+When converting an existing input, remove the separate beam force and moment material so the action
+can supply it on the same blocks as the strain material. Use tagged vectors and matrices to access
+solver output for automatic differentiation.
+
+In this example, the action creates the beam variables and equations for a cantilever undergoing
+thermal expansion. The thermal expansion material is supplied in `[Materials]`.
+
+!listing modules/solid_mechanics/test/tests/ad_migration/beam_eigenstrain/ad_thermal_beam_action_jac.i block=Physics/SolidMechanics/LineElement/QuasiStatic
+
 ### Subblocks
 
 The subblocks of the LineElement action are what trigger MOOSE objects to be built.
