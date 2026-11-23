@@ -1,0 +1,55 @@
+Time Step 0, time = 0
+Time Step 1, time = 0.005, dt = 0.005
+ 0 Nonlinear |R| = 8.500000e-02
+      0 Linear |R| = 8.500000e-02
+    Linear solve converged due to CONVERGED_RTOL iterations 48
+ 1 Nonlinear |R| = 3.010301e-10
+      0 Linear |R| = 3.010301e-10
+    Linear solve converged due to CONVERGED_RTOL iterations 64
+ 2 Nonlinear |R| = 1.022094e-15
+  Nonlinear solve converged due to CONVERGED_FNORM_ABS iterations 2
+ Solve Converged!
+Time Step 2, time = 0.01, dt = 0.005
+ 0 Nonlinear |R| = 8.500000e-02
+      0 Linear |R| = 8.500000e-02
+    Linear solve converged due to CONVERGED_RTOL iterations 49
+ 1 Nonlinear |R| = 3.004994e-10
+      0 Linear |R| = 3.004994e-10
+    Linear solve converged due to CONVERGED_RTOL iterations 64
+ 2 Nonlinear |R| = 1.044638e-15
+  Nonlinear solve converged due to CONVERGED_FNORM_ABS iterations 2
+ Solve Converged!
+Time Step 3, time = 0.015, dt = 0.005
+ 0 Nonlinear |R| = 8.500000e-02
+      0 Linear |R| = 8.500000e-02
+    Linear solve converged due to CONVERGED_RTOL iterations 51
+ 1 Nonlinear |R| = 3.011028e-10
+      0 Linear |R| = 3.011028e-10
+    Linear solve converged due to CONVERGED_RTOL iterations 65
+ 2 Nonlinear |R| = 1.038829e-15
+  Nonlinear solve converged due to CONVERGED_FNORM_ABS iterations 2
+ Solve Converged!
+Time Step 4, time = 0.02, dt = 0.005
+ 0 Nonlinear |R| = 8.500000e-02
+      0 Linear |R| = 8.500000e-02
+    Linear solve converged due to CONVERGED_RTOL iterations 47
+ 1 Nonlinear |R| = 3.030975e-10
+      0 Linear |R| = 3.030975e-10
+    Linear solve converged due to CONVERGED_RTOL iterations 65
+ 2 Nonlinear |R| = 1.065982e-15
+  Nonlinear solve converged due to CONVERGED_FNORM_ABS iterations 2
+ Solve Converged!
+Time Step 5, time = 0.025, dt = 0.005
+ 0 Nonlinear |R| = 8.500000e-02
+      0 Linear |R| = 8.500000e-02
+    Linear solve converged due to CONVERGED_RTOL iterations 53
+ 1 Nonlinear |R| = 3.064005e-10
+      0 Linear |R| = 3.064005e-10
+    Linear solve converged due to CONVERGED_RTOL iterations 68
+ 2 Nonlinear |R| = 1.075292e-15
+  Nonlinear solve converged due to CONVERGED_FNORM_ABS iterations 2
+ Solve Converged!
+Performance Graph:
+--------------------------------------------------------------------------------------------------------------------------------------------
+|                                Section                               | Calls |   Self(s)  |   Avg(s)   |    %   | Mem(MB) |  Total(s)  |
+--------------------------------------------------------------------------------------------------------------------------------------------
