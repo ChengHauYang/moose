@@ -11,9 +11,11 @@
 #include "libmesh/quadrature.h"
 
 registerMooseObject("SolidMechanicsApp", LinearViscoelasticityManager);
+registerMooseObject("SolidMechanicsApp", ADLinearViscoelasticityManager);
 
+template <bool is_ad>
 InputParameters
-LinearViscoelasticityManager::validParams()
+LinearViscoelasticityManagerTempl<is_ad>::validParams()
 {
   InputParameters params = ElementUserObject::validParams();
   params.addClassDescription("Manages the updating of the semi-implicit "
@@ -35,33 +37,40 @@ LinearViscoelasticityManager::validParams()
   return params;
 }
 
-LinearViscoelasticityManager::LinearViscoelasticityManager(const InputParameters & parameters)
+template <bool is_ad>
+LinearViscoelasticityManagerTempl<is_ad>::LinearViscoelasticityManagerTempl(
+    const InputParameters & parameters)
   : ElementUserObject(parameters),
-    _stress_name(getParam<std::string>("stress_name")),
-    _stress(getMaterialPropertyByName<RankTwoTensor>(_stress_name)),
-    _creep_strain_name(getParam<std::string>("creep_strain_name")),
-    _creep_strain(getMaterialPropertyByName<RankTwoTensor>(_creep_strain_name)),
-    _elastic_strain_name(getParam<std::string>("elastic_strain_name")),
-    _elastic_strain(getMaterialPropertyByName<RankTwoTensor>(_elastic_strain_name)),
-    _viscoelastic_model_name(getParam<std::string>("viscoelastic_model")),
+    _stress_name(this->template getParam<std::string>("stress_name")),
+    _stress(this->template getGenericMaterialProperty<RankTwoTensor, is_ad>(_stress_name)),
+    _creep_strain_name(this->template getParam<std::string>("creep_strain_name")),
+    _creep_strain(
+        this->template getGenericMaterialProperty<RankTwoTensor, is_ad>(_creep_strain_name)),
+    _elastic_strain_name(this->template getParam<std::string>("elastic_strain_name")),
+    _elastic_strain(
+        this->template getGenericMaterialProperty<RankTwoTensor, is_ad>(_elastic_strain_name)),
+    _viscoelastic_model_name(this->template getParam<std::string>("viscoelastic_model")),
     _viscoelastic_model(nullptr)
 {
 }
 
+template <bool is_ad>
 void
-LinearViscoelasticityManager::initialSetup()
+LinearViscoelasticityManagerTempl<is_ad>::initialSetup()
 {
-  MaterialBase * test = &getMaterialByName(_viscoelastic_model_name, /*no_warn =*/true);
+  MaterialBase * test = &this->getMaterialByName(_viscoelastic_model_name, /*no_warn =*/true);
   if (!test)
-    mooseError(_viscoelastic_model_name + " does not exist");
+    this->mooseError(_viscoelastic_model_name + " does not exist");
 
-  _viscoelastic_model = dynamic_cast<LinearViscoelasticityBase *>(test);
+  _viscoelastic_model = dynamic_cast<LinearViscoelasticityBaseTempl<is_ad> *>(test);
   if (!_viscoelastic_model)
-    mooseError(_viscoelastic_model_name + " is not a LinearViscoelasticityBase object");
+    this->mooseError(_viscoelastic_model_name +
+                     " is not a LinearViscoelasticityBase object matching the AD specialization");
 }
 
+template <bool is_ad>
 void
-LinearViscoelasticityManager::execute()
+LinearViscoelasticityManagerTempl<is_ad>::execute()
 {
   if (_mi_feproblem.getCurrentExecuteOnFlag() == EXEC_TIMESTEP_BEGIN)
   {
@@ -69,3 +78,6 @@ LinearViscoelasticityManager::execute()
       _viscoelastic_model->recomputeQpApparentProperties(_qp);
   }
 }
+
+template class LinearViscoelasticityManagerTempl<false>;
+template class LinearViscoelasticityManagerTempl<true>;

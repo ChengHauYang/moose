@@ -27,12 +27,13 @@
  *
  * See LinearViscoelasticityBase for more information
  */
-class GeneralizedKelvinVoigtBase : public LinearViscoelasticityBase
+template <bool is_ad>
+class GeneralizedKelvinVoigtBaseTempl : public LinearViscoelasticityBaseTempl<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  GeneralizedKelvinVoigtBase(const InputParameters & parameters);
+  GeneralizedKelvinVoigtBaseTempl(const InputParameters & parameters);
 
 protected:
   virtual void declareViscoelasticProperties() override;
@@ -44,4 +45,38 @@ protected:
   const MaterialProperty<RankFourTensor> & _first_elasticity_tensor_old;
   const MaterialProperty<RankFourTensor> * _longterm_elasticity_tensor_inv_old;
   ///@}
+
+  using LinearViscoelasticityBaseTempl<is_ad>::_base_name;
+  using LinearViscoelasticityBaseTempl<is_ad>::_has_longterm_dashpot;
+  using LinearViscoelasticityBaseTempl<is_ad>::_need_viscoelastic_properties_inverse;
+  using LinearViscoelasticityBaseTempl<is_ad>::_first_elasticity_tensor;
+  using LinearViscoelasticityBaseTempl<is_ad>::_first_elasticity_tensor_inv;
+  using LinearViscoelasticityBaseTempl<is_ad>::_apparent_elasticity_tensor;
+  using LinearViscoelasticityBaseTempl<is_ad>::_apparent_elasticity_tensor_inv;
+  using LinearViscoelasticityBaseTempl<is_ad>::_elasticity_tensor_inv;
+  using LinearViscoelasticityBaseTempl<is_ad>::_springs_elasticity_tensors;
+  using LinearViscoelasticityBaseTempl<is_ad>::_springs_elasticity_tensors_inv;
+  using LinearViscoelasticityBaseTempl<is_ad>::_springs_elasticity_tensors_inv_old;
+  using LinearViscoelasticityBaseTempl<is_ad>::_dashpot_viscosities;
+  using LinearViscoelasticityBaseTempl<is_ad>::_dashpot_viscosities_old;
+  using LinearViscoelasticityBaseTempl<is_ad>::_longterm_elasticity_tensor;
+  using LinearViscoelasticityBaseTempl<is_ad>::_longterm_elasticity_tensor_inv;
+  using LinearViscoelasticityBaseTempl<is_ad>::_viscous_strains;
+  using LinearViscoelasticityBaseTempl<is_ad>::_viscous_strains_old;
+  using LinearViscoelasticityBaseTempl<is_ad>::_apparent_creep_strain;
+  using LinearViscoelasticityBaseTempl<is_ad>::_elastic_strain_old;
+  using LinearViscoelasticityBaseTempl<is_ad>::_has_driving_eigenstrain;
+  using LinearViscoelasticityBaseTempl<is_ad>::_driving_eigenstrain;
+  using LinearViscoelasticityBaseTempl<is_ad>::_driving_eigenstrain_old;
+  using LinearViscoelasticityBaseTempl<is_ad>::computeTheta;
+  using LinearViscoelasticityBaseTempl<is_ad>::_components;
+  using Material::getMaterialPropertyOld;
+  using Material::_qp;
+  using Material::_t_step;
+  using Material::_dt;
+  using Material::_dt_old;
+  using ComputeElasticityTensorBaseTempl<is_ad, RankFourTensor>::_elasticity_tensor;
 };
+
+using GeneralizedKelvinVoigtBase = GeneralizedKelvinVoigtBaseTempl<false>;
+using ADGeneralizedKelvinVoigtBase = GeneralizedKelvinVoigtBaseTempl<true>;

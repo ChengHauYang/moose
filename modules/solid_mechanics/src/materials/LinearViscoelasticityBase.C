@@ -10,12 +10,13 @@
 #include "LinearViscoelasticityBase.h"
 #include "Conversion.h"
 
+template <bool is_ad>
 InputParameters
-LinearViscoelasticityBase::validParams()
+LinearViscoelasticityBaseTempl<is_ad>::validParams()
 {
   MooseEnum integration("backward-euler mid-point newmark zienkiewicz", "backward-euler");
 
-  InputParameters params = ComputeElasticityTensorBase::validParams();
+  InputParameters params = ComputeElasticityTensorBaseTempl<is_ad, RankFourTensor>::validParams();
   params.addParam<MooseEnum>("integration_rule",
                              integration,
                              "describes how the viscoelastic behavior is integrated through time");
@@ -45,16 +46,21 @@ LinearViscoelasticityBase::validParams()
   return params;
 }
 
-LinearViscoelasticityBase::LinearViscoelasticityBase(const InputParameters & parameters)
-  : ComputeElasticityTensorBase(parameters),
-    _integration_rule(getParam<MooseEnum>("integration_rule").getEnum<IntegrationRule>()),
-    _theta(getParam<Real>("theta")),
+template <bool is_ad>
+LinearViscoelasticityBaseTempl<is_ad>::LinearViscoelasticityBaseTempl(
+    const InputParameters & parameters)
+  : ComputeElasticityTensorBaseTempl<is_ad, RankFourTensor>(parameters),
+    _integration_rule(
+        this->template getParam<MooseEnum>("integration_rule")
+            .template getEnum<typename LinearViscoelasticityBaseTempl<is_ad>::IntegrationRule>()),
+    _theta(this->template getParam<Real>("theta")),
     _apparent_elasticity_tensor(
         declareProperty<RankFourTensor>(_base_name + "apparent_elasticity_tensor")),
     _apparent_elasticity_tensor_inv(
         declareProperty<RankFourTensor>(_base_name + "apparent_elasticity_tensor_inv")),
     _elasticity_tensor_inv(declareProperty<RankFourTensor>(_elasticity_tensor_name + "_inv")),
-    _need_viscoelastic_properties_inverse(getParam<bool>("need_viscoelastic_properties_inverse")),
+    _need_viscoelastic_properties_inverse(
+        this->template getParam<bool>("need_viscoelastic_properties_inverse")),
     _has_longterm_dashpot(false),
     _components(0),
     _first_elasticity_tensor(
@@ -68,25 +74,30 @@ LinearViscoelasticityBase::LinearViscoelasticityBase(const InputParameters & par
     _apparent_creep_strain(declareProperty<RankTwoTensor>(_base_name + "apparent_creep_strain")),
     _apparent_creep_strain_old(
         getMaterialPropertyOld<RankTwoTensor>(_base_name + "apparent_creep_strain")),
-    _elastic_strain_old(
-        getMaterialPropertyOld<RankTwoTensor>(getParam<std::string>("elastic_strain_name"))),
-    _creep_strain_old(
-        getMaterialPropertyOld<RankTwoTensor>(getParam<std::string>("creep_strain_name"))),
-    _has_driving_eigenstrain(isParamValid("driving_eigenstrain")),
+    _elastic_strain_old(getMaterialPropertyOld<RankTwoTensor>(
+        this->template getParam<std::string>("elastic_strain_name"))),
+    _creep_strain_old(getMaterialPropertyOld<RankTwoTensor>(
+        this->template getParam<std::string>("creep_strain_name"))),
+    _has_driving_eigenstrain(this->isParamValid("driving_eigenstrain")),
     _driving_eigenstrain_name(
-        _has_driving_eigenstrain ? getParam<std::string>("driving_eigenstrain") : ""),
-    _driving_eigenstrain(_has_driving_eigenstrain
+        _has_driving_eigenstrain
+            ? this->template getParam<std::string>("driving_eigenstrain")
+            : ""),
+    // For the AD specialization, skip the non-AD property lookup; the derived
+    // constructor issues paramError before the eigenstrain is ever accessed.
+    _driving_eigenstrain((_has_driving_eigenstrain && !is_ad)
                              ? &getMaterialPropertyByName<RankTwoTensor>(_driving_eigenstrain_name)
                              : nullptr),
-    _driving_eigenstrain_old(_has_driving_eigenstrain
+    _driving_eigenstrain_old((_has_driving_eigenstrain && !is_ad)
                                  ? &getMaterialPropertyOld<RankTwoTensor>(_driving_eigenstrain_name)
                                  : nullptr),
-    _force_recompute_properties(getParam<bool>("force_recompute_properties")),
-    _step_zero(declareRestartableData<bool>("step_zero", true))
+    _force_recompute_properties(this->template getParam<bool>("force_recompute_properties")),
+    _step_zero(this->template declareRestartableData<bool>("step_zero", true))
 {
   if (_theta < 0.5)
-    mooseWarning("theta parameter for LinearViscoelasticityBase is below 0.5; time integration may "
-                 "not converge!");
+    this->mooseWarning(
+        "theta parameter for LinearViscoelasticityBase is below 0.5; time integration may "
+        "not converge!");
 
   // force material properties to be considered stateful
   getMaterialPropertyOld<RankFourTensor>(_base_name + "apparent_elasticity_tensor");
@@ -98,8 +109,9 @@ LinearViscoelasticityBase::LinearViscoelasticityBase(const InputParameters & par
     getMaterialPropertyOld<RankFourTensor>(_base_name + "spring_elasticity_tensor_0_inv");
 }
 
+template <bool is_ad>
 void
-LinearViscoelasticityBase::declareViscoelasticProperties()
+LinearViscoelasticityBaseTempl<is_ad>::declareViscoelasticProperties()
 {
   for (unsigned int i = 0; i < _components; ++i)
   {
@@ -140,11 +152,12 @@ LinearViscoelasticityBase::declareViscoelasticProperties()
   }
 }
 
+template <bool is_ad>
 void
-LinearViscoelasticityBase::initQpStatefulProperties()
+LinearViscoelasticityBaseTempl<is_ad>::initQpStatefulProperties()
 {
   if (_components != _viscous_strains.size())
-    mooseError(
+    this->mooseError(
         "inconsistent numbers of dashpots and viscous strains in LinearViscoelasticityBase;"
         " Make sure declareViscoelasticProperties has been called in the viscoelastic model");
 
@@ -174,8 +187,9 @@ LinearViscoelasticityBase::initQpStatefulProperties()
   }
 }
 
+template <bool is_ad>
 void
-LinearViscoelasticityBase::recomputeQpApparentProperties(unsigned int qp)
+LinearViscoelasticityBaseTempl<is_ad>::recomputeQpApparentProperties(unsigned int qp)
 {
   unsigned int qp_prev = _qp;
   _qp = qp;
@@ -202,15 +216,17 @@ LinearViscoelasticityBase::recomputeQpApparentProperties(unsigned int qp)
   _qp = qp_prev;
 }
 
+template <bool is_ad>
 void
-LinearViscoelasticityBase::computeQpElasticityTensor()
+LinearViscoelasticityBaseTempl<is_ad>::computeQpElasticityTensor()
 {
   if (_force_recompute_properties)
     recomputeQpApparentProperties(_qp);
 }
 
+template <bool is_ad>
 void
-LinearViscoelasticityBase::computeQpViscoelasticPropertiesInv()
+LinearViscoelasticityBaseTempl<is_ad>::computeQpViscoelasticPropertiesInv()
 {
   mooseAssert(_first_elasticity_tensor_inv, "_first_elasticity_tensor_inv is null");
   if (MooseUtils::absoluteFuzzyEqual(_first_elasticity_tensor[_qp].L2norm(), 0.0))
@@ -224,7 +240,8 @@ LinearViscoelasticityBase::computeQpViscoelasticPropertiesInv()
     if (MooseUtils::absoluteFuzzyEqual((*_springs_elasticity_tensors[i])[_qp].L2norm(), 0.0))
       (*_springs_elasticity_tensors_inv[i])[_qp].zero();
     else
-      (*_springs_elasticity_tensors_inv[i])[_qp] = (*_springs_elasticity_tensors[i])[_qp].invSymm();
+      (*_springs_elasticity_tensors_inv[i])[_qp] =
+          (*_springs_elasticity_tensors[i])[_qp].invSymm();
   }
 
   if (_longterm_elasticity_tensor)
@@ -237,11 +254,12 @@ LinearViscoelasticityBase::computeQpViscoelasticPropertiesInv()
   }
 }
 
+template <bool is_ad>
 Real
-LinearViscoelasticityBase::computeTheta(Real dt, Real viscosity) const
+LinearViscoelasticityBaseTempl<is_ad>::computeTheta(Real dt, Real viscosity) const
 {
   if (MooseUtils::absoluteFuzzyEqual(dt, 0.0))
-    mooseError("linear viscoelasticity cannot be integrated over a dt of ", dt);
+    this->mooseError("linear viscoelasticity cannot be integrated over a dt of ", dt);
 
   switch (_integration_rule)
   {
@@ -258,3 +276,6 @@ LinearViscoelasticityBase::computeTheta(Real dt, Real viscosity) const
   }
   return 1.;
 }
+
+template class LinearViscoelasticityBaseTempl<false>;
+template class LinearViscoelasticityBaseTempl<true>;

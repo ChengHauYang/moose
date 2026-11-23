@@ -18,16 +18,17 @@
  * optional dashpot. Having an optional dashpot may lead to divergence of
  * the time-stepping scheme and should be used with care.
  */
-class GeneralizedMaxwellModel : public GeneralizedMaxwellBase
+template <bool is_ad>
+class GeneralizedMaxwellModelTempl : public GeneralizedMaxwellBaseTempl<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  GeneralizedMaxwellModel(const InputParameters & parameters);
+  GeneralizedMaxwellModelTempl(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpViscoelasticProperties();
-  virtual void computeQpViscoelasticPropertiesInv();
+  virtual void computeQpViscoelasticProperties() override;
+  virtual void computeQpViscoelasticPropertiesInv() override;
 
   /**
    * The elasticity tensor associated with the first spring. This is
@@ -43,4 +44,17 @@ protected:
   RankFourTensor _S0;
   /// The inverse of each subsequent spring elasticity tensor
   std::vector<RankFourTensor> _Si;
+
+  using GeneralizedMaxwellBaseTempl<is_ad>::_base_name;
+  using GeneralizedMaxwellBaseTempl<is_ad>::_has_longterm_dashpot;
+  using GeneralizedMaxwellBaseTempl<is_ad>::_components;
+  using GeneralizedMaxwellBaseTempl<is_ad>::_first_elasticity_tensor;
+  using GeneralizedMaxwellBaseTempl<is_ad>::_first_elasticity_tensor_inv;
+  using GeneralizedMaxwellBaseTempl<is_ad>::_springs_elasticity_tensors;
+  using GeneralizedMaxwellBaseTempl<is_ad>::_springs_elasticity_tensors_inv;
+  using GeneralizedMaxwellBaseTempl<is_ad>::_dashpot_viscosities;
+  using Material::_qp;
 };
+
+using GeneralizedMaxwellModel = GeneralizedMaxwellModelTempl<false>;
+using ADGeneralizedMaxwellModel = GeneralizedMaxwellModelTempl<true>;

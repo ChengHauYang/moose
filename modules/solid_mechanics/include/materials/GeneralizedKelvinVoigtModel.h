@@ -18,16 +18,17 @@
  * of Kelvin-Voigt units associated in series with a single spring, and an
  * optional dashpot (this could represent a Burgers model, for example).
  */
-class GeneralizedKelvinVoigtModel : public GeneralizedKelvinVoigtBase
+template <bool is_ad>
+class GeneralizedKelvinVoigtModelTempl : public GeneralizedKelvinVoigtBaseTempl<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  GeneralizedKelvinVoigtModel(const InputParameters & parameters);
+  GeneralizedKelvinVoigtModelTempl(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpViscoelasticProperties();
-  virtual void computeQpViscoelasticPropertiesInv();
+  virtual void computeQpViscoelasticProperties() override;
+  virtual void computeQpViscoelasticPropertiesInv() override;
 
   /**
    * The elasticity tensor associated with the first spring. This is
@@ -48,4 +49,19 @@ protected:
   std::optional<RankFourTensor> _C_longterm;
   /// The inverse of the elasticity tensor associated with the long-term dashpot, if applicable
   std::optional<RankFourTensor> _S_longterm;
+
+  using GeneralizedKelvinVoigtBaseTempl<is_ad>::_base_name;
+  using GeneralizedKelvinVoigtBaseTempl<is_ad>::_has_longterm_dashpot;
+  using GeneralizedKelvinVoigtBaseTempl<is_ad>::_components;
+  using GeneralizedKelvinVoigtBaseTempl<is_ad>::_first_elasticity_tensor;
+  using GeneralizedKelvinVoigtBaseTempl<is_ad>::_first_elasticity_tensor_inv;
+  using GeneralizedKelvinVoigtBaseTempl<is_ad>::_springs_elasticity_tensors;
+  using GeneralizedKelvinVoigtBaseTempl<is_ad>::_springs_elasticity_tensors_inv;
+  using GeneralizedKelvinVoigtBaseTempl<is_ad>::_dashpot_viscosities;
+  using GeneralizedKelvinVoigtBaseTempl<is_ad>::_longterm_elasticity_tensor;
+  using GeneralizedKelvinVoigtBaseTempl<is_ad>::_longterm_elasticity_tensor_inv;
+  using Material::_qp;
 };
+
+using GeneralizedKelvinVoigtModel = GeneralizedKelvinVoigtModelTempl<false>;
+using ADGeneralizedKelvinVoigtModel = GeneralizedKelvinVoigtModelTempl<true>;

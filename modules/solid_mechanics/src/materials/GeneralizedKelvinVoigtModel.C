@@ -10,11 +10,13 @@
 #include "GeneralizedKelvinVoigtModel.h"
 
 registerMooseObject("SolidMechanicsApp", GeneralizedKelvinVoigtModel);
+registerMooseObject("SolidMechanicsApp", ADGeneralizedKelvinVoigtModel);
 
+template <bool is_ad>
 InputParameters
-GeneralizedKelvinVoigtModel::validParams()
+GeneralizedKelvinVoigtModelTempl<is_ad>::validParams()
 {
-  InputParameters params = GeneralizedKelvinVoigtBase::validParams();
+  InputParameters params = GeneralizedKelvinVoigtBaseTempl<is_ad>::validParams();
   params.addClassDescription(
       "Generalized Kelvin-Voigt model composed of a serial assembly of unit Kelvin-Voigt modules");
   params.addRequiredParam<Real>("young_modulus", "initial elastic modulus of the material");
@@ -37,33 +39,43 @@ GeneralizedKelvinVoigtModel::validParams()
   return params;
 }
 
-GeneralizedKelvinVoigtModel::GeneralizedKelvinVoigtModel(const InputParameters & parameters)
-  : GeneralizedKelvinVoigtBase(parameters),
-    _Ci(getParam<std::vector<Real>>("creep_modulus").size()),
-    _eta_i(getParam<std::vector<Real>>("creep_viscosity")),
-    _Si(getParam<std::vector<Real>>("creep_modulus").size()),
+template <bool is_ad>
+GeneralizedKelvinVoigtModelTempl<is_ad>::GeneralizedKelvinVoigtModelTempl(
+    const InputParameters & parameters)
+  : GeneralizedKelvinVoigtBaseTempl<is_ad>(parameters),
+    _Ci(this->template getParam<std::vector<Real>>("creep_modulus").size()),
+    _eta_i(this->template getParam<std::vector<Real>>("creep_viscosity")),
+    _Si(this->template getParam<std::vector<Real>>("creep_modulus").size()),
     _C_longterm(std::nullopt),
     _S_longterm(std::nullopt)
 {
-  Real young_modulus = getParam<Real>("young_modulus");
-  Real poisson_ratio = getParam<Real>("poisson_ratio");
+  if constexpr (is_ad)
+  {
+    if (this->isParamValid("driving_eigenstrain"))
+      this->paramError("driving_eigenstrain",
+                       "driving_eigenstrain is not yet supported for the AD viscoelastic workflow; "
+                       "use GeneralizedKelvinVoigtModel (non-AD) for this configuration");
+  }
+
+  Real young_modulus = this->template getParam<Real>("young_modulus");
+  Real poisson_ratio = this->template getParam<Real>("poisson_ratio");
 
   _C0.fillFromInputVector({young_modulus, poisson_ratio}, RankFourTensor::symmetric_isotropic_E_nu);
   _S0 = _C0.invSymm();
 
-  std::vector<Real> creep_modulus = getParam<std::vector<Real>>("creep_modulus");
+  std::vector<Real> creep_modulus = this->template getParam<std::vector<Real>>("creep_modulus");
   std::vector<Real> creep_ratio;
-  if (isParamValid("creep_ratio"))
-    creep_ratio = getParam<std::vector<Real>>("creep_ratio");
+  if (this->isParamValid("creep_ratio"))
+    creep_ratio = this->template getParam<std::vector<Real>>("creep_ratio");
   else
     creep_ratio.resize(_Ci.size(), poisson_ratio);
 
   if (creep_modulus.size() != _Ci.size())
-    mooseError("incompatible number of creep moduli and viscosities");
+    this->mooseError("incompatible number of creep moduli and viscosities");
   if (creep_ratio.size() != _Ci.size())
-    mooseError("incompatible number of creep ratios and viscosities");
+    this->mooseError("incompatible number of creep ratios and viscosities");
   if (!(_Ci.size() == _eta_i.size() || _Ci.size() + 1 == _eta_i.size()))
-    mooseError("incompatible number of creep ratios and viscosities");
+    this->mooseError("incompatible number of creep ratios and viscosities");
 
   for (unsigned int i = 0; i < _Ci.size(); ++i)
   {
@@ -75,7 +87,7 @@ GeneralizedKelvinVoigtModel::GeneralizedKelvinVoigtModel(const InputParameters &
   for (unsigned int i = 0; i < _eta_i.size(); ++i)
   {
     if (_eta_i[i] < 0 || MooseUtils::absoluteFuzzyEqual(_eta_i[i], 0.0))
-      mooseError("material viscosity must be strictly > 0");
+      this->mooseError("material viscosity must be strictly > 0");
   }
 
   _components = _eta_i.size();
@@ -84,11 +96,13 @@ GeneralizedKelvinVoigtModel::GeneralizedKelvinVoigtModel(const InputParameters &
   if (_has_longterm_dashpot)
   {
     Real longterm_youngs_modulus =
-        (isParamValid("longterm_youngs_modulus") ? getParam<Real>("longterm_youngs_modulus")
-                                                 : young_modulus);
+        (this->isParamValid("longterm_youngs_modulus")
+             ? this->template getParam<Real>("longterm_youngs_modulus")
+             : young_modulus);
     Real longterm_poissons_ratio =
-        (isParamValid("longterm_poissons_ratio") ? getParam<Real>("longterm_poissons_ratio")
-                                                 : poisson_ratio);
+        (this->isParamValid("longterm_poissons_ratio")
+             ? this->template getParam<Real>("longterm_poissons_ratio")
+             : poisson_ratio);
     _C_longterm = std::make_optional<RankFourTensor>();
     _C_longterm->fillFromInputVector({longterm_youngs_modulus, longterm_poissons_ratio},
                                      RankFourTensor::symmetric_isotropic_E_nu);
@@ -96,12 +110,13 @@ GeneralizedKelvinVoigtModel::GeneralizedKelvinVoigtModel(const InputParameters &
     *_S_longterm = _C_longterm->invSymm();
   }
 
-  issueGuarantee(_elasticity_tensor_name, Guarantee::ISOTROPIC);
-  declareViscoelasticProperties();
+  this->issueGuarantee(this->_elasticity_tensor_name, Guarantee::ISOTROPIC);
+  this->declareViscoelasticProperties();
 }
 
+template <bool is_ad>
 void
-GeneralizedKelvinVoigtModel::computeQpViscoelasticProperties()
+GeneralizedKelvinVoigtModelTempl<is_ad>::computeQpViscoelasticProperties()
 {
   _first_elasticity_tensor[_qp] = _C0;
 
@@ -115,8 +130,9 @@ GeneralizedKelvinVoigtModel::computeQpViscoelasticProperties()
     (*_longterm_elasticity_tensor)[_qp] = *_C_longterm;
 }
 
+template <bool is_ad>
 void
-GeneralizedKelvinVoigtModel::computeQpViscoelasticPropertiesInv()
+GeneralizedKelvinVoigtModelTempl<is_ad>::computeQpViscoelasticPropertiesInv()
 {
   (*_first_elasticity_tensor_inv)[_qp] = _S0;
 
@@ -126,3 +142,6 @@ GeneralizedKelvinVoigtModel::computeQpViscoelasticPropertiesInv()
   if (_has_longterm_dashpot)
     (*_longterm_elasticity_tensor_inv)[_qp] = *_S_longterm;
 }
+
+template class GeneralizedKelvinVoigtModelTempl<false>;
+template class GeneralizedKelvinVoigtModelTempl<true>;
