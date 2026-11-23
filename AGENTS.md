@@ -12,6 +12,51 @@ Licensed under the BSD 2-Clause License.
 
 These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+## Verification Cadence (Read First)
+
+- Do not build or test after every edit; verify one coherent, reviewable change slice at a time.
+- During implementation, prefer source inspection, CodeGraph, and diff review. When the slice is
+  ready, format changed C++ files, run the narrowest relevant build, and run the smallest focused test.
+- Run broad suites, MPI/distributed variants, and docs only for the change's blast radius, at a
+  milestone, or before final handoff. Do not repeat unchanged checks or build for docs/comments/plans
+  unless generated code or test discovery is affected; never claim runtime behavior without verification.
+
+## 0. Local Harness Map
+
+Cheng-Hau has two private stacks, each with one per-machine entry point. Define `{machine} = mac` or
+`cuda`, and drive everything through `./scripts/{machine}/<entry>` (shown as `moose` below):
+
+- `{machine} = cuda` -> `./scripts/cuda/moose_cuda.sh` -- Linux GPU box, from-scratch CUDA-Kokkos stack under `kokkos-cuda-stack/`.
+- `{machine} = mac` -> `./scripts/mac/moose.sh` -- macOS Apple Silicon, Conda `moose` stack.
+
+Common commands (identical on both machines):
+
+- Inspect compilers, CUDA/MPI, Python, paths: `moose doctor`
+- Initialize dependencies and configuration: `moose init`
+- Incremental compile: `moose compile <framework|solid_mechanics|shifted_boundary_method|neml2> [-j N]`
+- Run an input: `moose run <target> <input.i> [options...]`
+- Test without compiling: `moose test <scope> [pattern] [options...]`
+- Compile and test: `moose verify <scope> [options...]`
+- Full initialization, compile, and test: `moose all`
+
+Machine-specific:
+
+- **cuda:** build state is `moose status`. `run`/`test`/`verify` add `--compute-device=cuda` by default;
+  override with `--compute-device=cpu`. A CUDA build only proves the kernels compiled -- confirm actual
+  GPU execution by running on `--compute-device=cuda`.
+- **mac:** dashboard/progress is `moose dummy`; C++ GoogleTest unit tests are `moose unit [target] [pattern]`
+  (and `unit` is also a `compile`/`verify` scope); install the pre-commit hook once per clone with
+  `moose precheck`.
+
+The cuda harness does not depend on or conflict with direnv. On that box `.envrc` sources
+`kokkos-cuda-stack/scripts/activate.sh` when you `cd` in, exporting the CUDA-stack paths (`PETSC_DIR`,
+`LIBMESH_DIR`, `WASP_DIR`, `OPAL_PREFIX`, `PATH`, `VIRTUAL_ENV`, ...). `moose_cuda.sh` runs in its own
+subprocess and re-exports those same values itself (`cuda_export_settings`, plus `env.sh` to purge
+Conda build hints during builds), so it produces identical results whether or not direnv has
+activated. There is no need to deactivate direnv before using it.
+
+Do not treat missing generated files such as `framework_config.h`, configured Makefiles, object files, or module binaries as a broken checkout. Fresh checkouts are expected to lack them. Run `moose doctor` before inventing build commands or asking how to configure MOOSE.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
@@ -103,14 +148,20 @@ that request requires.
 
 ## 6. Tool Use
 
+Use the Local Harness Map (Section 0) before asking about the environment or inventing
+build commands. The `moose` entry point sets up its own stack: on macOS it activates the
+Conda `moose` env, and on the Linux GPU box the cuda harness is a self-contained
+from-scratch stack (no Conda) that also matches the direnv-activated `.envrc`.
 - Prefer builtin tools over bash commands whenever possible in the vein of
   reducing permission prompting.
-- Before building or performing verification, including running tests or
-  invoking a pre-existing MOOSE executable, ask the user whether their MOOSE
-  stack uses conda unless this has already been established in the
-  conversation. If it does, ask which conda environment to activate and wait
-  for the answer before running the command; do not use an existing binary or
-  current shell state as a shortcut around this check.
+- Before building or performing verification OUTSIDE the harness, including running
+  tests or invoking a pre-existing MOOSE executable, establish the environment instead
+  of relying on an existing binary or current shell state: for a Conda stack (macOS, or
+  Linux CPU work), ask whether the stack uses conda unless this has already been
+  established in the conversation, and if it does ask which conda environment to activate
+  and wait for the answer; for the Linux cuda stack, source its environment first
+  (`.envrc` / `kokkos-cuda-stack/scripts/activate.sh`, or `cuda_runtime_env` from
+  `scripts/cuda/moose_cuda_common.sh`).
 
 ## 7. TestHarness Coverage
 
@@ -179,3 +230,12 @@ not govern unrelated conversations or prescribe the user's conversational style.
 ---
 
 **These guidelines are working if:** diffs are as small as the design allows, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+## Harness Utilities
+
+Shared utilities live in `scripts/harness/` and are exposed by both `scripts/mac/moose.sh` and `scripts/cuda/moose_cuda.sh`:
+
+- `compare <file1> <file2> [--cmp spec] [--verbose]` -- numerical comparison for Exodus/CSV. Reports max abs/rel per variable, worst variable/timestep, reference magnitude. With `--cmp`, delegates to MOOSE's exodiff/csvdiff for authoritative pass/fail. Exit status is nonzero for differences, incompatibility, or errors unless `--cmp` accepts the files.
+- `logstat <log...> [--verbose]` -- solver convergence summary (timesteps, Newton/linear/SNES iterations, final residual, retries, status). One line per run; failed, unknown, or incomplete runs return nonzero. `CONVERGED` requires application-exit output (the MOOSE performance graph, PETSc's unused-option report, or `-log_view`) after the last solve; otherwise a fully converged log reports `UNCONFIRMED` (nonzero), since a log cut between timesteps looks the same. A mooseError banner (`*** ERROR ***`) reports `MOOSE_ERROR` with the message under `--verbose`. A TestHarness log is judged by its per-test results and final `N passed, M skipped, K failed` line (`TEST_PASSED`, `TEST_FAILED`, `SKIPPED`, `NO_TESTS`, or `UNCONFIRMED` without the final line).
+
+Use `compare` for output validation, `logstat` for solver diagnostics. Request detail with `--verbose`. Reuse these before writing temporary diagnostic scripts.
