@@ -1,0 +1,20 @@
+[Tests]
+  [ad_thermal_beam_jac]
+    type = PetscJacobianTester
+    input = 'ad_thermal_beam_jac.i'
+    run_sim = True
+    ratio_tol = 1e-8
+    requirement = 'The system shall compute how changes in temperature affect the balance of forces and moments in a beam.'
+    design = 'ADComputeThermalExpansionEigenstrainBeam.md ADComputeIncrementalBeamStrain.md ADComputeBeamResultants.md ADStressDivergenceBeam.md'
+    issues = '#10313'
+  []
+  [ad_eigenstrain_from_var_beam_jac]
+    type = PetscJacobianTester
+    input = 'ad_eigenstrain_from_var_beam_jac.i'
+    run_sim = True
+    ratio_tol = 1e-8
+    requirement = 'The system shall compute how imposed stretching, shearing, bending, and twisting strains affect the balance of forces and moments in a beam.'
+    design = 'ADComputeEigenstrainBeamFromVariable.md ADComputeIncrementalBeamStrain.md ADComputeBeamResultants.md ADStressDivergenceBeam.md'
+    issues = '#10313'
+  []
+[]

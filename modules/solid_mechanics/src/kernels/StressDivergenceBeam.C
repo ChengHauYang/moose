@@ -21,11 +21,13 @@
 #include "libmesh/quadrature.h"
 
 registerMooseObject("SolidMechanicsApp", StressDivergenceBeam);
+registerMooseObject("SolidMechanicsApp", ADStressDivergenceBeam);
 
+template <bool is_ad>
 InputParameters
-StressDivergenceBeam::validParams()
+StressDivergenceBeamTempl<is_ad>::validParams()
 {
-  InputParameters params = Kernel::validParams();
+  InputParameters params = GenericKernel<is_ad>::validParams();
   params.addClassDescription("Quasi-static and dynamic stress divergence kernel for Beam element");
   params.addRequiredParam<unsigned int>(
       "component",
@@ -49,36 +51,44 @@ StressDivergenceBeam::validParams()
   return params;
 }
 
-StressDivergenceBeam::StressDivergenceBeam(const InputParameters & parameters)
-  : Kernel(parameters),
-    _component(getParam<unsigned int>("component")),
-    _ndisp(coupledComponents("displacements")),
+template <bool is_ad>
+StressDivergenceBeamTempl<is_ad>::StressDivergenceBeamTempl(const InputParameters & parameters)
+  : GenericKernel<is_ad>(parameters),
+    _component(this->template getParam<unsigned int>("component")),
+    _ndisp(this->coupledComponents("displacements")),
     _disp_var(_ndisp),
-    _nrot(coupledComponents("rotations")),
+    _nrot(this->coupledComponents("rotations")),
     _rot_var(_nrot),
-    _force(getMaterialPropertyByName<RealVectorValue>("forces")),
-    _moment(getMaterialPropertyByName<RealVectorValue>("moments")),
-    _K11(getMaterialPropertyByName<RankTwoTensor>("Jacobian_11")),
-    _K22(getMaterialPropertyByName<RankTwoTensor>("Jacobian_22")),
-    _K22_cross(getMaterialPropertyByName<RankTwoTensor>("Jacobian_22_cross")),
-    _K21_cross(getMaterialPropertyByName<RankTwoTensor>("Jacobian_12")),
-    _K21(getMaterialPropertyByName<RankTwoTensor>("Jacobian_21")),
-    _original_length(getMaterialPropertyByName<Real>("original_length")),
-    _total_rotation(getMaterialPropertyByName<RankTwoTensor>("total_rotation")),
-    _zeta(getMaterialProperty<Real>("zeta")),
-    _alpha(getParam<Real>("alpha")),
-    _isDamped(getParam<MaterialPropertyName>("zeta") != "0.0" || std::abs(_alpha) > 0.0),
-    _force_old(_isDamped ? &getMaterialPropertyOld<RealVectorValue>("forces") : nullptr),
-    _moment_old(_isDamped ? &getMaterialPropertyOld<RealVectorValue>("moments") : nullptr),
-    _total_rotation_old(_isDamped ? &getMaterialPropertyOld<RankTwoTensor>("total_rotation")
-                                  : nullptr),
-    _force_older(std::abs(_alpha) > 0.0 ? &getMaterialPropertyOlder<RealVectorValue>("forces")
-                                        : nullptr),
-    _moment_older(std::abs(_alpha) > 0.0 ? &getMaterialPropertyOlder<RealVectorValue>("moments")
-                                         : nullptr),
-    _total_rotation_older(std::abs(_alpha) > 0.0
-                              ? &getMaterialPropertyOlder<RankTwoTensor>("total_rotation")
-                              : nullptr),
+    _force(this->template getGenericMaterialPropertyByName<RealVectorValue, is_ad>("forces")),
+    _moment(this->template getGenericMaterialPropertyByName<RealVectorValue, is_ad>("moments")),
+    _K11(this->template getMaterialPropertyByName<RankTwoTensor>("Jacobian_11")),
+    _K22(this->template getMaterialPropertyByName<RankTwoTensor>("Jacobian_22")),
+    _K22_cross(this->template getMaterialPropertyByName<RankTwoTensor>("Jacobian_22_cross")),
+    _K21_cross(this->template getMaterialPropertyByName<RankTwoTensor>("Jacobian_12")),
+    _K21(this->template getMaterialPropertyByName<RankTwoTensor>("Jacobian_21")),
+    _original_length(this->template getMaterialPropertyByName<Real>("original_length")),
+    _total_rotation(this->template getMaterialPropertyByName<RankTwoTensor>("total_rotation")),
+    _zeta(this->template getMaterialProperty<Real>("zeta")),
+    _alpha(this->template getParam<Real>("alpha")),
+    _isDamped(this->template getParam<MaterialPropertyName>("zeta") != "0.0" ||
+              std::abs(_alpha) > 0.0),
+    _force_old(_isDamped ? &this->template getMaterialPropertyOld<RealVectorValue>("forces")
+                         : nullptr),
+    _moment_old(_isDamped ? &this->template getMaterialPropertyOld<RealVectorValue>("moments")
+                          : nullptr),
+    _total_rotation_old(
+        _isDamped ? &this->template getMaterialPropertyOld<RankTwoTensor>("total_rotation")
+                  : nullptr),
+    _force_older(std::abs(_alpha) > 0.0
+                     ? &this->template getMaterialPropertyOlder<RealVectorValue>("forces")
+                     : nullptr),
+    _moment_older(std::abs(_alpha) > 0.0
+                      ? &this->template getMaterialPropertyOlder<RealVectorValue>("moments")
+                      : nullptr),
+    _total_rotation_older(
+        std::abs(_alpha) > 0.0
+            ? &this->template getMaterialPropertyOlder<RankTwoTensor>("total_rotation")
+            : nullptr),
     _global_force_res(0),
     _global_moment_res(0),
     _force_local_t(0),
@@ -87,99 +97,134 @@ StressDivergenceBeam::StressDivergenceBeam(const InputParameters & parameters)
     _local_moment_res(0)
 {
   if (_ndisp != _nrot)
-    mooseError(
+    this->mooseError(
         "StressDivergenceBeam: The number of displacement and rotation variables should be same.");
 
   for (unsigned int i = 0; i < _ndisp; ++i)
-    _disp_var[i] = coupled("displacements", i);
+    _disp_var[i] = this->coupled("displacements", i);
 
   for (unsigned int i = 0; i < _nrot; ++i)
-    _rot_var[i] = coupled("rotations", i);
+    _rot_var[i] = this->coupled("rotations", i);
 }
 
+template <bool is_ad>
 void
-StressDivergenceBeam::computeResidual()
+StressDivergenceBeamTempl<is_ad>::computeResidual()
 {
-  prepareVectorTag(_assembly, _var.number());
-
-  mooseAssert(_local_re.size() == 2,
-              "StressDivergenceBeam: Beam element must have two nodes only.");
-
-  _global_force_res.resize(_test.size());
-  _global_moment_res.resize(_test.size());
-
-  computeGlobalResidual(&_force, &_moment, &_total_rotation, _global_force_res, _global_moment_res);
-
-  // add contributions from stiffness proportional damping (non-zero _zeta) or HHT time integration
-  // (non-zero _alpha)
-  if (_isDamped && _dt > 0.0)
-    computeDynamicTerms(_global_force_res, _global_moment_res);
-
-  for (_i = 0; _i < _test.size(); ++_i)
+  if constexpr (!is_ad)
   {
-    if (_component < 3)
-      _local_re(_i) = _global_force_res[_i](_component);
-    else
-      _local_re(_i) = _global_moment_res[_i](_component - 3);
-  }
+    prepareVectorTag(_assembly, _var.number());
 
-  accumulateTaggedLocalResidual();
+    mooseAssert(_local_re.size() == 2,
+                "StressDivergenceBeam: Beam element must have two nodes only.");
 
-  if (_has_save_in)
-  {
-    Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (_i = 0; _i < _save_in.size(); ++_i)
-      _save_in[_i]->sys().solution().add_vector(_local_re, _save_in[_i]->dofIndices());
-  }
-}
+    _global_force_res.resize(_test.size());
+    _global_moment_res.resize(_test.size());
 
-void
-StressDivergenceBeam::computeJacobian()
-{
-  prepareMatrixTag(_assembly, _var.number(), _var.number());
+    computeGlobalResidual(
+        &_force, &_moment, &_total_rotation, _global_force_res, _global_moment_res);
 
-  for (unsigned int i = 0; i < _test.size(); ++i)
-  {
-    for (unsigned int j = 0; j < _phi.size(); ++j)
+    // add contributions from stiffness proportional damping (non-zero _zeta) or HHT time
+    // integration (non-zero _alpha)
+    if (_isDamped && _dt > 0.0)
+      computeDynamicTerms(_global_force_res, _global_moment_res);
+
+    for (_i = 0; _i < _test.size(); ++_i)
     {
       if (_component < 3)
-        _local_ke(i, j) = (i == j ? 1 : -1) * _K11[0](_component, _component);
+        _local_re(_i) = _global_force_res[_i](_component);
       else
-      {
-        if (i == j)
-          _local_ke(i, j) = _K22[0](_component - 3, _component - 3);
-        else
-          _local_ke(i, j) = _K22_cross[0](_component - 3, _component - 3);
-      }
+        _local_re(_i) = _global_moment_res[_i](_component - 3);
+    }
+
+    accumulateTaggedLocalResidual();
+
+    if (_has_save_in)
+    {
+      Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
+      for (_i = 0; _i < _save_in.size(); ++_i)
+        _save_in[_i]->sys().solution().add_vector(_local_re, _save_in[_i]->dofIndices());
     }
   }
-
-  // scaling factor for Rayliegh damping and HHT time integration
-  if (_isDamped && _dt > 0.0)
-    _local_ke *= (1.0 + _alpha + (1.0 + _alpha) * _zeta[0] / _dt);
-
-  accumulateTaggedLocalMatrix();
-
-  if (_has_diag_save_in)
+  else
   {
-    unsigned int rows = _local_ke.m();
-    DenseVector<Number> diag(rows);
-    for (unsigned int i = 0; i < rows; ++i)
-      diag(i) = _local_ke(i, i);
+    // AD path: compute element AD residuals and add their raw (non-AD) values to the residual
+    // vector via addResiduals. Derivative information is used later in computeJacobian.
+    std::vector<GenericRealVectorValue<true>> ad_global_force_res(_test.size());
+    std::vector<GenericRealVectorValue<true>> ad_global_moment_res(_test.size());
+    computeADGlobalResidual(ad_global_force_res, ad_global_moment_res);
 
-    Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (unsigned int i = 0; i < _diag_save_in.size(); ++i)
-      _diag_save_in[i]->sys().solution().add_vector(diag, _diag_save_in[i]->dofIndices());
+    std::vector<Real> re(_test.size());
+    for (_i = 0; _i < _test.size(); ++_i)
+    {
+      if (_component < 3)
+        re[_i] = MetaPhysicL::raw_value(ad_global_force_res[_i](_component));
+      else
+        re[_i] = MetaPhysicL::raw_value(ad_global_moment_res[_i](_component - 3));
+    }
+
+    addResiduals(_assembly, re, _var.dofIndices(), _var.scalingFactor());
   }
 }
 
+template <bool is_ad>
 void
-StressDivergenceBeam::computeOffDiagJacobian(const unsigned int jvar_num)
+StressDivergenceBeamTempl<is_ad>::computeJacobian()
 {
-  if (jvar_num == _var.number())
-    computeJacobian();
-  else
+  if constexpr (!is_ad)
   {
+    prepareMatrixTag(_assembly, _var.number(), _var.number());
+
+    for (unsigned int i = 0; i < _test.size(); ++i)
+    {
+      for (unsigned int j = 0; j < _phi.size(); ++j)
+      {
+        if (_component < 3)
+          _local_ke(i, j) = (i == j ? 1 : -1) * _K11[0](_component, _component);
+        else
+        {
+          if (i == j)
+            _local_ke(i, j) = _K22[0](_component - 3, _component - 3);
+          else
+            _local_ke(i, j) = _K22_cross[0](_component - 3, _component - 3);
+        }
+      }
+    }
+
+    // scaling factor for Rayliegh damping and HHT time integration
+    if (_isDamped && _dt > 0.0)
+      _local_ke *= (1.0 + _alpha + (1.0 + _alpha) * _zeta[0] / _dt);
+
+    accumulateTaggedLocalMatrix();
+
+    if (_has_diag_save_in)
+    {
+      unsigned int rows = _local_ke.m();
+      DenseVector<Number> diag(rows);
+      for (unsigned int i = 0; i < rows; ++i)
+        diag(i) = _local_ke(i, i);
+
+      Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
+      for (unsigned int i = 0; i < _diag_save_in.size(); ++i)
+        _diag_save_in[i]->sys().solution().add_vector(diag, _diag_save_in[i]->dofIndices());
+    }
+  }
+  else
+    GenericKernel<is_ad>::computeJacobian();
+}
+
+template <bool is_ad>
+void
+StressDivergenceBeamTempl<is_ad>::computeOffDiagJacobian(const unsigned int jvar_num)
+{
+  if constexpr (!is_ad)
+  {
+    if (jvar_num == _var.number())
+    {
+      computeJacobian();
+      return;
+    }
+
     unsigned int coupled_component = 0;
     bool disp_coupled = false;
     bool rot_coupled = false;
@@ -239,17 +284,21 @@ StressDivergenceBeam::computeOffDiagJacobian(const unsigned int jvar_num)
       }
     }
 
-    // scaling factor for Rayleigh damping and HHT time integration
+    // scaling factor for Rayliegh damping and HHT time integration
     if (_isDamped && _dt > 0.0)
       _local_ke *= (1.0 + _alpha + (1.0 + _alpha) * _zeta[0] / _dt);
 
     accumulateTaggedLocalMatrix();
   }
+  else
+    GenericKernel<is_ad>::computeOffDiagJacobian(jvar_num);
 }
 
+template <bool is_ad>
 void
-StressDivergenceBeam::computeDynamicTerms(std::vector<RealVectorValue> & global_force_res,
-                                          std::vector<RealVectorValue> & global_moment_res)
+StressDivergenceBeamTempl<is_ad>::computeDynamicTerms(
+    std::vector<RealVectorValue> & global_force_res,
+    std::vector<RealVectorValue> & global_moment_res)
 {
   mooseAssert(_zeta[0] >= 0.0, "StressDivergenceBeam: Zeta parameter should be non-negative.");
   std::vector<RealVectorValue> global_force_res_old(_test.size());
@@ -283,12 +332,14 @@ StressDivergenceBeam::computeDynamicTerms(std::vector<RealVectorValue> & global_
   }
 }
 
+template <bool is_ad>
 void
-StressDivergenceBeam::computeGlobalResidual(const MaterialProperty<RealVectorValue> * force,
-                                            const MaterialProperty<RealVectorValue> * moment,
-                                            const MaterialProperty<RankTwoTensor> * total_rotation,
-                                            std::vector<RealVectorValue> & global_force_res,
-                                            std::vector<RealVectorValue> & global_moment_res)
+StressDivergenceBeamTempl<is_ad>::computeGlobalResidual(
+    const MaterialProperty<RealVectorValue> * force,
+    const MaterialProperty<RealVectorValue> * moment,
+    const MaterialProperty<RankTwoTensor> * total_rotation,
+    std::vector<RealVectorValue> & global_force_res,
+    std::vector<RealVectorValue> & global_moment_res)
 {
   RealVectorValue a;
   _force_local_t.resize(_qrule->n_points());
@@ -346,3 +397,111 @@ StressDivergenceBeam::computeGlobalResidual(const MaterialProperty<RealVectorVal
     global_moment_res[_i] = (*total_rotation)[0].transpose() * _local_moment_res[_i];
   }
 }
+
+template <bool is_ad>
+void
+StressDivergenceBeamTempl<is_ad>::computeADGlobalResidual(
+    std::vector<GenericRealVectorValue<true>> & global_force_res,
+    std::vector<GenericRealVectorValue<true>> & global_moment_res)
+{
+  // AD version of computeGlobalResidual: forces and moments carry full derivative information
+  // so no raw_value() extraction is needed. Only compiled/called in the AD specialization.
+  if constexpr (!is_ad)
+  {
+    this->mooseError("computeADGlobalResidual called on non-AD StressDivergenceBeam");
+    return;
+  }
+
+  GenericRealVectorValue<true> a;
+  std::vector<GenericRealVectorValue<true>> force_local_t(_qrule->n_points());
+  std::vector<GenericRealVectorValue<true>> moment_local_t(_qrule->n_points());
+  std::vector<GenericRealVectorValue<true>> local_force_res(_test.size());
+  std::vector<GenericRealVectorValue<true>> local_moment_res(_test.size());
+
+  for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+  {
+    force_local_t[_qp] = _total_rotation[0] * _force[_qp];
+    moment_local_t[_qp] = _total_rotation[0] * _moment[_qp];
+  }
+
+  for (_i = 0; _i < _test.size(); ++_i)
+  {
+    local_force_res[_i] = a;
+    for (unsigned int component = 0; component < 3; ++component)
+      for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+        local_force_res[_i](component) += (_i == 0 ? -1 : 1) * force_local_t[_qp](component) * 0.5;
+  }
+
+  for (_i = 0; _i < _test.size(); ++_i)
+  {
+    local_moment_res[_i] = a;
+    for (unsigned int component = 3; component < 6; ++component)
+      for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+      {
+        if (component == 3)
+          local_moment_res[_i](component - 3) += (_i == 0 ? -1 : 1) * moment_local_t[_qp](0) * 0.5;
+        else if (component == 4)
+          local_moment_res[_i](component - 3) += (_i == 0 ? -1 : 1) * moment_local_t[_qp](1) * 0.5 +
+                                                 force_local_t[_qp](2) * 0.25 * _original_length[0];
+        else
+          local_moment_res[_i](component - 3) += (_i == 0 ? -1 : 1) * moment_local_t[_qp](2) * 0.5 -
+                                                 force_local_t[_qp](1) * 0.25 * _original_length[0];
+      }
+  }
+
+  for (_i = 0; _i < _test.size(); ++_i)
+  {
+    global_force_res[_i] = _total_rotation[0].transpose() * local_force_res[_i];
+    global_moment_res[_i] = _total_rotation[0].transpose() * local_moment_res[_i];
+  }
+
+  // Damping/HHT contributions use old/older non-AD values and are added as plain Real offsets;
+  // they do not carry derivatives with respect to current-step unknowns.
+  if (_isDamped && _dt > 0.0)
+  {
+    mooseAssert(_zeta[0] >= 0.0, "StressDivergenceBeam: Zeta parameter should be non-negative.");
+    std::vector<RealVectorValue> gf_old(_test.size());
+    std::vector<RealVectorValue> gm_old(_test.size());
+    computeGlobalResidual(_force_old, _moment_old, _total_rotation_old, gf_old, gm_old);
+
+    std::vector<RealVectorValue> gf_older(_test.size());
+    std::vector<RealVectorValue> gm_older(_test.size());
+    if (std::abs(_alpha) > 0.0)
+      computeGlobalResidual(_force_older, _moment_older, _total_rotation_older, gf_older, gm_older);
+
+    for (_i = 0; _i < _test.size(); ++_i)
+    {
+      global_force_res[_i] =
+          global_force_res[_i] * (1.0 + _alpha + (1.0 + _alpha) * _zeta[0] / _dt) -
+          gf_old[_i] * (_alpha + (1.0 + 2.0 * _alpha) * _zeta[0] / _dt) +
+          gf_older[_i] * (_alpha * _zeta[0] / _dt);
+      global_moment_res[_i] =
+          global_moment_res[_i] * (1.0 + _alpha + (1.0 + _alpha) * _zeta[0] / _dt) -
+          gm_old[_i] * (_alpha + (1.0 + 2.0 * _alpha) * _zeta[0] / _dt) +
+          gm_older[_i] * (_alpha * _zeta[0] / _dt);
+    }
+  }
+}
+
+void
+ADStressDivergenceBeam::computeResidualsForJacobian()
+{
+  // Preserve derivatives in the element residuals for ADKernelTempl Jacobian assembly.
+  std::vector<GenericRealVectorValue<true>> ad_global_force_res(_test.size());
+  std::vector<GenericRealVectorValue<true>> ad_global_moment_res(_test.size());
+  computeADGlobalResidual(ad_global_force_res, ad_global_moment_res);
+
+  if (_residuals.size() != _test.size())
+    _residuals.resize(_test.size(), 0);
+
+  for (_i = 0; _i < _test.size(); ++_i)
+  {
+    if (_component < 3)
+      _residuals[_i] = ad_global_force_res[_i](_component);
+    else
+      _residuals[_i] = ad_global_moment_res[_i](_component - 3);
+  }
+}
+
+template class StressDivergenceBeamTempl<false>;
+template class StressDivergenceBeamTempl<true>;

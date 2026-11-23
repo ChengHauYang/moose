@@ -19,12 +19,13 @@ class Function;
  * ComputeIncrementalBeamStrain defines a displacement and rotation strain increment and rotation
  * increment (=1), for small strains.
  */
-class ComputeIncrementalBeamStrain : public Material
+template <bool is_ad>
+class ComputeIncrementalBeamStrainTempl : public Material
 {
 public:
   static InputParameters validParams();
 
-  ComputeIncrementalBeamStrain(const InputParameters & parameters);
+  ComputeIncrementalBeamStrainTempl(const InputParameters & parameters);
 
   virtual void computeProperties() override;
 
@@ -83,10 +84,10 @@ protected:
   MaterialProperty<RankTwoTensor> & _total_rotation;
 
   /// Current total displacement strain integrated over the cross-section in global coordinate system.
-  MaterialProperty<RealVectorValue> & _total_disp_strain;
+  GenericMaterialProperty<RealVectorValue, is_ad> & _total_disp_strain;
 
   /// Current total rotational strain integrated over the cross-section in global coordinate system.
-  MaterialProperty<RealVectorValue> & _total_rot_strain;
+  GenericMaterialProperty<RealVectorValue, is_ad> & _total_rot_strain;
 
   /// Old total displacement strain integrated over the cross-section in global coordinate system.
   const MaterialProperty<RealVectorValue> & _total_disp_strain_old;
@@ -95,10 +96,10 @@ protected:
   const MaterialProperty<RealVectorValue> & _total_rot_strain_old;
 
   /// Mechanical displacement strain increment (after removal of eigenstrains) integrated over the cross-section.
-  MaterialProperty<RealVectorValue> & _mech_disp_strain_increment;
+  GenericMaterialProperty<RealVectorValue, is_ad> & _mech_disp_strain_increment;
 
   /// Mechanical rotation strain increment (after removal of eigenstrains) integrated over the cross-section
-  MaterialProperty<RealVectorValue> & _mech_rot_strain_increment;
+  GenericMaterialProperty<RealVectorValue, is_ad> & _mech_rot_strain_increment;
 
   /// Material stiffness vector that relates displacement strain increments to force increments
   const MaterialProperty<RealVectorValue> & _material_stiffness;
@@ -122,22 +123,22 @@ protected:
   const bool _large_strain;
 
   /// Gradient of displacement calculated in the beam local configuration at time t
-  RealVectorValue _grad_disp_0_local_t;
+  GenericRealVectorValue<is_ad> _grad_disp_0_local_t;
 
   /// Gradient of rotation calculated in the beam local configuration at time t
-  RealVectorValue _grad_rot_0_local_t;
+  GenericRealVectorValue<is_ad> _grad_rot_0_local_t;
 
   /// Average rotation calculated in the beam local configuration at time t
-  RealVectorValue _avg_rot_local_t;
+  GenericRealVectorValue<is_ad> _avg_rot_local_t;
 
   /// Vector of beam eigenstrain names
   std::vector<MaterialPropertyName> _eigenstrain_names;
 
   /// Vector of current displacement eigenstrains
-  std::vector<const MaterialProperty<RealVectorValue> *> _disp_eigenstrain;
+  std::vector<const GenericMaterialProperty<RealVectorValue, is_ad> *> _disp_eigenstrain;
 
   /// Vector of current rotational eigenstrains
-  std::vector<const MaterialProperty<RealVectorValue> *> _rot_eigenstrain;
+  std::vector<const GenericMaterialProperty<RealVectorValue, is_ad> *> _rot_eigenstrain;
 
   /// Vector of old displacement eigenstrains
   std::vector<const MaterialProperty<RealVectorValue> *> _disp_eigenstrain_old;
@@ -146,10 +147,21 @@ protected:
   std::vector<const MaterialProperty<RealVectorValue> *> _rot_eigenstrain_old;
 
   /// Displacement and rotations at the two nodes of the beam in the global coordinate system
-  RealVectorValue _disp0, _disp1, _rot0, _rot1;
+  GenericRealVectorValue<is_ad> _disp0, _disp1, _rot0, _rot1;
+
+  /// AD current nodal DOF values for displacements and rotations (AD path only).
+  /// Stored in the constructor so needSolutionState() is called outside the threaded element loop.
+  std::vector<const ADVariableValue *> _ad_disp_dof_values;
+  std::vector<const ADVariableValue *> _ad_rot_dof_values;
+
+  /// Non-AD old nodal DOF values for displacements and rotations (AD path only).
+  /// Stored in the constructor so needSolutionState() is called outside the threaded element loop.
+  std::vector<const VariableValue *> _disp_dof_values_old;
+  std::vector<const VariableValue *> _rot_dof_values_old;
 
   /// Reference to the nonlinear system object
   NonlinearSystemBase & _nonlinear_sys;
+
   /// Indices of solution vector corresponding to displacement DOFs at the node 0
   std::vector<unsigned int> _soln_disp_index_0;
 
@@ -170,4 +182,9 @@ protected:
 
   /// Prefactor function to multiply the elasticity tensor with
   const Function * const _prefactor_function;
+
+  usingMaterialMembers;
 };
+
+using ComputeIncrementalBeamStrain = ComputeIncrementalBeamStrainTempl<false>;
+using ADComputeIncrementalBeamStrain = ComputeIncrementalBeamStrainTempl<true>;

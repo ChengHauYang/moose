@@ -15,12 +15,14 @@
  * ComputeThermalExpansionEigenstrainBeamBase is a base class for all models that
  * compute beam eigenstrains due to thermal expansion of a material.
  */
-class ComputeThermalExpansionEigenstrainBeamBase : public ComputeEigenstrainBeamBase
+template <bool is_ad>
+class ComputeThermalExpansionEigenstrainBeamBaseTempl
+  : public ComputeEigenstrainBeamBaseTempl<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  ComputeThermalExpansionEigenstrainBeamBase(const InputParameters & parameters);
+  ComputeThermalExpansionEigenstrainBeamBaseTempl(const InputParameters & parameters);
 
 protected:
   virtual void computeQpEigenstrain() override;
@@ -31,14 +33,23 @@ protected:
    * param thermal_strain    The current total linear thermal strain
    *                         (\delta L / L)
    */
-  virtual Real computeThermalStrain() = 0;
+  virtual GenericReal<is_ad> computeThermalStrain() = 0;
 
   /// Value of temperature at each quadrature point
-  const VariableValue & _temperature;
+  const GenericVariableValue<is_ad> & _temperature;
 
   /// Value of stress free temperature at each quadrature point
-  const VariableValue & _stress_free_temperature;
+  const GenericVariableValue<is_ad> & _stress_free_temperature;
 
   /// Initial orientation of the beam
   RealGradient _initial_axis;
+
+  usingMaterialMembers;
+  using ComputeEigenstrainBeamBaseTempl<is_ad>::_disp_eigenstrain;
+  using ComputeEigenstrainBeamBaseTempl<is_ad>::_rot_eigenstrain;
 };
+
+using ComputeThermalExpansionEigenstrainBeamBase =
+    ComputeThermalExpansionEigenstrainBeamBaseTempl<false>;
+using ADComputeThermalExpansionEigenstrainBeamBase =
+    ComputeThermalExpansionEigenstrainBeamBaseTempl<true>;

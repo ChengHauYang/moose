@@ -10,11 +10,13 @@
 #include "ComputeThermalExpansionEigenstrainBeam.h"
 
 registerMooseObject("SolidMechanicsApp", ComputeThermalExpansionEigenstrainBeam);
+registerMooseObject("SolidMechanicsApp", ADComputeThermalExpansionEigenstrainBeam);
 
+template <bool is_ad>
 InputParameters
-ComputeThermalExpansionEigenstrainBeam::validParams()
+ComputeThermalExpansionEigenstrainBeamTempl<is_ad>::validParams()
 {
-  InputParameters params = ComputeThermalExpansionEigenstrainBeamBase::validParams();
+  InputParameters params = ComputeThermalExpansionEigenstrainBeamBaseTempl<is_ad>::validParams();
   params.addClassDescription("Computes eigenstrain due to thermal expansion "
                              "with a constant coefficient");
   params.addParam<Real>("thermal_expansion_coeff", "Thermal expansion coefficient");
@@ -22,15 +24,20 @@ ComputeThermalExpansionEigenstrainBeam::validParams()
   return params;
 }
 
-ComputeThermalExpansionEigenstrainBeam::ComputeThermalExpansionEigenstrainBeam(
+template <bool is_ad>
+ComputeThermalExpansionEigenstrainBeamTempl<is_ad>::ComputeThermalExpansionEigenstrainBeamTempl(
     const InputParameters & parameters)
-  : ComputeThermalExpansionEigenstrainBeamBase(parameters),
-    _thermal_expansion_coeff(getParam<Real>("thermal_expansion_coeff"))
+  : ComputeThermalExpansionEigenstrainBeamBaseTempl<is_ad>(parameters),
+    _thermal_expansion_coeff(this->template getParam<Real>("thermal_expansion_coeff"))
 {
 }
 
-Real
-ComputeThermalExpansionEigenstrainBeam::computeThermalStrain()
+template <bool is_ad>
+GenericReal<is_ad>
+ComputeThermalExpansionEigenstrainBeamTempl<is_ad>::computeThermalStrain()
 {
   return _thermal_expansion_coeff * (_temperature[_qp] - _stress_free_temperature[_qp]);
 }
+
+template class ComputeThermalExpansionEigenstrainBeamTempl<false>;
+template class ComputeThermalExpansionEigenstrainBeamTempl<true>;
