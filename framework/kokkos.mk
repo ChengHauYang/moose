@@ -63,6 +63,16 @@ ifeq ($(PETSC_HAVE_KOKKOS),1)
       $(error For NVIDIA GPUs, use CUDA instead of HIP)
     endif
     HIP_ARCH := $(shell sed -n 's/\#define PETSC_HIP_ROCM_ARCH //p' $(PETSC_CONF))
+    # Newer PETSc no longer defines PETSC_HIP_ROCM_ARCH; take the architecture PETSc compiles its
+    # HIP code for. Without one, hipcc targets its default architecture (gfx906 in ROCm 6), whose
+    # kernels do not load on other GPUs (hipErrorInvalidKernelFile).
+    ifeq ($(HIP_ARCH),)
+      HIP_ARCH := $(shell sed -n 's/^HIPC_FLAGS =.*--offload-arch=\([^ ]*\).*/\1/p' \
+                    $(PETSC_DIR)/$(PETSC_ARCH)/lib/petsc/conf/petscvariables)
+    endif
+    ifeq ($(HIP_ARCH),)
+      $(error Could not determine the HIP GPU architecture from PETSc; set HIP_ARCH, e.g. gfx90a)
+    endif
   endif
   ifeq ($(PETSC_HAVE_SYCL),1)
     SYCL_ARCH := $(shell sed -n 's/\#define PETSC_SYCL_DEVICE //p' $(PETSC_CONF))
