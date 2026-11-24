@@ -66,6 +66,13 @@
       detail = 'with data sorted by blocks and read through a material held constant over each '
                'subdomain (computed during subdomain setup, before the element is reinitialized),'
     []
+    [extra_element_id]
+      type = 'CSVDiff'
+      input = 'piecewise_constant_extra_element_id.i'
+      csvdiff = 'piecewise_constant_extra_element_id_out.csv'
+      detail = 'with data sorted by the value of an extra element integer that differs from the '
+               'subdomain ID,'
+    []
     [multiple_files]
       type = 'Exodiff'
       input = 'piecewise_constant_elem_multiple.i'
@@ -103,6 +110,27 @@
       cli_args = 'ICs/active=block UserObjects/reader_block/nblock=0'
       expect_err = 'Provide non-zero number of blocks.'
       detail = 'if the number of blocks specified to a CSV reader reading block-data is 0'
+    []
+    [zero_extra_element_ids]
+      type = RunException
+      input = 'piecewise_constant_extra_element_id.i'
+      cli_args = 'UserObjects/reader/n_extra_element_ids=0'
+      expect_err = 'Provide a non-zero number of extra element ID values.'
+      detail = 'if the number of extra element ID values specified to a CSV reader reading extra-element-ID-data is 0'
+    []
+    [missing_extra_element_id]
+      type = RunException
+      input = 'piecewise_constant_extra_element_id.i'
+      cli_args = 'UserObjects/reader/extra_element_id=missing'
+      expect_err = "The mesh has no extra element integer 'missing'."
+      detail = 'if the extra element integer that orders the CSV data does not exist'
+    []
+    [extra_element_id_out_of_range]
+      type = RunException
+      input = 'piecewise_constant_extra_element_id.i'
+      cli_args = 'UserObjects/reader/use_zero_based_extra_element_id_indexing=true'
+      expect_err = 'has extra element ID 3, which has no row among the 3 rows of data.'
+      detail = 'if an element has an extra element ID with no row of data'
     []
     [zero_voronoi]
       type = RunException
