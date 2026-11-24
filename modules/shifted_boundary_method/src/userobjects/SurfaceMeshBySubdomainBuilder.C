@@ -19,6 +19,9 @@ SurfaceMeshBySubdomainBuilder::validParams()
   params.renameParam("boundary_mesh",
                      "complete_boundary_mesh",
                      "The saved mesh containing the complete boundary of each subdomain.");
+  params.renameParam("boundary_mesh_file",
+                     "complete_boundary_mesh_file",
+                     "A file holding the complete boundary of each subdomain.");
   params.addClassDescription(
       "Builds one SurfaceElementSet per subdomain from a given surface mesh.");
   return params;

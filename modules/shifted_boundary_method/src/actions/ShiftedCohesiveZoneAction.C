@@ -124,6 +124,12 @@ ShiftedCohesiveZoneAction::validParams()
       "complete_interface_mesh",
       "Saved surface mesh containing the complete boundary of each subdomain. Setting this "
       "parameter automatically creates one interface manager and distance user object.");
+  params.addParam<FileName>(
+      "complete_interface_mesh_file",
+      "File holding the surface mesh with the complete boundary of each subdomain, read directly "
+      "instead of a saved mesh. Use this with a pre-split mesh (--use-split), for which the mesh "
+      "generators that would save 'complete_interface_mesh' do not run. Mutually exclusive with "
+      "'complete_interface_mesh' and 'complete_interface_meshes'.");
   params.addParam<std::vector<MeshGeneratorName>>(
       "complete_interface_meshes",
       "Saved watertight boundary mesh for each grain, one per grain, with the matching grain "
@@ -181,20 +187,25 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
   const bool generate_distance = getParam<bool>("generate_sbm_distance");
   const bool has_distance_uo = isParamSetByUser("sbm_distance_uo");
   const bool has_single_mesh = isParamSetByUser("complete_interface_mesh");
+  const bool has_mesh_file = isParamSetByUser("complete_interface_mesh_file");
   const bool has_mesh_list = isParamSetByUser("complete_interface_meshes");
-  // The single-mesh and per-grain-list forms both drive the interface manager.
-  const bool uses_manager = has_single_mesh || has_mesh_list;
+  // The single-mesh, mesh-file, and per-grain-list forms all drive the interface manager.
+  const bool uses_manager = has_single_mesh || has_mesh_file || has_mesh_list;
 
-  if (has_single_mesh && has_mesh_list)
+  if (static_cast<unsigned int>(has_single_mesh) + static_cast<unsigned int>(has_mesh_file) +
+          static_cast<unsigned int>(has_mesh_list) >
+      1)
     paramError("complete_interface_meshes",
-               "Specify only one of 'complete_interface_mesh' and 'complete_interface_meshes'.");
+               "Specify only one of 'complete_interface_mesh', 'complete_interface_mesh_file', and "
+               "'complete_interface_meshes'.");
 
   if (static_cast<unsigned int>(generate_distance) + static_cast<unsigned int>(has_distance_uo) +
           static_cast<unsigned int>(uses_manager) >
       1)
     paramError("sbm_distance_uo",
                "Specify only one of 'sbm_distance_uo', 'generate_sbm_distance', and "
-               "'complete_interface_mesh'/'complete_interface_meshes'.");
+               "'complete_interface_mesh'/'complete_interface_mesh_file'/"
+               "'complete_interface_meshes'.");
 
   if (has_mesh_list)
   {
@@ -219,7 +230,7 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
   if (!uses_manager && isParamSetByUser("interface_matching_tolerance"))
     paramError("interface_matching_tolerance",
                "This parameter is only valid with 'complete_interface_mesh'/"
-               "'complete_interface_meshes'.");
+               "'complete_interface_mesh_file'/'complete_interface_meshes'.");
 
   if (generate_distance)
   {
@@ -234,7 +245,7 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
   if (!uses_manager && isParamSetByUser("interface_subdomain_pairs"))
     paramError("interface_subdomain_pairs",
                "This parameter is only valid with 'complete_interface_mesh'/"
-               "'complete_interface_meshes'.");
+               "'complete_interface_mesh_file'/'complete_interface_meshes'.");
   if (uses_manager && isParamSetByUser("interface_subdomain_pairs") &&
       getParam<std::vector<std::vector<SubdomainID>>>("interface_subdomain_pairs").size() !=
           _boundary.size())
@@ -468,6 +479,7 @@ bool
 ShiftedCohesiveZoneAction::usesInterfaceManager() const
 {
   return isParamSetByUser("complete_interface_mesh") ||
+         isParamSetByUser("complete_interface_mesh_file") ||
          isParamSetByUser("complete_interface_meshes");
 }
 
@@ -497,6 +509,9 @@ ShiftedCohesiveZoneAction::addSBMDistanceUserObjects()
     if (isParamSetByUser("complete_interface_mesh"))
       manager_params.set<MeshGeneratorName>("complete_interface_mesh") =
           getParam<MeshGeneratorName>("complete_interface_mesh");
+    else if (isParamSetByUser("complete_interface_mesh_file"))
+      manager_params.set<FileName>("complete_interface_mesh_file") =
+          getParam<FileName>("complete_interface_mesh_file");
     else
     {
       // Per-grain list form: the manager stitches the shells itself. These are
