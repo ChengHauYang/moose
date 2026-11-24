@@ -26,12 +26,13 @@ PiecewiseConstantFromCSV::validParams()
   // This parameter is added for optimization when doing nearest neighbor interpolation
   // but it's also safer to have that parameter be close to the use case, and not only in the UO
   params.addRequiredParam<MooseEnum>("read_type",
-                                     MooseEnum("element voronoi block node"),
+                                     MooseEnum("element voronoi block node extra_element_id=5"),
                                      "Organization of data in the CSV file: "
                                      "element:by element "
                                      "node: by node "
                                      "voronoi:nearest neighbor / voronoi tesselation structure "
-                                     "block:by mesh block");
+                                     "block:by mesh block "
+                                     "extra_element_id: by the value of an extra element integer");
   // We need one ghost layer in case we need to retrieve the id or subdomain id from an
   // element that is on the other side of a domain boundary
   params.set<unsigned short>("ghost_layers") = 1;
@@ -95,8 +96,26 @@ PiecewiseConstantFromCSV::value(Real, const Point & p) const
       return _read_prop_user_object->getBlockData(current_subdomain, _column_number);
   }
 
+  if (_read_type == PropertyReadFile::ReadTypeEnum::EXTRA_ELEMENT_ID)
+  {
+    // The element being assembled is the common case (a material quadrature point); checking it
+    // first avoids a point-location for every evaluation. A quadrature point of that element is
+    // matched exactly, which is much cheaper than the inverse map of contains_point().
+    const Assembly & assembly = _ti_feproblem.assembly(_tid, /*nl_sys=*/0);
+    if (const Elem * const current_elem = assembly.elem())
+    {
+      const auto & q_points = assembly.qPoints();
+      for (const auto qp : make_range(q_points.size()))
+        if (q_points[qp] == p)
+          return _read_prop_user_object->getExtraElementIDData(current_elem, _column_number);
+      if (current_elem->contains_point(p))
+        return _read_prop_user_object->getExtraElementIDData(current_elem, _column_number);
+    }
+  }
+
   if (_read_type == PropertyReadFile::ReadTypeEnum::ELEMENT ||
-      _read_type == PropertyReadFile::ReadTypeEnum::BLOCK)
+      _read_type == PropertyReadFile::ReadTypeEnum::BLOCK ||
+      _read_type == PropertyReadFile::ReadTypeEnum::EXTRA_ELEMENT_ID)
   {
     // Genuine per-location lookup: find the element containing the point.
     std::set<const Elem *> candidate_elements;
@@ -116,6 +135,8 @@ PiecewiseConstantFromCSV::value(Real, const Point & p) const
 
     if (_read_type == PropertyReadFile::ReadTypeEnum::BLOCK)
       return _read_prop_user_object->getBlockData(min_id_elem, _column_number);
+    if (_read_type == PropertyReadFile::ReadTypeEnum::EXTRA_ELEMENT_ID)
+      return _read_prop_user_object->getExtraElementIDData(min_id_elem, _column_number);
     return _read_prop_user_object->getData(min_id_elem, _column_number);
   }
   else if (_read_type == PropertyReadFile::ReadTypeEnum::NODE)

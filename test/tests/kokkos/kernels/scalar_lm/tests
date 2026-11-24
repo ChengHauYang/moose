@@ -1,0 +1,29 @@
+[Tests]
+  design = 'syntax/KokkosKernels/index.md'
+  issues = '#33709'
+  [host]
+    type = Exodiff
+    input = 'scalar_lm.i'
+    exodiff = 'scalar_lm_out.e'
+    requirement = 'The system shall enforce an integral constraint on a field variable with a scalar Lagrange multiplier contributed by a host kernel.'
+  []
+  [kokkos]
+    type = Exodiff
+    input = 'scalar_lm.i'
+    exodiff = 'kokkos_scalar_lm_out.e'
+    # The gold file is a copy of the host solution, gold/scalar_lm_out.e
+    cli_args = 'KOKKOS=Kokkos Outputs/file_base=kokkos_scalar_lm_out'
+    requirement = 'The Kokkos system shall allow a field kernel to contribute the residual and Jacobian rows of a coupled scalar variable, matching the equivalent host kernel.'
+    capabilities = 'kokkos'
+    compute_devices = 'cpu cuda'
+  []
+  [kokkos_jacobian]
+    type = PetscJacobianTester
+    input = 'scalar_lm.i'
+    cli_args = 'KOKKOS=Kokkos Kernels/sk_lm/penalty=0.5 Outputs/exodus=false'
+    run_sim = true
+    requirement = 'The Kokkos system shall assemble a consistent Jacobian for a field kernel with scalar variable rows, including the field-scalar, scalar-field, and scalar-scalar blocks.'
+    capabilities = 'kokkos'
+    compute_devices = 'cpu cuda'
+  []
+[]

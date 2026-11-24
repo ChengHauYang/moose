@@ -15,8 +15,12 @@
  * Computes the total deformation gradient as a Kokkos rank-two material property.
  *
  * With stabilize_strain, it also computes the total-mode F-bar deformation gradient
- * B = (det(M) / det(U))^(1/3) U, where U is the physical deformation gradient and M is the average
- * of U over the true reference volume of the element that owns the evaluation point.
+ * B = (det(M) / det(U))^(1/3) U (large kinematics) or B = U + (tr(M) - tr(U)) / 3 I (small
+ * kinematics), where U is the physical deformation gradient and M is the average of U over the true
+ * reference volume of the element that owns the evaluation point.
+ *
+ * A homogenization gradient H is added to both U and B after the F-bar correction, as in the host
+ * ComputeLagrangianStrainBase, so that F-bar acts on the displacement gradient only.
  */
 class KokkosComputeDeformationGradient : public Moose::Kokkos::Material
 {
@@ -38,7 +42,12 @@ private:
   KOKKOS_FUNCTION Moose::Kokkos::Real33 volumeAverageDeformationGradient(Datum & datum) const;
 
   const unsigned int _ndisp;
+  const bool _large_kinematics;
   const bool _stabilize_strain;
+  /// Whether a homogenization gradient is added
+  const bool _has_homogenization_gradient;
+  /// Homogenization gradient H, used only when _has_homogenization_gradient
+  Moose::Kokkos::MaterialProperty<Real, 2> _homogenization_gradient;
   const Moose::Kokkos::VariableGradient _grad_displacements;
   /// Physical deformation gradient U = I + grad(u)
   Moose::Kokkos::MaterialProperty<Real, 2> _physical_deformation_gradient;
@@ -61,25 +70,52 @@ KokkosComputeDeformationGradient::computeQpProperties(const unsigned int qp, Dat
     for (unsigned int j = 0; j < _ndisp; ++j)
       deformation_gradient(i, j) += _grad_displacements(datum, qp, i)(j);
 
-  if (!_stabilize_strain)
+  if (_stabilize_strain)
+  {
+    Moose::Kokkos::Real33 U;
+    for (unsigned int i = 0; i < 3; ++i)
+      for (unsigned int j = 0; j < 3; ++j)
+        U(i, j) = deformation_gradient(i, j);
+
+    const auto M = volumeAverageDeformationGradient(datum);
+
+    auto average = _average_deformation_gradient(datum, qp);
+    auto stabilized = _stabilized_deformation_gradient(datum, qp);
+    for (unsigned int i = 0; i < 3; ++i)
+      for (unsigned int j = 0; j < 3; ++j)
+        average(i, j) = M(i, j);
+
+    if (_large_kinematics)
+    {
+      const Real gamma = ::Kokkos::cbrt(M.determinant() / U.determinant());
+      for (unsigned int i = 0; i < 3; ++i)
+        for (unsigned int j = 0; j < 3; ++j)
+          stabilized(i, j) = gamma * U(i, j);
+    }
+    else
+    {
+      const Real trace_correction = (M(0, 0) + M(1, 1) + M(2, 2) - U(0, 0) - U(1, 1) - U(2, 2)) / 3;
+      for (unsigned int i = 0; i < 3; ++i)
+        for (unsigned int j = 0; j < 3; ++j)
+          stabilized(i, j) = U(i, j) + (i == j) * trace_correction;
+    }
+  }
+
+  if (!_has_homogenization_gradient)
     return;
 
-  Moose::Kokkos::Real33 U;
+  const auto H = _homogenization_gradient(datum, qp);
   for (unsigned int i = 0; i < 3; ++i)
     for (unsigned int j = 0; j < 3; ++j)
-      U(i, j) = deformation_gradient(i, j);
+      deformation_gradient(i, j) += H(i, j);
 
-  const auto M = volumeAverageDeformationGradient(datum);
-  const Real gamma = ::Kokkos::cbrt(M.determinant() / U.determinant());
-
-  auto average = _average_deformation_gradient(datum, qp);
-  auto stabilized = _stabilized_deformation_gradient(datum, qp);
-  for (unsigned int i = 0; i < 3; ++i)
-    for (unsigned int j = 0; j < 3; ++j)
-    {
-      average(i, j) = M(i, j);
-      stabilized(i, j) = gamma * U(i, j);
-    }
+  if (_stabilize_strain)
+  {
+    auto stabilized = _stabilized_deformation_gradient(datum, qp);
+    for (unsigned int i = 0; i < 3; ++i)
+      for (unsigned int j = 0; j < 3; ++j)
+        stabilized(i, j) += H(i, j);
+  }
 }
 
 KOKKOS_FUNCTION inline Moose::Kokkos::Real33

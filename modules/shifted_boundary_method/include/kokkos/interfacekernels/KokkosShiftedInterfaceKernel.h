@@ -77,7 +77,8 @@ private:
   void initializeSurrogateInterfaceMapping();
   void ensureSurrogateInterfaceMappingReady() const;
 
-  const BoundaryShortestDistanceToSurface & _sbm_distance_uo;
+  /// The surrogate-interface mapping source; nullptr when the shift is disabled
+  const BoundaryShortestDistanceToSurface * const _sbm_distance_uo;
   Array2D<dof_id_type> _qp_offsets;
   Array<Real3> _surrogate_distance_vectors;
   Array<Real3> _true_normals;

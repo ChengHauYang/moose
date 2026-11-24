@@ -101,6 +101,10 @@ KokkosSCZMInterfaceKernelSmallStrain::KokkosSCZMInterfaceKernelSmallStrain(
   else
     _tangent_is_dpk1_df = tangent_definition == "pk1_wrt_deformation_gradient";
 
+  if (_shifted && !isParamValid("sbm_distance_uo"))
+    paramError("sbm_distance_uo",
+               "The 'sbm_distance_uo' parameter is required unless 'no_shifted = true'.");
+
   if (_shifted && _directional_correction)
   {
     const auto prefix = isParamValid("base_name") && !getParam<std::string>("base_name").empty()

@@ -1,0 +1,53 @@
+Time Step 0, time = 0
+
+Postprocessor Values:
++----------------+-------------------+--------------------+--------------------+
+| time           | avg_disp_x_block1 | avg_slip_hardening | max_slip_hardening |
++----------------+-------------------+--------------------+--------------------+
+|   0.000000e+00 |      0.000000e+00 |       0.000000e+00 |       0.000000e+00 |
++----------------+-------------------+--------------------+--------------------+
+
+
+Time Step 1, time = 0.005, dt = 0.005
+
+Performing automatic scaling calculation
+
+ 0 Nonlinear |R| = [32m1.500000e-02[39m
+      0 Linear |R| = [32m1.500000e-02[39m
+      1 Linear |R| = [32m1.523948e-04[39m
+      2 Linear |R| = [32m8.422890e-06[39m
+      3 Linear |R| = [32m4.448632e-07[39m
+      4 Linear |R| = [32m1.413565e-08[39m
+      5 Linear |R| = [32m6.867610e-10[39m
+      6 Linear |R| = [32m3.443384e-11[39m
+      7 Linear |R| = [32m1.333960e-12[39m
+ 1 Nonlinear |R| = [32m1.306644e-10[39m
+  Nonlinear solve did not converge due to DIVERGED_MAX_IT iterations 1
+[31m Solve Did NOT Converge![39m
+
+Aborting as solve did not converge
+
+[31m
+*** ERROR ***
+The following occurred in the TimeStepper 'ConstantDT' of type ConstantDT.
+
+Solve failed and timestep already at or below dtmin, cannot continue![39m
+
+Stack frames: 13
+0: libMesh::print_trace(std::ostream&)
+1: moose::internal::mooseErrorRaw(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, hit::Node const*, bool)
+2: MooseBase::callMooseError(MooseApp*, InputParameters const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, hit::Node const*, bool)
+3: MooseBase::callMooseError(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, hit::Node const*, bool) const
+4: TimeStepper::computeFailedDT()
+5: TimeStepper::computeStep()
+6: TransientBase::execute()
+7: MooseApp::executeExecutioner()
+8: MooseApp::run()
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------

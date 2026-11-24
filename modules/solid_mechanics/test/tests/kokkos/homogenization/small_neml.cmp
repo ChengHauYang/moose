@@ -1,0 +1,28 @@
+# The Kokkos and host inputs use the same mesh and time steps
+COORDINATES absolute 1.e-12
+TIME STEPS relative 1.e-12 floor 1.e-14
+
+# Volume-averaged PK1 stress and macro gradient components
+GLOBAL VARIABLES relative 1.e-6 floor 1.e-6
+	mCS_xx
+	mCS_xy
+	mCS_xz
+	mCS_yx
+	mCS_yy
+	mCS_yz
+	mCS_zx
+	mCS_zy
+	mCS_zz
+	hvar_0
+	hvar_1
+	hvar_2
+	hvar_3
+	hvar_4
+	hvar_5
+
+NODAL VARIABLES relative 1.e-6 floor 1.e-10
+	disp_x
+	disp_y
+	disp_z
+
+# No ELEMENT VARIABLES

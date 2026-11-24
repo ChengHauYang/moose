@@ -14,6 +14,8 @@
 // MOOSE includes
 #include "TorchPreKernel.h"
 
+class MooseVariableScalar;
+
 class TorchSmallStrain : public TorchPreKernel
 {
 public:
@@ -31,6 +33,13 @@ protected:
   const at::Tensor * _grad_disp_y;
   const at::Tensor * _grad_disp_z;
   ///@}
+
+  /// Whether to apply the additive (B-bar) volumetric locking correction
+  const bool _stabilize_strain;
+  /// Macro gradient scalar variable added after the volumetric correction, if any
+  const MooseVariableScalar * const _macro_gradient;
+  /// Tensor indices of the macro gradient components
+  const std::vector<std::pair<unsigned int, unsigned int>> _macro_gradient_indices;
 };
 
 #endif // NEML2_ENABLED

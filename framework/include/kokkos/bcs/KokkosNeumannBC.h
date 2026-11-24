@@ -22,8 +22,8 @@ public:
   KOKKOS_FUNCTION Real precomputeQpResidual(const unsigned int, AssemblyDatum &) const;
 
 protected:
-  /// Value of grad(u) on the boundary.
-  const Real _value;
+  /// Value of grad(u) on the boundary (controllable)
+  const Moose::Kokkos::Scalar<const Real> _value;
 };
 
 template <typename Derived>

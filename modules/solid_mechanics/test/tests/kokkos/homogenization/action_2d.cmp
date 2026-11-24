@@ -1,0 +1,15 @@
+# The Kokkos and host inputs use the same mesh and time steps
+COORDINATES absolute 1.e-12
+TIME STEPS relative 1.e-12 floor 1.e-14
+
+# Macro gradient components
+GLOBAL VARIABLES relative 1.e-6 floor 1.e-10
+	hvar_0
+	hvar_1
+	hvar_2
+
+NODAL VARIABLES relative 1.e-6 floor 1.e-10
+	disp_x
+	disp_y
+
+# No ELEMENT VARIABLES

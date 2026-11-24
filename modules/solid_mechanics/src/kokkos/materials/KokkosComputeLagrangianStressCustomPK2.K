@@ -56,6 +56,17 @@ KokkosComputeLagrangianStressCustomPK2Templ<interface, neighbor>::validParams()
       "fbar_gamma_over_3",
       "fbar_gamma_over_3",
       "Name of the F-bar gamma/3 scalar published for the kernel's non-local Jacobian.");
+  params.template addParam<std::vector<MaterialPropertyName>>(
+      "homogenization_gradient_names",
+      {},
+      "Homogenization gradient added to the deformation gradient of the PK1 wrap. At most one "
+      "gradient is supported, and interface conversion does not support it.");
+  params.template addParam<MaterialPropertyName>(
+      "dpk1_bypass_fbar",
+      "dpk1_bypass_fbar",
+      "Name of the PK1 tangent without the F-bar dF_stab/dF_ust factor, the derivative with "
+      "respect to the homogenization gradient. Declared only with stabilize_strain and a "
+      "homogenization gradient.");
 
   if constexpr (neighbor)
     params.template set<Moose::MaterialDataType>("_material_data_type") =
@@ -86,8 +97,28 @@ KokkosComputeLagrangianStressCustomPK2Templ<interface, neighbor>::
                          : Moose::Kokkos::MaterialProperty<Real, 2>()),
     _gamma_over_3(_stabilize_strain
                       ? this->template declareKokkosProperty<Real, 0>("fbar_gamma_over_3")
-                      : Moose::Kokkos::MaterialProperty<Real, 0>())
+                      : Moose::Kokkos::MaterialProperty<Real, 0>()),
+    _has_homogenization_gradient(
+        !this->template getParam<std::vector<MaterialPropertyName>>("homogenization_gradient_names")
+             .empty())
 {
+  const auto & homogenization_gradient_names =
+      this->template getParam<std::vector<MaterialPropertyName>>("homogenization_gradient_names");
+  if (homogenization_gradient_names.size() > 1)
+    this->paramError("homogenization_gradient_names",
+                     "At most one homogenization gradient is supported.");
+  if (_has_homogenization_gradient)
+  {
+    if constexpr (interface)
+      this->paramError("homogenization_gradient_names",
+                       "Homogenization is not supported for interface PK2-to-PK1 conversion.");
+    _homogenization_gradient = this->template getKokkosMaterialPropertyByName<Real, 2>(
+        homogenization_gradient_names[0]);
+    if (_stabilize_strain)
+      _dpk1_bypass_fbar =
+          this->template declareKokkosProperty<Real, 4>("dpk1_bypass_fbar", {3, 3, 3, 3});
+  }
+
   if (_ndisp != this->_mesh.dimension())
     this->paramError("displacements",
                      "The number of displacement variables must match the mesh dimension.");

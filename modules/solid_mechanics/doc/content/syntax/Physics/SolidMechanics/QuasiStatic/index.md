@@ -61,6 +61,16 @@ See [Homogenization](solid_mechanics/Homogenization.md).
 - [!param](/Physics/SolidMechanics/QuasiStatic/QuasiStaticSolidMechanicsPhysics/targets)
 - [!param](/Physics/SolidMechanics/QuasiStatic/QuasiStaticSolidMechanicsPhysics/homogenized_off_diagonal_jacobian)
 
+With [!param](/Physics/SolidMechanics/QuasiStatic/QuasiStaticSolidMechanicsPhysics/use_kokkos), the
+Physics adds the Kokkos total-Lagrangian kernels
+([KokkosTotalLagrangianStressDivergence](KokkosTotalLagrangianStressDivergence.md) or
+[KokkosHomogenizedTotalLagrangianStressDivergence](KokkosHomogenizedTotalLagrangianStressDivergence.md))
+and kinematics materials instead of the host objects. The stress must then come from a Kokkos
+material such as [KokkosComputeLagrangianStressCustomPK2](KokkosComputeLagrangianStressCustomPK2.md)
+or [KokkosComputeLagrangianStressCustomSmall](KokkosComputeLagrangianStressCustomSmall.md).
+
+!listing modules/solid_mechanics/test/tests/kokkos/homogenization/action_2d.i block=Physics/SolidMechanics/QuasiStatic
+
 ## Output id=output
 
 Add AuxVariables that output stress and strain tensor components and derived scalar quantities.  See

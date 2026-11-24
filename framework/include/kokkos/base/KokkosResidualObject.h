@@ -37,6 +37,9 @@ public:
   /// Whether this object has computeQpOffDiagJacobianScalar() hook
   static constexpr bool supports_scalar_jacobian = false;
 
+  /// Whether this object has the scalar variable row hooks of KernelScalarBase
+  static constexpr bool supports_scalar_residual = false;
+
   /**
    * Constructor
    * @param field_type The MOOSE variable field type
@@ -227,6 +230,28 @@ protected:
                                                        const unsigned int jvar,
                                                        const unsigned int comp = 0) const;
   /**
+   * Accumulate a residual contribution to tagged vectors at a local DOF, distributing it through
+   * the DOF constraints if any
+   * @param local_re The residual contribution
+   * @param sys The Kokkos system containing the DOF
+   * @param dof The local DOF index
+   */
+  KOKKOS_FUNCTION void accumulateTaggedDofResidual(const Real local_re,
+                                                   const FESystem & sys,
+                                                   const dof_id_type dof) const;
+  /**
+   * Accumulate a Jacobian contribution to tagged matrices at a local row and column DOF,
+   * distributing it through the row and column DOF constraints if any
+   * @param local_ke The Jacobian contribution
+   * @param sys The Kokkos system containing the DOFs
+   * @param row The local row DOF index
+   * @param col The local column DOF index
+   */
+  KOKKOS_FUNCTION void accumulateTaggedDofMatrix(const Real local_ke,
+                                                 const FESystem & sys,
+                                                 const dof_id_type row,
+                                                 const dof_id_type col) const;
+  /**
    * Accumulate local elemental Jacobian contribution to tagged matrices using automatic
    * differentiation (AD)
    * @param local_ke The local elemental Jacobian contribution
@@ -331,7 +356,15 @@ ResidualObject::accumulateTaggedInterfaceResidual(const Real local_re,
     return;
 
   auto & sys = kokkosSystem(row_var.sys(comp));
-  auto dof = sys.getElemLocalDofIndex(row_elem, i, row_var.var(comp));
+  accumulateTaggedDofResidual(
+      local_re, sys, sys.getElemLocalDofIndex(row_elem, i, row_var.var(comp)));
+}
+
+KOKKOS_FUNCTION inline void
+ResidualObject::accumulateTaggedDofResidual(const Real local_re,
+                                            const FESystem & sys,
+                                            const dof_id_type dof) const
+{
   auto constraints = sys.getLocalConstraints(dof);
 
   for (unsigned int t = 0; t < _vector_tags.size(); ++t)
@@ -434,6 +467,15 @@ ResidualObject::accumulateTaggedInterfaceMatrix(const Real local_ke,
   auto row = sys.getElemLocalDofIndex(row_elem, i, ivar);
   auto col = sys.isScalarVariable(jvar) ? sys.getScalarLocalDofIndex(j, jvar)
                                         : sys.getElemLocalDofIndex(col_elem, j, jvar);
+  accumulateTaggedDofMatrix(local_ke, sys, row, col);
+}
+
+KOKKOS_FUNCTION inline void
+ResidualObject::accumulateTaggedDofMatrix(const Real local_ke,
+                                          const FESystem & sys,
+                                          const dof_id_type row,
+                                          const dof_id_type col) const
+{
   auto col_global = sys.localToGlobalDofIndex(col);
   auto row_constraints = sys.getLocalConstraints(row);
   auto col_constraints = sys.getLocalConstraints(col);

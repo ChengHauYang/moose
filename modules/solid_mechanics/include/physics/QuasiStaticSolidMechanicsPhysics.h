@@ -29,6 +29,8 @@ protected:
   void actGatherActionParameters();
   void verifyOrderAndFamilyOutputs();
   void actLagrangianKernelStrain();
+  void actKokkosLagrangianKernelStrain();
+  void actKokkosLagrangianKernels();
   void actStressDivergenceTensorsStrain();
 
   virtual std::string getKernelType();
@@ -177,6 +179,8 @@ protected:
   std::vector<FunctionName> _targets;
   /// Whether to use the off diagonal scalar jacobian for the homogenization system
   const bool _lk_h_off_jac;
+  /// Whether to add the Kokkos versions of the Lagrangian kernels and kinematics materials
+  const bool _use_kokkos;
 };
 
 template <typename T, typename T2>

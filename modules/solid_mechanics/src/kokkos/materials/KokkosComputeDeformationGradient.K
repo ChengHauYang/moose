@@ -24,10 +24,20 @@ KokkosComputeDeformationGradient::validParams()
       "Name of the deformation gradient property. With stabilize_strain, this is the total-mode "
       "F-bar deformation gradient.");
   params.addParam<bool>(
+      "large_kinematics",
+      true,
+      "Use the multiplicative (large kinematics) rather than the additive trace (small kinematics) "
+      "F-bar correction.");
+  params.addParam<bool>(
       "stabilize_strain",
       false,
       "Also compute the total-mode F-bar deformation gradient from the average of the physical "
       "deformation gradient over the true reference volume of the owning element.");
+  params.addParam<std::vector<MaterialPropertyName>>(
+      "homogenization_gradient_names",
+      {},
+      "Homogenization gradient to add to the deformation gradient after the F-bar correction. At "
+      "most one gradient is supported.");
   params.addParam<MaterialPropertyName>(
       "physical_deformation_gradient",
       "physical_deformation_gradient",
@@ -44,7 +54,10 @@ KokkosComputeDeformationGradient::KokkosComputeDeformationGradient(
     const InputParameters & parameters)
   : Material(parameters),
     _ndisp(coupledComponents("displacements")),
+    _large_kinematics(getParam<bool>("large_kinematics")),
     _stabilize_strain(getParam<bool>("stabilize_strain")),
+    _has_homogenization_gradient(
+        !getParam<std::vector<MaterialPropertyName>>("homogenization_gradient_names").empty()),
     _grad_displacements(kokkosCoupledGradients("displacements")),
     _physical_deformation_gradient(declareKokkosProperty<Real, 2>(
         getParam<MaterialPropertyName>(_stabilize_strain ? "physical_deformation_gradient"
@@ -54,6 +67,14 @@ KokkosComputeDeformationGradient::KokkosComputeDeformationGradient(
   if (_ndisp != _mesh.dimension())
     paramError("displacements",
                "The number of displacement variables must match the mesh dimension.");
+
+  const auto & homogenization_gradient_names =
+      getParam<std::vector<MaterialPropertyName>>("homogenization_gradient_names");
+  if (homogenization_gradient_names.size() > 1)
+    paramError("homogenization_gradient_names", "At most one homogenization gradient is supported.");
+  if (_has_homogenization_gradient)
+    _homogenization_gradient =
+        getKokkosMaterialPropertyByName<Real, 2>(homogenization_gradient_names[0]);
 
   if (_stabilize_strain)
   {

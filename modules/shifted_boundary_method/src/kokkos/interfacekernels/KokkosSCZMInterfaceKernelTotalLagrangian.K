@@ -103,6 +103,10 @@ KokkosSCZMInterfaceKernelTotalLagrangian::KokkosSCZMInterfaceKernelTotalLagrangi
     _disp_vars[i] = coupled("displacements", i);
   _disp_vars.copyToDevice();
 
+  if (_shifted && !isParamValid("sbm_distance_uo"))
+    paramError("sbm_distance_uo",
+               "The 'sbm_distance_uo' parameter is required unless 'no_shifted = true'.");
+
   if (_shifted && _directional_correction)
   {
     const auto prefix = isParamValid("base_name") && !getParam<std::string>("base_name").empty()

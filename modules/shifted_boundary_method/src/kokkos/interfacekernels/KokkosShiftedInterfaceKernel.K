@@ -18,17 +18,22 @@ InputParameters
 ShiftedInterfaceKernel::validParams()
 {
   auto params = InterfaceKernel::validParams();
-  params.addRequiredParam<UserObjectName>(
-      "sbm_distance_uo", "UserObject providing the surrogate-interface mapping data.");
+  params.addParam<UserObjectName>(
+      "sbm_distance_uo",
+      "UserObject providing the surrogate-interface mapping data. Required unless the kernel "
+      "disables the shift (no_shifted = true).");
   return params;
 }
 
 ShiftedInterfaceKernel::ShiftedInterfaceKernel(const InputParameters & parameters)
   : InterfaceKernel(parameters),
-    _sbm_distance_uo(getUserObject<BoundaryShortestDistanceToSurface>("sbm_distance_uo"))
+    _sbm_distance_uo(isParamValid("sbm_distance_uo")
+                         ? &getUserObject<BoundaryShortestDistanceToSurface>("sbm_distance_uo")
+                         : nullptr)
 {
-  _fe_problem.addKokkosMeshInitializationHook(
-      std::bind(&ShiftedInterfaceKernel::initializeSurrogateInterfaceMapping, this));
+  if (_sbm_distance_uo)
+    _fe_problem.addKokkosMeshInitializationHook(
+        std::bind(&ShiftedInterfaceKernel::initializeSurrogateInterfaceMapping, this));
 }
 
 ShiftedInterfaceKernel::ShiftedInterfaceKernel(const ShiftedInterfaceKernel & object)
@@ -57,7 +62,7 @@ ShiftedInterfaceKernel::computeJacobian()
 void
 ShiftedInterfaceKernel::initializeSurrogateInterfaceMapping()
 {
-  const auto & mapping = _sbm_distance_uo.registerKokkosSurrogateInterfaceMapping(
+  const auto & mapping = _sbm_distance_uo->registerKokkosSurrogateInterfaceMapping(
       boundaryIDs(), kokkosInterfaceFaces());
   _qp_offsets = mapping.qp_offsets;
   _surrogate_distance_vectors = mapping.surrogate_distance_vectors;
@@ -67,7 +72,8 @@ ShiftedInterfaceKernel::initializeSurrogateInterfaceMapping()
 void
 ShiftedInterfaceKernel::ensureSurrogateInterfaceMappingReady() const
 {
-  if (!_sbm_distance_uo.kokkosSurrogateInterfaceMappingReady(boundaryIDs()))
+  // Without a distance user object (no shift) there is no mapping to wait for
+  if (_sbm_distance_uo && !_sbm_distance_uo->kokkosSurrogateInterfaceMappingReady(boundaryIDs()))
     mooseError("Surrogate-interface mapping for '",
                name(),
                "' is unavailable. Ensure its 'sbm_distance_uo' executes before nonlinear "

@@ -432,6 +432,34 @@
     capabilities = kokkos
     compute_devices = 'cpu cuda xpu'
   []
+  [sczm_tl_2d_neml2_traction]
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall evaluate a '
+                  'two-dimensional traction-separation law with NEML2, padding the 2D Kokkos '
+                  'displacement jump to three components and retrieving the traction and its jump '
+                  'derivative as Kokkos interface material properties,'
+    [solution]
+      type = Exodiff
+      input = sczm_tl_2d_neml2_traction.i
+      exodiff = sczm_tl_2d_neml2_traction_out.e
+      # The gold is a symlink to sczm_tl_2d_kokkos_out.e: the same law, so the same solution
+      abs_zero = 1e-8
+      rel_err = 1e-8
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
+      detail = 'matching the solution with the Kokkos traction-separation law, and'
+    []
+    [jacobian]
+      type = PetscJacobianTester
+      input = sczm_tl_2d_neml2_traction.i
+      ratio_tol = 1e-7
+      difference_tol = 1e-5
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      prereq = sczm_tl_2d_neml2_traction/solution
+      detail = 'with a consistent Jacobian.'
+    []
+  []
   [sczm_tl_2d_noshifted_host]
     type = Exodiff
     input = sczm_tl_2d_noshifted_host.i
@@ -486,6 +514,34 @@
     capabilities = kokkos
     compute_devices = 'cpu cuda xpu'
   []
+  [sczm_tl_3d_neml2_traction]
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall evaluate its '
+                  'traction-separation law with NEML2, gathering the Kokkos displacement jump into '
+                  'NEML2 and retrieving the traction and its jump derivative as Kokkos interface '
+                  'material properties,'
+    [solution]
+      type = Exodiff
+      input = sczm_tl_3d_neml2_traction.i
+      exodiff = sczm_tl_3d_neml2_traction_out.e
+      # The gold is a symlink to sczm_tl_3d_kokkos_out.e: the same law, so the same solution
+      abs_zero = 1e-8
+      rel_err = 1e-8
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
+      detail = 'matching the solution with the Kokkos traction-separation law, and'
+    []
+    [jacobian]
+      type = PetscJacobianTester
+      input = sczm_tl_3d_neml2_traction.i
+      ratio_tol = 1e-7
+      difference_tol = 1e-5
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      prereq = sczm_tl_3d_neml2_traction/solution
+      detail = 'with a consistent Jacobian.'
+    []
+  []
   [sczm_tl_3d_noshifted_host]
     type = Exodiff
     input = sczm_tl_3d_noshifted_host.i
@@ -500,6 +556,19 @@
     abs_zero = 1e-8
     rel_err = 1e-8
     requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host solution on a three-dimensional interface with shifted terms disabled.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    recover = false
+  []
+  [sczm_tl_3d_noshifted_no_distance]
+    type = Exodiff
+    input = sczm_tl_3d_noshifted_no_distance_kokkos.i
+    exodiff = sczm_tl_3d_noshifted_no_distance_kokkos_out.e
+    # The gold is a symlink to sczm_tl_3d_noshifted_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall not require a '
+                  'distance user object when the shifted terms are disabled.'
     capabilities = kokkos
     compute_devices = 'cpu cuda xpu'
     recover = false

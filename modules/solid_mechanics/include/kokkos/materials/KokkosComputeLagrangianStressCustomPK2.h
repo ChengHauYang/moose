@@ -17,9 +17,13 @@
 /**
  * Converts full PK2 stress and its deformation-gradient derivative to PK1 quantities.
  *
- * The bulk specialization also supports the total-mode F-bar Jacobian chain. Interface
- * specializations operate on the primary or neighbor material-property storage and intentionally
- * reject F-bar because the SCZM kernel does not assemble its non-local coupling.
+ * The bulk specialization also supports the total-mode F-bar Jacobian chain and a homogenization
+ * gradient H. As in the host ComputeLagrangianStressCustomPK2, PK1 = (F_ust + H) PK2, where the
+ * F-bar chain dF_stab/dF_ust acts on the displacement-only F_ust. With both, it also publishes the
+ * bypass tangent, the PK1 tangent with dF_stab/dF_ust replaced by the identity, which is the
+ * derivative with respect to H. Interface specializations operate on the primary or neighbor
+ * material-property storage and intentionally reject F-bar because the SCZM kernel does not
+ * assemble its non-local coupling.
  */
 template <bool interface, bool neighbor = false>
 class KokkosComputeLagrangianStressCustomPK2Templ
@@ -66,6 +70,13 @@ private:
   Moose::Kokkos::MaterialProperty<Real, 2> _F_avg_invT;
   Moose::Kokkos::MaterialProperty<Real, 2> _A;
   Moose::Kokkos::MaterialProperty<Real, 0> _gamma_over_3;
+
+  /// Whether a homogenization gradient is added to the PK1 wrap
+  const bool _has_homogenization_gradient;
+  /// Homogenization gradient H
+  Moose::Kokkos::MaterialProperty<Real, 2> _homogenization_gradient;
+  /// PK1 tangent without the F-bar dF_stab/dF_ust factor, declared with F-bar and homogenization
+  Moose::Kokkos::MaterialProperty<Real, 4> _dpk1_bypass_fbar;
 };
 
 using KokkosComputeLagrangianStressCustomPK2 =
@@ -121,12 +132,26 @@ KokkosComputeLagrangianStressCustomPK2Templ<interface, neighbor>::convertPK2ToPK
     for (unsigned int j = 0; j < 3; ++j)
       F[i][j] += _grad_displacements(datum, qp, i)(j);
 
+  // The PK1 wrap uses the total F_ust + H; the F-bar chain below uses the displacement-only F.
+  Real Fw[3][3];
+  for (unsigned int i = 0; i < 3; ++i)
+    for (unsigned int j = 0; j < 3; ++j)
+      Fw[i][j] = F[i][j];
+  if constexpr (!interface)
+    if (_has_homogenization_gradient)
+    {
+      const auto H = _homogenization_gradient(datum, qp);
+      for (unsigned int i = 0; i < 3; ++i)
+        for (unsigned int j = 0; j < 3; ++j)
+          Fw[i][j] += H(i, j);
+    }
+
   for (unsigned int i = 0; i < 3; ++i)
     for (unsigned int J = 0; J < 3; ++J)
     {
       pk1(i, J) = 0;
       for (unsigned int K = 0; K < 3; ++K)
-        pk1(i, J) += F[i][K] * pk2(K, J);
+        pk1(i, J) += Fw[i][K] * pk2(K, J);
     }
 
   if (!_need_jacobian_device)
@@ -141,7 +166,7 @@ KokkosComputeLagrangianStressCustomPK2Templ<interface, neighbor>::convertPK2ToPK
           {
             dpk1_d_grad_u(i, J, k, L) = (i == k) * pk2(L, J);
             for (unsigned int K = 0; K < 3; ++K)
-              dpk1_d_grad_u(i, J, k, L) += F[i][K] * dpk2_dF(K, J, k, L);
+              dpk1_d_grad_u(i, J, k, L) += Fw[i][K] * dpk2_dF(K, J, k, L);
           }
     return;
   }
@@ -180,7 +205,7 @@ KokkosComputeLagrangianStressCustomPK2Templ<interface, neighbor>::convertPK2ToPK
       for (unsigned int K = 0; K < 3; ++K)
         for (unsigned int m = 0; m < 3; ++m)
           for (unsigned int n = 0; n < 3; ++n)
-            s += F[i][K] * dpk2_dF(K, J, m, n) * F[m][n];
+            s += Fw[i][K] * dpk2_dF(K, J, m, n) * F[m][n];
       Aij[i][J] = s;
       A_prop(i, J) = s;
     }
@@ -192,9 +217,13 @@ KokkosComputeLagrangianStressCustomPK2Templ<interface, neighbor>::convertPK2ToPK
       for (unsigned int k = 0; k < 3; ++k)
         for (unsigned int L = 0; L < 3; ++L)
         {
-          Real v = (i == k) * pk2(L, J);
+          Real v = 0.0;
           for (unsigned int K = 0; K < 3; ++K)
-            v += gamma * F[i][K] * dpk2_dF(K, J, k, L);
-          dpk1_d_grad_u(i, J, k, L) = v - g3 * Aij[i][J] * Fust_invT[k][L];
+            v += Fw[i][K] * dpk2_dF(K, J, k, L);
+          dpk1_d_grad_u(i, J, k, L) =
+              (i == k) * pk2(L, J) + gamma * v - g3 * Aij[i][J] * Fust_invT[k][L];
+          if constexpr (!interface)
+            if (_has_homogenization_gradient)
+              _dpk1_bypass_fbar(datum, qp)(i, J, k, L) = (i == k) * pk2(L, J) + v;
         }
 }

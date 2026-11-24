@@ -13,6 +13,7 @@ It can assume CSV data
 - is sorted by element-id, in which case, when the function is evaluated at a point, it will locate the element containing it then return the value for that element in the CSV file
 - is sorted by node-id, in which case, when the function is evaluated at a point, it will locate the node at that point then return the value for that node in the CSV file
 - is sorted by blocks, in which case, when the function is evaluated at a point, it will locate the element containing it then return the value for that element's block in the CSV file
+- is sorted by the value of an extra element integer, in which case the function returns the value for that integer of the element containing the point. The element being assembled is checked first, so a material evaluating the function at its quadrature points needs no point location.
 - defines an interpolation grid, with the voronoi [!param](/Functions/PiecewiseConstantFromCSV/read_type), in which case the function will locate the closest point in that interpolation grid, then return the value for that point in the CSV file
 
 

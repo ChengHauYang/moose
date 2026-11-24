@@ -37,7 +37,9 @@
  * the parallel `subdomain_ids` list. The list form stamps each mesh's elements
  * with its subdomain ID and stitches them into one owned mesh, which is
  * equivalent to combining the meshes with SubdomainIDGenerator + CombinerGenerator
- * upstream.
+ * upstream. A single boundary mesh may also be read directly from a file
+ * (`boundary_mesh_file`), which works when the mesh generators do not run, e.g.
+ * with a pre-split mesh (`--use-split`).
  */
 class BoundaryMeshBuilder : public GeneralUserObject
 {
@@ -80,6 +82,10 @@ protected:
   /// The whole-mesh SurfaceElementSet, lazily cached on first use.
   mutable std::unique_ptr<SurfaceElementSet> _set;
 
+  /// The current name of a parameter of this class that subclasses may have renamed (possibly
+  /// more than once, e.g. boundary_mesh -> complete_boundary_mesh -> complete_interface_mesh)
+  std::string renamedParam(std::string name) const;
+
   /// Retrieve the saved per-subdomain meshes named in `boundary_meshes`, stamp
   /// each with its subdomain ID from `subdomain_ids`, and stitch them into one
   /// owned mesh. Used in place of retrieving a single `boundary_mesh`.
@@ -90,8 +96,11 @@ protected:
   const std::vector<MeshGeneratorName> _bnd_mesh_names;
 
   /// The name of a single mesh saved via a MeshGenerator's `save_with_name`
-  /// parameter, or empty when the per-subdomain list form is used instead.
+  /// parameter, or empty when the per-subdomain list form or a file is used instead.
   const MeshGeneratorName _bnd_mesh_name;
+
+  /// A file holding the single boundary mesh, or empty when a saved mesh is used instead
+  const FileName _bnd_mesh_file;
 
   /// Subdomain ID stamped onto each mesh in _bnd_mesh_names.
   const std::vector<subdomain_id_type> _subdomain_ids;

@@ -1,0 +1,340 @@
+[Tests]
+  issues = '#31355'
+  design = 'KokkosHomogenizedTotalLagrangianStressDivergence.md'
+
+  [csv]
+    requirement = 'The Kokkos total-Lagrangian homogenization system shall reproduce the host solution, on CPUs and GPUs, for'
+    [small_1d_strain]
+      type = CSVDiff
+      input = 'small_1d.i'
+      csvdiff = '1d-strain_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/small-tests/gold'
+      cli_args = "Outputs/file_base=1d-strain_out constraint_types='strain none none none none none none "
+                 "none none' targets=func_strain"
+      detail = 'a strain constraint in 1D with small kinematics.'
+      capabilities = 'kokkos'
+      compute_devices = 'cpu cuda'
+    []
+    [small_1d_stress]
+      type = CSVDiff
+      input = 'small_1d.i'
+      csvdiff = '1d-stress_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/small-tests/gold'
+      cli_args = "Outputs/file_base=1d-stress_out constraint_types='stress none none none none none none "
+                 "none none' targets=func_stress"
+      detail = 'a stress constraint in 1D with small kinematics.'
+      capabilities = 'kokkos'
+      compute_devices = 'cpu cuda'
+    []
+    [small_2d_strain]
+      type = CSVDiff
+      input = 'small_2d.i'
+      csvdiff = '2d-strain_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/small-tests/gold'
+      cli_args = "Outputs/file_base=2d-strain_out constraint_types='strain none none strain strain none "
+                 "none none none' targets='strain11 strain12 strain22'"
+      detail = 'strain constraints in 2D with small kinematics.'
+      capabilities = 'kokkos'
+      compute_devices = 'cpu cuda'
+    []
+    [small_2d_stress]
+      type = CSVDiff
+      input = 'small_2d.i'
+      csvdiff = '2d-stress_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/small-tests/gold'
+      cli_args = "Outputs/file_base=2d-stress_out constraint_types='stress none none stress stress none "
+                 "none none none' targets='stress11 stress12 stress22'"
+      detail = 'stress constraints in 2D with small kinematics.'
+      capabilities = 'kokkos'
+      compute_devices = 'cpu cuda'
+    []
+    [small_2d_mixed]
+      type = CSVDiff
+      input = 'small_2d.i'
+      csvdiff = '2d-mixed_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/small-tests/gold'
+      cli_args = "Outputs/file_base=2d-mixed_out constraint_types='stress none none stress strain none "
+                 "none none none' targets='stress11 stress12 strain22'"
+      detail = 'mixed stress and strain constraints in 2D with small kinematics.'
+      capabilities = 'kokkos'
+      compute_devices = 'cpu cuda'
+    []
+    [small_2d_mixed_bbar]
+      type = CSVDiff
+      input = 'small_2d.i'
+      csvdiff = '2d-mixed-bbar_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/small-tests/gold'
+      cli_args = "Outputs/file_base=2d-mixed-bbar_out STABILIZE=true constraint_types='stress none none "
+                 "stress strain none none none none' targets='stress11 stress12 strain22'"
+      detail = 'mixed stress and strain constraints in 2D with small kinematics and the volumetric locking correction.'
+      capabilities = 'kokkos'
+      compute_devices = 'cpu cuda'
+    []
+    [small_3d_strain]
+      type = CSVDiff
+      input = 'small_3d.i'
+      csvdiff = '3d-strain_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/small-tests/gold'
+      cli_args = "Outputs/file_base=3d-strain_out constraint_types='strain none none strain strain none "
+                 "strain strain strain' targets='strain11 strain12 strain22 strain13 strain23 strain33'"
+      detail = 'strain constraints in 3D with small kinematics.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [small_3d_stress]
+      type = CSVDiff
+      input = 'small_3d.i'
+      csvdiff = '3d-stress_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/small-tests/gold'
+      cli_args = "Outputs/file_base=3d-stress_out constraint_types='stress none none stress stress none "
+                 "stress stress stress' targets='stress11 stress12 stress22 stress13 stress23 stress33'"
+      detail = 'stress constraints in 3D with small kinematics.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [small_3d_mixed]
+      type = CSVDiff
+      input = 'small_3d.i'
+      csvdiff = '3d-mixed_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/small-tests/gold'
+      cli_args = "Outputs/file_base=3d-mixed_out constraint_types='stress none none strain strain none "
+                 "stress stress stress' targets='stress11 strain12 strain22 stress13 stress23 stress33'"
+      detail = 'mixed stress and strain constraints in 3D with small kinematics.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [small_3d_mixed_bbar]
+      type = CSVDiff
+      input = 'small_3d.i'
+      csvdiff = '3d-mixed-bbar_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/small-tests/gold'
+      cli_args = "Outputs/file_base=3d-mixed-bbar_out STABILIZE=true constraint_types='stress none none "
+                 "strain strain none stress stress stress' targets='stress11 strain12 strain22 stress13 "
+                 "stress23 stress33'"
+      detail = 'mixed stress and strain constraints in 3D with small kinematics and the volumetric locking correction.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [large_1d_stress]
+      type = CSVDiff
+      input = 'large_1d.i'
+      csvdiff = '1d-stress-svk_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/large-tests/gold'
+      cli_args = "Outputs/file_base=1d-stress-svk_out constraint_types='stress none none none none none "
+                 "none none none' targets=func_stress"
+      detail = 'a stress constraint in 1D with large kinematics.'
+      capabilities = 'kokkos'
+      compute_devices = 'cpu cuda'
+    []
+    [large_2d_strain]
+      type = CSVDiff
+      input = 'large_2d.i'
+      csvdiff = '2d-strain-svk_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/large-tests/gold'
+      cli_args = "Outputs/file_base=2d-strain-svk_out constraint_types='strain strain none strain strain "
+                 "none none none none' targets='strain11 strain21 strain12 strain22'"
+      detail = 'strain constraints in 2D with large kinematics.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [large_2d_stress]
+      type = CSVDiff
+      input = 'large_2d.i'
+      csvdiff = '2d-stress-svk_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/large-tests/gold'
+      cli_args = "Outputs/file_base=2d-stress-svk_out constraint_types='stress stress none strain stress "
+                 "none none none none' targets='stress11 stress21 0 stress22'"
+      detail = 'stress constraints in 2D with large kinematics.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [large_2d_stress_fbar]
+      type = CSVDiff
+      input = 'large_2d.i'
+      csvdiff = '2d-stress-svk-fbar_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/large-tests/gold'
+      cli_args = "Outputs/file_base=2d-stress-svk-fbar_out STABILIZE=true constraint_types='stress stress "
+                 "none strain stress none none none none' targets='stress11 stress21 0 stress22'"
+      detail = 'stress constraints in 2D with large kinematics and the volumetric locking correction.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [large_3d_strain]
+      type = CSVDiff
+      input = 'large_3d.i'
+      csvdiff = '3d-strain-svk_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/large-tests/gold'
+      cli_args = "Outputs/file_base=3d-strain-svk_out constraint_types='strain strain strain strain strain"
+                 " strain strain strain strain' targets='strain11 strain21 strain31 strain12 strain22 "
+                 "strain32 strain13 strain23 strain33'"
+      detail = 'strain constraints in 3D with large kinematics.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [large_3d_stress]
+      type = CSVDiff
+      input = 'large_3d.i'
+      csvdiff = '3d-stress-svk_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/large-tests/gold'
+      cli_args = "Outputs/file_base=3d-stress-svk_out constraint_types='stress strain strain stress stress"
+                 " strain stress stress stress' targets='stress11 0 0 stress12 stress22 0 stress13 "
+                 "stress23 stress33'"
+      detail = 'stress constraints in 3D with large kinematics.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [large_3d_stress_fbar]
+      type = CSVDiff
+      input = 'large_3d.i'
+      csvdiff = '3d-stress-svk-fbar_out.csv'
+      gold_dir = '../../lagrangian/cartesian/total/homogenization/large-tests/gold'
+      cli_args = "Outputs/file_base=3d-stress-svk-fbar_out STABILIZE=true constraint_types='stress strain "
+                 "strain stress stress strain stress stress stress' targets='stress11 0 0 stress12 "
+                 "stress22 0 stress13 stress23 stress33'"
+      detail = 'stress constraints in 3D with large kinematics and the volumetric locking correction.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+  []
+
+  [jacobian]
+    requirement = 'The Kokkos total-Lagrangian homogenization system shall assemble a Jacobian consistent with finite differencing, including the macro gradient rows and columns, for'
+    [jacobian_small_2d_strain]
+      type = PetscJacobianTester
+      input = 'small_2d.i'
+      cli_args = "Executioner/num_steps=1 Outputs/csv=false constraint_types='strain none none strain "
+                 "strain none none none none' targets='strain11 strain12 strain22'"
+      run_sim = true
+      detail = 'strain constraints in 2D with small kinematics.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [jacobian_small_2d_stress]
+      type = PetscJacobianTester
+      input = 'small_2d.i'
+      cli_args = "Executioner/num_steps=1 Outputs/csv=false constraint_types='stress none none stress "
+                 "stress none none none none' targets='stress11 stress12 stress22'"
+      run_sim = true
+      detail = 'stress constraints in 2D with small kinematics.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [jacobian_small_2d_mixed_bbar]
+      type = PetscJacobianTester
+      input = 'small_2d.i'
+      cli_args = "Executioner/num_steps=1 Outputs/csv=false STABILIZE=true constraint_types='stress none "
+                 "none stress strain none none none none' targets='stress11 stress12 strain22'"
+      run_sim = true
+      detail = 'mixed constraints in 2D with small kinematics and the volumetric locking correction.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [jacobian_small_3d_mixed_bbar]
+      type = PetscJacobianTester
+      input = 'small_3d.i'
+      cli_args = "Executioner/num_steps=1 Outputs/csv=false STABILIZE=true constraint_types='stress none "
+                 "none strain strain none stress stress stress' targets='stress11 strain12 strain22 "
+                 "stress13 stress23 stress33'"
+      run_sim = true
+      detail = 'mixed constraints in 3D with small kinematics and the volumetric locking correction.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [jacobian_large_2d_strain]
+      type = PetscJacobianTester
+      input = 'large_2d.i'
+      cli_args = "Executioner/num_steps=1 Outputs/csv=false constraint_types='strain strain none strain "
+                 "strain none none none none' targets='strain11 strain21 strain12 strain22'"
+      run_sim = true
+      # The relative finite-difference error of the host kernel on the same problem is also
+      # about 1e-7 at the ~1e5 stress magnitude of these St. Venant-Kirchhoff models
+      ratio_tol = 5e-7
+      difference_tol = 1
+      detail = 'strain constraints in 2D with large kinematics.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [jacobian_large_2d_mixed_fbar]
+      type = PetscJacobianTester
+      input = 'large_2d.i'
+      cli_args = "Executioner/num_steps=1 Outputs/csv=false STABILIZE=true constraint_types='stress stress"
+                 " none strain stress none none none none' targets='stress11 stress21 0 stress22'"
+      run_sim = true
+      # The relative finite-difference error of the host kernel on the same problem is also
+      # about 1e-7 at the ~1e5 stress magnitude of these St. Venant-Kirchhoff models
+      ratio_tol = 5e-7
+      difference_tol = 1
+      detail = 'mixed constraints in 2D with large kinematics and the volumetric locking correction.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [jacobian_large_2d_strain_fbar]
+      type = PetscJacobianTester
+      input = 'large_2d.i'
+      cli_args = "Executioner/num_steps=1 Outputs/csv=false STABILIZE=true constraint_types='strain strain"
+                 " none strain strain none none none none' targets='strain11 strain21 strain12 strain22'"
+      run_sim = true
+      # The relative finite-difference error of the host kernel on the same problem is also
+      # about 1e-7 at the ~1e5 stress magnitude of these St. Venant-Kirchhoff models
+      ratio_tol = 5e-7
+      difference_tol = 1
+      detail = 'strain constraints in 2D with large kinematics and the volumetric locking correction.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+    [jacobian_large_3d_mixed_fbar]
+      type = PetscJacobianTester
+      input = 'large_3d.i'
+      cli_args = "Executioner/num_steps=1 Outputs/csv=false STABILIZE=true constraint_types='stress strain"
+                 " strain stress stress strain stress stress stress' targets='stress11 0 0 stress12 "
+                 "stress22 0 stress13 stress23 stress33'"
+      run_sim = true
+      # The relative finite-difference error of the host kernel on the same problem is also
+      # about 1e-7 at the ~1e5 stress magnitude of these St. Venant-Kirchhoff models
+      ratio_tol = 5e-7
+      difference_tol = 1
+      detail = 'mixed constraints in 3D with large kinematics and the volumetric locking correction.'
+      capabilities = 'kokkos & method!=dbg'
+      compute_devices = 'cpu cuda'
+    []
+  []
+
+  [neml2_small]
+    type = Exodiff
+    input = 'small_neml.i'
+    exodiff = 'small_neml_out.e'
+    gold_dir = '../../lagrangian/cartesian/total/homogenization/neml2/gold'
+    custom_cmp = 'small_neml.cmp'
+    requirement = 'The Kokkos total-Lagrangian homogenization system shall reproduce the host solution with a NEML2 model, small kinematics, and the macro gradient added to the NEML2 strain input, on CPUs and GPUs.'
+    capabilities = 'kokkos & libtorch & neml2 & method!=dbg'
+    compute_devices = 'cpu cuda'
+  []
+  [neml2_large_host]
+    type = Exodiff
+    input = 'large_neml_host.i'
+    exodiff = 'large_neml_out.e'
+    requirement = 'The system shall solve a large-kinematics homogenization problem with a St. Venant-Kirchhoff model as the reference for the NEML2 Kokkos version.'
+    capabilities = 'method!=dbg'
+  []
+  [neml2_large]
+    type = Exodiff
+    input = 'large_neml.i'
+    exodiff = 'large_neml_kokkos_out.e'
+    # The gold file is a copy of the host solution, gold/large_neml_out.e
+    custom_cmp = 'large_neml.cmp'
+    requirement = 'The Kokkos total-Lagrangian homogenization system shall reproduce the host solution with a NEML2 St. Venant-Kirchhoff model, large kinematics, and the macro gradient added to the NEML2 deformation gradient input, on CPUs and GPUs.'
+    capabilities = 'kokkos & libtorch & neml2 & method!=dbg'
+    compute_devices = 'cpu cuda'
+  []
+
+  [action_2d]
+    type = Exodiff
+    input = 'action_2d.i'
+    exodiff = '2d.e'
+    gold_dir = '../../lagrangian/cartesian/total/homogenization/action/gold'
+    custom_cmp = 'action_2d.cmp'
+    requirement = 'The QuasiStatic solid mechanics Physics shall set up the Kokkos total-Lagrangian homogenization system and reproduce the host solution, on CPUs and GPUs.'
+    capabilities = 'kokkos'
+    compute_devices = 'cpu cuda'
+  []
+[]

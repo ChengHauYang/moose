@@ -26,6 +26,7 @@
 #include "neml2/csrc/dispatchers/factory.h"
 #include "neml2/csrc/dispatchers/DispatchedModel.h"
 #include "neml2/csrc/dispatchers/MPISimpleScheduler.h"
+#include "neml2/csrc/dispatchers/SimpleScheduler.h"
 
 /**
  * Runtime-agnostic handle over a NEML2 v3 model.
@@ -140,9 +141,10 @@ private:
  *
  * For a friendly UX the `input` is resolved flexibly (see ::load): the artifact folder itself, the
  * `metadata.json` inside it, or the legacy stub `.i` are all accepted. An `MPISimpleScheduler` pins
- * this rank's workload to a device, round-robining the device list over the MPI ranks on each node
- * (the single "cpu" entry sends every rank's local batch to CPU). This matches MOOSE's MPI domain
- * decomposition -- each rank evaluates its own local batch.
+ * this rank's workload to a device, round-robining a list of several devices over the MPI ranks on
+ * each node; a single device (e.g. "cpu", or "cuda" with one GPU per rank) gets every rank's local
+ * batch through a `SimpleScheduler`, which does not need NEML2 built with MPI. This matches MOOSE's
+ * MPI domain decomposition -- each rank evaluates its own local batch.
  */
 class AOTIModelHandle : public NEML2ModelHandle
 {
@@ -192,8 +194,8 @@ private:
                        const std::vector<int64_t> & batch_shape,
                        bool parameters) const;
 
-  /// Build the MPI scheduler (round-robin device list over the node's ranks) and load the dispatched
-  /// aoti model. `input` is resolved flexibly for a friendlier UX:
+  /// Build the scheduler (a single device, or the MPI round-robin of a device list over the node's
+  /// ranks) and load the dispatched aoti model. `input` is resolved flexibly for a friendlier UX:
   ///   - a directory                -> the artifact root, loaded directly (self-describing);
   ///   - a `metadata.json` file     -> its parent directory (metadata.json always sits at the root);
   ///   - anything else (a stub `.i`)-> parsed by `neml2::aoti::load_model`, which resolves the
@@ -208,11 +210,25 @@ private:
                                            const std::vector<std::size_t> & batch_sizes,
                                            const void * comm)
   {
-    neml2::aoti::MPISimpleScheduler::Config config;
-    config.devices = devices;
-    config.batch_sizes = batch_sizes;
-    config.comm = comm;
-    auto scheduler = std::make_shared<neml2::aoti::MPISimpleScheduler>(config);
+    // With a single device every rank uses it, so there is nothing to assign over the ranks: a
+    // plain SimpleScheduler behaves identically and, unlike the MPI scheduler, does not require
+    // NEML2 to be built with MPI support.
+    std::shared_ptr<neml2::aoti::WorkScheduler> scheduler;
+    if (devices.size() == 1)
+    {
+      neml2::aoti::SimpleScheduler::Config config;
+      config.device = devices.front();
+      config.batch_size = batch_sizes.front();
+      scheduler = std::make_shared<neml2::aoti::SimpleScheduler>(config);
+    }
+    else
+    {
+      neml2::aoti::MPISimpleScheduler::Config config;
+      config.devices = devices;
+      config.batch_sizes = batch_sizes;
+      config.comm = comm;
+      scheduler = std::make_shared<neml2::aoti::MPISimpleScheduler>(config);
+    }
 
     const std::filesystem::path path(input);
     if (std::filesystem::is_directory(path))
