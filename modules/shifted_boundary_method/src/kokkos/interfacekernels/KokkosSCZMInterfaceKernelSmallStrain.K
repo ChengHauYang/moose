@@ -46,6 +46,7 @@ KokkosSCZMInterfaceKernelSmallStrain::validParams()
       "Jacobian_mult property as d(stress)/d(strain) and pk1_jacobian as d(PK1)/d(F). Select "
       "'stress_wrt_strain' or 'pk1_wrt_deformation_gradient' explicitly for a custom tangent "
       "property; use the latter only when the property is known to be d(PK1)/d(F).");
+  SCZMWeightedTractionStabilization::addParams(params);
   params.addClassDescription(
       "Kokkos shifted cohesive-zone interface kernel for small-strain displacements.");
   return params;
@@ -59,6 +60,7 @@ KokkosSCZMInterfaceKernelSmallStrain::KokkosSCZMInterfaceKernelSmallStrain(
     _shifted(!getParam<bool>("no_shifted")),
     _directional_correction(getParam<bool>("directional_correction")),
     _volumetric_locking_correction(getParam<bool>("volumetric_locking_correction")),
+    _stabilization_weights(SCZMWeightedTractionStabilization::weights(*this)),
     _tangent_is_dpk1_df(false),
     _traction_global(getKokkosMaterialPropertyByName<Real, 1>(
         (isParamValid("base_name") && !getParam<std::string>("base_name").empty()
@@ -105,7 +107,7 @@ KokkosSCZMInterfaceKernelSmallStrain::KokkosSCZMInterfaceKernelSmallStrain(
     paramError("sbm_distance_uo",
                "The 'sbm_distance_uo' parameter is required unless 'no_shifted = true'.");
 
-  if (_shifted && _directional_correction)
+  if ((_shifted && _directional_correction) || _stabilization_weights.enabled)
   {
     const auto prefix = isParamValid("base_name") && !getParam<std::string>("base_name").empty()
                             ? getParam<std::string>("base_name") + "_"

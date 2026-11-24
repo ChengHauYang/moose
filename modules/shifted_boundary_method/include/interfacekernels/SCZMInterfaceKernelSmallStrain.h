@@ -24,10 +24,29 @@ protected:
   Real computeQpJacobian(Moose::DGJacobianType type) override;
   Real computeQpOffDiagJacobian(Moose::DGJacobianType type, unsigned int jvar) override;
 
-  Real computeDResidualDDisplacement(unsigned int component_j, Moose::DGJacobianType type) const;
+  /// Jacobian of this component's residual with respect to displacement component component_j
+  Real computeJacobianComponent(unsigned int component_j, Moose::DGJacobianType type) const;
+
+  /**
+   * Derivative of the residual through the cohesive traction component traction_component with
+   * respect to displacement component component_j, including test function, sign, and area
+   * correction.
+   */
+  Real computeDResidualDDisplacement(unsigned int traction_component,
+                                     unsigned int component_j,
+                                     Moose::DGJacobianType type) const;
   Real calculateDirectionalCorrectionJacobian(unsigned int ivar,
                                               unsigned int jvar,
                                               Moose::DGJacobianType type) const;
+
+  /**
+   * Derivative of stress.row(ivar) . direction on the trial side with respect to the trial
+   * function of displacement component jvar, using the unshifted trial gradient.
+   */
+  Real stressDerivative(unsigned int ivar,
+                        unsigned int jvar,
+                        const RealVectorValue & direction,
+                        bool trial_on_element) const;
 
   /// The stress tensor on the element and neighbor sides
   ///@{
@@ -55,6 +74,9 @@ protected:
   using SCZMInterfaceKernelBaseTempl<is_ad>::_component;
   using SCZMInterfaceKernelBaseTempl<is_ad>::_ndisp;
   using SCZMInterfaceKernelBaseTempl<is_ad>::_shifted;
+  using SCZMInterfaceKernelBaseTempl<is_ad>::_stabilization;
+  using SCZMInterfaceKernelBaseTempl<is_ad>::stabilizationNormal;
+  using SCZMInterfaceKernelBaseTempl<is_ad>::stabilizationWeight;
   using SCZMInterfaceKernelBaseTempl<is_ad>::_coord;
   using SCZMInterfaceKernelBaseTempl<is_ad>::_coord_sys;
   using SCZMInterfaceKernelBaseTempl<is_ad>::_JxW;

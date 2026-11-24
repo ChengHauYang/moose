@@ -62,6 +62,7 @@ KokkosSCZMInterfaceKernelTotalLagrangian::validParams()
                              MooseEnum("auto stress_wrt_strain pk1_wrt_deformation_gradient",
                                        "pk1_wrt_deformation_gradient"),
                              "Mathematical definition of the tangent material property.");
+  SCZMWeightedTractionStabilization::addParams(params);
   params.addClassDescription("Kokkos shifted cohesive-zone interface kernel for total-Lagrangian "
                              "finite-strain displacements.");
   return params;
@@ -75,6 +76,7 @@ KokkosSCZMInterfaceKernelTotalLagrangian::KokkosSCZMInterfaceKernelTotalLagrangi
     _shifted(!getParam<bool>("no_shifted")),
     _directional_correction(getParam<bool>("directional_correction")),
     _volumetric_locking_correction(getParam<bool>("volumetric_locking_correction")),
+    _stabilization_weights(SCZMWeightedTractionStabilization::weights(*this)),
     _traction_global(getKokkosMaterialPropertyByName<Real, 1>(
         (isParamValid("base_name") && !getParam<std::string>("base_name").empty()
              ? getParam<std::string>("base_name") + "_"
@@ -107,7 +109,8 @@ KokkosSCZMInterfaceKernelTotalLagrangian::KokkosSCZMInterfaceKernelTotalLagrangi
     paramError("sbm_distance_uo",
                "The 'sbm_distance_uo' parameter is required unless 'no_shifted = true'.");
 
-  if (_shifted && _directional_correction)
+  // Both the directional correction and the stabilization differentiate the bulk stress
+  if ((_shifted && _directional_correction) || _stabilization_weights.enabled)
   {
     const auto prefix = isParamValid("base_name") && !getParam<std::string>("base_name").empty()
                             ? getParam<std::string>("base_name") + "_"

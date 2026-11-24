@@ -15,6 +15,7 @@
 #include "Conversion.h"
 #include "NEML2Action.h"
 #include "QuasiStaticSolidMechanicsPhysicsBase.h"
+#include "SCZMWeightedTractionStabilization.h"
 
 #include <algorithm>
 #include <set>
@@ -150,6 +151,7 @@ ShiftedCohesiveZoneAction::validParams()
   params.addParam<bool>("no_shifted", false, "Disable shifted terms.");
   params.addParam<bool>("use_kokkos", false, "Create Kokkos SCZM objects.");
   params.addParam<bool>("directional_correction", true, "Add the directional correction terms.");
+  SCZMWeightedTractionStabilization::addParams(params);
   params.addParam<MaterialPropertyName>(
       "stress", "stress", "Name of the stress tensor material property for small strain SCZM.");
   params.addParam<MaterialPropertyName>("tangent",
@@ -316,7 +318,11 @@ ShiftedCohesiveZoneAction::act()
   if (_ndisp != _mesh->dimension())
     paramError("displacements", "Number of displacements must match problem dimension.");
 
-  if (_current_task == "add_interface_kernel" && getParam<bool>("directional_correction"))
+  // Both the directional correction and the stabilization evaluate the bulk stress and tangent on
+  // the interface
+  if (_current_task == "add_interface_kernel" &&
+      (getParam<bool>("directional_correction") ||
+       getParam<MooseEnum>("stabilization") == "weighted_traction"))
   {
     std::vector<MaterialPropertyName> stress_names;
     std::vector<MaterialPropertyName> tangent_names;
@@ -379,7 +385,8 @@ ShiftedCohesiveZoneAction::act()
               neml2_property_name,
               "' produced by this NEML2 block is required on the cohesive interface by a Kokkos "
               "[Physics/SolidMechanics/ShiftedCohesiveZone]. Set 'output_backend = kokkos' or set "
-              "'directional_correction = false' in the ShiftedCohesiveZone block.");
+              "'directional_correction = false' and 'stabilization = none' in the "
+              "ShiftedCohesiveZone block.");
 
         const bool interface_set = neml2_action->isParamSetByUser("interface");
         const auto & interfaces = neml2_action->getParam<std::vector<BoundaryName>>("interface");
@@ -390,9 +397,10 @@ ShiftedCohesiveZoneAction::act()
               "The material property '",
               neml2_property_name,
               "' produced by this NEML2 block is required on the cohesive interface by "
-              "[Physics/SolidMechanics/ShiftedCohesiveZone] with directional_correction = true. "
-              "This NEML2 block needs 'interface' set to the SCZM boundary (for example, "
-              "interface = ${boundary}) or set 'directional_correction = false' in the "
+              "[Physics/SolidMechanics/ShiftedCohesiveZone] with directional_correction = true or "
+              "stabilization = weighted_traction. This NEML2 block needs 'interface' set to the "
+              "SCZM boundary (for example, interface = ${boundary}) or set "
+              "'directional_correction = false' and 'stabilization = none' in the "
               "ShiftedCohesiveZone block.");
 
         if (!hasOverlap(_boundary, interfaces))
@@ -401,10 +409,11 @@ ShiftedCohesiveZoneAction::act()
               "The material property '",
               neml2_property_name,
               "' produced by this NEML2 block is required on the cohesive interface by "
-              "[Physics/SolidMechanics/ShiftedCohesiveZone] with directional_correction = true, "
-              "but its 'interface' setting does not overlap the SCZM boundary. This NEML2 block "
-              "needs 'interface' to include the SCZM boundary or set 'directional_correction = "
-              "false' in the ShiftedCohesiveZone block.");
+              "[Physics/SolidMechanics/ShiftedCohesiveZone] with directional_correction = true or "
+              "stabilization = weighted_traction, but its 'interface' setting does not overlap "
+              "the SCZM boundary. This NEML2 block needs 'interface' to include the SCZM boundary "
+              "or set 'directional_correction = false' and 'stabilization = none' in the "
+              "ShiftedCohesiveZone block.");
       }
     };
 
@@ -558,7 +567,10 @@ ShiftedCohesiveZoneAction::addSBMDistanceUserObjects()
 bool
 ShiftedCohesiveZoneAction::needsPK2ToPK1Conversion() const
 {
-  return getParam<bool>("directional_correction") && !getParam<bool>("no_shifted") &&
+  const bool needs_stress = (getParam<bool>("directional_correction") &&
+                             !getParam<bool>("no_shifted")) ||
+                            getParam<MooseEnum>("stabilization") == "weighted_traction";
+  return needs_stress &&
          getParam<MooseEnum>("tangent_definition") == "pk2_wrt_deformation_gradient";
 }
 
@@ -689,6 +701,12 @@ ShiftedCohesiveZoneAction::customizeCZMInterfaceKernelParameters(InputParameters
     params.set<bool>("no_shifted") = getParam<bool>("no_shifted");
   if (params.isParamValid("directional_correction"))
     params.set<bool>("directional_correction") = getParam<bool>("directional_correction");
+  if (params.have_parameter<MooseEnum>("stabilization"))
+    params.applySpecificParameters(parameters(),
+                                   {"stabilization",
+                                    "stabilization_beta",
+                                    "stabilization_normal_stiffness",
+                                    "stabilization_tangential_stiffness"});
   if (params.isParamValid("stress"))
     params.set<MaterialPropertyName>("stress") =
         _strain == Strain::Finite && !isParamSetByUser("stress")

@@ -60,12 +60,12 @@ template <bool is_ad>
 SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::SCZMInterfaceKernelTotalLagrangianTempl(
     const InputParameters & parameters)
   : SCZMInterfaceKernelBaseTempl<is_ad>(parameters),
-    _stress(parameters.get<bool>("directional_correction")
+    _stress(parameters.get<bool>("directional_correction") || this->_stabilization
                 ? &this->template getGenericMaterialPropertyByName<RankTwoTensor, is_ad>(
                       this->_base_name + parameters.get<MaterialPropertyName>("stress"))
                 : nullptr),
     _stress_neighbor(
-        parameters.get<bool>("directional_correction")
+        parameters.get<bool>("directional_correction") || this->_stabilization
             ? &this->template getGenericNeighborMaterialPropertyByName<RankTwoTensor, is_ad>(
                   this->_base_name + parameters.get<MaterialPropertyName>("stress"))
             : nullptr),
@@ -98,7 +98,10 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::SCZMInterfaceKernelTotalLagrangi
         this->_base_name + "dtraction_djump_global");
     _dPK1traction_dF = &this->template getMaterialPropertyByName<RankThreeTensor>(
         this->_base_name + "dPK1traction_dF");
-    if (this->_shifted && _directional_correction)
+    // Both the directional correction and the stabilization differentiate the bulk stress
+    const bool needs_stress_derivative =
+        (this->_shifted && _directional_correction) || this->_stabilization;
+    if (needs_stress_derivative)
     {
       _Jacobian_mult = &this->template getMaterialPropertyByName<RankFourTensor>(
           this->_base_name + parameters.get<MaterialPropertyName>("tangent"));
@@ -107,7 +110,7 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::SCZMInterfaceKernelTotalLagrangi
     }
     _volumetric_locking_correction = parameters.get<bool>("volumetric_locking_correction");
 
-    if (_volumetric_locking_correction && this->_shifted && _directional_correction)
+    if (_volumetric_locking_correction && needs_stress_derivative)
     {
       if (parameters.get<MooseEnum>("tangent_definition") != "pk1_wrt_deformation_gradient")
         this->paramError("tangent_definition",
@@ -171,18 +174,23 @@ template <bool is_ad>
 GenericReal<is_ad>
 SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::computeQpResidual(Moose::DGResidualType type)
 {
-  if (!this->_shifted)
+  if (!this->_shifted && !this->_stabilization)
     return SCZMInterfaceKernelBaseTempl<is_ad>::computeQpResidual(type);
 
-  const RealVectorValue true_normal(this->trueNormal());
+  const RealVectorValue true_normal(this->stabilizationNormal());
   const Real true_normal_dot_surrogate_normal = true_normal * this->_normals[this->_qp];
 
-  auto residual = SCZMInterfaceKernelBaseTempl<is_ad>::computeQpResidual(type);
+  auto residual =
+      this->_stabilization
+          ? this->stabilizedTraction(true_normal, (*_stress)[this->_qp], (*_stress_neighbor)[this->_qp])
+          : this->_traction_global[this->_qp](this->_component);
   // This maps true reference-interface area to surrogate area; it is separate from the Nanson
   // mapping already included in PK1traction.
-  residual *= true_normal_dot_surrogate_normal;
+  residual *= true_normal_dot_surrogate_normal * (type == Moose::Element
+                                                      ? -this->_test[this->_i][this->_qp]
+                                                      : this->_test_neighbor[this->_i][this->_qp]);
 
-  if (_directional_correction)
+  if (this->_shifted && _directional_correction)
   {
     const auto stress = (*_stress)[this->_qp].row(this->_component);
     const auto stress_neighbor = (*_stress_neighbor)[this->_qp].row(this->_component);
@@ -201,13 +209,15 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::computeQpResidual(Moose::DGResid
 template <bool is_ad>
 Real
 SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::computeDResidualDDisplacement(
-    const unsigned int component_j, const Moose::DGJacobianType type) const
+    const unsigned int traction_component,
+    const unsigned int component_j,
+    const Moose::DGJacobianType type) const
 {
   if constexpr (is_ad)
     return 0;
   else
   {
-    Real derivative = (*_dtraction_djump_global)[this->_qp](this->_component, component_j);
+    Real derivative = (*_dtraction_djump_global)[this->_qp](traction_component, component_j);
     const auto d = this->_shifted ? this->surrogateDistance() : RealVectorValue();
     const bool trial_on_neighbor =
         type == Moose::ElementNeighbor || type == Moose::NeighborNeighbor;
@@ -235,7 +245,9 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::computeDResidualDDisplacement(
 template <bool is_ad>
 Real
 SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::computeDResidualDDeformationGradient(
-    const unsigned int component_j, const Moose::DGJacobianType type) const
+    const unsigned int traction_component,
+    const unsigned int component_j,
+    const Moose::DGJacobianType type) const
 {
   if constexpr (is_ad)
     return 0;
@@ -252,7 +264,7 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::computeDResidualDDeformationGrad
     Real derivative = 0;
     for (const auto j : make_range(3))
       derivative +=
-          (*_dPK1traction_dF)[this->_qp](this->_component, component_j, j) * 0.5 * grad_phi(j);
+          (*_dPK1traction_dF)[this->_qp](traction_component, component_j, j) * 0.5 * grad_phi(j);
 
     if (this->_shifted)
       derivative *= RealVectorValue(this->trueNormal()) * this->_normals[this->_qp];
@@ -278,44 +290,107 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::calculateDirectionalCorrectionJa
     const auto normal_tangent =
         this->_normals[this->_qp] - (true_normal * this->_normals[this->_qp]) * true_normal;
     const bool trial_on_element = type == Moose::ElementElement || type == Moose::NeighborElement;
-    const auto & grad_phi = trial_on_element ? this->_grad_phi[this->_j][this->_qp]
-                                             : this->_grad_phi_neighbor[this->_j][this->_qp];
     const auto test = (type == Moose::ElementElement || type == Moose::ElementNeighbor)
                           ? this->_test[this->_i][this->_qp]
                           : this->_test_neighbor[this->_i][this->_qp];
-    const auto & tangent = (type == Moose::ElementElement || type == Moose::ElementNeighbor)
-                               ? (*_Jacobian_mult)[this->_qp]
-                               : (*_Jacobian_mult_neighbor)[this->_qp];
 
-    Real jacobian = 0;
+    // Only the same-side blocks call this, so the row side is also the trial side.
+    return test * stressDerivative(ivar, jvar, normal_tangent, trial_on_element);
+  }
+}
+
+template <bool is_ad>
+Real
+SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::stressDerivative(const unsigned int ivar,
+                                                                 const unsigned int jvar,
+                                                                 const RealVectorValue & direction,
+                                                                 const bool trial_on_element)
+{
+  if constexpr (is_ad)
+    return 0;
+  else
+  {
+    const auto & grad_phi = trial_on_element ? this->_grad_phi[this->_j][this->_qp]
+                                             : this->_grad_phi_neighbor[this->_j][this->_qp];
+    const auto & tangent =
+        trial_on_element ? (*_Jacobian_mult)[this->_qp] : (*_Jacobian_mult_neighbor)[this->_qp];
+
+    Real derivative = 0;
     for (const auto J : make_range(3))
       for (const auto L : make_range(3))
-        jacobian += tangent(ivar, J, jvar, L) * grad_phi(L) * normal_tangent(J) * test;
+        derivative += tangent(ivar, J, jvar, L) * grad_phi(L) * direction(J);
 
     if (_volumetric_locking_correction)
     {
-      // The F-bar terms only couple a side's stress to the displacements of the same element, so
-      // this is reached for ElementElement and NeighborNeighbor only.
-      mooseAssert(type == Moose::ElementElement || type == Moose::NeighborNeighbor,
-                  "The F-bar directional correction only couples same-side displacements.");
-      const bool on_element = type == Moose::ElementElement;
+      // The F-bar terms couple a side's stress to the displacements of that side's element only,
+      // whose volume average of the trial gradient enters through M.
       const auto & avg_grad_phi =
-          on_element ? volumeAverageGradPhi(this->_current_elem, _avg_grad_phi_elem, _avg_grad_phi)
-                     : volumeAverageGradPhi(this->_neighbor_elem,
-                                            _avg_grad_phi_neighbor_elem,
-                                            _avg_grad_phi_neighbor);
-      jacobian += test * fbarDirectionalCorrection(
-                             ivar,
-                             jvar,
-                             on_element ? (*_stabilized_tangent)[this->_qp]
-                                        : (*_stabilized_tangent_neighbor)[this->_qp],
-                             on_element ? (*_physical_deformation_gradient)[this->_qp]
-                                        : (*_physical_deformation_gradient_neighbor)[this->_qp],
-                             on_element ? (*_average_deformation_gradient)[this->_qp]
-                                        : (*_average_deformation_gradient_neighbor)[this->_qp],
-                             normal_tangent,
-                             grad_phi,
-                             avg_grad_phi[this->_j]);
+          trial_on_element
+              ? volumeAverageGradPhi(this->_current_elem, _avg_grad_phi_elem, _avg_grad_phi)
+              : volumeAverageGradPhi(
+                    this->_neighbor_elem, _avg_grad_phi_neighbor_elem, _avg_grad_phi_neighbor);
+      derivative += fbarDirectionalCorrection(
+          ivar,
+          jvar,
+          trial_on_element ? (*_stabilized_tangent)[this->_qp]
+                           : (*_stabilized_tangent_neighbor)[this->_qp],
+          trial_on_element ? (*_physical_deformation_gradient)[this->_qp]
+                           : (*_physical_deformation_gradient_neighbor)[this->_qp],
+          trial_on_element ? (*_average_deformation_gradient)[this->_qp]
+                           : (*_average_deformation_gradient_neighbor)[this->_qp],
+          direction,
+          grad_phi,
+          avg_grad_phi[this->_j]);
+    }
+
+    return derivative;
+  }
+}
+
+template <bool is_ad>
+Real
+SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::computeJacobianComponent(
+    const unsigned int component_j, const Moose::DGJacobianType type)
+{
+  if constexpr (is_ad)
+    return 0;
+  else
+  {
+    Real jacobian = 0;
+
+    if (this->_stabilization)
+    {
+      // d/du of S t_c + (I - S) (P + P_neighbor) N / 2. Each side's PK1 stress depends only on that
+      // side's displacements, so the trial side selects the stress, tangent, and trial gradient.
+      const auto normal = this->stabilizationNormal();
+      const bool trial_on_element =
+          type == Moose::ElementElement || type == Moose::NeighborElement;
+      const Real signed_test = (type == Moose::ElementElement || type == Moose::ElementNeighbor)
+                                   ? -this->_test[this->_i][this->_qp]
+                                   : this->_test_neighbor[this->_i][this->_qp];
+
+      Real average_traction_derivative = 0;
+      for (const auto b : make_range(this->_ndisp))
+      {
+        const Real weight = this->stabilizationWeight(normal, this->_component, b);
+        jacobian += weight * (computeDResidualDDisplacement(b, component_j, type) +
+                              computeDResidualDDeformationGradient(b, component_j, type));
+        average_traction_derivative += ((b == this->_component ? 1.0 : 0.0) - weight) *
+                                       stressDerivative(b, component_j, normal, trial_on_element);
+      }
+      jacobian +=
+          0.5 * (normal * this->_normals[this->_qp]) * signed_test * average_traction_derivative;
+    }
+    else
+      jacobian = computeDResidualDDisplacement(this->_component, component_j, type) +
+                 computeDResidualDDeformationGradient(this->_component, component_j, type);
+
+    if (this->_shifted && _directional_correction)
+    {
+      if (type == Moose::ElementElement)
+        jacobian -= calculateDirectionalCorrectionJacobian(this->_component, component_j, type);
+      else if (type == Moose::NeighborNeighbor)
+        jacobian += calculateDirectionalCorrectionJacobian(this->_component, component_j, type);
     }
 
     return jacobian;
@@ -412,23 +487,7 @@ template <bool is_ad>
 Real
 SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::computeQpJacobian(Moose::DGJacobianType type)
 {
-  if constexpr (is_ad)
-    return 0;
-  else
-  {
-    auto jacobian = computeDResidualDDisplacement(this->_component, type) +
-                    computeDResidualDDeformationGradient(this->_component, type);
-    if (this->_shifted && _directional_correction)
-    {
-      if (type == Moose::ElementElement)
-        jacobian -=
-            calculateDirectionalCorrectionJacobian(this->_component, this->_component, type);
-      else if (type == Moose::NeighborNeighbor)
-        jacobian +=
-            calculateDirectionalCorrectionJacobian(this->_component, this->_component, type);
-    }
-    return jacobian;
-  }
+  return computeJacobianComponent(this->_component, type);
 }
 
 template <bool is_ad>
@@ -443,21 +502,11 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::computeQpOffDiagJacobian(Moose::
     if (this->getJvarMap()[jvar] < 0)
       return 0;
 
-    Real jacobian = 0;
     for (const auto component_j : make_range(this->_ndisp))
       if (jvar == _disp_var[component_j])
-      {
-        jacobian = computeDResidualDDisplacement(component_j, type) +
-                   computeDResidualDDeformationGradient(component_j, type);
-        if (this->_shifted && _directional_correction)
-        {
-          if (type == Moose::ElementElement)
-            jacobian -= calculateDirectionalCorrectionJacobian(this->_component, component_j, type);
-          else if (type == Moose::NeighborNeighbor)
-            jacobian += calculateDirectionalCorrectionJacobian(this->_component, component_j, type);
-        }
-      }
-    return jacobian;
+        return computeJacobianComponent(component_j, type);
+
+    return 0;
   }
 }
 
