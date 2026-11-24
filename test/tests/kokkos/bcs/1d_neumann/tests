@@ -10,4 +10,26 @@
     capabilities = 'kokkos'
     compute_devices = 'cpu cuda xpu'
   []
+  [controlled]
+    requirement = 'The Kokkos system shall support Neumann boundary conditions whose value is set '
+                  'by a control'
+    [host]
+      type = 'CSVDiff'
+      input = 'kokkos_1d_neumann_control.i'
+      cli_args = 'diffusion=Diffusion dirichlet=DirichletBC neumann=NeumannBC '
+                 'Outputs/file_base=host_control_out'
+      csvdiff = 'host_control_out.csv'
+      detail = 'with the host Neumann boundary condition as the reference, and'
+    []
+    [kokkos]
+      type = 'CSVDiff'
+      input = 'kokkos_1d_neumann_control.i'
+      csvdiff = 'kokkos_1d_neumann_control_out.csv'
+      # The gold is a symlink to host_control_out.csv
+      capabilities = 'kokkos'
+      compute_devices = 'cpu cuda xpu'
+      prereq = 'controlled/host'
+      detail = 'matching it with the Kokkos one.'
+    []
+  []
 []
