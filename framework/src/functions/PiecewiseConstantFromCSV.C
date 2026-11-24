@@ -99,10 +99,18 @@ PiecewiseConstantFromCSV::value(Real, const Point & p) const
   if (_read_type == PropertyReadFile::ReadTypeEnum::EXTRA_ELEMENT_ID)
   {
     // The element being assembled is the common case (a material quadrature point); checking it
-    // first avoids a point-location for every evaluation
-    const Elem * const current_elem = _ti_feproblem.assembly(_tid, /*nl_sys=*/0).elem();
-    if (current_elem && current_elem->contains_point(p))
-      return _read_prop_user_object->getExtraElementIDData(current_elem, _column_number);
+    // first avoids a point-location for every evaluation. A quadrature point of that element is
+    // matched exactly, which is much cheaper than the inverse map of contains_point().
+    const Assembly & assembly = _ti_feproblem.assembly(_tid, /*nl_sys=*/0);
+    if (const Elem * const current_elem = assembly.elem())
+    {
+      const auto & q_points = assembly.qPoints();
+      for (const auto qp : make_range(q_points.size()))
+        if (q_points[qp] == p)
+          return _read_prop_user_object->getExtraElementIDData(current_elem, _column_number);
+      if (current_elem->contains_point(p))
+        return _read_prop_user_object->getExtraElementIDData(current_elem, _column_number);
+    }
   }
 
   if (_read_type == PropertyReadFile::ReadTypeEnum::ELEMENT ||
