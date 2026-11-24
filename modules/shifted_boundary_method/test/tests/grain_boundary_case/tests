@@ -45,6 +45,23 @@
       detail = 'giving the same solution.'
     []
   []
+  [case_insensitive_pair_names]
+    type = 'CSVDiff'
+    input = 'grain_boundary_sczm_coarse_lambda1.i'
+    cli_args = "Mesh/rename/type=RenameBoundaryGenerator Mesh/rename/input=right_top "
+               "Mesh/rename/old_boundary='grain1_grain2 grain1_grain4 grain1_grain5 grain2_grain4 grain3_grain4 grain3_grain5 grain4_grain5' "
+               "Mesh/rename/new_boundary='Grain1_Grain2 Grain1_Grain4 Grain1_Grain5 Grain2_Grain4 Grain3_Grain4 Grain3_Grain5 Grain4_Grain5' "
+               "Mesh/final_generator=rename "
+               "interfaces='Grain1_Grain2 Grain1_Grain4 Grain1_Grain5 Grain2_Grain4 Grain3_Grain4 Grain3_Grain5 Grain4_Grain5' "
+               "Outputs/exodus=false Outputs/csv/file_base=case_insensitive_pair_names_csv"
+    csvdiff = 'case_insensitive_pair_names_csv.csv'
+    # The gold is a symlink to grain_boundary_sczm_coarse_lambda1_csv.csv
+    mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
+    recover = false
+    requirement = 'The system shall infer the subdomain pair of a shifted cohesive zone interface '
+                  'from a boundary name of the form grainX_grainY or blockX_blockY in any letter '
+                  'case, including the BlockX_BlockY names of BreakMeshByBlockGenerator.'
+  []
   [reversed_interface_pairs]
     type = CSVDiff
     input = 'grain_boundary_sczm_coarse_lambda1.i'

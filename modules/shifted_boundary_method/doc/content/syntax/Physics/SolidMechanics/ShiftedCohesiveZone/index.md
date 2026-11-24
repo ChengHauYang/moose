@@ -72,10 +72,11 @@ file form is the one to use for large distributed runs:
 
 !listing modules/shifted_boundary_method/test/tests/grain_boundary_case/grain_boundary_sczm_mesh_file.i start=[Physics/SolidMechanics/ShiftedCohesiveZone] end=[Materials] include-end=false
 
-Boundary names of the form `grainX_grainY` or `blockX_blockY` identify the two interface subdomains
-automatically. For other boundary names, set `interface_subdomain_pairs` with one pair per boundary
-in the same order. The pair selects an interface; its order does not control the final true-normal
-orientation.
+Boundary names of the form `grainX_grainY` or `blockX_blockY` (in any letter case, so including
+the `BlockX_BlockY` names [BreakMeshByBlockGenerator](BreakMeshByBlockGenerator.md) gives unnamed
+subdomains) identify the two interface subdomains automatically. For other boundary names, set
+`interface_subdomain_pairs` with one pair per boundary in the same order. The pair selects an
+interface; its order does not control the final true-normal orientation.
 
 Shifted integration is enabled by default and is the intended mode for SBM simulations. The
 `no_shifted = true` option is retained primarily for verification and comparison: it disables the
