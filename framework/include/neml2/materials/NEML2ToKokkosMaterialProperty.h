@@ -14,8 +14,8 @@
 #include "MathUtils.h"
 
 /**
- * Copies a scalar (Real), or a symmetric or full rank-two or rank-four NEML2 output into a Kokkos
- * material property.
+ * Copies a scalar (Real), a vector, or a symmetric or full rank-two or rank-four NEML2 output into
+ * a Kokkos material property.
  *
  * The Kokkos material-property rank is part of the MaterialProperty<Real, rank> type, so it must
  * be fixed at compile time for device code. The interface and neighbor template parameters likewise
@@ -23,15 +23,17 @@
  * aliases below provide factory-registerable names for these specializations without duplicating
  * their implementation. rank == 0 is the scalar case: a single component with no tensor index or
  * Mandel factor, matching the host NEML2ToMOOSERealMaterialProperty; 'full' is meaningless for it.
+ * rank == 1 is a vector of 3 components (e.g. a cohesive traction); 'full' is meaningless for it
+ * too.
  */
 template <unsigned int rank, bool full = false, bool interface = false, bool neighbor = false>
 class NEML2ToKokkosMaterialProperty
   : public std::conditional_t<interface, Moose::Kokkos::InterfaceMaterial, Moose::Kokkos::Material>,
     public NEML2OutputInterface
 {
-  static_assert(rank == 0 || rank == 2 || rank == 4,
-                "Only scalar, rank-two, and rank-four properties are supported.");
-  static_assert(!(rank == 0 && full), "'full' is meaningless for a scalar property.");
+  static_assert(rank <= 2 || rank == 4,
+                "Only scalar, vector, rank-two, and rank-four properties are supported.");
+  static_assert(!(rank < 2 && full), "'full' is meaningless for a scalar or vector property.");
 
 public:
   using MaterialBase =
@@ -88,6 +90,10 @@ using NEML2ToKokkosRealMaterialProperty = NEML2ToKokkosMaterialProperty<0>;
 using NEML2ToKokkosSideRealMaterialProperty = NEML2ToKokkosMaterialProperty<0, false, true>;
 using NEML2ToKokkosNeighborRealMaterialProperty =
     NEML2ToKokkosMaterialProperty<0, false, true, true>;
+using NEML2ToKokkosVectorMaterialProperty = NEML2ToKokkosMaterialProperty<1>;
+using NEML2ToKokkosSideVectorMaterialProperty = NEML2ToKokkosMaterialProperty<1, false, true>;
+using NEML2ToKokkosNeighborVectorMaterialProperty =
+    NEML2ToKokkosMaterialProperty<1, false, true, true>;
 using NEML2ToKokkosRankTwoMaterialProperty = NEML2ToKokkosMaterialProperty<2>;
 using NEML2ToKokkosRankFourMaterialProperty = NEML2ToKokkosMaterialProperty<4>;
 using NEML2ToKokkosFullRankTwoMaterialProperty = NEML2ToKokkosMaterialProperty<2, true>;
@@ -135,6 +141,10 @@ NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::writeOutputToPro
   auto prop = _prop(datum, storage_qp);
   if constexpr (rank == 0)
     prop = batch_index == libMesh::DofObject::invalid_id ? 0.0 : _staged_output[batch_index];
+  else if constexpr (rank == 1)
+    for (unsigned int i = 0; i < 3; ++i)
+      prop(i) =
+          batch_index == libMesh::DofObject::invalid_id ? 0.0 : _staged_output[batch_index * 3 + i];
   else
   {
     // The property keeps the full 3x3 NEML2 tensor in every mesh dimension
