@@ -14,22 +14,28 @@
 #include "RankTwoTensor.h"
 
 /**
- * ComputeVariableBaseEigenstrain computes an Eigenstrain based on a real tensor value material
- * property base (a),
- * a real material property prefactor (p) and a rank two tensor offset tensor (b)
- * p * a + b
+ * Computes an eigenstrain from a tensor-valued material property \f$\mathbf{A}\f$, a scalar
+ * material-property prefactor \f$p\f$, and an optional constant offset tensor \f$\mathbf{B}\f$:
+ * \f$\boldsymbol{\epsilon}^{eigen} = p\mathbf{A} + \mathbf{B}\f$.
  */
-class ComputeVariableBaseEigenStrain : public ComputeEigenstrainBase
+template <bool is_ad>
+class ComputeVariableBaseEigenStrainTempl : public ComputeEigenstrainBaseTempl<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  ComputeVariableBaseEigenStrain(const InputParameters & parameters);
+  ComputeVariableBaseEigenStrainTempl(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpEigenstrain();
+  virtual void computeQpEigenstrain() override;
 
-  const MaterialProperty<RealTensorValue> & _base_tensor;
-  const MaterialProperty<Real> & _prefactor;
+  const GenericMaterialProperty<RealTensorValue, is_ad> & _base_tensor;
+  const GenericMaterialProperty<Real, is_ad> & _prefactor;
   RankTwoTensor _offset_tensor;
+
+  using Material::_qp;
+  using ComputeEigenstrainBaseTempl<is_ad>::_eigenstrain;
 };
+
+using ComputeVariableBaseEigenStrain = ComputeVariableBaseEigenStrainTempl<false>;
+using ADComputeVariableBaseEigenStrain = ComputeVariableBaseEigenStrainTempl<true>;

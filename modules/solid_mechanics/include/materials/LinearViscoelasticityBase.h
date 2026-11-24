@@ -73,7 +73,9 @@
  * adapted for numerical efficiency. The true creep strain itself is declared by
  * ComputeLinearViscoelasticStress or LinearViscoelasticStressUpdate.
  */
-class LinearViscoelasticityBase : public ComputeElasticityTensorBase
+template <bool is_ad>
+class LinearViscoelasticityBaseTempl
+  : public ComputeElasticityTensorBaseTempl<is_ad, RankFourTensor>
 {
 public:
   /**
@@ -93,19 +95,19 @@ public:
 
   static InputParameters validParams();
 
-  LinearViscoelasticityBase(const InputParameters & parameters);
+  LinearViscoelasticityBaseTempl(const InputParameters & parameters);
 
   /**
    * Compute the apparent properties at a quadrature point. This initializes the internal
    * time-stepping scheme, and must be called at the beginning of the time step.
    *
-   * This method is called by LinearViscoelasticityManager.
+   * This method is called by LinearViscoelasticityManagerTempl.
    */
   void recomputeQpApparentProperties(unsigned int qp);
 
 protected:
   virtual void initQpStatefulProperties() override;
-  /// Inherited from ComputeElasticityTensorBase
+  /// Inherited from ComputeElasticityTensorBaseTempl
   virtual void computeQpElasticityTensor() final;
 
   /**
@@ -193,8 +195,6 @@ protected:
   /// Inverse of the apparent elasticity tensor
   MaterialProperty<RankFourTensor> & _apparent_elasticity_tensor_inv;
 
-  /// Instantaneous elasticity tensor. This IS the real elasticity tensor of the material
-  //  MaterialProperty<RankFourTensor> & _instantaneous_elasticity_tensor;
   /// Inverse of the instaneous elasticity tensor
   MaterialProperty<RankFourTensor> & _elasticity_tensor_inv;
 
@@ -269,4 +269,19 @@ protected:
 
   /// checks whether we are at the first time step
   bool & _step_zero;
+
+  // Bring base-class members into scope for dependent name lookup
+  using ComputeElasticityTensorBaseTempl<is_ad, RankFourTensor>::_base_name;
+  using ComputeElasticityTensorBaseTempl<is_ad, RankFourTensor>::_elasticity_tensor;
+  using ComputeElasticityTensorBaseTempl<is_ad, RankFourTensor>::_elasticity_tensor_name;
+  using Material::declareProperty;
+  using Material::getMaterialPropertyOld;
+  using Material::getMaterialPropertyByName;
+  using Material::_qp;
+  using Material::_t_step;
+  using Material::_dt;
+  using Material::_dt_old;
 };
+
+using LinearViscoelasticityBase = LinearViscoelasticityBaseTempl<false>;
+using ADLinearViscoelasticityBase = LinearViscoelasticityBaseTempl<true>;

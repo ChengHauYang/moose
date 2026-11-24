@@ -1,0 +1,71 @@
+[Tests]
+  [ad_thermal_beam_jac]
+    type = PetscJacobianTester
+    input = 'ad_thermal_beam_jac.i'
+    run_sim = True
+    ratio_tol = 1e-8
+    requirement = 'The system shall compute how changes in temperature affect the balance of forces and moments in a beam.'
+    design = 'ADComputeThermalExpansionEigenstrainBeam.md ADComputeIncrementalBeamStrain.md ADComputeBeamResultants.md ADStressDivergenceBeam.md'
+    issues = '#10313'
+  []
+  [ad_eigenstrain_from_var_beam_jac]
+    type = PetscJacobianTester
+    input = 'ad_eigenstrain_from_var_beam_jac.i'
+    run_sim = True
+    ratio_tol = 1e-8
+    requirement = 'The system shall compute how imposed stretching, shearing, bending, and twisting strains affect the balance of forces and moments in a beam.'
+    design = 'ADComputeEigenstrainBeamFromVariable.md ADComputeIncrementalBeamStrain.md ADComputeBeamResultants.md ADStressDivergenceBeam.md'
+    issues = '#10313'
+  []
+  [ad_thermal_beam_action_jac]
+    type = PetscJacobianTester
+    input = 'ad_thermal_beam_action_jac.i'
+    run_sim = True
+    ratio_tol = 1e-8
+    requirement = 'The system shall compute how heating affects the balance of forces and moments when the beam is set up through a single mechanics block.'
+    design = 'syntax/Physics/SolidMechanics/LineElement/QuasiStatic/index.md'
+    issues = '#10313'
+  []
+  [ad_beam_action_unsupported_model]
+    requirement = 'The system shall report the supported beam settings when automatic differentiation is requested for'
+    design = 'syntax/Physics/SolidMechanics/LineElement/QuasiStatic/index.md'
+    issues = '#10313'
+    [truss]
+      type = RunException
+      input = 'ad_thermal_beam_action_jac.i'
+      cli_args = 'Physics/SolidMechanics/LineElement/QuasiStatic/beam/truss=true'
+      expect_err = 'Automatic differentiation requires a beam with small strains'
+      detail = 'a truss.'
+    []
+    [finite_strain]
+      type = RunException
+      input = 'ad_thermal_beam_action_jac.i'
+      cli_args = 'Physics/SolidMechanics/LineElement/QuasiStatic/beam/strain_type=FINITE'
+      expect_err = 'Automatic differentiation requires a beam with small strains'
+      detail = 'a beam undergoing large strains.'
+    []
+    [finite_rotation]
+      type = RunException
+      input = 'ad_thermal_beam_action_jac.i'
+      cli_args = 'Physics/SolidMechanics/LineElement/QuasiStatic/beam/rotation_type=FINITE'
+      expect_err = 'Automatic differentiation requires a beam with small strains'
+      detail = 'a beam undergoing large rotations.'
+    []
+    [inertia]
+      type = RunException
+      input = 'ad_thermal_beam_action_jac.i'
+      cli_args = 'Physics/SolidMechanics/LineElement/QuasiStatic/beam/dynamic_consistent_inertia=true'
+      expect_err = 'Automatic differentiation requires a beam with small strains'
+      detail = 'a beam with inertia.'
+    []
+  []
+  [ad_beam_action_unsupported_output]
+    type = RunException
+    input = 'ad_thermal_beam_action_jac.i'
+    cli_args = 'Physics/SolidMechanics/LineElement/QuasiStatic/beam/diag_save_in=diagonal'
+    expect_err = 'Saving residuals or Jacobian diagonals to auxiliary variables is unavailable'
+    requirement = 'The system shall report when saving solver diagnostics to auxiliary fields is unavailable for a beam.'
+    design = 'syntax/Physics/SolidMechanics/LineElement/QuasiStatic/index.md'
+    issues = '#10313'
+  []
+[]

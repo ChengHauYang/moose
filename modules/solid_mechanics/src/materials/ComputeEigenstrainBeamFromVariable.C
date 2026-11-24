@@ -10,11 +10,13 @@
 #include "ComputeEigenstrainBeamFromVariable.h"
 
 registerMooseObject("SolidMechanicsApp", ComputeEigenstrainBeamFromVariable);
+registerMooseObject("SolidMechanicsApp", ADComputeEigenstrainBeamFromVariable);
 
+template <bool is_ad>
 InputParameters
-ComputeEigenstrainBeamFromVariable::validParams()
+ComputeEigenstrainBeamFromVariableTempl<is_ad>::validParams()
 {
-  InputParameters params = ComputeEigenstrainBeamBase::validParams();
+  InputParameters params = ComputeEigenstrainBeamBaseTempl<is_ad>::validParams();
   params.addClassDescription("Computes an eigenstrain from a set of variables");
   params.addCoupledVar("displacement_eigenstrain_variables",
                        "A list of variable names describing the "
@@ -29,24 +31,30 @@ ComputeEigenstrainBeamFromVariable::validParams()
   return params;
 }
 
-ComputeEigenstrainBeamFromVariable::ComputeEigenstrainBeamFromVariable(
+template <bool is_ad>
+ComputeEigenstrainBeamFromVariableTempl<is_ad>::ComputeEigenstrainBeamFromVariableTempl(
     const InputParameters & parameters)
-  : ComputeEigenstrainBeamBase(parameters),
-    _ndisp(coupledComponents("displacement_eigenstrain_variables")),
-    _nrot(coupledComponents("rotational_eigenstrain_variables")),
-    _disp(_ndisp > 0 ? coupledValues("displacement_eigenstrain_variables")
-                     : std::vector<const VariableValue *>(3, &_zero)),
-    _rot(_nrot > 0 ? coupledValues("rotational_eigenstrain_variables")
-                   : std::vector<const VariableValue *>(3, &_zero))
+  : ComputeEigenstrainBeamBaseTempl<is_ad>(parameters),
+    _ndisp(this->coupledComponents("displacement_eigenstrain_variables")),
+    _nrot(this->coupledComponents("rotational_eigenstrain_variables")),
+    _disp(_ndisp > 0
+              ? this->template coupledGenericValues<is_ad>("displacement_eigenstrain_variables")
+              : std::vector<const GenericVariableValue<is_ad> *>(
+                    3, &this->template genericZeroValue<is_ad>())),
+    _rot(_nrot > 0 ? this->template coupledGenericValues<is_ad>("rotational_eigenstrain_variables")
+                   : std::vector<const GenericVariableValue<is_ad> *>(
+                         3, &this->template genericZeroValue<is_ad>()))
 {
   if ((_ndisp != 3 && _ndisp != 0) || (_nrot != 3 && _nrot != 0))
-    mooseError("ComputeEigenstrainBeamFromVariable: If the displacement or rotational eigenstrains "
-               "are provided, it should contain 3 variables corresponding to the three "
-               "components in the global coordinate system.");
+    this->mooseError(
+        "ComputeEigenstrainBeamFromVariable: If the displacement or rotational eigenstrains "
+        "are provided, it should contain 3 variables corresponding to the three "
+        "components in the global coordinate system.");
 }
 
+template <bool is_ad>
 void
-ComputeEigenstrainBeamFromVariable::computeQpEigenstrain()
+ComputeEigenstrainBeamFromVariableTempl<is_ad>::computeQpEigenstrain()
 {
   for (unsigned int i = 0; i < 3; ++i)
   {
@@ -54,3 +62,6 @@ ComputeEigenstrainBeamFromVariable::computeQpEigenstrain()
     _rot_eigenstrain[_qp](i) = (*_rot[i])[_qp];
   }
 }
+
+template class ComputeEigenstrainBeamFromVariableTempl<false>;
+template class ComputeEigenstrainBeamFromVariableTempl<true>;

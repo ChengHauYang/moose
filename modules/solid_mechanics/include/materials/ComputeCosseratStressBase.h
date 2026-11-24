@@ -10,30 +10,39 @@
 #pragma once
 
 #include "ComputeStressBase.h"
+#include "ADComputeStressBase.h"
 
 /**
- * ComputeCosseratStressBase is the base class for stress tensors
+ * ComputeCosseratStressBaseTempl is the base class for Cosserat stress tensors.
  */
-class ComputeCosseratStressBase : public ComputeStressBase
+template <bool is_ad>
+class ComputeCosseratStressBaseTempl
+  : public std::conditional_t<is_ad, ADComputeStressBase, ComputeStressBase>
 {
 public:
   static InputParameters validParams();
 
-  ComputeCosseratStressBase(const InputParameters & parameters);
+  ComputeCosseratStressBaseTempl(const InputParameters & parameters);
 
 protected:
-  virtual void initQpStatefulProperties();
-  virtual void computeQpStress() = 0;
+  virtual void initQpStatefulProperties() override;
+  virtual void computeQpStress() override = 0;
 
   /// The Cosserat curvature strain
-  const MaterialProperty<RankTwoTensor> & _curvature;
+  const GenericMaterialProperty<RankTwoTensor, is_ad> & _curvature;
 
   /// The Cosserat elastic flexural rigidity tensor
   const MaterialProperty<RankFourTensor> & _elastic_flexural_rigidity_tensor;
 
-  /// the Cosserat couple-stress
-  MaterialProperty<RankTwoTensor> & _stress_couple;
+  /// The Cosserat couple-stress
+  GenericMaterialProperty<RankTwoTensor, is_ad> & _stress_couple;
 
-  /// derivative of couple-stress w.r.t. curvature
-  MaterialProperty<RankFourTensor> & _Jacobian_mult_couple;
+  /// Derivative of couple-stress with respect to curvature
+  MaterialProperty<RankFourTensor> * const _Jacobian_mult_couple;
+
+  using StressBase = std::conditional_t<is_ad, ADComputeStressBase, ComputeStressBase>;
+  using StressBase::_qp;
 };
+
+using ComputeCosseratStressBase = ComputeCosseratStressBaseTempl<false>;
+using ADComputeCosseratStressBase = ComputeCosseratStressBaseTempl<true>;

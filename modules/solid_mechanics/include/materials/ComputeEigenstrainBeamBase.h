@@ -14,12 +14,13 @@
 /**
  * ComputeEigenstrainBeamBase is the base class for beam eigenstrain vectors
  */
-class ComputeEigenstrainBeamBase : public Material
+template <bool is_ad>
+class ComputeEigenstrainBeamBaseTempl : public Material
 {
 public:
   static InputParameters validParams();
 
-  ComputeEigenstrainBeamBase(const InputParameters & parameters);
+  ComputeEigenstrainBeamBaseTempl(const InputParameters & parameters);
 
 protected:
   virtual void initQpStatefulProperties();
@@ -32,11 +33,16 @@ protected:
   std::string _eigenstrain_name;
 
   /// Stores the current displacement eigenstrain
-  MaterialProperty<RealVectorValue> & _disp_eigenstrain;
+  GenericMaterialProperty<RealVectorValue, is_ad> & _disp_eigenstrain;
 
   /// Stores the current rotational eigenstrain
-  MaterialProperty<RealVectorValue> & _rot_eigenstrain;
+  GenericMaterialProperty<RealVectorValue, is_ad> & _rot_eigenstrain;
 
   /// Restartable data to check for the zeroth and first time steps for thermal calculations
   bool & _step_zero;
+
+  usingMaterialMembers;
 };
+
+using ComputeEigenstrainBeamBase = ComputeEigenstrainBeamBaseTempl<false>;
+using ADComputeEigenstrainBeamBase = ComputeEigenstrainBeamBaseTempl<true>;

@@ -9,10 +9,11 @@
 
 #include "ComputeThermalExpansionEigenstrainBeamBase.h"
 
+template <bool is_ad>
 InputParameters
-ComputeThermalExpansionEigenstrainBeamBase::validParams()
+ComputeThermalExpansionEigenstrainBeamBaseTempl<is_ad>::validParams()
 {
-  InputParameters params = ComputeEigenstrainBeamBase::validParams();
+  InputParameters params = ComputeEigenstrainBeamBaseTempl<is_ad>::validParams();
   params.addRequiredCoupledVar("temperature", "Coupled temperature");
   params.addRequiredCoupledVar("stress_free_temperature",
                                "Reference temperature at which there is no "
@@ -21,16 +22,18 @@ ComputeThermalExpansionEigenstrainBeamBase::validParams()
   return params;
 }
 
-ComputeThermalExpansionEigenstrainBeamBase::ComputeThermalExpansionEigenstrainBeamBase(
-    const InputParameters & parameters)
-  : ComputeEigenstrainBeamBase(parameters),
-    _temperature(coupledValue("temperature")),
-    _stress_free_temperature(coupledValue("stress_free_temperature"))
+template <bool is_ad>
+ComputeThermalExpansionEigenstrainBeamBaseTempl<
+    is_ad>::ComputeThermalExpansionEigenstrainBeamBaseTempl(const InputParameters & parameters)
+  : ComputeEigenstrainBeamBaseTempl<is_ad>(parameters),
+    _temperature(this->template coupledGenericValue<is_ad>("temperature")),
+    _stress_free_temperature(this->template coupledGenericValue<is_ad>("stress_free_temperature"))
 {
 }
 
+template <bool is_ad>
 void
-ComputeThermalExpansionEigenstrainBeamBase::computeQpEigenstrain()
+ComputeThermalExpansionEigenstrainBeamBaseTempl<is_ad>::computeQpEigenstrain()
 {
   // fetch the two end nodes for current element
   std::vector<const Node *> node;
@@ -43,9 +46,12 @@ ComputeThermalExpansionEigenstrainBeamBase::computeQpEigenstrain()
 
   _initial_axis /= _initial_axis.norm();
 
-  Real thermal_strain = computeThermalStrain();
+  GenericReal<is_ad> thermal_strain = computeThermalStrain();
 
   _disp_eigenstrain[_qp].zero();
   _rot_eigenstrain[_qp].zero();
   _disp_eigenstrain[_qp] = _initial_axis * thermal_strain;
 }
+
+template class ComputeThermalExpansionEigenstrainBeamBaseTempl<false>;
+template class ComputeThermalExpansionEigenstrainBeamBaseTempl<true>;

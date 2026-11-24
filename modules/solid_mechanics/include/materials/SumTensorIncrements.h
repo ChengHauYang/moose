@@ -16,23 +16,28 @@
 /**
  * SumTensorIncrements update a tensor by summing tensor increments passed as property
  */
-class SumTensorIncrements : public DerivativeMaterialInterface<Material>
+template <bool is_ad>
+class SumTensorIncrementsTempl : public DerivativeMaterialInterface<Material>
 {
 public:
   static InputParameters validParams();
 
-  SumTensorIncrements(const InputParameters & parameters);
+  SumTensorIncrementsTempl(const InputParameters & parameters);
 
 protected:
-  virtual void initQpStatefulProperties();
-  virtual void computeQpProperties();
+  void initQpStatefulProperties() override;
+  void computeQpProperties() override;
 
   std::vector<MaterialPropertyName> _property_names;
   unsigned int _num_property;
 
-  MaterialProperty<RankTwoTensor> & _tensor;
+  GenericMaterialProperty<RankTwoTensor, is_ad> & _tensor;
   const MaterialProperty<RankTwoTensor> & _tensor_old;
-  MaterialProperty<RankTwoTensor> & _tensor_increment;
+  GenericMaterialProperty<RankTwoTensor, is_ad> & _tensor_increment;
 
-  std::vector<const MaterialProperty<RankTwoTensor> *> _coupled_tensor_increments;
+  std::vector<const GenericMaterialProperty<RankTwoTensor, is_ad> *>
+      _coupled_tensor_increments;
 };
+
+using SumTensorIncrements = SumTensorIncrementsTempl<false>;
+using ADSumTensorIncrements = SumTensorIncrementsTempl<true>;

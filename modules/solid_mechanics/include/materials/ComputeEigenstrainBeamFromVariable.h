@@ -15,15 +15,16 @@
  * ComputeEigenstrainBeamFromVariable computes an eigenstrain from displacement and rotational
  * eigenstrain variables
  */
-class ComputeEigenstrainBeamFromVariable : public ComputeEigenstrainBeamBase
+template <bool is_ad>
+class ComputeEigenstrainBeamFromVariableTempl : public ComputeEigenstrainBeamBaseTempl<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  ComputeEigenstrainBeamFromVariable(const InputParameters & parameters);
+  ComputeEigenstrainBeamFromVariableTempl(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpEigenstrain() override;
+  void computeQpEigenstrain() override;
 
   /// Number of displacement eigenstrain variables
   const unsigned int _ndisp;
@@ -32,8 +33,15 @@ protected:
   const unsigned int _nrot;
 
   /// Displacemenet eigenstrain variable values
-  const std::vector<const VariableValue *> _disp;
+  const std::vector<const GenericVariableValue<is_ad> *> _disp;
 
   /// Rotational eigenstrain variable values
-  const std::vector<const VariableValue *> _rot;
+  const std::vector<const GenericVariableValue<is_ad> *> _rot;
+
+  usingMaterialMembers;
+  using ComputeEigenstrainBeamBaseTempl<is_ad>::_disp_eigenstrain;
+  using ComputeEigenstrainBeamBaseTempl<is_ad>::_rot_eigenstrain;
 };
+
+using ComputeEigenstrainBeamFromVariable = ComputeEigenstrainBeamFromVariableTempl<false>;
+using ADComputeEigenstrainBeamFromVariable = ComputeEigenstrainBeamFromVariableTempl<true>;

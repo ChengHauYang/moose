@@ -10,34 +10,39 @@
 #pragma once
 
 #include "ScalarKernel.h"
+#include "ADScalarKernel.h"
+#include "MooseTypes.h"
 #include "RankTwoTensorForward.h"
 #include "RankFourTensorForward.h"
 
-// Forward Declarations
-class GlobalStrainUserObjectInterface;
+#include "GlobalStrainUserObjectInterface.h"
 
-class GlobalStrain : public ScalarKernel
+template <bool is_ad>
+class GlobalStrainTempl : public std::conditional_t<is_ad, ADScalarKernel, ScalarKernel>
 {
 public:
   static InputParameters validParams();
 
-  GlobalStrain(const InputParameters & parameters);
+  GlobalStrainTempl(const InputParameters & parameters);
 
-  virtual void reinit() override {}
+  virtual void reinit() override;
   virtual void computeResidual() override;
   virtual void computeJacobian() override;
-  virtual void computeOffDiagJacobian(unsigned int) override {}
+  virtual void computeOffDiagJacobian(unsigned int jvar) override;
 
 protected:
+  virtual GenericReal<is_ad> computeQpResidual() override;
   virtual void assignComponentIndices(Order var_order);
-  virtual Real computeQpResidual() override { mooseError("unused"); }
-  virtual Real computeQpJacobian() override { mooseError("unused"); }
 
-  const GlobalStrainUserObjectInterface & _pst;
-  const RankTwoTensor & _pst_residual;
-  const RankFourTensor & _pst_jacobian;
+  using Parent = std::conditional_t<is_ad, ADScalarKernel, ScalarKernel>;
+
+  const GlobalStrainUserObjectInterfaceTempl<is_ad> & _pst;
+  const GenericRankTwoTensor<is_ad> & _pst_residual;
   const VectorValue<bool> & _periodic_dir;
 
   std::vector<std::pair<unsigned int, unsigned int>> _components;
   const unsigned int _dim;
 };
+
+using GlobalStrain = GlobalStrainTempl<false>;
+using ADGlobalStrain = GlobalStrainTempl<true>;

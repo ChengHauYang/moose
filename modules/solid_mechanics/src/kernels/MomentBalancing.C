@@ -18,11 +18,13 @@
 #include "RankTwoTensor.h"
 
 registerMooseObject("SolidMechanicsApp", MomentBalancing);
+registerMooseObject("SolidMechanicsApp", ADMomentBalancing);
 
+template <bool is_ad>
 InputParameters
-MomentBalancing::validParams()
+MomentBalancingTempl<is_ad>::validParams()
 {
-  InputParameters params = Kernel::validParams();
+  InputParameters params = GenericKernel<is_ad>::validParams();
   params.addClassDescription("Balance of momentum for three-dimensional Cosserat media, notably in "
                              "a Cosserat layered elasticity model.");
   params.addRequiredRangeCheckedParam<unsigned int>(
@@ -39,68 +41,89 @@ MomentBalancing::validParams()
   return params;
 }
 
-MomentBalancing::MomentBalancing(const InputParameters & parameters)
-  : Kernel(parameters),
-    _stress(getMaterialProperty<RankTwoTensor>("stress" +
-                                               getParam<std::string>("appended_property_name"))),
-    _Jacobian_mult(getMaterialProperty<RankFourTensor>(
-        "Jacobian_mult" + getParam<std::string>("appended_property_name"))),
-    _component(getParam<unsigned int>("component")),
-    _nrots(coupledComponents("Cosserat_rotations")),
+template <bool is_ad>
+MomentBalancingTempl<is_ad>::MomentBalancingTempl(const InputParameters & parameters)
+  : GenericKernel<is_ad>(parameters),
+    _stress(this->template getGenericMaterialProperty<RankTwoTensor, is_ad>(
+        "stress" + this->template getParam<std::string>("appended_property_name"))),
+    _Jacobian_mult(
+        is_ad ? nullptr
+              : &this->template getMaterialProperty<RankFourTensor>(
+                    "Jacobian_mult" +
+                    this->template getParam<std::string>("appended_property_name"))),
+    _component(this->template getParam<unsigned int>("component")),
+    _nrots(this->coupledComponents("Cosserat_rotations")),
     _wc_var(_nrots),
-    _ndisp(coupledComponents("displacements")),
+    _ndisp(this->coupledComponents("displacements")),
     _disp_var(_ndisp)
 {
   if (_nrots != 3)
     mooseError("MomentBalancing: This Kernel is only defined for 3-dimensional simulations so 3 "
                "Cosserat rotation variables are needed");
   for (unsigned i = 0; i < _nrots; ++i)
-    _wc_var[i] = coupled("Cosserat_rotations", i);
+    _wc_var[i] = this->coupled("Cosserat_rotations", i);
 
   if (_ndisp != 3)
     mooseError("MomentBalancing: This Kernel is only defined for 3-dimensional simulations so 3 "
                "displacement variables are needed");
   for (unsigned i = 0; i < _ndisp; ++i)
-    _disp_var[i] = coupled("displacements", i);
+    _disp_var[i] = this->coupled("displacements", i);
 
   // Following check is necessary to ensure the correct Jacobian is calculated
-  if (_wc_var[_component] != _var.number())
+  if (_wc_var[_component] != this->_var.number())
     mooseError("MomentBalancing: The variable for this Kernel must be equal to the Cosserat "
                "rotation variable defined by the \"component\" and the \"Cosserat_rotations\" "
                "parameters");
 }
 
-Real
-MomentBalancing::computeQpResidual()
+template <bool is_ad>
+GenericReal<is_ad>
+MomentBalancingTempl<is_ad>::computeQpResidual()
 {
-  Real the_sum = 0.0;
+  GenericReal<is_ad> the_sum = 0.0;
   for (const auto j : make_range(Moose::dim))
     for (const auto k : make_range(Moose::dim))
-      the_sum += PermutationTensor::eps(_component, j, k) * _stress[_qp](j, k);
-  return _test[_i][_qp] * the_sum;
+      the_sum += PermutationTensor::eps(_component, j, k) * _stress[this->_qp](j, k);
+  return this->_test[this->_i][this->_qp] * the_sum;
 }
 
+template <bool is_ad>
 Real
-MomentBalancing::computeQpJacobian()
+MomentBalancingTempl<is_ad>::computeQpJacobian()
 {
-  return ElasticityTensorTools::momentJacobianWC(
-      _Jacobian_mult[_qp], _component, _component, _test[_i][_qp], _phi[_j][_qp]);
+  if constexpr (is_ad)
+    return 0.0;
+  else
+    return ElasticityTensorTools::momentJacobianWC(
+        (*_Jacobian_mult)[this->_qp], _component, _component, this->_test[this->_i][this->_qp],
+        this->_phi[this->_j][this->_qp]);
 }
 
+template <bool is_ad>
 Real
-MomentBalancing::computeQpOffDiagJacobian(unsigned int jvar)
+MomentBalancingTempl<is_ad>::computeQpOffDiagJacobian(unsigned int jvar)
 {
-  // What does 2D look like here?
-  for (unsigned v = 0; v < _ndisp; ++v)
-    if (jvar == _disp_var[v])
-      return ElasticityTensorTools::momentJacobian(
-          _Jacobian_mult[_qp], _component, v, _test[_i][_qp], _grad_phi[_j][_qp]);
+  if constexpr (is_ad)
+    return 0.0;
+  else
+  {
+    // What does 2D look like here?
+    for (unsigned v = 0; v < _ndisp; ++v)
+      if (jvar == _disp_var[v])
+        return ElasticityTensorTools::momentJacobian(
+            (*_Jacobian_mult)[this->_qp], _component, v, this->_test[this->_i][this->_qp],
+            this->_grad_phi[this->_j][this->_qp]);
 
-  // What does 2D look like here?
-  for (unsigned v = 0; v < _nrots; ++v)
-    if (jvar == _wc_var[v])
-      return ElasticityTensorTools::momentJacobianWC(
-          _Jacobian_mult[_qp], _component, v, _test[_i][_qp], _phi[_j][_qp]);
+    // What does 2D look like here?
+    for (unsigned v = 0; v < _nrots; ++v)
+      if (jvar == _wc_var[v])
+        return ElasticityTensorTools::momentJacobianWC(
+            (*_Jacobian_mult)[this->_qp], _component, v, this->_test[this->_i][this->_qp],
+            this->_phi[this->_j][this->_qp]);
 
-  return 0.0;
+    return 0.0;
+  }
 }
+
+template class MomentBalancingTempl<false>;
+template class MomentBalancingTempl<true>;

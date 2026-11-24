@@ -21,15 +21,25 @@
  * The generic logic that computes a weighted sum of tensors is located in the
  * templated base class CompositeTensorBase.
  */
-class CompositeEigenstrain : public CompositeTensorBase<RankTwoTensor, ComputeEigenstrainBase>
+template <bool is_ad>
+class CompositeEigenstrainTempl
+  : public CompositeTensorBase<RankTwoTensor, ComputeEigenstrainBaseTempl<is_ad>, is_ad>
 {
 public:
   static InputParameters validParams();
 
-  CompositeEigenstrain(const InputParameters & parameters);
+  CompositeEigenstrainTempl(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpEigenstrain();
+  virtual void computeQpEigenstrain() override;
 
-  const std::string _M_name;
+  using CompositeTensorBase<RankTwoTensor, ComputeEigenstrainBaseTempl<is_ad>, is_ad>::_base_name;
+  using CompositeTensorBase<RankTwoTensor, ComputeEigenstrainBaseTempl<is_ad>, is_ad>::_eigenstrain;
+  using CompositeTensorBase<RankTwoTensor, ComputeEigenstrainBaseTempl<is_ad>, is_ad>::
+      computeQpTensorProperties;
+  using CompositeTensorBase<RankTwoTensor, ComputeEigenstrainBaseTempl<is_ad>, is_ad>::
+      initializeDerivativeProperties;
 };
+
+using CompositeEigenstrain = CompositeEigenstrainTempl<false>;
+using ADCompositeEigenstrain = CompositeEigenstrainTempl<true>;

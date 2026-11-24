@@ -13,11 +13,13 @@
 #include "libmesh/quadrature.h"
 
 registerMooseObject("SolidMechanicsApp", ComputeReducedOrderEigenstrain);
+registerMooseObject("SolidMechanicsApp", ADComputeReducedOrderEigenstrain);
 
+template <bool is_ad>
 InputParameters
-ComputeReducedOrderEigenstrain::validParams()
+ComputeReducedOrderEigenstrainTempl<is_ad>::validParams()
 {
-  InputParameters params = ComputeEigenstrainBase::validParams();
+  InputParameters params = ComputeEigenstrainBaseTempl<is_ad>::validParams();
   params.addClassDescription("accepts eigenstrains and computes a reduced order eigenstrain for "
                              "consistency in the order of strain and eigenstrains.");
   params.addRequiredParam<std::vector<MaterialPropertyName>>(
@@ -25,10 +27,12 @@ ComputeReducedOrderEigenstrain::validParams()
   return params;
 }
 
-ComputeReducedOrderEigenstrain::ComputeReducedOrderEigenstrain(const InputParameters & parameters)
-  : ComputeEigenstrainBase(parameters),
+template <bool is_ad>
+ComputeReducedOrderEigenstrainTempl<is_ad>::ComputeReducedOrderEigenstrainTempl(
+    const InputParameters & parameters)
+  : ComputeEigenstrainBaseTempl<is_ad>(parameters),
     _input_eigenstrain_names(
-        getParam<std::vector<MaterialPropertyName>>("input_eigenstrain_names")),
+        this->template getParam<std::vector<MaterialPropertyName>>("input_eigenstrain_names")),
     _eigenstrains(_input_eigenstrain_names.size()),
     _subproblem(*parameters.get<SubProblem *>("_subproblem")),
     _ncols(1 + _subproblem.mesh().dimension()),
@@ -37,26 +41,30 @@ ComputeReducedOrderEigenstrain::ComputeReducedOrderEigenstrain(const InputParame
     _A(),
     _b(6),
     _AT(),
+    _A_inverse(),
     _ATb(_ncols),
-    _x(6, DenseVector<Real>(_ncols)),
+    _x(6, GenericDenseVector<is_ad>(_ncols)),
     _vals(6),
     _adjusted_eigenstrain()
 {
   for (unsigned int i = 0; i < _eigenstrains.size(); ++i)
   {
-    _input_eigenstrain_names[i] = _base_name + _input_eigenstrain_names[i];
-    _eigenstrains[i] = &getMaterialProperty<RankTwoTensor>(_input_eigenstrain_names[i]);
+    _input_eigenstrain_names[i] = this->_base_name + _input_eigenstrain_names[i];
+    _eigenstrains[i] = &this->template getGenericMaterialProperty<RankTwoTensor, is_ad>(
+        _input_eigenstrain_names[i]);
   }
 }
 
+template <bool is_ad>
 void
-ComputeReducedOrderEigenstrain::initQpStatefulProperties()
+ComputeReducedOrderEigenstrainTempl<is_ad>::initQpStatefulProperties()
 {
-  _eigenstrain[_qp].zero();
+  this->_eigenstrain[this->_qp].zero();
 }
 
+template <bool is_ad>
 void
-ComputeReducedOrderEigenstrain::computeProperties()
+ComputeReducedOrderEigenstrainTempl<is_ad>::computeProperties()
 {
   sumEigenstrain();
 
@@ -65,8 +73,9 @@ ComputeReducedOrderEigenstrain::computeProperties()
   Material::computeProperties();
 }
 
+template <bool is_ad>
 void
-ComputeReducedOrderEigenstrain::computeQpEigenstrain()
+ComputeReducedOrderEigenstrainTempl<is_ad>::computeQpEigenstrain()
 {
   if (_second_order)
   {
@@ -74,39 +83,41 @@ ComputeReducedOrderEigenstrain::computeQpEigenstrain()
     {
       _vals[i] = _x[i](0);
       for (unsigned j = 1; j < _ncols; ++j)
-        _vals[i] += _x[i](j) * _q_point[_qp](j - 1);
+        _vals[i] += _x[i](j) * this->_q_point[this->_qp](j - 1);
     }
     _adjusted_eigenstrain.fillFromInputVector(_vals);
   }
-  _eigenstrain[_qp] = _adjusted_eigenstrain;
+  this->_eigenstrain[this->_qp] = _adjusted_eigenstrain;
 }
 
+template <bool is_ad>
 void
-ComputeReducedOrderEigenstrain::sumEigenstrain()
+ComputeReducedOrderEigenstrainTempl<is_ad>::sumEigenstrain()
 {
-  _eigsum.resize(_qrule->n_points());
-  for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+  _eigsum.resize(this->_qrule->n_points());
+  for (this->_qp = 0; this->_qp < this->_qrule->n_points(); ++this->_qp)
   {
-    _eigsum[_qp].zero();
+    _eigsum[this->_qp].zero();
     for (auto es : _eigenstrains)
-      _eigsum[_qp] += (*es)[_qp];
+      _eigsum[this->_qp] += (*es)[this->_qp];
   }
 }
 
+template <bool is_ad>
 void
-ComputeReducedOrderEigenstrain::prepareEigenstrain()
+ComputeReducedOrderEigenstrainTempl<is_ad>::prepareEigenstrain()
 {
   // The eigenstrains can either be constant in an element or linear in x, y, z
   // If constant, do volume averaging.
-  if (!_second_order || _qrule->n_points() == 1)
+  if (!_second_order || this->_qrule->n_points() == 1)
   {
     // Volume average
     _adjusted_eigenstrain.zero();
-    Real vol = 0.0;
-    for (unsigned qp = 0; qp < _qrule->n_points(); ++qp)
+    GenericReal<is_ad> vol = 0.0;
+    for (unsigned qp = 0; qp < this->_qrule->n_points(); ++qp)
     {
-      _adjusted_eigenstrain += _eigsum[qp] * _JxW[qp] * _coord[qp];
-      vol += _JxW[qp] * _coord[qp];
+      _adjusted_eigenstrain += _eigsum[qp] * this->_JxW[qp] * this->_coord[qp];
+      vol += this->_JxW[qp] * this->_coord[qp];
     }
     _adjusted_eigenstrain /= vol;
   }
@@ -115,15 +126,15 @@ ComputeReducedOrderEigenstrain::prepareEigenstrain()
     // 1 x y z
 
     // Six sets (one for each unique component of eigen) of qp data
-    _A.resize(_qrule->n_points(), _ncols);
+    _A.resize(this->_qrule->n_points(), _ncols);
     for (auto && b : _b)
-      b.resize(_qrule->n_points());
+      b.resize(this->_qrule->n_points());
 
-    for (unsigned qp = 0; qp < _qrule->n_points(); ++qp)
+    for (unsigned qp = 0; qp < this->_qrule->n_points(); ++qp)
     {
       _A(qp, 0) = 1.0;
       for (unsigned j = 1; j < _ncols; ++j)
-        _A(qp, j) = _q_point[qp](j - 1);
+        _A(qp, j) = this->_q_point[qp](j - 1);
 
       _b[0](qp) = _eigsum[qp](0, 0);
       _b[1](qp) = _eigsum[qp](1, 1);
@@ -135,11 +146,28 @@ ComputeReducedOrderEigenstrain::prepareEigenstrain()
 
     _A.get_transpose(_AT);
     _A.left_multiply(_AT);
-    for (unsigned i = 0; i < 6; ++i)
+
+    // Form the geometric inverse with Real solves, then apply it to AD right-hand sides so the
+    // projection preserves input-eigenstrain derivatives.
+    _A_inverse.resize(_ncols, _ncols);
+    DenseVector<Real> unit_vector(_ncols);
+    DenseVector<Real> inverse_column(_ncols);
+    for (const auto column : make_range(_ncols))
+    {
+      unit_vector.zero();
+      unit_vector(column) = 1.0;
+      _A.cholesky_solve(unit_vector, inverse_column);
+      for (const auto row : make_range(_ncols))
+        _A_inverse(row, column) = inverse_column(row);
+    }
+
+    for (const auto i : make_range(6))
     {
       _AT.vector_mult(_ATb, _b[i]);
-
-      _A.cholesky_solve(_ATb, _x[i]);
+      _A_inverse.vector_mult(_x[i], _ATb);
     }
   }
 }
+
+template class ComputeReducedOrderEigenstrainTempl<false>;
+template class ComputeReducedOrderEigenstrainTempl<true>;

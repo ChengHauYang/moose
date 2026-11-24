@@ -10,22 +10,29 @@
 #pragma once
 
 #include "ComputeThermalExpansionEigenstrainBeamBase.h"
-#include "DerivativeMaterialInterface.h"
 
 /**
- * ComputeThermalExpansionEigenstrainBeam computes an eigenstrain for thermal expansion
- * with a constant expansion coefficient.
+ * Computes eigenstrain due to thermal expansion with a constant coefficient
  */
-class ComputeThermalExpansionEigenstrainBeam : public ComputeThermalExpansionEigenstrainBeamBase
+template <bool is_ad>
+class ComputeThermalExpansionEigenstrainBeamTempl
+  : public ComputeThermalExpansionEigenstrainBeamBaseTempl<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  ComputeThermalExpansionEigenstrainBeam(const InputParameters & parameters);
+  ComputeThermalExpansionEigenstrainBeamTempl(const InputParameters & parameters);
 
 protected:
-  virtual Real computeThermalStrain() override;
+  virtual GenericReal<is_ad> computeThermalStrain() override;
 
   /// Constant thermal expansion coefficient
-  const Real & _thermal_expansion_coeff;
+  const Real _thermal_expansion_coeff;
+
+  usingMaterialMembers;
+  using ComputeThermalExpansionEigenstrainBeamBaseTempl<is_ad>::_temperature;
+  using ComputeThermalExpansionEigenstrainBeamBaseTempl<is_ad>::_stress_free_temperature;
 };
+
+using ComputeThermalExpansionEigenstrainBeam = ComputeThermalExpansionEigenstrainBeamTempl<false>;
+using ADComputeThermalExpansionEigenstrainBeam = ComputeThermalExpansionEigenstrainBeamTempl<true>;

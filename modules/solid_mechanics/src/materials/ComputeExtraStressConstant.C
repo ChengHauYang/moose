@@ -10,11 +10,13 @@
 #include "ComputeExtraStressConstant.h"
 
 registerMooseObject("SolidMechanicsApp", ComputeExtraStressConstant);
+registerMooseObject("SolidMechanicsApp", ADComputeExtraStressConstant);
 
+template <bool is_ad>
 InputParameters
-ComputeExtraStressConstant::validParams()
+ComputeExtraStressConstantTempl<is_ad>::validParams()
 {
-  InputParameters params = ComputeExtraStressBase::validParams();
+  InputParameters params = ExtraStressBase::validParams();
   params.addClassDescription("Computes a constant extra stress that is added to the stress "
                              "calculated by the constitutive model");
   params.addRequiredParam<std::vector<Real>>("extra_stress_tensor",
@@ -25,14 +27,22 @@ ComputeExtraStressConstant::validParams()
   return params;
 }
 
-ComputeExtraStressConstant::ComputeExtraStressConstant(const InputParameters & parameters)
-  : ComputeExtraStressBase(parameters), _prefactor(getMaterialProperty<Real>("prefactor"))
+template <bool is_ad>
+ComputeExtraStressConstantTempl<is_ad>::ComputeExtraStressConstantTempl(
+    const InputParameters & parameters)
+  : ExtraStressBase(parameters),
+    _prefactor(this->template getGenericMaterialProperty<Real, is_ad>("prefactor"))
 {
-  _extra_stress_tensor.fillFromInputVector(getParam<std::vector<Real>>("extra_stress_tensor"));
+  _extra_stress_tensor.fillFromInputVector(
+      this->template getParam<std::vector<Real>>("extra_stress_tensor"));
 }
 
+template <bool is_ad>
 void
-ComputeExtraStressConstant::computeQpExtraStress()
+ComputeExtraStressConstantTempl<is_ad>::computeQpExtraStress()
 {
   _extra_stress[_qp] = _extra_stress_tensor * _prefactor[_qp];
 }
+
+template class ComputeExtraStressConstantTempl<false>;
+template class ComputeExtraStressConstantTempl<true>;

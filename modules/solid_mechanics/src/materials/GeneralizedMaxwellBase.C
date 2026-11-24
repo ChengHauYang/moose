@@ -8,22 +8,26 @@
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "GeneralizedMaxwellBase.h"
+#include "metaphysicl/raw_type.h"
 
+template <bool is_ad>
 InputParameters
-GeneralizedMaxwellBase::validParams()
+GeneralizedMaxwellBaseTempl<is_ad>::validParams()
 {
-  InputParameters params = LinearViscoelasticityBase::validParams();
+  InputParameters params = LinearViscoelasticityBaseTempl<is_ad>::validParams();
   return params;
 }
 
-GeneralizedMaxwellBase::GeneralizedMaxwellBase(const InputParameters & parameters)
-  : LinearViscoelasticityBase(parameters)
+template <bool is_ad>
+GeneralizedMaxwellBaseTempl<is_ad>::GeneralizedMaxwellBaseTempl(const InputParameters & parameters)
+  : LinearViscoelasticityBaseTempl<is_ad>(parameters)
 {
-  _need_viscoelastic_properties_inverse = false;
+  this->_need_viscoelastic_properties_inverse = false;
 }
 
+template <bool is_ad>
 void
-GeneralizedMaxwellBase::updateQpViscousStrains()
+GeneralizedMaxwellBaseTempl<is_ad>::updateQpViscousStrains()
 {
   if (_t_step <= 1)
     return;
@@ -55,8 +59,9 @@ GeneralizedMaxwellBase::updateQpViscousStrains()
   }
 }
 
+template <bool is_ad>
 void
-GeneralizedMaxwellBase::computeQpApparentElasticityTensors()
+GeneralizedMaxwellBaseTempl<is_ad>::computeQpApparentElasticityTensors()
 {
 
   _elasticity_tensor[_qp] = _first_elasticity_tensor[_qp];
@@ -77,16 +82,18 @@ GeneralizedMaxwellBase::computeQpApparentElasticityTensors()
     Real gamma = (*_dashpot_viscosities.back())[_qp] / (_dt * theta_i);
     _apparent_elasticity_tensor[_qp] += _first_elasticity_tensor[_qp] * gamma;
 
-    mooseDoOnce(mooseWarning("Generalized Maxwell model with longterm viscosity may not converge "
-                             "under Dirichlet boundary conditions"));
+    mooseDoOnce(this->mooseWarning("Generalized Maxwell model with longterm viscosity may not "
+                                   "converge under Dirichlet boundary conditions"));
   }
 
-  _apparent_elasticity_tensor_inv[_qp] = _apparent_elasticity_tensor[_qp].invSymm();
-  _elasticity_tensor_inv[_qp] = _elasticity_tensor[_qp].invSymm();
+  _apparent_elasticity_tensor_inv[_qp] =
+      MetaPhysicL::raw_value(_apparent_elasticity_tensor[_qp]).invSymm();
+  _elasticity_tensor_inv[_qp] = MetaPhysicL::raw_value(_elasticity_tensor[_qp]).invSymm();
 }
 
+template <bool is_ad>
 void
-GeneralizedMaxwellBase::computeQpApparentCreepStrain()
+GeneralizedMaxwellBaseTempl<is_ad>::computeQpApparentCreepStrain()
 {
   _apparent_creep_strain[_qp].zero();
 
@@ -112,8 +119,13 @@ GeneralizedMaxwellBase::computeQpApparentCreepStrain()
   if (_has_driving_eigenstrain)
   {
     _apparent_creep_strain[_qp] +=
-        (_elasticity_tensor[_qp] * _apparent_elasticity_tensor_inv[_qp]) *
-        (*_driving_eigenstrain)[_qp];
+        MetaPhysicL::raw_value(
+            (MetaPhysicL::raw_value(_elasticity_tensor[_qp]) *
+             _apparent_elasticity_tensor_inv[_qp]) *
+            (*_driving_eigenstrain)[_qp]);
     _apparent_creep_strain[_qp] -= (*_driving_eigenstrain)[_qp];
   }
 }
+
+template class GeneralizedMaxwellBaseTempl<false>;
+template class GeneralizedMaxwellBaseTempl<true>;

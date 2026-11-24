@@ -1,0 +1,65 @@
+[Tests]
+  issues = '#9412'
+  design = '/GeneralizedKelvinVoigtModel.md /GeneralizedMaxwellModel.md'
+
+  [kelvin_voigt_creep]
+    type = CSVDiff
+    input = ad_kelvin_voigt_small_strain.i
+    csvdiff = ad_kelvin_voigt_small_strain_out.csv
+    requirement = 'The AD generalized Kelvin-Voigt model shall exhibit observable creep strain '
+                  'growth under a constant surface traction when using total small strain and '
+                  'constant spring/dashpot coefficients.'
+  []
+  [kelvin_voigt_jacobian]
+    type = PetscJacobianTester
+    input = ad_kelvin_voigt_jacobian.i
+    run_sim = True
+    ratio_tol = 1e-7
+    # difference_tol is the absolute Frobenius norm ||J - J_fd||_F.  At the
+    # 10 MPa load level used here this norm is O(1e7) even when the ratio
+    # ||J - J_fd||_F / ||J||_F is machine-precision small (~1e-11).  The ratio
+    # is the meaningful correctness criterion; difference_tol is set large
+    # enough to never be the binding constraint.
+    difference_tol = 1e10
+    requirement = 'The AD generalized Kelvin-Voigt model shall provide an exact Jacobian for the '
+                  'displacement residual under a transient Neumann load with creep history, '
+                  'including steps after the first where viscous history is updated.'
+  []
+  [maxwell_relaxation]
+    type = CSVDiff
+    input = ad_maxwell_small_strain.i
+    csvdiff = ad_maxwell_small_strain_out.csv
+    requirement = 'The AD generalized Maxwell model shall exhibit observable stress relaxation '
+                  'under a fixed displacement when using total small strain and constant '
+                  'spring/dashpot coefficients.'
+  []
+  [maxwell_jacobian]
+    type = PetscJacobianTester
+    input = ad_maxwell_jacobian.i
+    run_sim = True
+    ratio_tol = 1e-7
+    # difference_tol: same reasoning as kelvin_voigt_jacobian above.
+    # The stress scale here is O(1e7) Pa, so the absolute Frobenius difference
+    # is large even though the ratio is ~1e-11.  ratio_tol certifies correctness.
+    difference_tol = 1e10
+    requirement = 'The AD generalized Maxwell model shall provide an exact Jacobian for the '
+                  'displacement residual under a transient fixed-strain relaxation with creep '
+                  'history, including steps after the first where viscous history is updated.'
+  []
+  [kelvin_voigt_driving_eigenstrain_error]
+    type = RunException
+    input = ad_kelvin_voigt_driving_error.i
+    expect_err = 'driving_eigenstrain is not yet supported for the AD viscoelastic workflow'
+    requirement = 'The AD generalized Kelvin-Voigt model shall emit an informative error when '
+                  'driving_eigenstrain is supplied, rather than silently producing an incorrect '
+                  'Jacobian.'
+  []
+  [maxwell_driving_eigenstrain_error]
+    type = RunException
+    input = ad_maxwell_driving_error.i
+    expect_err = 'driving_eigenstrain is not yet supported for the AD viscoelastic workflow'
+    requirement = 'The AD generalized Maxwell model shall emit an informative error when '
+                  'driving_eigenstrain is supplied, rather than silently producing an incorrect '
+                  'Jacobian.'
+  []
+[]

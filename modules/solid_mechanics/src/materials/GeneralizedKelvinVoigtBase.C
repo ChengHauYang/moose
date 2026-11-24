@@ -8,37 +8,43 @@
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "GeneralizedKelvinVoigtBase.h"
+#include "metaphysicl/raw_type.h"
 
+template <bool is_ad>
 InputParameters
-GeneralizedKelvinVoigtBase::validParams()
+GeneralizedKelvinVoigtBaseTempl<is_ad>::validParams()
 {
-  InputParameters params = LinearViscoelasticityBase::validParams();
+  InputParameters params = LinearViscoelasticityBaseTempl<is_ad>::validParams();
   params.set<bool>("need_viscoelastic_properties_inverse") = true;
   params.suppressParameter<bool>("need_viscoelastic_properties_inverse");
   return params;
 }
 
-GeneralizedKelvinVoigtBase::GeneralizedKelvinVoigtBase(const InputParameters & parameters)
-  : LinearViscoelasticityBase(parameters),
+template <bool is_ad>
+GeneralizedKelvinVoigtBaseTempl<is_ad>::GeneralizedKelvinVoigtBaseTempl(
+    const InputParameters & parameters)
+  : LinearViscoelasticityBaseTempl<is_ad>(parameters),
     _first_elasticity_tensor_old(
         getMaterialPropertyOld<RankFourTensor>(_base_name + "spring_elasticity_tensor_0")),
     _longterm_elasticity_tensor_inv_old(nullptr)
 {
 }
 
+template <bool is_ad>
 void
-GeneralizedKelvinVoigtBase::declareViscoelasticProperties()
+GeneralizedKelvinVoigtBaseTempl<is_ad>::declareViscoelasticProperties()
 {
   if (_has_longterm_dashpot && _need_viscoelastic_properties_inverse)
   {
     _longterm_elasticity_tensor_inv_old =
         &getMaterialPropertyOld<RankFourTensor>(_base_name + "longterm_elasticity_tensor_inv");
   }
-  LinearViscoelasticityBase::declareViscoelasticProperties();
+  LinearViscoelasticityBaseTempl<is_ad>::declareViscoelasticProperties();
 }
 
+template <bool is_ad>
 void
-GeneralizedKelvinVoigtBase::updateQpViscousStrains()
+GeneralizedKelvinVoigtBaseTempl<is_ad>::updateQpViscousStrains()
 {
   if (_t_step <= 1)
     return;
@@ -68,8 +74,9 @@ GeneralizedKelvinVoigtBase::updateQpViscousStrains()
   }
 }
 
+template <bool is_ad>
 void
-GeneralizedKelvinVoigtBase::computeQpApparentElasticityTensors()
+GeneralizedKelvinVoigtBaseTempl<is_ad>::computeQpApparentElasticityTensors()
 {
   _elasticity_tensor[_qp] = _first_elasticity_tensor[_qp];
   _elasticity_tensor_inv[_qp] = (*_first_elasticity_tensor_inv)[_qp];
@@ -93,8 +100,9 @@ GeneralizedKelvinVoigtBase::computeQpApparentElasticityTensors()
   _apparent_elasticity_tensor[_qp] = _apparent_elasticity_tensor_inv[_qp].invSymm();
 }
 
+template <bool is_ad>
 void
-GeneralizedKelvinVoigtBase::computeQpApparentCreepStrain()
+GeneralizedKelvinVoigtBaseTempl<is_ad>::computeQpApparentCreepStrain()
 {
   _apparent_creep_strain[_qp].zero();
 
@@ -120,7 +128,9 @@ GeneralizedKelvinVoigtBase::computeQpApparentCreepStrain()
     }
 
     _apparent_creep_strain[_qp] +=
-        (_elasticity_tensor[_qp] * cumulated_driving_tensor) * (*_driving_eigenstrain)[_qp];
+        MetaPhysicL::raw_value(
+            (MetaPhysicL::raw_value(_elasticity_tensor[_qp]) * cumulated_driving_tensor) *
+            (*_driving_eigenstrain)[_qp]);
 
     if (_has_longterm_dashpot)
     {
@@ -130,3 +140,6 @@ GeneralizedKelvinVoigtBase::computeQpApparentCreepStrain()
     }
   }
 }
+
+template class GeneralizedKelvinVoigtBaseTempl<false>;
+template class GeneralizedKelvinVoigtBaseTempl<true>;

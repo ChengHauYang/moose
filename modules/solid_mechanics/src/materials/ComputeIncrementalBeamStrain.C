@@ -18,9 +18,11 @@
 #include "libmesh/utility.h"
 
 registerMooseObject("SolidMechanicsApp", ComputeIncrementalBeamStrain);
+registerMooseObject("SolidMechanicsApp", ADComputeIncrementalBeamStrain);
 
+template <bool is_ad>
 InputParameters
-ComputeIncrementalBeamStrain::validParams()
+ComputeIncrementalBeamStrainTempl<is_ad>::validParams()
 {
   InputParameters params = Material::validParams();
   params.addClassDescription("Compute a infinitesimal/large strain increment for the beam.");
@@ -29,10 +31,6 @@ ComputeIncrementalBeamStrain::validParams()
   params.addRequiredCoupledVar(
       "displacements",
       "The displacements appropriate for the simulation geometry and coordinate system");
-  params.addRequiredParam<RealGradient>("y_orientation",
-                                        "Orientation of the y direction along "
-                                        "with Iyy is provided. This should be "
-                                        "perpendicular to the axis of the beam.");
   params.addRequiredCoupledVar(
       "area",
       "Cross-section area of the beam. Can be supplied as either a number or a variable name.");
@@ -53,6 +51,10 @@ ComputeIncrementalBeamStrain::validParams()
   params.addRequiredCoupledVar("Iz",
                                "Second moment of area of the beam about z axis. Can be "
                                "supplied as either a number or a variable name.");
+  params.addRequiredParam<RealGradient>("y_orientation",
+                                        "Orientation of the y direction along "
+                                        "with Iyy is provided. This should be "
+                                        "perpendicular to the axis of the beam.");
   params.addParam<bool>("large_strain", false, "Set to true if large strain are to be calculated.");
   params.addParam<std::vector<MaterialPropertyName>>(
       "eigenstrain_names",
@@ -64,36 +66,49 @@ ComputeIncrementalBeamStrain::validParams()
   return params;
 }
 
-ComputeIncrementalBeamStrain::ComputeIncrementalBeamStrain(const InputParameters & parameters)
+template <bool is_ad>
+ComputeIncrementalBeamStrainTempl<is_ad>::ComputeIncrementalBeamStrainTempl(
+    const InputParameters & parameters)
   : Material(parameters),
-    _has_Ix(isParamValid("Ix")),
-    _nrot(coupledComponents("rotations")),
-    _ndisp(coupledComponents("displacements")),
+    _has_Ix(this->isParamValid("Ix")),
+    _nrot(this->coupledComponents("rotations")),
+    _ndisp(this->coupledComponents("displacements")),
     _rot_num(_nrot),
     _disp_num(_ndisp),
-    _area(coupledValue("area")),
-    _Ay(coupledValue("Ay")),
-    _Az(coupledValue("Az")),
-    _Iy(coupledValue("Iy")),
-    _Iz(coupledValue("Iz")),
-    _Ix(_has_Ix ? coupledValue("Ix") : _zero),
-    _original_local_config(declareRestartableData<RankTwoTensor>("original_local_config")),
-    _original_length(declareProperty<Real>("original_length")),
-    _total_rotation(declareProperty<RankTwoTensor>("total_rotation")),
-    _total_disp_strain(declareProperty<RealVectorValue>("total_disp_strain")),
-    _total_rot_strain(declareProperty<RealVectorValue>("total_rot_strain")),
-    _total_disp_strain_old(getMaterialPropertyOld<RealVectorValue>("total_disp_strain")),
-    _total_rot_strain_old(getMaterialPropertyOld<RealVectorValue>("total_rot_strain")),
-    _mech_disp_strain_increment(declareProperty<RealVectorValue>("mech_disp_strain_increment")),
-    _mech_rot_strain_increment(declareProperty<RealVectorValue>("mech_rot_strain_increment")),
-    _material_stiffness(getMaterialPropertyByName<RealVectorValue>("material_stiffness")),
-    _K11(declareProperty<RankTwoTensor>("Jacobian_11")),
-    _K21_cross(declareProperty<RankTwoTensor>("Jacobian_12")),
-    _K21(declareProperty<RankTwoTensor>("Jacobian_21")),
-    _K22(declareProperty<RankTwoTensor>("Jacobian_22")),
-    _K22_cross(declareProperty<RankTwoTensor>("Jacobian_22_cross")),
-    _large_strain(getParam<bool>("large_strain")),
-    _eigenstrain_names(getParam<std::vector<MaterialPropertyName>>("eigenstrain_names")),
+    _area(this->coupledValue("area")),
+    _Ay(this->coupledValue("Ay")),
+    _Az(this->coupledValue("Az")),
+    _Iy(this->coupledValue("Iy")),
+    _Iz(this->coupledValue("Iz")),
+    _Ix(_has_Ix ? this->coupledValue("Ix")
+                : _zero), // falls back to Iy+Iz in computeQpStrain/computeStiffnessMatrix when
+                          // _has_Ix is false
+    _original_local_config(
+        this->template declareRestartableData<RankTwoTensor>("original_local_config")),
+    _original_length(this->template declareProperty<Real>("original_length")),
+    _total_rotation(this->template declareProperty<RankTwoTensor>("total_rotation")),
+    _total_disp_strain(
+        this->template declareGenericProperty<RealVectorValue, is_ad>("total_disp_strain")),
+    _total_rot_strain(
+        this->template declareGenericProperty<RealVectorValue, is_ad>("total_rot_strain")),
+    _total_disp_strain_old(
+        this->template getMaterialPropertyOld<RealVectorValue>("total_disp_strain")),
+    _total_rot_strain_old(
+        this->template getMaterialPropertyOld<RealVectorValue>("total_rot_strain")),
+    _mech_disp_strain_increment(this->template declareGenericProperty<RealVectorValue, is_ad>(
+        "mech_disp_strain_increment")),
+    _mech_rot_strain_increment(
+        this->template declareGenericProperty<RealVectorValue, is_ad>("mech_rot_strain_increment")),
+    _material_stiffness(
+        this->template getMaterialPropertyByName<RealVectorValue>("material_stiffness")),
+    _K11(this->template declareProperty<RankTwoTensor>("Jacobian_11")),
+    _K21_cross(this->template declareProperty<RankTwoTensor>("Jacobian_12")),
+    _K21(this->template declareProperty<RankTwoTensor>("Jacobian_21")),
+    _K22(this->template declareProperty<RankTwoTensor>("Jacobian_22")),
+    _K22_cross(this->template declareProperty<RankTwoTensor>("Jacobian_22_cross")),
+    _large_strain(this->template getParam<bool>("large_strain")),
+    _eigenstrain_names(
+        this->template getParam<std::vector<MaterialPropertyName>>("eigenstrain_names")),
     _disp_eigenstrain(_eigenstrain_names.size()),
     _rot_eigenstrain(_eigenstrain_names.size()),
     _disp_eigenstrain_old(_eigenstrain_names.size()),
@@ -103,46 +118,68 @@ ComputeIncrementalBeamStrain::ComputeIncrementalBeamStrain(const InputParameters
     _soln_disp_index_1(_ndisp),
     _soln_rot_index_0(_ndisp),
     _soln_rot_index_1(_ndisp),
-    _initial_rotation(declareProperty<RankTwoTensor>("initial_rotation")),
-    _effective_stiffness(declareProperty<Real>("effective_stiffness")),
-    _prefactor_function(isParamValid("elasticity_prefactor") ? &getFunction("elasticity_prefactor")
-                                                             : nullptr)
+    _initial_rotation(this->template declareProperty<RankTwoTensor>("initial_rotation")),
+    _effective_stiffness(this->template declareProperty<Real>("effective_stiffness")),
+    _prefactor_function(this->isParamValid("elasticity_prefactor")
+                            ? &this->getFunction("elasticity_prefactor")
+                            : nullptr)
 {
-  // Checking for consistency between length of the provided displacements and rotations vector
   if (_ndisp != _nrot)
-    mooseError("ComputeIncrementalBeamStrain: The number of variables supplied in 'displacements' "
-               "and 'rotations' must match.");
+    this->mooseError(
+        "ComputeIncrementalBeamStrain: The number of variables supplied in 'displacements' "
+        "and 'rotations' must match.");
 
-  // fetch coupled variables and gradients (as stateful properties if necessary)
   for (unsigned int i = 0; i < _ndisp; ++i)
   {
-    MooseVariable * disp_variable = getVar("displacements", i);
+    MooseVariable * disp_variable = this->getVar("displacements", i);
     _disp_num[i] = disp_variable->number();
 
-    MooseVariable * rot_variable = getVar("rotations", i);
+    MooseVariable * rot_variable = this->getVar("rotations", i);
     _rot_num[i] = rot_variable->number();
   }
 
+  // For the AD path, request nodal DOF value references here in the constructor so that
+  // needSolutionState() is invoked before the threaded element loop begins.  Calling
+  // this->coupledDofValuesOld() / this->adCoupledDofValues() inside computeProperties() triggers
+  // needSolutionState() during threading, which MOOSE asserts is forbidden.
+  if constexpr (is_ad)
+  {
+    _ad_disp_dof_values.resize(_ndisp);
+    _ad_rot_dof_values.resize(_ndisp);
+    _disp_dof_values_old.resize(_ndisp);
+    _rot_dof_values_old.resize(_ndisp);
+    for (unsigned int i = 0; i < _ndisp; ++i)
+    {
+      _ad_disp_dof_values[i] = &this->adCoupledDofValues("displacements", i);
+      _ad_rot_dof_values[i] = &this->adCoupledDofValues("rotations", i);
+      _disp_dof_values_old[i] = &this->coupledDofValuesOld("displacements", i);
+      _rot_dof_values_old[i] = &this->coupledDofValuesOld("rotations", i);
+    }
+  }
+
   if (_large_strain && (_Ay[0] > 0.0 || _Ay[1] > 0.0 || _Az[0] > 0.0 || _Az[1] > 0.0))
-    mooseError("ComputeIncrementalBeamStrain: Large strain calculation does not currently "
-               "support asymmetric beam configurations with non-zero first or third moments of "
-               "area.");
+    this->mooseError(
+        "ComputeIncrementalBeamStrain: Large strain calculation does not currently "
+        "support asymmetric beam configurations with non-zero first or third moments of "
+        "area.");
 
   for (unsigned int i = 0; i < _eigenstrain_names.size(); ++i)
   {
-    _disp_eigenstrain[i] = &getMaterialProperty<RealVectorValue>("disp_" + _eigenstrain_names[i]);
-    _rot_eigenstrain[i] = &getMaterialProperty<RealVectorValue>("rot_" + _eigenstrain_names[i]);
+    _disp_eigenstrain[i] = &this->template getGenericMaterialProperty<RealVectorValue, is_ad>(
+        "disp_" + _eigenstrain_names[i]);
+    _rot_eigenstrain[i] = &this->template getGenericMaterialProperty<RealVectorValue, is_ad>(
+        "rot_" + _eigenstrain_names[i]);
     _disp_eigenstrain_old[i] =
-        &getMaterialPropertyOld<RealVectorValue>("disp_" + _eigenstrain_names[i]);
+        &this->template getMaterialPropertyOld<RealVectorValue>("disp_" + _eigenstrain_names[i]);
     _rot_eigenstrain_old[i] =
-        &getMaterialPropertyOld<RealVectorValue>("rot_" + _eigenstrain_names[i]);
+        &this->template getMaterialPropertyOld<RealVectorValue>("rot_" + _eigenstrain_names[i]);
   }
 }
 
+template <bool is_ad>
 void
-ComputeIncrementalBeamStrain::initQpStatefulProperties()
+ComputeIncrementalBeamStrainTempl<is_ad>::initQpStatefulProperties()
 {
-  // compute initial orientation of the beam for calculating initial rotation matrix
   const std::vector<RealGradient> * orientation =
       &_subproblem.assembly(_tid, _nonlinear_sys.number())
            .getFE(FEType().set_p_refinement(false), 1)
@@ -150,22 +187,20 @@ ComputeIncrementalBeamStrain::initQpStatefulProperties()
   RealGradient x_orientation = (*orientation)[0];
   x_orientation /= x_orientation.norm();
 
-  RealGradient y_orientation = getParam<RealGradient>("y_orientation");
+  RealGradient y_orientation = this->template getParam<RealGradient>("y_orientation");
   y_orientation /= y_orientation.norm();
   Real sum = x_orientation(0) * y_orientation(0) + x_orientation(1) * y_orientation(1) +
              x_orientation(2) * y_orientation(2);
 
   if (std::abs(sum) > 1e-4)
-    mooseError("ComputeIncrementalBeamStrain: y_orientation should be perpendicular to "
-               "the axis of the beam.");
+    this->mooseError("ComputeIncrementalBeamStrain: y_orientation should be perpendicular to "
+                     "the axis of the beam.");
 
-  // Calculate z orientation as a cross product of the x and y orientations
   RealGradient z_orientation;
   z_orientation(0) = (x_orientation(1) * y_orientation(2) - x_orientation(2) * y_orientation(1));
   z_orientation(1) = (x_orientation(2) * y_orientation(0) - x_orientation(0) * y_orientation(2));
   z_orientation(2) = (x_orientation(0) * y_orientation(1) - x_orientation(1) * y_orientation(0));
 
-  // Rotation matrix from global to original beam local configuration
   _original_local_config(0, 0) = x_orientation(0);
   _original_local_config(0, 1) = x_orientation(1);
   _original_local_config(0, 2) = x_orientation(2);
@@ -183,43 +218,51 @@ ComputeIncrementalBeamStrain::initQpStatefulProperties()
   _total_rot_strain[_qp] = temp;
 }
 
+template <bool is_ad>
 void
-ComputeIncrementalBeamStrain::computeProperties()
+ComputeIncrementalBeamStrainTempl<is_ad>::computeProperties()
 {
-  // fetch the two end nodes for current element
   std::vector<const Node *> node;
   for (unsigned int i = 0; i < 2; ++i)
     node.push_back(_current_elem->node_ptr(i));
 
-  // calculate original length of a beam element
-  // Nodal positions do not change with time as undisplaced mesh is used by material classes by
-  // default
   RealGradient dxyz;
   for (unsigned int i = 0; i < _ndisp; ++i)
     dxyz(i) = (*node[1])(i) - (*node[0])(i);
 
   _original_length[0] = dxyz.norm();
 
-  // Fetch the solution for the two end nodes at time t
-  const NumericVector<Number> & sol = *_nonlinear_sys.currentSolution();
-  const NumericVector<Number> & sol_old = _nonlinear_sys.solutionOld();
-
-  for (unsigned int i = 0; i < _ndisp; ++i)
+  if constexpr (is_ad)
   {
-    _soln_disp_index_0[i] = node[0]->dof_number(_nonlinear_sys.number(), _disp_num[i], 0);
-    _soln_disp_index_1[i] = node[1]->dof_number(_nonlinear_sys.number(), _disp_num[i], 0);
-    _soln_rot_index_0[i] = node[0]->dof_number(_nonlinear_sys.number(), _rot_num[i], 0);
-    _soln_rot_index_1[i] = node[1]->dof_number(_nonlinear_sys.number(), _rot_num[i], 0);
+    for (unsigned int i = 0; i < _ndisp; ++i)
+    {
+      // Use pre-registered references (stored in constructor) to avoid calling
+      // this->coupledDofValuesOld() / this->adCoupledDofValues() during the threaded element loop.
+      _disp0(i) = (*_ad_disp_dof_values[i])[0] - (*_disp_dof_values_old[i])[0];
+      _disp1(i) = (*_ad_disp_dof_values[i])[1] - (*_disp_dof_values_old[i])[1];
+      _rot0(i) = (*_ad_rot_dof_values[i])[0] - (*_rot_dof_values_old[i])[0];
+      _rot1(i) = (*_ad_rot_dof_values[i])[1] - (*_rot_dof_values_old[i])[1];
+    }
+  }
+  else
+  {
+    const NumericVector<Number> & sol = *_nonlinear_sys.currentSolution();
+    const NumericVector<Number> & sol_old = _nonlinear_sys.solutionOld();
 
-    _disp0(i) = sol(_soln_disp_index_0[i]) - sol_old(_soln_disp_index_0[i]);
-    _disp1(i) = sol(_soln_disp_index_1[i]) - sol_old(_soln_disp_index_1[i]);
-    _rot0(i) = sol(_soln_rot_index_0[i]) - sol_old(_soln_rot_index_0[i]);
-    _rot1(i) = sol(_soln_rot_index_1[i]) - sol_old(_soln_rot_index_1[i]);
+    for (unsigned int i = 0; i < _ndisp; ++i)
+    {
+      _soln_disp_index_0[i] = node[0]->dof_number(_nonlinear_sys.number(), _disp_num[i], 0);
+      _soln_disp_index_1[i] = node[1]->dof_number(_nonlinear_sys.number(), _disp_num[i], 0);
+      _soln_rot_index_0[i] = node[0]->dof_number(_nonlinear_sys.number(), _rot_num[i], 0);
+      _soln_rot_index_1[i] = node[1]->dof_number(_nonlinear_sys.number(), _rot_num[i], 0);
+
+      _disp0(i) = sol(_soln_disp_index_0[i]) - sol_old(_soln_disp_index_0[i]);
+      _disp1(i) = sol(_soln_disp_index_1[i]) - sol_old(_soln_disp_index_1[i]);
+      _rot0(i) = sol(_soln_rot_index_0[i]) - sol_old(_soln_rot_index_0[i]);
+      _rot1(i) = sol(_soln_rot_index_1[i]) - sol_old(_soln_rot_index_1[i]);
+    }
   }
 
-  // For small rotation problems, the rotation matrix is essentially the transformation from the
-  // global to original beam local configuration and is never updated. This method has to be
-  // overriden for scenarios with finite rotation
   computeRotation();
   _initial_rotation[0] = _original_local_config;
 
@@ -227,11 +270,13 @@ ComputeIncrementalBeamStrain::computeProperties()
     computeQpStrain();
 
   if (_fe_problem.currentlyComputingJacobian())
-    computeStiffnessMatrix();
+    if constexpr (!is_ad)
+      computeStiffnessMatrix();
 }
 
+template <bool is_ad>
 void
-ComputeIncrementalBeamStrain::computeQpStrain()
+ComputeIncrementalBeamStrainTempl<is_ad>::computeQpStrain()
 {
   const Real A_avg = (_area[0] + _area[1]) / 2.0;
   const Real Iz_avg = (_Iz[0] + _Iz[1]) / 2.0;
@@ -239,29 +284,15 @@ ComputeIncrementalBeamStrain::computeQpStrain()
   if (!_has_Ix)
     Ix = _Iy[_qp] + _Iz[_qp];
 
-  // Rotate the gradient of displacements and rotations at t+delta t from global coordinate
-  // frame to beam local coordinate frame
-  const RealVectorValue grad_disp_0(1.0 / _original_length[0] * (_disp1 - _disp0));
-  const RealVectorValue grad_rot_0(1.0 / _original_length[0] * (_rot1 - _rot0));
-  const RealVectorValue avg_rot(
+  const GenericRealVectorValue<is_ad> grad_disp_0(1.0 / _original_length[0] * (_disp1 - _disp0));
+  const GenericRealVectorValue<is_ad> grad_rot_0(1.0 / _original_length[0] * (_rot1 - _rot0));
+  const GenericRealVectorValue<is_ad> avg_rot(
       0.5 * (_rot0(0) + _rot1(0)), 0.5 * (_rot0(1) + _rot1(1)), 0.5 * (_rot0(2) + _rot1(2)));
 
   _grad_disp_0_local_t = _total_rotation[0] * grad_disp_0;
   _grad_rot_0_local_t = _total_rotation[0] * grad_rot_0;
   _avg_rot_local_t = _total_rotation[0] * avg_rot;
 
-  // displacement at any location on beam in local coordinate system at t
-  // u_1 = u_n1 - rot_3 * y + rot_2 * z
-  // u_2 = u_n2 - rot_1 * z
-  // u_3 = u_n3 + rot_1 * y
-  // where u_n1, u_n2, u_n3 are displacements at neutral axis
-
-  // small strain
-  // e_11 = u_1,1 = u_n1, 1 - rot_3, 1 * y + rot_2, 1 * z
-  // e_12 = 2 * 0.5 * (u_1,2 + u_2,1) = (- rot_3 + u_n2,1 - rot_1,1 * z)
-  // e_13 = 2 * 0.5 * (u_1,3 + u_3,1) = (rot_2 + u_n3,1 + rot_1,1 * y)
-
-  // axial and shearing strains at each qp along the length of the beam
   _mech_disp_strain_increment[_qp](0) = _grad_disp_0_local_t(0) * _area[_qp] -
                                         _grad_rot_0_local_t(2) * _Ay[_qp] +
                                         _grad_rot_0_local_t(1) * _Az[_qp];
@@ -272,12 +303,6 @@ ComputeIncrementalBeamStrain::computeQpStrain()
                                         _grad_disp_0_local_t(2) * _area[_qp] +
                                         _grad_rot_0_local_t(0) * _Ay[_qp];
 
-  // rotational strains at each qp along the length of the beam
-  // rot_strain_1 = integral(e_13 * y - e_12 * z) dA
-  // rot_strain_2 = integral(e_11 * z) dA
-  // rot_strain_3 = integral(e_11 * -y) dA
-  // Iyz is the product moment of inertia which is zero for most cross-sections so it is assumed to
-  // be zero for this analysis
   const Real Iyz = 0;
   _mech_rot_strain_increment[_qp](0) =
       _avg_rot_local_t(1) * _Ay[_qp] + _grad_disp_0_local_t(2) * _Ay[_qp] +
@@ -319,11 +344,9 @@ ComputeIncrementalBeamStrain::computeQpStrain()
 
   _total_disp_strain[_qp] = _total_rotation[0].transpose() * _mech_disp_strain_increment[_qp] +
                             _total_disp_strain_old[_qp];
-  _total_rot_strain[_qp] = _total_rotation[0].transpose() * _mech_rot_strain_increment[_qp] +
-                           _total_disp_strain_old[_qp];
+  _total_rot_strain[_qp] =
+      _total_rotation[0].transpose() * _mech_rot_strain_increment[_qp] + _total_rot_strain_old[_qp];
 
-  // Convert eigenstrain increment from global to beam local coordinate system and remove eigen
-  // strain increment
   for (unsigned int i = 0; i < _eigenstrain_names.size(); ++i)
   {
     _mech_disp_strain_increment[_qp] -=
@@ -346,277 +369,286 @@ ComputeIncrementalBeamStrain::computeQpStrain()
     _effective_stiffness[_qp] *= std::sqrt(_prefactor_function->value(_t, _q_point[_qp]));
 }
 
+template <bool is_ad>
 void
-ComputeIncrementalBeamStrain::computeStiffnessMatrix()
+ComputeIncrementalBeamStrainTempl<is_ad>::computeStiffnessMatrix()
 {
-  const Real youngs_modulus = _material_stiffness[0](0);
-  const Real shear_modulus = _material_stiffness[0](1);
-
-  const Real A_avg = (_area[0] + _area[1]) / 2.0;
-  const Real Iy_avg = (_Iy[0] + _Iy[1]) / 2.0;
-  const Real Iz_avg = (_Iz[0] + _Iz[1]) / 2.0;
-  Real Ix_avg = (_Ix[0] + _Ix[1]) / 2.0;
-  if (!_has_Ix)
-    Ix_avg = Iy_avg + Iz_avg;
-
-  // K = |K11 K12|
-  //     |K21 K22|
-
-  // relation between translational displacements at node 0 and translational forces at node 0
-  RankTwoTensor K11_local;
-  K11_local.zero();
-  K11_local(0, 0) = youngs_modulus * A_avg / _original_length[0];
-  K11_local(1, 1) = shear_modulus * A_avg / _original_length[0];
-  K11_local(2, 2) = shear_modulus * A_avg / _original_length[0];
-  _K11[0] = _total_rotation[0].transpose() * K11_local * _total_rotation[0];
-
-  // relation between displacements at node 0 and rotational moments at node 0
-  RankTwoTensor K21_local;
-  K21_local.zero();
-  K21_local(2, 1) = shear_modulus * A_avg * 0.5;
-  K21_local(1, 2) = -shear_modulus * A_avg * 0.5;
-  _K21[0] = _total_rotation[0].transpose() * K21_local * _total_rotation[0];
-
-  // relation between rotations at node 0 and rotational moments at node 0
-  RankTwoTensor K22_local;
-  K22_local.zero();
-  K22_local(0, 0) = shear_modulus * Ix_avg / _original_length[0];
-  K22_local(1, 1) = youngs_modulus * Iz_avg / _original_length[0] +
-                    shear_modulus * A_avg * _original_length[0] / 4.0;
-  K22_local(2, 2) = youngs_modulus * Iy_avg / _original_length[0] +
-                    shear_modulus * A_avg * _original_length[0] / 4.0;
-  _K22[0] = _total_rotation[0].transpose() * K22_local * _total_rotation[0];
-
-  // relation between rotations at node 0 and rotational moments at node 1
-  RankTwoTensor K22_local_cross = -K22_local;
-  K22_local_cross(1, 1) += 2.0 * shear_modulus * A_avg * _original_length[0] / 4.0;
-  K22_local_cross(2, 2) += 2.0 * shear_modulus * A_avg * _original_length[0] / 4.0;
-  _K22_cross[0] = _total_rotation[0].transpose() * K22_local_cross * _total_rotation[0];
-
-  // relation between displacements at node 0 and rotational moments at node 1
-  _K21_cross[0] = -_K21[0];
-
-  // stiffness matrix for large strain
-  if (_large_strain)
+  // only needed for non-AD analytic Jacobian path
+  if constexpr (!is_ad)
   {
-    // k1_large is the stiffness matrix obtained from sigma_xx * d(epsilon_xx)
-    RankTwoTensor k1_large_11;
-    // row 1
-    k1_large_11(0, 0) = Utility::pow<2>(_grad_disp_0_local_t(0)) +
-                        1.5 * Utility::pow<2>(_grad_rot_0_local_t(2)) * Iy_avg +
-                        1.5 * Utility::pow<2>(_grad_rot_0_local_t(1)) * Iz_avg +
-                        0.5 * Utility::pow<2>(_grad_disp_0_local_t(1)) +
-                        0.5 * Utility::pow<2>(_grad_disp_0_local_t(2)) +
-                        0.5 * Utility::pow<2>(_grad_rot_0_local_t(0)) * Ix_avg;
-    k1_large_11(1, 0) = 0.5 * _grad_disp_0_local_t(0) * _grad_disp_0_local_t(1) -
-                        1.0 / 3.0 * _grad_rot_0_local_t(0) * _grad_rot_0_local_t(1) * Iz_avg;
-    k1_large_11(2, 0) = 0.5 * _grad_disp_0_local_t(0) * _grad_disp_0_local_t(2) -
-                        1.0 / 3.0 * _grad_rot_0_local_t(0) * _grad_rot_0_local_t(2) * Iy_avg;
+    const Real youngs_modulus = _material_stiffness[0](0);
+    const Real shear_modulus = _material_stiffness[0](1);
 
-    // row 2
-    k1_large_11(0, 1) = k1_large_11(1, 0);
-    k1_large_11(1, 1) = Utility::pow<2>(_grad_disp_0_local_t(1)) +
-                        1.5 * Utility::pow<2>(_grad_rot_0_local_t(0)) * Iz_avg +
-                        0.5 * Utility::pow<2>(_grad_disp_0_local_t(0)) +
-                        0.5 * Utility::pow<2>(_grad_disp_0_local_t(2)) +
-                        0.5 * Utility::pow<2>(_grad_rot_0_local_t(2)) * Iy_avg +
-                        0.5 * Utility::pow<2>(_grad_rot_0_local_t(1)) * Iz_avg +
-                        0.5 * Utility::pow<2>(_grad_rot_0_local_t(0)) * Iy_avg;
-    k1_large_11(2, 1) = 0.5 * _grad_disp_0_local_t(1) * _grad_disp_0_local_t(2);
+    const Real A_avg = (_area[0] + _area[1]) / 2.0;
+    const Real Iy_avg = (_Iy[0] + _Iy[1]) / 2.0;
+    const Real Iz_avg = (_Iz[0] + _Iz[1]) / 2.0;
+    Real Ix_avg = (_Ix[0] + _Ix[1]) / 2.0;
+    if (!_has_Ix)
+      Ix_avg = Iy_avg + Iz_avg;
 
-    // row 3
-    k1_large_11(0, 2) = k1_large_11(2, 0);
-    k1_large_11(1, 2) = k1_large_11(2, 1);
-    k1_large_11(2, 2) = Utility::pow<2>(_grad_disp_0_local_t(2)) +
-                        1.5 * Utility::pow<2>(_grad_rot_0_local_t(0)) * Iy_avg +
-                        0.5 * Utility::pow<2>(_grad_disp_0_local_t(0)) +
-                        0.5 * Utility::pow<2>(_grad_disp_0_local_t(1)) +
-                        0.5 * Utility::pow<2>(_grad_rot_0_local_t(0)) * Iz_avg +
-                        0.5 * Utility::pow<2>(_grad_rot_0_local_t(2)) * Iy_avg +
-                        0.5 * Utility::pow<2>(_grad_rot_0_local_t(2)) * Iz_avg;
+    // K = |K11 K12|
+    //     |K21 K22|
 
-    k1_large_11 *= 1.0 / 4.0 / Utility::pow<2>(_original_length[0]);
+    // relation between translational displacements at node 0 and translational forces at node 0
+    RankTwoTensor K11_local;
+    K11_local.zero();
+    K11_local(0, 0) = youngs_modulus * A_avg / _original_length[0];
+    K11_local(1, 1) = shear_modulus * A_avg / _original_length[0];
+    K11_local(2, 2) = shear_modulus * A_avg / _original_length[0];
+    _K11[0] = _total_rotation[0].transpose() * K11_local * _total_rotation[0];
 
-    RankTwoTensor k1_large_21;
-    // row 1
-    k1_large_21(0, 0) = 0.5 * _grad_disp_0_local_t(0) * _grad_rot_0_local_t(0) * (Ix_avg)-1.0 /
-                            3.0 * _grad_disp_0_local_t(1) * _grad_rot_0_local_t(1) * Iz_avg -
-                        1.0 / 3.0 * _grad_disp_0_local_t(2) * _grad_rot_0_local_t(2);
-    k1_large_21(1, 0) = 1.5 * _grad_disp_0_local_t(0) * _grad_rot_0_local_t(1) * Iz_avg -
-                        1.0 / 3.0 * _grad_disp_0_local_t(1) * _grad_rot_0_local_t(0) * Iz_avg;
-    k1_large_21(2, 0) = 1.5 * _grad_disp_0_local_t(0) * _grad_rot_0_local_t(2) * Iy_avg -
-                        1.0 / 3.0 * _grad_disp_0_local_t(2) * _grad_rot_0_local_t(0) * Iy_avg;
+    // relation between displacements at node 0 and rotational moments at node 0
+    RankTwoTensor K21_local;
+    K21_local.zero();
+    K21_local(2, 1) = shear_modulus * A_avg * 0.5;
+    K21_local(1, 2) = -shear_modulus * A_avg * 0.5;
+    _K21[0] = _total_rotation[0].transpose() * K21_local * _total_rotation[0];
 
-    // row 2
-    k1_large_21(0, 1) = k1_large_21(1, 0);
-    k1_large_21(1, 1) = 0.5 * _grad_disp_0_local_t(1) * _grad_rot_0_local_t(1) * Iz_avg -
-                        1.0 / 3.0 * _grad_disp_0_local_t(0) * _grad_rot_0_local_t(0) * Iz_avg;
-    k1_large_21(2, 1) = 0.5 * _grad_disp_0_local_t(1) * _grad_rot_0_local_t(2) * Iy_avg;
+    // relation between rotations at node 0 and rotational moments at node 0
+    RankTwoTensor K22_local;
+    K22_local.zero();
+    K22_local(0, 0) = shear_modulus * Ix_avg / _original_length[0];
+    K22_local(1, 1) = youngs_modulus * Iz_avg / _original_length[0] +
+                      shear_modulus * A_avg * _original_length[0] / 4.0;
+    K22_local(2, 2) = youngs_modulus * Iy_avg / _original_length[0] +
+                      shear_modulus * A_avg * _original_length[0] / 4.0;
+    _K22[0] = _total_rotation[0].transpose() * K22_local * _total_rotation[0];
 
-    // row 3
-    k1_large_21(0, 2) = k1_large_21(2, 0);
-    k1_large_21(1, 2) = k1_large_21(2, 1);
-    k1_large_21(2, 2) = 0.5 * _grad_disp_0_local_t(2) * _grad_rot_0_local_t(2) * Iy_avg -
-                        1.0 / 3.0 * _grad_disp_0_local_t(0) * _grad_rot_0_local_t(0) * Iy_avg;
-    k1_large_21 *= 1.0 / 4.0 / Utility::pow<2>(_original_length[0]);
+    // relation between rotations at node 0 and rotational moments at node 1
+    RankTwoTensor K22_local_cross = -K22_local;
+    K22_local_cross(1, 1) += 2.0 * shear_modulus * A_avg * _original_length[0] / 4.0;
+    K22_local_cross(2, 2) += 2.0 * shear_modulus * A_avg * _original_length[0] / 4.0;
+    _K22_cross[0] = _total_rotation[0].transpose() * K22_local_cross * _total_rotation[0];
 
-    RankTwoTensor k1_large_22;
-    // row 1
-    k1_large_22(0, 0) = Utility::pow<2>(_grad_rot_0_local_t(0)) * Utility::pow<2>(Ix_avg) +
-                        1.5 * Utility::pow<2>(_grad_disp_0_local_t(1)) * Iz_avg +
-                        1.5 * Utility::pow<2>(_grad_disp_0_local_t(2)) * Iy_avg +
-                        0.5 * Utility::pow<2>(_grad_disp_0_local_t(0)) * Ix_avg +
-                        0.5 * Utility::pow<2>(_grad_disp_0_local_t(2)) * Iz_avg +
-                        0.5 * Utility::pow<2>(_grad_disp_0_local_t(1)) * Iy_avg +
-                        0.5 * Utility::pow<2>(_grad_rot_0_local_t(2)) * Iy_avg * Ix_avg +
-                        0.5 * Utility::pow<2>(_grad_rot_0_local_t(1)) * Iz_avg * Ix_avg;
-    k1_large_22(1, 0) = 0.5 * _grad_rot_0_local_t(0) * _grad_rot_0_local_t(1) * Iz_avg * Ix_avg -
-                        1.0 / 3.0 * _grad_disp_0_local_t(0) * _grad_disp_0_local_t(1) * Iz_avg;
-    k1_large_22(2, 0) = 0.5 * _grad_rot_0_local_t(0) * _grad_rot_0_local_t(2) * Iy_avg * Ix_avg -
-                        1.0 / 3.0 * _grad_disp_0_local_t(0) * _grad_disp_0_local_t(2) * Iy_avg;
+    // relation between displacements at node 0 and rotational moments at node 1
+    _K21_cross[0] = -_K21[0];
 
-    // row 2
-    k1_large_22(0, 1) = k1_large_22(1, 0);
-    k1_large_22(1, 1) = Utility::pow<2>(_grad_rot_0_local_t(1)) * Iz_avg * Iz_avg +
-                        1.5 * Utility::pow<2>(_grad_disp_0_local_t(0)) * Iz_avg +
-                        1.5 * Utility::pow<2>(_grad_rot_0_local_t(2)) * Iy_avg * Iz_avg +
-                        0.5 * Utility::pow<2>(_grad_disp_0_local_t(1)) * Iz_avg +
-                        0.5 * Utility::pow<2>(_grad_disp_0_local_t(2)) * Iz_avg +
-                        0.5 * Utility::pow<2>(_grad_rot_0_local_t(0)) * Iz_avg * Ix_avg;
-    k1_large_22(2, 1) = 1.5 * _grad_rot_0_local_t(1) * _grad_rot_0_local_t(2) * Iy_avg * Iz_avg;
+    // stiffness matrix for large strain
+    if (_large_strain)
+    {
+      // k1_large is the stiffness matrix obtained from sigma_xx * d(epsilon_xx)
+      RankTwoTensor k1_large_11;
+      // row 1
+      k1_large_11(0, 0) = Utility::pow<2>(_grad_disp_0_local_t(0)) +
+                          1.5 * Utility::pow<2>(_grad_rot_0_local_t(2)) * Iy_avg +
+                          1.5 * Utility::pow<2>(_grad_rot_0_local_t(1)) * Iz_avg +
+                          0.5 * Utility::pow<2>(_grad_disp_0_local_t(1)) +
+                          0.5 * Utility::pow<2>(_grad_disp_0_local_t(2)) +
+                          0.5 * Utility::pow<2>(_grad_rot_0_local_t(0)) * Ix_avg;
+      k1_large_11(1, 0) = 0.5 * _grad_disp_0_local_t(0) * _grad_disp_0_local_t(1) -
+                          1.0 / 3.0 * _grad_rot_0_local_t(0) * _grad_rot_0_local_t(1) * Iz_avg;
+      k1_large_11(2, 0) = 0.5 * _grad_disp_0_local_t(0) * _grad_disp_0_local_t(2) -
+                          1.0 / 3.0 * _grad_rot_0_local_t(0) * _grad_rot_0_local_t(2) * Iy_avg;
 
-    // row 3
-    k1_large_22(0, 2) = k1_large_22(2, 0);
-    k1_large_22(1, 2) = k1_large_22(2, 1);
-    k1_large_22(2, 2) = Utility::pow<2>(_grad_rot_0_local_t(2)) * Iy_avg * Iy_avg +
-                        1.5 * Utility::pow<2>(_grad_disp_0_local_t(0)) * Iy_avg +
-                        1.5 * Utility::pow<2>(_grad_rot_0_local_t(1)) * Iy_avg * Iz_avg +
-                        0.5 * Utility::pow<2>(_grad_disp_0_local_t(1)) * Iy_avg +
-                        0.5 * Utility::pow<2>(_grad_disp_0_local_t(2)) * Iy_avg +
-                        0.5 * Utility::pow<2>(_grad_rot_0_local_t(0)) * Iz_avg * Ix_avg;
+      // row 2
+      k1_large_11(0, 1) = k1_large_11(1, 0);
+      k1_large_11(1, 1) = Utility::pow<2>(_grad_disp_0_local_t(1)) +
+                          1.5 * Utility::pow<2>(_grad_rot_0_local_t(0)) * Iz_avg +
+                          0.5 * Utility::pow<2>(_grad_disp_0_local_t(0)) +
+                          0.5 * Utility::pow<2>(_grad_disp_0_local_t(2)) +
+                          0.5 * Utility::pow<2>(_grad_rot_0_local_t(2)) * Iy_avg +
+                          0.5 * Utility::pow<2>(_grad_rot_0_local_t(1)) * Iz_avg +
+                          0.5 * Utility::pow<2>(_grad_rot_0_local_t(0)) * Iy_avg;
+      k1_large_11(2, 1) = 0.5 * _grad_disp_0_local_t(1) * _grad_disp_0_local_t(2);
 
-    k1_large_22 *= 1.0 / 4.0 / Utility::pow<2>(_original_length[0]);
+      // row 3
+      k1_large_11(0, 2) = k1_large_11(2, 0);
+      k1_large_11(1, 2) = k1_large_11(2, 1);
+      k1_large_11(2, 2) = Utility::pow<2>(_grad_disp_0_local_t(2)) +
+                          1.5 * Utility::pow<2>(_grad_rot_0_local_t(0)) * Iy_avg +
+                          0.5 * Utility::pow<2>(_grad_disp_0_local_t(0)) +
+                          0.5 * Utility::pow<2>(_grad_disp_0_local_t(1)) +
+                          0.5 * Utility::pow<2>(_grad_rot_0_local_t(0)) * Iz_avg +
+                          0.5 * Utility::pow<2>(_grad_rot_0_local_t(2)) * Iy_avg +
+                          0.5 * Utility::pow<2>(_grad_rot_0_local_t(2)) * Iz_avg;
 
-    // k2_large and k3_large are contributions from tau_xy * d(gamma_xy) and tau_xz * d(gamma_xz)
-    // k2_large for node 1 is negative of that for node 0
-    RankTwoTensor k2_large_11;
-    // col 1
-    k2_large_11(0, 0) =
-        0.25 * Utility::pow<2>(_avg_rot_local_t(2)) + 0.25 * Utility::pow<2>(_avg_rot_local_t(1));
-    k2_large_11(1, 0) = -1.0 / 6.0 * _avg_rot_local_t(0) * _avg_rot_local_t(1);
-    k2_large_11(2, 0) = -1.0 / 6.0 * _avg_rot_local_t(0) * _avg_rot_local_t(2);
+      k1_large_11 *= 1.0 / 4.0 / Utility::pow<2>(_original_length[0]);
 
-    // col 2
-    k2_large_11(0, 1) = k2_large_11(1, 0);
-    k2_large_11(1, 1) = 0.25 * _avg_rot_local_t(0);
+      RankTwoTensor k1_large_21;
+      // row 1
+      k1_large_21(0, 0) = 0.5 * _grad_disp_0_local_t(0) * _grad_rot_0_local_t(0) * (Ix_avg)-1.0 /
+                              3.0 * _grad_disp_0_local_t(1) * _grad_rot_0_local_t(1) * Iz_avg -
+                          1.0 / 3.0 * _grad_disp_0_local_t(2) * _grad_rot_0_local_t(2);
+      k1_large_21(1, 0) = 1.5 * _grad_disp_0_local_t(0) * _grad_rot_0_local_t(1) * Iz_avg -
+                          1.0 / 3.0 * _grad_disp_0_local_t(1) * _grad_rot_0_local_t(0) * Iz_avg;
+      k1_large_21(2, 0) = 1.5 * _grad_disp_0_local_t(0) * _grad_rot_0_local_t(2) * Iy_avg -
+                          1.0 / 3.0 * _grad_disp_0_local_t(2) * _grad_rot_0_local_t(0) * Iy_avg;
 
-    // col 3
-    k2_large_11(0, 2) = k2_large_11(2, 0);
-    k2_large_11(2, 2) = 0.25 * Utility::pow<2>(_avg_rot_local_t(0));
+      // row 2
+      k1_large_21(0, 1) = k1_large_21(1, 0);
+      k1_large_21(1, 1) = 0.5 * _grad_disp_0_local_t(1) * _grad_rot_0_local_t(1) * Iz_avg -
+                          1.0 / 3.0 * _grad_disp_0_local_t(0) * _grad_rot_0_local_t(0) * Iz_avg;
+      k1_large_21(2, 1) = 0.5 * _grad_disp_0_local_t(1) * _grad_rot_0_local_t(2) * Iy_avg;
 
-    k2_large_11 *= 1.0 / 4.0 / Utility::pow<2>(_original_length[0]);
+      // row 3
+      k1_large_21(0, 2) = k1_large_21(2, 0);
+      k1_large_21(1, 2) = k1_large_21(2, 1);
+      k1_large_21(2, 2) = 0.5 * _grad_disp_0_local_t(2) * _grad_rot_0_local_t(2) * Iy_avg -
+                          1.0 / 3.0 * _grad_disp_0_local_t(0) * _grad_rot_0_local_t(0) * Iy_avg;
+      k1_large_21 *= 1.0 / 4.0 / Utility::pow<2>(_original_length[0]);
 
-    RankTwoTensor k2_large_22;
-    // col1
-    k2_large_22(0, 0) = 0.25 * Utility::pow<2>(_avg_rot_local_t(0)) * Ix_avg;
-    k2_large_22(1, 0) = 1.0 / 6.0 * _avg_rot_local_t(0) * _avg_rot_local_t(1) * Iz_avg;
-    k2_large_22(2, 0) = 1.0 / 6.0 * _avg_rot_local_t(0) * _avg_rot_local_t(2) * Iy_avg;
+      RankTwoTensor k1_large_22;
+      // row 1
+      k1_large_22(0, 0) = Utility::pow<2>(_grad_rot_0_local_t(0)) * Utility::pow<2>(Ix_avg) +
+                          1.5 * Utility::pow<2>(_grad_disp_0_local_t(1)) * Iz_avg +
+                          1.5 * Utility::pow<2>(_grad_disp_0_local_t(2)) * Iy_avg +
+                          0.5 * Utility::pow<2>(_grad_disp_0_local_t(0)) * Ix_avg +
+                          0.5 * Utility::pow<2>(_grad_disp_0_local_t(2)) * Iz_avg +
+                          0.5 * Utility::pow<2>(_grad_disp_0_local_t(1)) * Iy_avg +
+                          0.5 * Utility::pow<2>(_grad_rot_0_local_t(2)) * Iy_avg * Ix_avg +
+                          0.5 * Utility::pow<2>(_grad_rot_0_local_t(1)) * Iz_avg * Ix_avg;
+      k1_large_22(1, 0) = 0.5 * _grad_rot_0_local_t(0) * _grad_rot_0_local_t(1) * Iz_avg * Ix_avg -
+                          1.0 / 3.0 * _grad_disp_0_local_t(0) * _grad_disp_0_local_t(1) * Iz_avg;
+      k1_large_22(2, 0) = 0.5 * _grad_rot_0_local_t(0) * _grad_rot_0_local_t(2) * Iy_avg * Ix_avg -
+                          1.0 / 3.0 * _grad_disp_0_local_t(0) * _grad_disp_0_local_t(2) * Iy_avg;
 
-    // col2
-    k2_large_22(0, 1) = k2_large_22(1, 0);
-    k2_large_22(1, 1) = 0.25 * Utility::pow<2>(_avg_rot_local_t(2)) * Iz_avg +
-                        0.25 * Utility::pow<2>(_avg_rot_local_t(1)) * Iz_avg;
+      // row 2
+      k1_large_22(0, 1) = k1_large_22(1, 0);
+      k1_large_22(1, 1) = Utility::pow<2>(_grad_rot_0_local_t(1)) * Iz_avg * Iz_avg +
+                          1.5 * Utility::pow<2>(_grad_disp_0_local_t(0)) * Iz_avg +
+                          1.5 * Utility::pow<2>(_grad_rot_0_local_t(2)) * Iy_avg * Iz_avg +
+                          0.5 * Utility::pow<2>(_grad_disp_0_local_t(1)) * Iz_avg +
+                          0.5 * Utility::pow<2>(_grad_disp_0_local_t(2)) * Iz_avg +
+                          0.5 * Utility::pow<2>(_grad_rot_0_local_t(0)) * Iz_avg * Ix_avg;
+      k1_large_22(2, 1) = 1.5 * _grad_rot_0_local_t(1) * _grad_rot_0_local_t(2) * Iy_avg * Iz_avg;
 
-    // col3
-    k2_large_22(0, 2) = k2_large_22(2, 0);
-    k2_large_22(2, 2) = 0.25 * Utility::pow<2>(_avg_rot_local_t(2)) * Iy_avg +
-                        0.25 * Utility::pow<2>(_avg_rot_local_t(1)) * Iy_avg;
+      // row 3
+      k1_large_22(0, 2) = k1_large_22(2, 0);
+      k1_large_22(1, 2) = k1_large_22(2, 1);
+      k1_large_22(2, 2) = Utility::pow<2>(_grad_rot_0_local_t(2)) * Iy_avg * Iy_avg +
+                          1.5 * Utility::pow<2>(_grad_disp_0_local_t(0)) * Iy_avg +
+                          1.5 * Utility::pow<2>(_grad_rot_0_local_t(1)) * Iy_avg * Iz_avg +
+                          0.5 * Utility::pow<2>(_grad_disp_0_local_t(1)) * Iy_avg +
+                          0.5 * Utility::pow<2>(_grad_disp_0_local_t(2)) * Iy_avg +
+                          0.5 * Utility::pow<2>(_grad_rot_0_local_t(0)) * Iz_avg * Ix_avg;
 
-    k2_large_22 *= 1.0 / 4.0 / Utility::pow<2>(_original_length[0]);
+      k1_large_22 *= 1.0 / 4.0 / Utility::pow<2>(_original_length[0]);
 
-    // k3_large for node 1 is same as that for node 0
-    RankTwoTensor k3_large_22;
-    // col1
-    k3_large_22(0, 0) = 0.25 * Utility::pow<2>(_grad_disp_0_local_t(2)) +
-                        0.25 * _grad_rot_0_local_t(0) * Ix_avg +
-                        0.25 * Utility::pow<2>(_grad_disp_0_local_t(1));
-    k3_large_22(1, 0) = -1.0 / 6.0 * _grad_disp_0_local_t(0) * _grad_disp_0_local_t(1) +
-                        1.0 / 6.0 * _grad_rot_0_local_t(0) * _grad_rot_0_local_t(1) * Iz_avg;
-    k3_large_22(2, 0) = -1.0 / 6.0 * _grad_disp_0_local_t(0) * _grad_disp_0_local_t(2) +
-                        1.0 / 6.0 * _grad_rot_0_local_t(0) * _grad_rot_0_local_t(2) * Iy_avg;
+      // k2_large and k3_large are contributions from tau_xy * d(gamma_xy) and tau_xz * d(gamma_xz)
+      // k2_large for node 1 is negative of that for node 0
+      RankTwoTensor k2_large_11;
+      // col 1
+      k2_large_11(0, 0) =
+          0.25 * Utility::pow<2>(_avg_rot_local_t(2)) + 0.25 * Utility::pow<2>(_avg_rot_local_t(1));
+      k2_large_11(1, 0) = -1.0 / 6.0 * _avg_rot_local_t(0) * _avg_rot_local_t(1);
+      k2_large_11(2, 0) = -1.0 / 6.0 * _avg_rot_local_t(0) * _avg_rot_local_t(2);
 
-    // col2
-    k3_large_22(0, 1) = k3_large_22(1, 0);
-    k3_large_22(2, 2) = 0.25 * Utility::pow<2>(_grad_disp_0_local_t(0)) +
-                        0.25 * _grad_rot_0_local_t(2) * Iy_avg +
-                        0.25 * _grad_rot_0_local_t(1) * Iz_avg;
+      // col 2
+      k2_large_11(0, 1) = k2_large_11(1, 0);
+      k2_large_11(1, 1) = 0.25 * _avg_rot_local_t(0);
 
-    // col3
-    k3_large_22(0, 2) = k3_large_22(2, 0);
-    k3_large_22(2, 2) = 0.25 * Utility::pow<2>(_grad_disp_0_local_t(0)) +
-                        0.25 * _grad_rot_0_local_t(2) * Iy_avg +
-                        0.25 * _grad_rot_0_local_t(1) * Iz_avg;
+      // col 3
+      k2_large_11(0, 2) = k2_large_11(2, 0);
+      k2_large_11(2, 2) = 0.25 * Utility::pow<2>(_avg_rot_local_t(0));
 
-    k3_large_22 *= 1.0 / 16.0;
+      k2_large_11 *= 1.0 / 4.0 / Utility::pow<2>(_original_length[0]);
 
-    RankTwoTensor k3_large_21;
-    // col1
-    k3_large_21(0, 0) = -1.0 / 6.0 *
-                        (_grad_disp_0_local_t(2) * _avg_rot_local_t(2) +
-                         _grad_disp_0_local_t(1) * _avg_rot_local_t(1));
-    k3_large_21(1, 0) = 0.25 * _grad_disp_0_local_t(0) * _avg_rot_local_t(1) -
-                        1.0 / 6.0 * _grad_disp_0_local_t(1) * _avg_rot_local_t(0);
-    k3_large_21(2, 0) = 0.25 * _grad_disp_0_local_t(0) * _avg_rot_local_t(2) -
-                        1.0 / 6.0 * _grad_disp_0_local_t(2) * _avg_rot_local_t(0);
+      RankTwoTensor k2_large_22;
+      // col1
+      k2_large_22(0, 0) = 0.25 * Utility::pow<2>(_avg_rot_local_t(0)) * Ix_avg;
+      k2_large_22(1, 0) = 1.0 / 6.0 * _avg_rot_local_t(0) * _avg_rot_local_t(1) * Iz_avg;
+      k2_large_22(2, 0) = 1.0 / 6.0 * _avg_rot_local_t(0) * _avg_rot_local_t(2) * Iy_avg;
 
-    // col2
-    k3_large_21(0, 1) = 0.25 * _grad_disp_0_local_t(1) * _avg_rot_local_t(0) -
-                        1.0 / 6.0 * _grad_disp_0_local_t(0) * _avg_rot_local_t(1);
-    k3_large_21(1, 1) = -1.0 / 6.0 * _grad_disp_0_local_t(0) * _avg_rot_local_t(0);
+      // col2
+      k2_large_22(0, 1) = k2_large_22(1, 0);
+      k2_large_22(1, 1) = 0.25 * Utility::pow<2>(_avg_rot_local_t(2)) * Iz_avg +
+                          0.25 * Utility::pow<2>(_avg_rot_local_t(1)) * Iz_avg;
 
-    // col3
-    k3_large_21(0, 2) = 0.25 * _grad_disp_0_local_t(2) * _avg_rot_local_t(0) -
-                        1.0 / 6.0 * _grad_disp_0_local_t(0) * _avg_rot_local_t(2);
-    k3_large_21(2, 2) = -1.0 / 6.0 * _grad_disp_0_local_t(0) * _avg_rot_local_t(0);
+      // col3
+      k2_large_22(0, 2) = k2_large_22(2, 0);
+      k2_large_22(2, 2) = 0.25 * Utility::pow<2>(_avg_rot_local_t(2)) * Iy_avg +
+                          0.25 * Utility::pow<2>(_avg_rot_local_t(1)) * Iy_avg;
 
-    k3_large_21 *= 1.0 / 8.0 / _original_length[0];
+      k2_large_22 *= 1.0 / 4.0 / Utility::pow<2>(_original_length[0]);
 
-    RankTwoTensor k4_large_22;
-    // col 1
-    k4_large_22(0, 0) = 0.25 * _grad_rot_0_local_t(0) * _avg_rot_local_t(0) * Ix_avg +
-                        1.0 / 6.0 * _grad_rot_0_local_t(2) * _avg_rot_local_t(2) * Iy_avg +
-                        1.0 / 6.0 * _grad_rot_0_local_t(1) * _avg_rot_local_t(1) * Iz_avg;
-    k4_large_22(1, 0) = 1.0 / 6.0 * _grad_rot_0_local_t(1) * _avg_rot_local_t(0) * Iz_avg;
-    k4_large_22(2, 0) = 1.0 / 6.0 * _grad_rot_0_local_t(2) * _avg_rot_local_t(0) * Iy_avg;
+      // k3_large for node 1 is same as that for node 0
+      RankTwoTensor k3_large_22;
+      // col1
+      k3_large_22(0, 0) = 0.25 * Utility::pow<2>(_grad_disp_0_local_t(2)) +
+                          0.25 * _grad_rot_0_local_t(0) * Ix_avg +
+                          0.25 * Utility::pow<2>(_grad_disp_0_local_t(1));
+      k3_large_22(1, 0) = -1.0 / 6.0 * _grad_disp_0_local_t(0) * _grad_disp_0_local_t(1) +
+                          1.0 / 6.0 * _grad_rot_0_local_t(0) * _grad_rot_0_local_t(1) * Iz_avg;
+      k3_large_22(2, 0) = -1.0 / 6.0 * _grad_disp_0_local_t(0) * _grad_disp_0_local_t(2) +
+                          1.0 / 6.0 * _grad_rot_0_local_t(0) * _grad_rot_0_local_t(2) * Iy_avg;
 
-    // col2
-    k4_large_22(0, 1) = 1.0 / 6.0 * _grad_rot_0_local_t(0) * _avg_rot_local_t(1) * Iz_avg;
-    k4_large_22(1, 1) = 0.25 * _grad_rot_0_local_t(1) * _avg_rot_local_t(1) * Iz_avg +
-                        1.0 / 6.0 * _grad_rot_0_local_t(0) * _avg_rot_local_t(0) * Iz_avg;
-    k4_large_22(2, 1) = 0.25 * _grad_rot_0_local_t(1) * _avg_rot_local_t(2) * Iz_avg;
+      // col2
+      k3_large_22(0, 1) = k3_large_22(1, 0);
+      k3_large_22(2, 2) = 0.25 * Utility::pow<2>(_grad_disp_0_local_t(0)) +
+                          0.25 * _grad_rot_0_local_t(2) * Iy_avg +
+                          0.25 * _grad_rot_0_local_t(1) * Iz_avg;
 
-    // col 3
-    k4_large_22(0, 2) = 1.0 / 6.0 * _grad_rot_0_local_t(0) * _avg_rot_local_t(2) * Iy_avg;
-    k4_large_22(1, 2) = 0.25 * _grad_rot_0_local_t(2) * _avg_rot_local_t(1) * Iy_avg;
-    k4_large_22(2, 2) = 0.25 * _grad_rot_0_local_t(2) * _avg_rot_local_t(2) * Iy_avg +
-                        1.0 / 6.0 * _grad_rot_0_local_t(0) * _avg_rot_local_t(0) * Iy_avg;
+      // col3
+      k3_large_22(0, 2) = k3_large_22(2, 0);
+      k3_large_22(2, 2) = 0.25 * Utility::pow<2>(_grad_disp_0_local_t(0)) +
+                          0.25 * _grad_rot_0_local_t(2) * Iy_avg +
+                          0.25 * _grad_rot_0_local_t(1) * Iz_avg;
 
-    k3_large_22 += 1.0 / 8.0 / _original_length[0] * (k4_large_22 + k4_large_22.transpose());
+      k3_large_22 *= 1.0 / 16.0;
 
-    // Assembling final matrix
-    _K11[0] += _total_rotation[0].transpose() * (k1_large_11 + k2_large_11) * _total_rotation[0];
-    _K22[0] += _total_rotation[0].transpose() * (k1_large_22 + k2_large_22 + k3_large_22) *
-               _total_rotation[0];
-    _K21[0] += _total_rotation[0].transpose() * (k1_large_21 + k3_large_21) * _total_rotation[0];
-    _K21_cross[0] +=
-        _total_rotation[0].transpose() * (-k1_large_21 + k3_large_21) * _total_rotation[0];
-    _K22_cross[0] += _total_rotation[0].transpose() * (-k1_large_22 - k2_large_22 + k3_large_22) *
-                     _total_rotation[0];
+      RankTwoTensor k3_large_21;
+      // col1
+      k3_large_21(0, 0) = -1.0 / 6.0 *
+                          (_grad_disp_0_local_t(2) * _avg_rot_local_t(2) +
+                           _grad_disp_0_local_t(1) * _avg_rot_local_t(1));
+      k3_large_21(1, 0) = 0.25 * _grad_disp_0_local_t(0) * _avg_rot_local_t(1) -
+                          1.0 / 6.0 * _grad_disp_0_local_t(1) * _avg_rot_local_t(0);
+      k3_large_21(2, 0) = 0.25 * _grad_disp_0_local_t(0) * _avg_rot_local_t(2) -
+                          1.0 / 6.0 * _grad_disp_0_local_t(2) * _avg_rot_local_t(0);
+
+      // col2
+      k3_large_21(0, 1) = 0.25 * _grad_disp_0_local_t(1) * _avg_rot_local_t(0) -
+                          1.0 / 6.0 * _grad_disp_0_local_t(0) * _avg_rot_local_t(1);
+      k3_large_21(1, 1) = -1.0 / 6.0 * _grad_disp_0_local_t(0) * _avg_rot_local_t(0);
+
+      // col3
+      k3_large_21(0, 2) = 0.25 * _grad_disp_0_local_t(2) * _avg_rot_local_t(0) -
+                          1.0 / 6.0 * _grad_disp_0_local_t(0) * _avg_rot_local_t(2);
+      k3_large_21(2, 2) = -1.0 / 6.0 * _grad_disp_0_local_t(0) * _avg_rot_local_t(0);
+
+      k3_large_21 *= 1.0 / 8.0 / _original_length[0];
+
+      RankTwoTensor k4_large_22;
+      // col 1
+      k4_large_22(0, 0) = 0.25 * _grad_rot_0_local_t(0) * _avg_rot_local_t(0) * Ix_avg +
+                          1.0 / 6.0 * _grad_rot_0_local_t(2) * _avg_rot_local_t(2) * Iy_avg +
+                          1.0 / 6.0 * _grad_rot_0_local_t(1) * _avg_rot_local_t(1) * Iz_avg;
+      k4_large_22(1, 0) = 1.0 / 6.0 * _grad_rot_0_local_t(1) * _avg_rot_local_t(0) * Iz_avg;
+      k4_large_22(2, 0) = 1.0 / 6.0 * _grad_rot_0_local_t(2) * _avg_rot_local_t(0) * Iy_avg;
+
+      // col2
+      k4_large_22(0, 1) = 1.0 / 6.0 * _grad_rot_0_local_t(0) * _avg_rot_local_t(1) * Iz_avg;
+      k4_large_22(1, 1) = 0.25 * _grad_rot_0_local_t(1) * _avg_rot_local_t(1) * Iz_avg +
+                          1.0 / 6.0 * _grad_rot_0_local_t(0) * _avg_rot_local_t(0) * Iz_avg;
+      k4_large_22(2, 1) = 0.25 * _grad_rot_0_local_t(1) * _avg_rot_local_t(2) * Iz_avg;
+
+      // col 3
+      k4_large_22(0, 2) = 1.0 / 6.0 * _grad_rot_0_local_t(0) * _avg_rot_local_t(2) * Iy_avg;
+      k4_large_22(1, 2) = 0.25 * _grad_rot_0_local_t(2) * _avg_rot_local_t(1) * Iy_avg;
+      k4_large_22(2, 2) = 0.25 * _grad_rot_0_local_t(2) * _avg_rot_local_t(2) * Iy_avg +
+                          1.0 / 6.0 * _grad_rot_0_local_t(0) * _avg_rot_local_t(0) * Iy_avg;
+
+      k3_large_22 += 1.0 / 8.0 / _original_length[0] * (k4_large_22 + k4_large_22.transpose());
+
+      // Assembling final matrix
+      _K11[0] += _total_rotation[0].transpose() * (k1_large_11 + k2_large_11) * _total_rotation[0];
+      _K22[0] += _total_rotation[0].transpose() * (k1_large_22 + k2_large_22 + k3_large_22) *
+                 _total_rotation[0];
+      _K21[0] += _total_rotation[0].transpose() * (k1_large_21 + k3_large_21) * _total_rotation[0];
+      _K21_cross[0] +=
+          _total_rotation[0].transpose() * (-k1_large_21 + k3_large_21) * _total_rotation[0];
+      _K22_cross[0] += _total_rotation[0].transpose() * (-k1_large_22 - k2_large_22 + k3_large_22) *
+                       _total_rotation[0];
+    }
   }
 }
 
+template <bool is_ad>
 void
-ComputeIncrementalBeamStrain::computeRotation()
+ComputeIncrementalBeamStrainTempl<is_ad>::computeRotation()
 {
   _total_rotation[0] = _original_local_config;
 }
+
+template class ComputeIncrementalBeamStrainTempl<false>;
+template class ComputeIncrementalBeamStrainTempl<true>;

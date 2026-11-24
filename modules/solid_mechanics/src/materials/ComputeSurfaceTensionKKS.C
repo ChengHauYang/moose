@@ -11,9 +11,11 @@
 #include "RankTwoTensor.h"
 
 registerMooseObject("SolidMechanicsApp", ComputeSurfaceTensionKKS);
+registerMooseObject("SolidMechanicsApp", ADComputeSurfaceTensionKKS);
 
+template <bool is_ad>
 InputParameters
-ComputeSurfaceTensionKKS::validParams()
+ComputeSurfaceTensionKKSTempl<is_ad>::validParams()
 {
   InputParameters params = Material::validParams();
   params.addClassDescription(
@@ -29,31 +31,34 @@ ComputeSurfaceTensionKKS::validParams()
   return params;
 }
 
-ComputeSurfaceTensionKKS::ComputeSurfaceTensionKKS(const InputParameters & parameters)
+template <bool is_ad>
+ComputeSurfaceTensionKKSTempl<is_ad>::ComputeSurfaceTensionKKSTempl(
+    const InputParameters & parameters)
   : Material(parameters),
-    _v(coupledValue("v")),
-    _grad_v(coupledGradient("v")),
-    _kappa(getMaterialProperty<Real>("kappa_name")),
-    _g(getMaterialProperty<Real>("g")),
-    _w(getParam<Real>("w")),
-    _planar_stress(
-        declareProperty<RankTwoTensor>(getParam<MaterialPropertyName>("planar_stress_name")))
+    _v(this->template coupledGenericValue<is_ad>("v")),
+    _grad_v(this->template coupledGenericGradient<is_ad>("v")),
+    _kappa(this->template getGenericMaterialProperty<Real, is_ad>("kappa_name")),
+    _g(this->template getGenericMaterialProperty<Real, is_ad>("g")),
+    _w(this->template getParam<Real>("w")),
+    _planar_stress(this->template declareGenericProperty<RankTwoTensor, is_ad>(
+        this->template getParam<MaterialPropertyName>("planar_stress_name")))
 {
 }
 
+template <bool is_ad>
 void
-ComputeSurfaceTensionKKS::computeQpProperties()
+ComputeSurfaceTensionKKSTempl<is_ad>::computeQpProperties()
 {
   auto & S = _planar_stress[_qp];
   S.zero();
 
   // compute norm square of the order parameter gradient
-  const Real grad_norm_sq = _grad_v[_qp].norm_sq();
+  const GenericReal<is_ad> grad_norm_sq = _grad_v[_qp].norm_sq();
 
-  const Real nx = _grad_v[_qp](0);
-  const Real ny = _grad_v[_qp](1);
-  const Real nz = _grad_v[_qp](2);
-  Real fsum = _w * _g[_qp] + 0.5 * _kappa[_qp] * grad_norm_sq;
+  const GenericReal<is_ad> nx = _grad_v[_qp](0);
+  const GenericReal<is_ad> ny = _grad_v[_qp](1);
+  const GenericReal<is_ad> nz = _grad_v[_qp](2);
+  GenericReal<is_ad> fsum = _w * _g[_qp] + 0.5 * _kappa[_qp] * grad_norm_sq;
 
   S(0, 0) += fsum - _kappa[_qp] * nx * nx;
   S(0, 1) += -_kappa[_qp] * nx * ny;
@@ -67,3 +72,6 @@ ComputeSurfaceTensionKKS::computeQpProperties()
   S(2, 0) = S(0, 2);
   S(2, 1) = S(1, 2);
 }
+
+template class ComputeSurfaceTensionKKSTempl<false>;
+template class ComputeSurfaceTensionKKSTempl<true>;

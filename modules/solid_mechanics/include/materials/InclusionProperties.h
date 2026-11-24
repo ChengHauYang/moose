@@ -21,12 +21,13 @@
  * calculated. References: X. Jin et al., J. Elast., v. 114, 1-18 (2014) and
  * X. Jin et al., J. Appl. Mech., v. 78, 031009 (2011).
  */
-class InclusionProperties : public Material
+template <bool is_ad>
+class InclusionPropertiesTempl : public Material
 {
 public:
   static InputParameters validParams();
 
-  InclusionProperties(const InputParameters & parameters);
+  InclusionPropertiesTempl(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties();
@@ -59,7 +60,10 @@ private:
   Real _elastic_energy_int;
 
   /// The stress tensor
-  MaterialProperty<RankTwoTensor> & _stress;
-  MaterialProperty<RankTwoTensor> & _strain;
-  MaterialProperty<Real> & _elastic_energy;
+  GenericMaterialProperty<RankTwoTensor, is_ad> & _stress;
+  GenericMaterialProperty<RankTwoTensor, is_ad> & _strain;
+  GenericMaterialProperty<Real, is_ad> & _elastic_energy;
 };
+
+using InclusionProperties = InclusionPropertiesTempl<false>;
+using ADInclusionProperties = InclusionPropertiesTempl<true>;

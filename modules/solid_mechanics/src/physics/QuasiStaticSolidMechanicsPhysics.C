@@ -734,14 +734,15 @@ QuasiStaticSolidMechanicsPhysics::actEigenstrainNames()
     }
 
     // Account for reduced eigenstrains and CompositeEigenstrains
-    if (mat_name == "ComputeReducedOrderEigenstrain")
+    if (mat_name == "ComputeReducedOrderEigenstrain" ||
+        mat_name == "ADComputeReducedOrderEigenstrain")
     {
       auto input_eigenstrain_names =
           mat_params.get<std::vector<MaterialPropertyName>>("input_eigenstrain_names");
       remove_reduced_set.insert(input_eigenstrain_names.begin(), input_eigenstrain_names.end());
     }
     // Account for CompositeEigenstrains
-    if (mat_name == "CompositeEigenstrain")
+    if (mat_name == "CompositeEigenstrain" || mat_name == "ADCompositeEigenstrain")
     {
       auto remove_list = mat_params.get<std::vector<MaterialPropertyName>>("tensors");
       for (auto i : remove_list)

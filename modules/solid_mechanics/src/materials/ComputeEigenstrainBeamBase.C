@@ -9,8 +9,9 @@
 
 #include "ComputeEigenstrainBeamBase.h"
 
+template <bool is_ad>
 InputParameters
-ComputeEigenstrainBeamBase::validParams()
+ComputeEigenstrainBeamBaseTempl<is_ad>::validParams()
 {
   InputParameters params = Material::validParams();
   params.addRequiredParam<std::string>("eigenstrain_name",
@@ -20,17 +21,22 @@ ComputeEigenstrainBeamBase::validParams()
   return params;
 }
 
-ComputeEigenstrainBeamBase::ComputeEigenstrainBeamBase(const InputParameters & parameters)
+template <bool is_ad>
+ComputeEigenstrainBeamBaseTempl<is_ad>::ComputeEigenstrainBeamBaseTempl(
+    const InputParameters & parameters)
   : Material(parameters),
-    _eigenstrain_name(getParam<std::string>("eigenstrain_name")),
-    _disp_eigenstrain(declareProperty<RealVectorValue>("disp_" + _eigenstrain_name)),
-    _rot_eigenstrain(declareProperty<RealVectorValue>("rot_" + _eigenstrain_name)),
-    _step_zero(declareRestartableData<bool>("step_zero", true))
+    _eigenstrain_name(this->template getParam<std::string>("eigenstrain_name")),
+    _disp_eigenstrain(
+        this->template declareGenericProperty<RealVectorValue, is_ad>("disp_" + _eigenstrain_name)),
+    _rot_eigenstrain(
+        this->template declareGenericProperty<RealVectorValue, is_ad>("rot_" + _eigenstrain_name)),
+    _step_zero(this->template declareRestartableData<bool>("step_zero", true))
 {
 }
 
+template <bool is_ad>
 void
-ComputeEigenstrainBeamBase::initQpStatefulProperties()
+ComputeEigenstrainBeamBaseTempl<is_ad>::initQpStatefulProperties()
 {
   // This property can be promoted to be stateful by other models that use it,
   // so it needs to be initalized.
@@ -39,8 +45,9 @@ ComputeEigenstrainBeamBase::initQpStatefulProperties()
   _rot_eigenstrain[_qp] = a;
 }
 
+template <bool is_ad>
 void
-ComputeEigenstrainBeamBase::computeQpProperties()
+ComputeEigenstrainBeamBaseTempl<is_ad>::computeQpProperties()
 {
   if (_t_step >= 1)
     _step_zero = false;
@@ -51,3 +58,6 @@ ComputeEigenstrainBeamBase::computeQpProperties()
   if (!_step_zero)
     computeQpEigenstrain();
 }
+
+template class ComputeEigenstrainBeamBaseTempl<false>;
+template class ComputeEigenstrainBeamBaseTempl<true>;

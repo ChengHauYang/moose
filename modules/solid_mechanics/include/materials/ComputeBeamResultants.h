@@ -13,24 +13,25 @@
 #include "RankTwoTensor.h"
 
 /**
- * ComputeBeamResultants computes forces and moments using elasticity
+ * Computes forces and moments using elasticity
  */
-class ComputeBeamResultants : public Material
+template <bool is_ad>
+class ComputeBeamResultantsTempl : public Material
 {
 public:
   static InputParameters validParams();
 
-  ComputeBeamResultants(const InputParameters & parameters);
+  ComputeBeamResultantsTempl(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpProperties() override;
   virtual void initQpStatefulProperties() override;
+  virtual void computeQpProperties() override;
 
   /// Mechanical displacement strain increment in beam local coordinate system
-  const MaterialProperty<RealVectorValue> & _disp_strain_increment;
+  const GenericMaterialProperty<RealVectorValue, is_ad> & _disp_strain_increment;
 
   /// Mechanical rotational strain increment in beam local coordinate system
-  const MaterialProperty<RealVectorValue> & _rot_strain_increment;
+  const GenericMaterialProperty<RealVectorValue, is_ad> & _rot_strain_increment;
 
   /// Material stiffness vector that relates displacement strain increment to force increment
   const MaterialProperty<RealVectorValue> & _material_stiffness;
@@ -42,14 +43,19 @@ protected:
   const MaterialProperty<RankTwoTensor> & _total_rotation;
 
   /// Current force vector in global coordinate system
-  MaterialProperty<RealVectorValue> & _force;
+  GenericMaterialProperty<RealVectorValue, is_ad> & _force;
 
   /// Current moment vector in global coordinate system
-  MaterialProperty<RealVectorValue> & _moment;
+  GenericMaterialProperty<RealVectorValue, is_ad> & _moment;
 
   /// Old force vector in global coordinate system
   const MaterialProperty<RealVectorValue> & _force_old;
 
   /// Old force vector in global coordinate system
   const MaterialProperty<RealVectorValue> & _moment_old;
+
+  usingMaterialMembers;
 };
+
+using ComputeBeamResultants = ComputeBeamResultantsTempl<false>;
+using ADComputeBeamResultants = ComputeBeamResultantsTempl<true>;

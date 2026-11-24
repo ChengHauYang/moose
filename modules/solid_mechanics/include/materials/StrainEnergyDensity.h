@@ -38,7 +38,7 @@ protected:
   const std::string _stress_name;
 
   /// The strain energy density material property
-  MaterialProperty<Real> & _strain_energy_density;
+  GenericMaterialProperty<Real, is_ad> & _strain_energy_density;
   const MaterialProperty<Real> & _strain_energy_density_old;
 
   ///@{ Current and old values of stress

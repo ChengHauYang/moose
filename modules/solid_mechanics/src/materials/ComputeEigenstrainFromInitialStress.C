@@ -13,11 +13,13 @@
 #include "Conversion.h" // for stringify
 
 registerMooseObject("SolidMechanicsApp", ComputeEigenstrainFromInitialStress);
+registerMooseObject("SolidMechanicsApp", ADComputeEigenstrainFromInitialStress);
 
+template <bool is_ad>
 InputParameters
-ComputeEigenstrainFromInitialStress::validParams()
+ComputeEigenstrainFromInitialStressTempl<is_ad>::validParams()
 {
-  InputParameters params = ComputeEigenstrainBase::validParams();
+  InputParameters params = ComputeEigenstrainBaseTempl<is_ad>::validParams();
   params.addClassDescription("Computes an eigenstrain from an initial stress");
   params.addRequiredParam<std::vector<FunctionName>>(
       "initial_stress",
@@ -37,22 +39,25 @@ ComputeEigenstrainFromInitialStress::validParams()
   return params;
 }
 
-ComputeEigenstrainFromInitialStress::ComputeEigenstrainFromInitialStress(
+template <bool is_ad>
+ComputeEigenstrainFromInitialStressTempl<is_ad>::ComputeEigenstrainFromInitialStressTempl(
     const InputParameters & parameters)
-  : ComputeEigenstrainBase(parameters),
-    _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
-    _elasticity_tensor(getMaterialPropertyByName<RankFourTensor>(_base_name + "elasticity_tensor")),
-    _eigenstrain_old(getMaterialPropertyOld<RankTwoTensor>(_eigenstrain_name)),
-    _ini_aux_provided(isParamValid("initial_stress_aux")),
-    _ini_aux(_ini_aux_provided ? coupledValues("initial_stress_aux")
+  : ComputeEigenstrainBaseTempl<is_ad>(parameters),
+    _base_name(this->isParamValid("base_name") ? this->template getParam<std::string>("base_name") + "_"
+                                              : ""),
+    _elasticity_tensor(this->template getGenericMaterialPropertyByName<RankFourTensor, is_ad>(
+        _base_name + "elasticity_tensor")),
+    _eigenstrain_old(this->template getMaterialPropertyOld<RankTwoTensor>(this->_eigenstrain_name)),
+    _ini_aux_provided(this->isParamValid("initial_stress_aux")),
+    _ini_aux(_ini_aux_provided ? this->coupledValues("initial_stress_aux")
                                : std::vector<const VariableValue *>())
 {
   const std::vector<FunctionName> & fcn_names(
-      getParam<std::vector<FunctionName>>("initial_stress"));
+      this->template getParam<std::vector<FunctionName>>("initial_stress"));
   const std::size_t num = fcn_names.size();
 
   if (num != LIBMESH_DIM * LIBMESH_DIM)
-    paramError(
+    this->paramError(
         "initial_stress",
         "ComputeEigenstrainFromInitialStress: " + Moose::stringify(LIBMESH_DIM * LIBMESH_DIM) +
             " initial stress functions must be provided.  You supplied " + Moose::stringify(num) +
@@ -60,35 +65,39 @@ ComputeEigenstrainFromInitialStress::ComputeEigenstrainFromInitialStress(
 
   _initial_stress_fcn.resize(num);
   for (unsigned i = 0; i < num; ++i)
-    _initial_stress_fcn[i] = &getFunctionByName(fcn_names[i]);
+    _initial_stress_fcn[i] = &this->getFunctionByName(fcn_names[i]);
 
   if (_ini_aux_provided)
   {
-    const std::size_t aux_size = coupledComponents("initial_stress_aux");
+    const std::size_t aux_size = this->coupledComponents("initial_stress_aux");
     if (aux_size != LIBMESH_DIM * LIBMESH_DIM)
-      paramError("initial_stress_aux",
-                 "ComputeEigenstrainFromInitialStress: If you supply initial_stress_aux, " +
-                     Moose::stringify(LIBMESH_DIM * LIBMESH_DIM) +
-                     " values must be given.  You supplied " + Moose::stringify(aux_size) + "\n");
+      this->paramError("initial_stress_aux",
+                       "ComputeEigenstrainFromInitialStress: If you supply initial_stress_aux, " +
+                           Moose::stringify(LIBMESH_DIM * LIBMESH_DIM) +
+                           " values must be given.  You supplied " + Moose::stringify(aux_size) + "\n");
   }
 }
 
+template <bool is_ad>
 void
-ComputeEigenstrainFromInitialStress::computeQpEigenstrain()
+ComputeEigenstrainFromInitialStressTempl<is_ad>::computeQpEigenstrain()
 {
-  if (_t_step == 1)
+  if (this->_t_step == 1)
   {
-    RankTwoTensor initial_stress;
+    GenericRankTwoTensor<is_ad> initial_stress;
     for (unsigned i = 0; i < LIBMESH_DIM; ++i)
       for (unsigned j = 0; j < LIBMESH_DIM; ++j)
       {
-        initial_stress(i, j) = _initial_stress_fcn[i * LIBMESH_DIM + j]->value(_t, _q_point[_qp]);
+        initial_stress(i, j) = _initial_stress_fcn[i * LIBMESH_DIM + j]->value(this->_t, this->_q_point[this->_qp]);
         if (_ini_aux_provided)
-          initial_stress(i, j) *= (*_ini_aux[i * LIBMESH_DIM + j])[_qp];
+          initial_stress(i, j) *= (*_ini_aux[i * LIBMESH_DIM + j])[this->_qp];
       }
 
-    _eigenstrain[_qp] = -_elasticity_tensor[_qp].invSymm() * initial_stress;
+    this->_eigenstrain[this->_qp] = -_elasticity_tensor[this->_qp].invSymm() * initial_stress;
   }
   else
-    _eigenstrain[_qp] = _eigenstrain_old[_qp];
+    this->_eigenstrain[this->_qp] = _eigenstrain_old[this->_qp];
 }
+
+template class ComputeEigenstrainFromInitialStressTempl<false>;
+template class ComputeEigenstrainFromInitialStressTempl<true>;

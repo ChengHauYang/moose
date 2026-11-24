@@ -65,3 +65,50 @@ protected:
   /// Instantaneous compliance tensor (extracted from a LinearViscoelasticityBase object)
   const MaterialProperty<RankFourTensor> & _elasticity_tensor_inv;
 };
+
+/**
+ * AD version of LinearViscoelasticStressUpdate for use with ADComputeMultipleInelasticStress.
+ *
+ * Uses the same constitutive equations as LinearViscoelasticStressUpdate, but operates on
+ * AD strain and stress types so that derivative information is preserved for the Jacobian.
+ * Apparent properties are non-AD (they are set at TIMESTEP_BEGIN by ADLinearViscoelasticityManager
+ * and do not depend on the current solve).
+ */
+class ADLinearViscoelasticStressUpdate : public ADStressUpdateBase
+{
+public:
+  static InputParameters validParams();
+
+  ADLinearViscoelasticStressUpdate(const InputParameters & parameters);
+
+  using ADStressUpdateBase::updateState;
+
+  virtual void updateState(ADRankTwoTensor & strain_increment,
+                           ADRankTwoTensor & inelastic_strain_increment,
+                           const ADRankTwoTensor & rotation_increment,
+                           ADRankTwoTensor & stress_new,
+                           const RankTwoTensor & stress_old,
+                           const ADRankFourTensor & elasticity_tensor,
+                           const RankTwoTensor & elastic_strain_old,
+                           bool compute_full_tangent_operator,
+                           RankFourTensor & tangent_operator) override;
+
+  virtual void propagateQpStatefulProperties() override;
+
+  virtual bool requiresIsotropicTensor() override { return false; }
+
+protected:
+  virtual void initQpStatefulProperties() override;
+
+  ///@{ Creep strain — AD so that the stress Jacobian carries derivatives through it
+  ADMaterialProperty<RankTwoTensor> & _creep_strain;
+  const MaterialProperty<RankTwoTensor> & _creep_strain_old;
+  ///@}
+
+  /// Apparent creep strain (non-AD, set at TIMESTEP_BEGIN by ADLinearViscoelasticityManager)
+  const MaterialProperty<RankTwoTensor> & _apparent_creep_strain;
+  /// Apparent elasticity tensor (non-AD, set at TIMESTEP_BEGIN)
+  const MaterialProperty<RankFourTensor> & _apparent_elasticity_tensor;
+  /// Instantaneous compliance tensor (non-AD, set at TIMESTEP_BEGIN)
+  const MaterialProperty<RankFourTensor> & _elasticity_tensor_inv;
+};

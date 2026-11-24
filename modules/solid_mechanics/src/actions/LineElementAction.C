@@ -41,6 +41,10 @@ LineElementAction::validParams()
       "truss",
       false,
       "Set to true if the line elements are truss elements instead of the default beam elements.");
+  params.addParam<bool>("use_automatic_differentiation",
+                        false,
+                        "Use automatic differentiation for beams with small strains, small "
+                        "rotations, and no inertia.");
   params.addParam<bool>("add_variables",
                         false,
                         "Add the displacement variables for truss elements "
@@ -247,6 +251,21 @@ LineElementAction::LineElementAction(const InputParameters & params)
                  "'add_dynamic_variables' to false.");
   }
   _truss = getParam<bool>("truss");
+
+  if (getParam<bool>("use_automatic_differentiation"))
+  {
+    if (_truss || _strain_type != Strain::SMALL || _rotation_type != Strain::SMALL ||
+        _dynamic_consistent_inertia || _dynamic_nodal_translational_inertia ||
+        _dynamic_nodal_rotational_inertia)
+      paramError("use_automatic_differentiation",
+                 "Automatic differentiation requires a beam with small strains, small rotations, "
+                 "and no inertia.");
+
+    if (!_save_in.empty() || !_diag_save_in.empty())
+      paramError("use_automatic_differentiation",
+                 "Saving residuals or Jacobian diagonals to auxiliary variables is unavailable "
+                 "with automatic differentiation.");
+  }
 
   if (!isParamValid("displacements"))
     paramError("displacements",
@@ -496,14 +515,25 @@ LineElementAction::actAddMaterials()
     // Add Strain
     if (_rotation_type == Strain::SMALL)
     {
-      auto params = _factory.getValidParams("ComputeIncrementalBeamStrain");
+      const bool use_ad = getParam<bool>("use_automatic_differentiation");
+      const std::string strain_type =
+          use_ad ? "ADComputeIncrementalBeamStrain" : "ComputeIncrementalBeamStrain";
+      auto params = _factory.getValidParams(strain_type);
       params.applyParameters(parameters(), {"boundary", "use_displaced_mesh"});
       params.set<bool>("use_displaced_mesh") = false;
 
       if (_strain_type == Strain::FINITE)
         params.set<bool>("large_strain") = true;
 
-      _problem->addMaterial("ComputeIncrementalBeamStrain", name() + "_strain", params);
+      _problem->addMaterial(strain_type, name() + "_strain", params);
+
+      if (use_ad)
+      {
+        const std::string resultants_type = "ADComputeBeamResultants";
+        auto resultants_params = _factory.getValidParams(resultants_type);
+        resultants_params.applySpecificParameters(parameters(), {"block"});
+        _problem->addMaterial(resultants_type, name() + "_resultants", resultants_params);
+      }
     }
     else if (_rotation_type == Strain::FINITE)
     {
@@ -525,7 +555,10 @@ LineElementAction::actAddKernels()
   if (!_truss)
   {
     // add StressDivergenceBeam kernels
-    auto params = _factory.getValidParams("StressDivergenceBeam");
+    const std::string kernel_type = getParam<bool>("use_automatic_differentiation")
+                                        ? "ADStressDivergenceBeam"
+                                        : "StressDivergenceBeam";
+    auto params = _factory.getValidParams(kernel_type);
     params.applyParameters(parameters(), {"use_displaced_mesh", "save_in", "diag_save_in"});
     params.set<bool>("use_displaced_mesh") = _use_displaced_mesh;
 
@@ -543,7 +576,7 @@ LineElementAction::actAddKernels()
         if (_diag_save_in.size() == 2 * _ndisp)
           params.set<std::vector<AuxVariableName>>("diag_save_in") = {_diag_save_in[i]};
 
-        _problem->addKernel("StressDivergenceBeam", kernel_name, params);
+        _problem->addKernel(kernel_type, kernel_name, params);
       }
       else
       {
@@ -555,7 +588,7 @@ LineElementAction::actAddKernels()
         if (_diag_save_in.size() == 2 * _ndisp)
           params.set<std::vector<AuxVariableName>>("diag_save_in") = {_diag_save_in[i]};
 
-        _problem->addKernel("StressDivergenceBeam", kernel_name, params);
+        _problem->addKernel(kernel_type, kernel_name, params);
       }
     }
     // Add InertialForceBeam if dynamic simulation using consistent mass/inertia matrix has to be

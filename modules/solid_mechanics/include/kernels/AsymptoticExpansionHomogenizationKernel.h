@@ -9,24 +9,27 @@
 
 #pragma once
 
-#include "Kernel.h"
+#include "GenericKernel.h"
+#include "RankFourTensorForward.h"
 
-// Forward Declarations
-
-class AsymptoticExpansionHomogenizationKernel : public Kernel
+/**
+ * Adds the elasticity-tensor term for an asymptotic-expansion homogenization corrector equation.
+ */
+template <bool is_ad>
+class AsymptoticExpansionHomogenizationKernelTempl : public GenericKernel<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  AsymptoticExpansionHomogenizationKernel(const InputParameters & parameters);
+  AsymptoticExpansionHomogenizationKernelTempl(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
+  virtual GenericReal<is_ad> computeQpResidual() override;
 
   /// Base name of the material system that this kernel applies to
   const std::string _base_name;
 
-  const MaterialProperty<RankFourTensor> & _elasticity_tensor;
+  const GenericMaterialProperty<RankFourTensor, is_ad> & _elasticity_tensor;
 
 private:
   /// An integer corresponding to the direction this kernel acts in
@@ -36,4 +39,11 @@ private:
   const std::array<unsigned int, 6> _l_index;
   const unsigned int _k;
   const unsigned int _l;
+
+  usingGenericKernelMembers;
 };
+
+using AsymptoticExpansionHomogenizationKernel =
+    AsymptoticExpansionHomogenizationKernelTempl<false>;
+using ADAsymptoticExpansionHomogenizationKernel =
+    AsymptoticExpansionHomogenizationKernelTempl<true>;

@@ -10,11 +10,13 @@
 #include "CompositeElasticityTensor.h"
 
 registerMooseObject("SolidMechanicsApp", CompositeElasticityTensor);
+registerMooseObject("SolidMechanicsApp", ADCompositeElasticityTensor);
 
+template <bool is_ad>
 InputParameters
-CompositeElasticityTensor::validParams()
+CompositeElasticityTensorTempl<is_ad>::validParams()
 {
-  InputParameters params = CompositeTensorBase<RankFourTensor, Material>::validParams();
+  InputParameters params = CompositeTensorBase<RankFourTensor, Material, is_ad>::validParams();
   params.addClassDescription("Assemble an elasticity tensor from multiple tensor contributions "
                              "weighted by material properties");
   params.addParam<std::string>("base_name",
@@ -24,21 +26,29 @@ CompositeElasticityTensor::validParams()
   return params;
 }
 
-CompositeElasticityTensor::CompositeElasticityTensor(const InputParameters & parameters)
-  : CompositeTensorBase<RankFourTensor, Material>(parameters),
-    _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
+template <bool is_ad>
+CompositeElasticityTensorTempl<is_ad>::CompositeElasticityTensorTempl(
+    const InputParameters & parameters)
+  : CompositeTensorBase<RankFourTensor, Material, is_ad>(parameters),
+    _base_name(this->isParamValid("base_name")
+                   ? this->template getParam<std::string>("base_name") + "_"
+                   : ""),
     _M_name(_base_name + "elasticity_tensor"),
-    _M(declareProperty<RankFourTensor>(_M_name))
+    _M(this->template declareGenericProperty<RankFourTensor, is_ad>(_M_name))
 {
   // we take the tensor names to be the _base names_ of the elasticity tensors
-  for (unsigned int i = 0; i < _num_comp; ++i)
+  for (const auto i : make_range(_num_comp))
     _tensor_names[i] += "_elasticity_tensor";
 
   initializeDerivativeProperties(_M_name);
 }
 
+template <bool is_ad>
 void
-CompositeElasticityTensor::computeQpProperties()
+CompositeElasticityTensorTempl<is_ad>::computeQpProperties()
 {
   computeQpTensorProperties(_M);
 }
+
+template class CompositeElasticityTensorTempl<false>;
+template class CompositeElasticityTensorTempl<true>;
