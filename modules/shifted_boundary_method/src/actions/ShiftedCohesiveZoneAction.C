@@ -500,7 +500,10 @@ ShiftedCohesiveZoneAction::addSBMDistanceUserObjects()
 {
   auto distance_params = _factory.getValidParams("BoundaryShortestDistanceToSurface");
   distance_params.set<std::vector<BoundaryName>>("boundary") = _boundary;
-  distance_params.set<int>("execution_order_group") = 0;
+  // Kokkos user objects run before host user objects within an execution order group, and a
+  // Kokkos user object can evaluate the shifted Kokkos materials (e.g. a NEML2 gatherer of the
+  // displacement jump), so the distance must come from an earlier group
+  distance_params.set<int>("execution_order_group") = _use_kokkos ? -2 : 0;
   distance_params.set<ExecFlagEnum>("execute_on") = EXEC_INITIAL;
 
   if (usesInterfaceManager())
@@ -522,6 +525,9 @@ ShiftedCohesiveZoneAction::addSBMDistanceUserObjects()
           getParam<std::vector<subdomain_id_type>>("interface_subdomain_ids");
     }
     manager_params.set<Real>("tolerance") = getParam<Real>("interface_matching_tolerance");
+    // The manager detects the interfaces that the distance user object reads in its own setup
+    manager_params.set<int>("execution_order_group") =
+        distance_params.get<int>("execution_order_group") - 1;
     _problem->addUserObject("SBMInterfaceManager", interfaceManagerName(), manager_params);
     distance_params.set<UserObjectName>("manager") = interfaceManagerName();
     if (isParamSetByUser("interface_subdomain_pairs"))
