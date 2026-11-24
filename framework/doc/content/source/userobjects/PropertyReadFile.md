@@ -2,13 +2,14 @@
 
 !syntax description /UserObjects/PropertyReadFile
 
-This user object may load data sorted in four different ways. The read modes are toggled using the
+This user object may load data sorted in five different ways. The read modes are toggled using the
 [!param](/UserObjects/PropertyReadFile/read_type) parameter.
 
 - In +element+ mode, the file read contains [!param](/UserObjects/PropertyReadFile/nprop) values for each element in the mesh.
 - In +grain+/+voronoi+ mode, a Voronoi tessellation with [!param](/UserObjects/PropertyReadFile/nvoronoi) random centers is either created randomly or read from the first three columns of the `CSV` file, depending on the [!param](/UserObjects/PropertyReadFile/use_random_voronoi) parameter. The file read should still contain [!param](/UserObjects/PropertyReadFile/nprop) columns, even though the three first columns may be used for the Voronoi tessellation positions.
 - In +block+ mode, the file read contains [!param](/UserObjects/PropertyReadFile/nprop) values for each block in the mesh. [!param](/UserObjects/PropertyReadFile/nblock) is the number of blocks in the mesh.
 - In +node+ mode, the file read contains [!param](/UserObjects/PropertyReadFile/nprop) values for each node in the mesh.
+- In +extra_element_id+ mode, the file read contains [!param](/UserObjects/PropertyReadFile/nprop) values for each value of the extra element integer [!param](/UserObjects/PropertyReadFile/extra_element_id), and [!param](/UserObjects/PropertyReadFile/n_extra_element_ids) is the number of such values. Row $i$ holds the data of the elements whose extra element integer is $i$, or $i+1$ if [!param](/UserObjects/PropertyReadFile/use_zero_based_extra_element_id_indexing) is `false`. This mode assigns data by a grouping of elements that differs from the subdomains, for example per-grain data when the subdomains are groups of grains.
 
 !alert warning title=Data ordering
 For the `element` (`block` and `node` respectively) modes, both the elements
@@ -58,6 +59,10 @@ This is done for each [!param](/UserObjects/PropertyReadFile/read_type).
 - Data sorted by block
 
 !listing test/tests/functions/piecewise_constant_from_csv/piecewise_constant.i block=UserObjects/reader_block
+
+- Data sorted by the value of an extra element integer
+
+!listing test/tests/functions/piecewise_constant_from_csv/piecewise_constant_extra_element_id.i block=UserObjects/reader
 
 !alert note
 In this example, the same CSV file as the nearest neighbor case is used. It is however processed and used differently.

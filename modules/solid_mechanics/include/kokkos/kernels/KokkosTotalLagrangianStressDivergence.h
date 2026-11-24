@@ -31,6 +31,10 @@
  * chain. The residual is unchanged from the unstabilized version: total-mode F-bar's residual
  * add-on lives only in `F_bar_mode = incremental`, which the Kokkos path does not implement.
  *
+ * With `large_kinematics = false`, the stress material is expected to be
+ * `KokkosComputeLagrangianStressCustomSmall`, the F-bar correction is the additive trace
+ * correction, and F_avg_invT is replaced by the identity in the non-local term above.
+ *
  * Restrictions: requires one displacement component per mesh dimension, and elements with
  * <= MAX_CACHED_DOF trial DOFs per variable (checked at first launch). In 2D the trial gradients
  * have no out-of-plane component, so the 3x3 contractions reduce to the plane-strain terms.
@@ -65,7 +69,7 @@ public:
   KOKKOS_FUNCTION void computeOffDiagJacobianInternal(const Derived & kernel,
                                                       AssemblyDatum & datum) const;
 
-private:
+protected:
   KOKKOS_FUNCTION Real3 jacobian(const unsigned int displacement_component,
                                  const Real3 & grad_phi,
                                  const unsigned int qp,
@@ -82,6 +86,8 @@ private:
 
   const unsigned int _component;
   const unsigned int _ndisp;
+  /// Whether the stress material uses large kinematics (multiplicative F-bar)
+  const bool _large_kinematics;
   Moose::Kokkos::MaterialProperty<Real, 2> _pk1_stress;
   Moose::Kokkos::MaterialProperty<Real, 4> _dpk1_d_grad_u;
   Moose::Kokkos::Array<unsigned int> _displacement_var_ids;
@@ -129,7 +135,7 @@ KokkosTotalLagrangianStressDivergence::precomputeQpOffDiagJacobian(const unsigne
   return Real3(0);
 }
 
-KOKKOS_FUNCTION Moose::Kokkos::Real3
+KOKKOS_FUNCTION inline Moose::Kokkos::Real3
 KokkosTotalLagrangianStressDivergence::jacobian(const unsigned int displacement_component,
                                                 const Real3 & grad_phi,
                                                 const unsigned int qp,
@@ -224,11 +230,18 @@ KokkosTotalLagrangianStressDivergence::computeJacobianBody(const Derived & kerne
     avg_grad_phi[j](2) *= inv_vol;
   }
 
-  // F_avg_invT is element-constant; read at qp = 0. Cache the trial component's row.
-  const auto F_avg_invT_prop = _F_avg_invT(datum, 0);
-  const Real3 F_avg_invT_row(F_avg_invT_prop(trial_component, 0),
-                             F_avg_invT_prop(trial_component, 1),
-                             F_avg_invT_prop(trial_component, 2));
+  // F_avg_invT is element-constant; read at qp = 0. Cache the trial component's row. The additive
+  // small-kinematics F-bar correction depends on tr(delta F_avg), i.e. F_avg_invT = I.
+  Real3 F_avg_invT_row(0);
+  if (_large_kinematics)
+  {
+    const auto F_avg_invT_prop = _F_avg_invT(datum, 0);
+    F_avg_invT_row = Real3(F_avg_invT_prop(trial_component, 0),
+                           F_avg_invT_prop(trial_component, 1),
+                           F_avg_invT_prop(trial_component, 2));
+  }
+  else
+    F_avg_invT_row(trial_component) = 1;
 
   Moose::Kokkos::ResidualObject::computeJacobianInternal(
       datum,

@@ -432,6 +432,34 @@
     capabilities = kokkos
     compute_devices = 'cpu cuda xpu'
   []
+  [sczm_tl_2d_neml2_traction]
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall evaluate a '
+                  'two-dimensional traction-separation law with NEML2, padding the 2D Kokkos '
+                  'displacement jump to three components and retrieving the traction and its jump '
+                  'derivative as Kokkos interface material properties,'
+    [solution]
+      type = Exodiff
+      input = sczm_tl_2d_neml2_traction.i
+      exodiff = sczm_tl_2d_neml2_traction_out.e
+      # The gold is a symlink to sczm_tl_2d_kokkos_out.e: the same law, so the same solution
+      abs_zero = 1e-8
+      rel_err = 1e-8
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
+      detail = 'matching the solution with the Kokkos traction-separation law, and'
+    []
+    [jacobian]
+      type = PetscJacobianTester
+      input = sczm_tl_2d_neml2_traction.i
+      ratio_tol = 1e-7
+      difference_tol = 1e-5
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      prereq = sczm_tl_2d_neml2_traction/solution
+      detail = 'with a consistent Jacobian.'
+    []
+  []
   [sczm_tl_2d_noshifted_host]
     type = Exodiff
     input = sczm_tl_2d_noshifted_host.i
@@ -486,6 +514,34 @@
     capabilities = kokkos
     compute_devices = 'cpu cuda xpu'
   []
+  [sczm_tl_3d_neml2_traction]
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall evaluate its '
+                  'traction-separation law with NEML2, gathering the Kokkos displacement jump into '
+                  'NEML2 and retrieving the traction and its jump derivative as Kokkos interface '
+                  'material properties,'
+    [solution]
+      type = Exodiff
+      input = sczm_tl_3d_neml2_traction.i
+      exodiff = sczm_tl_3d_neml2_traction_out.e
+      # The gold is a symlink to sczm_tl_3d_kokkos_out.e: the same law, so the same solution
+      abs_zero = 1e-8
+      rel_err = 1e-8
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
+      detail = 'matching the solution with the Kokkos traction-separation law, and'
+    []
+    [jacobian]
+      type = PetscJacobianTester
+      input = sczm_tl_3d_neml2_traction.i
+      ratio_tol = 1e-7
+      difference_tol = 1e-5
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      prereq = sczm_tl_3d_neml2_traction/solution
+      detail = 'with a consistent Jacobian.'
+    []
+  []
   [sczm_tl_3d_noshifted_host]
     type = Exodiff
     input = sczm_tl_3d_noshifted_host.i
@@ -500,6 +556,19 @@
     abs_zero = 1e-8
     rel_err = 1e-8
     requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reproduce the host solution on a three-dimensional interface with shifted terms disabled.'
+    capabilities = kokkos
+    compute_devices = 'cpu cuda xpu'
+    recover = false
+  []
+  [sczm_tl_3d_noshifted_no_distance]
+    type = Exodiff
+    input = sczm_tl_3d_noshifted_no_distance_kokkos.i
+    exodiff = sczm_tl_3d_noshifted_no_distance_kokkos_out.e
+    # The gold is a symlink to sczm_tl_3d_noshifted_kokkos_out.e
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall not require a '
+                  'distance user object when the shifted terms are disabled.'
     capabilities = kokkos
     compute_devices = 'cpu cuda xpu'
     recover = false
@@ -893,5 +962,120 @@
       detail = 'if the NEML2 block providing the stress or tangent property to a Kokkos directional correction does not set output_backend = kokkos.'
     []
 
+  []
+  [weighted_traction_stabilization]
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall assemble Jacobian entries consistent with its residual, including the bulk stress derivatives of the average traction in all four interface blocks, for the weighted traction stabilization'
+    # beta = k_n and k_t = 3 k_n give the weights S_n = 1/2 and S_t = 1/4, so the cohesive and the
+    # average bulk traction both contribute and the normal and tangential weights differ
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    [small_strain]
+      type = PetscJacobianTester
+      input = sczm_hetero_kokkos.i
+      cli_args = "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30"
+      detail = 'with small-strain kinematics, the directional correction, and different bulk properties on the two sides,'
+    []
+    [small_strain_no_shifted]
+      type = PetscJacobianTester
+      input = sczm_hetero_kokkos.i
+      cli_args = "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/no_shifted=true "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30"
+      detail = 'with small-strain kinematics and shifted terms disabled,'
+    []
+    [total_lagrangian]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "Outputs/csv=false "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30"
+      # Same tolerance as sczm_tl_fbar_off_kokkos_jacobian
+      difference_tol = 1e-4
+      detail = 'with total-Lagrangian kinematics,'
+    []
+    [total_lagrangian_no_shifted]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "Outputs/csv=false "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/no_shifted=true "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30"
+      difference_tol = 1e-4
+      detail = 'with total-Lagrangian kinematics and shifted terms disabled,'
+    []
+    [total_lagrangian_fbar]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "Outputs/csv=false "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30"
+      # Same tolerance as sczm_tl_fbar_kokkos_jacobian
+      difference_tol = 1e-4
+      detail = 'with total-Lagrangian kinematics and the F-bar deformation gradient, and'
+    []
+    [total_lagrangian_fbar_host]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_host.i
+      cli_args = "Outputs/csv=false "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30"
+      capabilities = 'libtorch & neml2'
+      difference_tol = 1e-4
+      detail = 'in the host total-Lagrangian formulation with the F-bar deformation gradient.'
+    []
+  []
+  [weighted_traction_stabilization_solution]
+    requirement = 'The shifted cohesive-zone formulation shall compute the displacement solution with the weighted traction stabilization on a two-dimensional angled interface including the directional correction'
+    # The Kokkos gold file is a copy of the host one: both evaluate identical double-precision
+    # discrete equations, so they must agree tightly.
+    abs_zero = 1e-8
+    rel_err = 1e-8
+    # See sczm_angled_kokkos_matches_host for why recovery is disabled.
+    recover = false
+    [host]
+      type = Exodiff
+      input = sczm_angled_host.i
+      cli_args = "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30 "
+                 "Outputs/file_base=sczm_angled_stabilization_host_out"
+      exodiff = sczm_angled_stabilization_host_out.e
+      detail = 'on the host, and'
+    []
+    [kokkos]
+      type = Exodiff
+      input = sczm_angled_kokkos.i
+      cli_args = "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30 "
+                 "Outputs/file_base=sczm_angled_stabilization_kokkos_out"
+      exodiff = sczm_angled_stabilization_kokkos_out.e
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      detail = 'with Kokkos, matching the host solution.'
+    []
   []
 []

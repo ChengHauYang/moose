@@ -103,6 +103,15 @@ public:
   Real getBlockData(const SubdomainID subdomain_id, const unsigned int prop_num) const;
 
   /**
+   * This function retrieves properties for elements, from a file that has data ordered by the value
+   * of an extra element integer (e.g. a grain ID that is not the subdomain ID)
+   * @param elem the element to get data for
+   * @param prop_num the column index of the property we want to retrieve
+   * @return the property value for the element
+   */
+  Real getExtraElementIDData(const Elem * const elem, const unsigned int prop_num) const;
+
+  /**
    * This function calculates minimum distance between 2 points
    * considering periodicity of the simulation volume
    * @return the minimum distance between two points
@@ -118,7 +127,8 @@ public:
     VORONOI = 1,
     BLOCK = 2,
     NODE = 3,
-    GRAIN = 4
+    GRAIN = 4,
+    EXTRA_ELEMENT_ID = 5
   };
 
   /**
@@ -169,6 +179,12 @@ private:
   const unsigned int _nvoronoi;
   /// Number of blocks (for reading a CSV file with properties ordered by blocks)
   const unsigned int _nblock;
+  /// Index of the extra element integer (for reading a CSV file ordered by extra element IDs)
+  unsigned int _extra_element_id_index;
+  /// Number of extra element ID values (rows) in the CSV file
+  const unsigned int _n_extra_element_ids;
+  /// Do the extra element ID values start with zero or one?
+  const bool _extra_element_id_zero;
 
   /// To keep track of initialization to avoid reading the files twice
   bool & _initialize_called_once;

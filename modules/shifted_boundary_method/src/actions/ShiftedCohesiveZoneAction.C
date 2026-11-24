@@ -15,6 +15,7 @@
 #include "Conversion.h"
 #include "NEML2Action.h"
 #include "QuasiStaticSolidMechanicsPhysicsBase.h"
+#include "SCZMWeightedTractionStabilization.h"
 
 #include <algorithm>
 #include <set>
@@ -124,6 +125,12 @@ ShiftedCohesiveZoneAction::validParams()
       "complete_interface_mesh",
       "Saved surface mesh containing the complete boundary of each subdomain. Setting this "
       "parameter automatically creates one interface manager and distance user object.");
+  params.addParam<FileName>(
+      "complete_interface_mesh_file",
+      "File holding the surface mesh with the complete boundary of each subdomain, read directly "
+      "instead of a saved mesh. Use this with a pre-split mesh (--use-split), for which the mesh "
+      "generators that would save 'complete_interface_mesh' do not run. Mutually exclusive with "
+      "'complete_interface_mesh' and 'complete_interface_meshes'.");
   params.addParam<std::vector<MeshGeneratorName>>(
       "complete_interface_meshes",
       "Saved watertight boundary mesh for each grain, one per grain, with the matching grain "
@@ -144,6 +151,7 @@ ShiftedCohesiveZoneAction::validParams()
   params.addParam<bool>("no_shifted", false, "Disable shifted terms.");
   params.addParam<bool>("use_kokkos", false, "Create Kokkos SCZM objects.");
   params.addParam<bool>("directional_correction", true, "Add the directional correction terms.");
+  SCZMWeightedTractionStabilization::addParams(params);
   params.addParam<MaterialPropertyName>(
       "stress", "stress", "Name of the stress tensor material property for small strain SCZM.");
   params.addParam<MaterialPropertyName>("tangent",
@@ -181,20 +189,25 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
   const bool generate_distance = getParam<bool>("generate_sbm_distance");
   const bool has_distance_uo = isParamSetByUser("sbm_distance_uo");
   const bool has_single_mesh = isParamSetByUser("complete_interface_mesh");
+  const bool has_mesh_file = isParamSetByUser("complete_interface_mesh_file");
   const bool has_mesh_list = isParamSetByUser("complete_interface_meshes");
-  // The single-mesh and per-grain-list forms both drive the interface manager.
-  const bool uses_manager = has_single_mesh || has_mesh_list;
+  // The single-mesh, mesh-file, and per-grain-list forms all drive the interface manager.
+  const bool uses_manager = has_single_mesh || has_mesh_file || has_mesh_list;
 
-  if (has_single_mesh && has_mesh_list)
+  if (static_cast<unsigned int>(has_single_mesh) + static_cast<unsigned int>(has_mesh_file) +
+          static_cast<unsigned int>(has_mesh_list) >
+      1)
     paramError("complete_interface_meshes",
-               "Specify only one of 'complete_interface_mesh' and 'complete_interface_meshes'.");
+               "Specify only one of 'complete_interface_mesh', 'complete_interface_mesh_file', and "
+               "'complete_interface_meshes'.");
 
   if (static_cast<unsigned int>(generate_distance) + static_cast<unsigned int>(has_distance_uo) +
           static_cast<unsigned int>(uses_manager) >
       1)
     paramError("sbm_distance_uo",
                "Specify only one of 'sbm_distance_uo', 'generate_sbm_distance', and "
-               "'complete_interface_mesh'/'complete_interface_meshes'.");
+               "'complete_interface_mesh'/'complete_interface_mesh_file'/"
+               "'complete_interface_meshes'.");
 
   if (has_mesh_list)
   {
@@ -219,7 +232,7 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
   if (!uses_manager && isParamSetByUser("interface_matching_tolerance"))
     paramError("interface_matching_tolerance",
                "This parameter is only valid with 'complete_interface_mesh'/"
-               "'complete_interface_meshes'.");
+               "'complete_interface_mesh_file'/'complete_interface_meshes'.");
 
   if (generate_distance)
   {
@@ -234,7 +247,7 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
   if (!uses_manager && isParamSetByUser("interface_subdomain_pairs"))
     paramError("interface_subdomain_pairs",
                "This parameter is only valid with 'complete_interface_mesh'/"
-               "'complete_interface_meshes'.");
+               "'complete_interface_mesh_file'/'complete_interface_meshes'.");
   if (uses_manager && isParamSetByUser("interface_subdomain_pairs") &&
       getParam<std::vector<std::vector<SubdomainID>>>("interface_subdomain_pairs").size() !=
           _boundary.size())
@@ -305,7 +318,11 @@ ShiftedCohesiveZoneAction::act()
   if (_ndisp != _mesh->dimension())
     paramError("displacements", "Number of displacements must match problem dimension.");
 
-  if (_current_task == "add_interface_kernel" && getParam<bool>("directional_correction"))
+  // Both the directional correction and the stabilization evaluate the bulk stress and tangent on
+  // the interface
+  if (_current_task == "add_interface_kernel" &&
+      (getParam<bool>("directional_correction") ||
+       getParam<MooseEnum>("stabilization") == "weighted_traction"))
   {
     std::vector<MaterialPropertyName> stress_names;
     std::vector<MaterialPropertyName> tangent_names;
@@ -368,7 +385,8 @@ ShiftedCohesiveZoneAction::act()
               neml2_property_name,
               "' produced by this NEML2 block is required on the cohesive interface by a Kokkos "
               "[Physics/SolidMechanics/ShiftedCohesiveZone]. Set 'output_backend = kokkos' or set "
-              "'directional_correction = false' in the ShiftedCohesiveZone block.");
+              "'directional_correction = false' and 'stabilization = none' in the "
+              "ShiftedCohesiveZone block.");
 
         const bool interface_set = neml2_action->isParamSetByUser("interface");
         const auto & interfaces = neml2_action->getParam<std::vector<BoundaryName>>("interface");
@@ -379,9 +397,10 @@ ShiftedCohesiveZoneAction::act()
               "The material property '",
               neml2_property_name,
               "' produced by this NEML2 block is required on the cohesive interface by "
-              "[Physics/SolidMechanics/ShiftedCohesiveZone] with directional_correction = true. "
-              "This NEML2 block needs 'interface' set to the SCZM boundary (for example, "
-              "interface = ${boundary}) or set 'directional_correction = false' in the "
+              "[Physics/SolidMechanics/ShiftedCohesiveZone] with directional_correction = true or "
+              "stabilization = weighted_traction. This NEML2 block needs 'interface' set to the "
+              "SCZM boundary (for example, interface = ${boundary}) or set "
+              "'directional_correction = false' and 'stabilization = none' in the "
               "ShiftedCohesiveZone block.");
 
         if (!hasOverlap(_boundary, interfaces))
@@ -390,10 +409,11 @@ ShiftedCohesiveZoneAction::act()
               "The material property '",
               neml2_property_name,
               "' produced by this NEML2 block is required on the cohesive interface by "
-              "[Physics/SolidMechanics/ShiftedCohesiveZone] with directional_correction = true, "
-              "but its 'interface' setting does not overlap the SCZM boundary. This NEML2 block "
-              "needs 'interface' to include the SCZM boundary or set 'directional_correction = "
-              "false' in the ShiftedCohesiveZone block.");
+              "[Physics/SolidMechanics/ShiftedCohesiveZone] with directional_correction = true or "
+              "stabilization = weighted_traction, but its 'interface' setting does not overlap "
+              "the SCZM boundary. This NEML2 block needs 'interface' to include the SCZM boundary "
+              "or set 'directional_correction = false' and 'stabilization = none' in the "
+              "ShiftedCohesiveZone block.");
       }
     };
 
@@ -468,6 +488,7 @@ bool
 ShiftedCohesiveZoneAction::usesInterfaceManager() const
 {
   return isParamSetByUser("complete_interface_mesh") ||
+         isParamSetByUser("complete_interface_mesh_file") ||
          isParamSetByUser("complete_interface_meshes");
 }
 
@@ -488,7 +509,10 @@ ShiftedCohesiveZoneAction::addSBMDistanceUserObjects()
 {
   auto distance_params = _factory.getValidParams("BoundaryShortestDistanceToSurface");
   distance_params.set<std::vector<BoundaryName>>("boundary") = _boundary;
-  distance_params.set<int>("execution_order_group") = 0;
+  // Kokkos user objects run before host user objects within an execution order group, and a
+  // Kokkos user object can evaluate the shifted Kokkos materials (e.g. a NEML2 gatherer of the
+  // displacement jump), so the distance must come from an earlier group
+  distance_params.set<int>("execution_order_group") = _use_kokkos ? -2 : 0;
   distance_params.set<ExecFlagEnum>("execute_on") = EXEC_INITIAL;
 
   if (usesInterfaceManager())
@@ -497,6 +521,9 @@ ShiftedCohesiveZoneAction::addSBMDistanceUserObjects()
     if (isParamSetByUser("complete_interface_mesh"))
       manager_params.set<MeshGeneratorName>("complete_interface_mesh") =
           getParam<MeshGeneratorName>("complete_interface_mesh");
+    else if (isParamSetByUser("complete_interface_mesh_file"))
+      manager_params.set<FileName>("complete_interface_mesh_file") =
+          getParam<FileName>("complete_interface_mesh_file");
     else
     {
       // Per-grain list form: the manager stitches the shells itself. These are
@@ -507,6 +534,9 @@ ShiftedCohesiveZoneAction::addSBMDistanceUserObjects()
           getParam<std::vector<subdomain_id_type>>("interface_subdomain_ids");
     }
     manager_params.set<Real>("tolerance") = getParam<Real>("interface_matching_tolerance");
+    // The manager detects the interfaces that the distance user object reads in its own setup
+    manager_params.set<int>("execution_order_group") =
+        distance_params.get<int>("execution_order_group") - 1;
     _problem->addUserObject("SBMInterfaceManager", interfaceManagerName(), manager_params);
     distance_params.set<UserObjectName>("manager") = interfaceManagerName();
     if (isParamSetByUser("interface_subdomain_pairs"))
@@ -537,7 +567,10 @@ ShiftedCohesiveZoneAction::addSBMDistanceUserObjects()
 bool
 ShiftedCohesiveZoneAction::needsPK2ToPK1Conversion() const
 {
-  return getParam<bool>("directional_correction") && !getParam<bool>("no_shifted") &&
+  const bool needs_stress = (getParam<bool>("directional_correction") &&
+                             !getParam<bool>("no_shifted")) ||
+                            getParam<MooseEnum>("stabilization") == "weighted_traction";
+  return needs_stress &&
          getParam<MooseEnum>("tangent_definition") == "pk2_wrt_deformation_gradient";
 }
 
@@ -668,6 +701,12 @@ ShiftedCohesiveZoneAction::customizeCZMInterfaceKernelParameters(InputParameters
     params.set<bool>("no_shifted") = getParam<bool>("no_shifted");
   if (params.isParamValid("directional_correction"))
     params.set<bool>("directional_correction") = getParam<bool>("directional_correction");
+  if (params.have_parameter<MooseEnum>("stabilization"))
+    params.applySpecificParameters(parameters(),
+                                   {"stabilization",
+                                    "stabilization_beta",
+                                    "stabilization_normal_stiffness",
+                                    "stabilization_tangential_stiffness"});
   if (params.isParamValid("stress"))
     params.set<MaterialPropertyName>("stress") =
         _strain == Strain::Finite && !isParamSetByUser("stress")

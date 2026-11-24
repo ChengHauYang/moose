@@ -63,6 +63,16 @@ ifeq ($(PETSC_HAVE_KOKKOS),1)
       $(error For NVIDIA GPUs, use CUDA instead of HIP)
     endif
     HIP_ARCH := $(shell sed -n 's/\#define PETSC_HIP_ROCM_ARCH //p' $(PETSC_CONF))
+    # Newer PETSc no longer defines PETSC_HIP_ROCM_ARCH; take the architecture PETSc compiles its
+    # HIP code for. Without one, hipcc targets its default architecture (gfx906 in ROCm 6), whose
+    # kernels do not load on other GPUs (hipErrorInvalidKernelFile).
+    ifeq ($(HIP_ARCH),)
+      HIP_ARCH := $(shell sed -n 's/^HIPC_FLAGS =.*--offload-arch=\([^ ]*\).*/\1/p' \
+                    $(PETSC_DIR)/$(PETSC_ARCH)/lib/petsc/conf/petscvariables)
+    endif
+    ifeq ($(HIP_ARCH),)
+      $(error Could not determine the HIP GPU architecture from PETSc; set HIP_ARCH, e.g. gfx90a)
+    endif
   endif
   ifeq ($(PETSC_HAVE_SYCL),1)
     SYCL_ARCH := $(shell sed -n 's/\#define PETSC_SYCL_DEVICE //p' $(PETSC_CONF))
@@ -102,9 +112,12 @@ else ifneq ($(PETSC_HAVE_HIP),)
   KOKKOS_ARCH       := $(KOKKOS_HIP_ARCH_$(HIP_ARCH))
   KOKKOS_COMPILER   := HIPCC
   KOKKOS_CXX         = $(HIP_COMPILER)
-  KOKKOS_CXXFLAGS    = --offload-arch=$(HIP_ARCH) -x hip $(CXXFLAGS) $(libmesh_CXXFLAGS)
+  KOKKOS_CXXFLAGS    = --offload-arch=$(HIP_ARCH) -x hip $(CXXFLAGS) $(libmesh_CXXFLAGS) -I${MPICH_DIR}/include
   KOKKOS_CPPFLAGS    = $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) ${ADDITIONAL_KOKKOS_CPPFLAGS}
-  KOKKOS_LDFLAGS     = --offload-arch=$(HIP_ARCH)
+  KOKKOS_LDFLAGS     = --offload-arch=$(HIP_ARCH) -L${MPICH_DIR}/lib -lmpi ${CRAY_XPMEM_POST_LINK_OPTS} -lxpmem ${PE_MPICH_GTL_DIR_amd_gfx90a} ${PE_MPICH_GTL_LIBS_amd_gfx90a}
+  # hipcc (clang) lowers OpenMP pragmas to LLVM runtime calls (__kmpc_*), which the GNU libgomp
+  # linked through libMesh does not provide, so link the OpenMP runtime clang compiled against
+  KOKKOS_LDFLAGS    += $(filter -fopenmp%,$(KOKKOS_CXXFLAGS))
 else ifneq ($(PETSC_HAVE_SYCL),)
   KOKKOS_DEVICE     := SYCL
   KOKKOS_ARCH       := $(KOKKOS_SYCL_ARCH_$(SYCL_ARCH))

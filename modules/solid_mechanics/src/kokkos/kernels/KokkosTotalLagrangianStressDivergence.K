@@ -25,6 +25,10 @@ KokkosTotalLagrangianStressDivergence::validParams()
       "pk1_stress", "pk1_stress", "Name of the first Piola-Kirchhoff stress.");
   params.addParam<MaterialPropertyName>(
       "dpk1_d_grad_u", "dpk1_d_grad_u", "Name of the PK1 displacement-gradient derivative.");
+  params.addParam<bool>("large_kinematics",
+                        true,
+                        "Whether the stress material uses large kinematics. With small kinematics, "
+                        "the F-bar correction is the additive trace correction.");
   params.addParam<bool>(
       "stabilize_strain",
       false,
@@ -48,12 +52,14 @@ KokkosTotalLagrangianStressDivergence::KokkosTotalLagrangianStressDivergence(
   : KernelGrad(parameters),
     _component(getParam<unsigned int>("component")),
     _ndisp(coupledComponents("displacements")),
+    _large_kinematics(getParam<bool>("large_kinematics")),
     _pk1_stress(getKokkosMaterialProperty<Real, 2>("pk1_stress")),
     _dpk1_d_grad_u(getKokkosMaterialProperty<Real, 4>("dpk1_d_grad_u")),
     _displacement_var_ids(_ndisp),
     _stabilize_strain(getParam<bool>("stabilize_strain")),
     _stabilize_strain_device(_stabilize_strain),
-    _F_avg_invT(_stabilize_strain ? getKokkosMaterialProperty<Real, 2>("F_avg_invT")
+    _F_avg_invT(_stabilize_strain && _large_kinematics
+                    ? getKokkosMaterialProperty<Real, 2>("F_avg_invT")
                                   : Moose::Kokkos::MaterialProperty<Real, 2>()),
     _A(_stabilize_strain ? getKokkosMaterialProperty<Real, 2>("fbar_A")
                          : Moose::Kokkos::MaterialProperty<Real, 2>()),

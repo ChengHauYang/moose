@@ -66,10 +66,17 @@ of every subdomain. The Physics creates one
 !listing modules/shifted_boundary_method/test/tests/grain_boundary_case/grain_boundary_sczm_coarse_lambda1.i start=[Physics/SolidMechanics/ShiftedCohesiveZone] end=[Materials] include-end=false
 
 The mesh generator that supplies `complete_interface_mesh` must retain the mesh with
-`save_with_name`. Boundary names of the form `grainX_grainY` or `blockX_blockY` identify the two
-interface subdomains automatically. For other boundary names, set `interface_subdomain_pairs` with
-one pair per boundary in the same order. The pair selects an interface; its order does not control
-the final true-normal orientation.
+`save_with_name`. Alternatively, set `complete_interface_mesh_file` to read the same surface mesh
+directly from a file. Mesh generators do not run with a pre-split mesh (`--use-split`), so the
+file form is the one to use for large distributed runs:
+
+!listing modules/shifted_boundary_method/test/tests/grain_boundary_case/grain_boundary_sczm_mesh_file.i start=[Physics/SolidMechanics/ShiftedCohesiveZone] end=[Materials] include-end=false
+
+Boundary names of the form `grainX_grainY` or `blockX_blockY` (in any letter case, so including
+the `BlockX_BlockY` names [BreakMeshByBlockGenerator](BreakMeshByBlockGenerator.md) gives unnamed
+subdomains) identify the two interface subdomains automatically. For other boundary names, set
+`interface_subdomain_pairs` with one pair per boundary in the same order. The pair selects an
+interface; its order does not control the final true-normal orientation.
 
 Shifted integration is enabled by default and is the intended mode for SBM simulations. The
 `no_shifted = true` option is retained primarily for verification and comparison: it disables the

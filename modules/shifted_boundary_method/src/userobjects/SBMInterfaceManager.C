@@ -26,6 +26,10 @@ SBMInterfaceManager::validParams()
       "complete_boundary_mesh",
       "complete_interface_mesh",
       "The saved mesh containing the complete boundary of each interface subdomain.");
+  params.renameParam("complete_boundary_mesh_file",
+                     "complete_interface_mesh_file",
+                     "A file holding the complete boundary of each interface subdomain, read "
+                     "directly instead of a saved mesh, e.g. with a pre-split mesh.");
   params.addRangeCheckedParam<unsigned int>(
       "leaf_max_size", 10, "leaf_max_size > 0", "Maximum number of points in a k-d tree leaf.");
   params.addRangeCheckedParam<Real>(

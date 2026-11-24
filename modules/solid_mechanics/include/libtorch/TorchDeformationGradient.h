@@ -12,6 +12,8 @@
 
 #include "TorchPreKernel.h"
 
+class MooseVariableScalar;
+
 /**
  * Computes the full deformation gradient from displacement gradients for use as a NEML2 input.
  *
@@ -56,6 +58,11 @@ protected:
   /// If true, apply the F-bar (total-mode) volumetric locking correction to the deformation
   /// gradient sent to NEML2. Off by default; preserves the original behavior.
   const bool _stabilize_strain;
+
+  /// Macro gradient scalar variable added after the F-bar correction, if any
+  const MooseVariableScalar * const _macro_gradient;
+  /// Tensor indices of the macro gradient components
+  const std::vector<std::pair<unsigned int, unsigned int>> _macro_gradient_indices;
 };
 
 #endif // NEML2_ENABLED

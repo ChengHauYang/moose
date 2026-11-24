@@ -10,6 +10,7 @@
 #pragma once
 
 #include "KokkosShiftedInterfaceKernel.h"
+#include "SCZMWeightedTractionStabilization.h"
 
 /**
  * Kokkos shifted cohesive-zone interface kernel for total-Lagrangian finite-strain displacements.
@@ -75,9 +76,27 @@ public:
                                      const Moose::Kokkos::Real3 & avg_grad_phi) const;
 
 protected:
+  /// Jacobian of this component's residual with respect to displacement component component_j
+  KOKKOS_FUNCTION Real computeJacobianComponent(Moose::DGJacobianType type,
+                                                unsigned int i,
+                                                unsigned int j,
+                                                unsigned int component_j,
+                                                unsigned int qp,
+                                                unsigned int neighbor_qp,
+                                                AssemblyDatum & elem_datum,
+                                                AssemblyDatum & neighbor_datum,
+                                                const Moose::Kokkos::Real3 & avg_grad_phi) const;
+
+  /**
+   * Derivatives of the residual through the cohesive traction component traction_component with
+   * respect to displacement component component_j, through the displacement jump and through the
+   * deformation gradient, including test function, sign, and area correction.
+   */
+  ///@{
   KOKKOS_FUNCTION Real computeDResidualDDisplacement(Moose::DGJacobianType type,
                                                      unsigned int i,
                                                      unsigned int j,
+                                                     unsigned int traction_component,
                                                      unsigned int component_j,
                                                      unsigned int qp,
                                                      unsigned int neighbor_qp,
@@ -87,11 +106,13 @@ protected:
   KOKKOS_FUNCTION Real computeDResidualDDeformationGradient(Moose::DGJacobianType type,
                                                             unsigned int i,
                                                             unsigned int j,
+                                                            unsigned int traction_component,
                                                             unsigned int component_j,
                                                             unsigned int qp,
                                                             unsigned int neighbor_qp,
                                                             AssemblyDatum & elem_datum,
                                                             AssemblyDatum & neighbor_datum) const;
+  ///@}
 
   KOKKOS_FUNCTION Real
   computeDirectionalCorrectionJacobian(Moose::DGJacobianType type,
@@ -105,19 +126,51 @@ protected:
                                        const Moose::Kokkos::Real3 & avg_grad_phi) const;
 
   /**
-   * Contribution of the F-bar deformation gradient B to the row-side directional correction
-   * derivative n_t . dP / du_j, where P = P(U, B) and B = (det(M) / det(U))^(1/3) U. This adds the
+   * Derivative of P.row(stress_row) . direction on the trial side with respect to the trial
+   * function of displacement component component_j, including the F-bar terms with
+   * volumetric_locking_correction.
+   */
+  KOKKOS_FUNCTION Real stressDerivative(bool on_element,
+                                        unsigned int stress_row,
+                                        unsigned int component_j,
+                                        unsigned int side_qp,
+                                        AssemblyDatum & side_datum,
+                                        const Moose::Kokkos::Real3 & direction,
+                                        const Moose::Kokkos::Real3 & grad_phi,
+                                        const Moose::Kokkos::Real3 & avg_grad_phi) const;
+
+  /**
+   * Contribution of the F-bar deformation gradient B to the trial-side derivative
+   * n_t . dP / du_j, where P = P(U, B) and B = (det(M) / det(U))^(1/3) U. This adds the
    * local terms gamma C_B - gamma / 3 Q (x) U^{-T} and the element-volume term
    * gamma / 3 Q (x) M^{-T} contracted with the volume-averaged trial gradient avg_grad_phi.
    */
   KOKKOS_FUNCTION Real
   computeFbarDirectionalCorrection(bool on_element,
+                                   unsigned int stress_row,
                                    unsigned int component_j,
                                    unsigned int row_qp,
                                    AssemblyDatum & row_datum,
                                    const Moose::Kokkos::Real3 & normal_tangent,
                                    const Moose::Kokkos::Real3 & grad_phi,
                                    const Moose::Kokkos::Real3 & avg_grad_phi) const;
+
+  /// The normal of the stabilization: the true normal when shifted, else the surrogate normal
+  KOKKOS_FUNCTION Moose::Kokkos::Real3 stabilizationNormal(AssemblyDatum & datum,
+                                                           unsigned int qp) const
+  {
+    return _shifted ? trueNormal(datum, qp) : datum.normals(qp);
+  }
+
+  /// Entry (a, b) of the weighted traction stabilization weight S = beta (K + beta I)^{-1}
+  KOKKOS_FUNCTION Real stabilizationWeight(const Moose::Kokkos::Real3 & normal,
+                                           unsigned int a,
+                                           unsigned int b) const
+  {
+    return (a == b ? _stabilization_weights.tangential : 0.0) +
+           (_stabilization_weights.normal - _stabilization_weights.tangential) * normal(a) *
+               normal(b);
+  }
 
   KOKKOS_FUNCTION Moose::Kokkos::Real3 normalTangent(AssemblyDatum & datum, unsigned int qp) const
   {
@@ -131,6 +184,8 @@ protected:
   const bool _shifted;
   const bool _directional_correction;
   const bool _volumetric_locking_correction;
+  /// Weights of the weighted traction stabilization; disabled by default
+  const SCZMWeightedTractionStabilization::Weights _stabilization_weights;
   Moose::Kokkos::Array<unsigned int> _disp_vars;
   const Moose::Kokkos::MaterialProperty<Real, 1> _traction_global;
   const Moose::Kokkos::MaterialProperty<Real, 2> _dtraction_djump_global;
@@ -165,13 +220,33 @@ KokkosSCZMInterfaceKernelTotalLagrangian::computeQpResidual(const Moose::DGResid
                                            : _test_neighbor(neighbor_datum, i, neighbor_qp);
   const auto sign = type == Moose::Element ? -1.0 : 1.0;
 
-  if (!_shifted)
+  if (!_shifted && !_stabilization_weights.enabled)
     return sign * test * _traction_global(elem_datum, qp)(_component);
 
-  const auto residual =
-      sign * test * areaCorrection(elem_datum, qp) * _traction_global(elem_datum, qp)(_component);
+  const auto traction = _traction_global(elem_datum, qp);
+  Real interface_traction = traction(_component);
+  if (_stabilization_weights.enabled)
+  {
+    // S t_c + (I - S) (P + P_neighbor) N / 2, see the host stabilizedTraction
+    const auto normal = stabilizationNormal(elem_datum, qp);
+    const auto stress = _stress(elem_datum, qp);
+    const auto stress_neighbor = _stress_neighbor(neighbor_datum, neighbor_qp);
+    interface_traction = 0.0;
+    for (unsigned int b = 0; b < _ndisp; ++b)
+    {
+      Real average_traction = 0.0;
+      for (unsigned int J = 0; J < _ndisp; ++J)
+        average_traction += 0.5 * (stress(b, J) + stress_neighbor(b, J)) * normal(J);
+      const Real weight = stabilizationWeight(normal, _component, b);
+      interface_traction +=
+          weight * traction(b) + ((b == _component ? 1.0 : 0.0) - weight) * average_traction;
+    }
+  }
 
-  if (!_directional_correction)
+  const auto residual =
+      sign * test * (_shifted ? areaCorrection(elem_datum, qp) : 1.0) * interface_traction;
+
+  if (!_shifted || !_directional_correction)
     return residual;
 
   const auto normal_tangent = normalTangent(elem_datum, qp);
@@ -195,23 +270,15 @@ KokkosSCZMInterfaceKernelTotalLagrangian::computeQpJacobian(const Moose::DGJacob
                                                             AssemblyDatum & elem_datum,
                                                             AssemblyDatum & neighbor_datum) const
 {
-  auto jacobian = computeDResidualDDisplacement(
-                      type, i, j, _component, qp, neighbor_qp, elem_datum, neighbor_datum) +
-                  computeDResidualDDeformationGradient(
-                      type, i, j, _component, qp, neighbor_qp, elem_datum, neighbor_datum);
-
-  if (_shifted && _directional_correction)
-    jacobian += computeDirectionalCorrectionJacobian(type,
-                                                     i,
-                                                     j,
-                                                     _component,
-                                                     qp,
-                                                     neighbor_qp,
-                                                     elem_datum,
-                                                     neighbor_datum,
-                                                     Moose::Kokkos::Real3(0));
-
-  return jacobian;
+  return computeJacobianComponent(type,
+                                  i,
+                                  j,
+                                  _component,
+                                  qp,
+                                  neighbor_qp,
+                                  elem_datum,
+                                  neighbor_datum,
+                                  Moose::Kokkos::Real3(0));
 }
 
 template <typename Derived>
@@ -221,8 +288,11 @@ KokkosSCZMInterfaceKernelTotalLagrangian::prepareJacobianColumn(
     const unsigned int j,
     AssemblyDatum & volume_column_datum) const
 {
-  if (!_shifted || !_directional_correction || !_volumetric_locking_correction ||
-      type == Moose::ElementNeighbor || type == Moose::NeighborElement)
+  // The directional correction differentiates only the same-side stress, while the stabilization
+  // also differentiates the counterpart stress in the cross blocks
+  const bool cross_block = type == Moose::ElementNeighbor || type == Moose::NeighborElement;
+  if (!_volumetric_locking_correction ||
+      !(_stabilization_weights.enabled || (_shifted && _directional_correction && !cross_block)))
     return Moose::Kokkos::Real3(0);
 
   bool is_displacement = false;
@@ -237,7 +307,7 @@ KokkosSCZMInterfaceKernelTotalLagrangian::prepareJacobianColumn(
   {
     const Real weight = volume_column_datum.JxW(volume_qp);
     volume += weight;
-    avg_grad_phi += weight * (type == Moose::NeighborNeighbor
+    avg_grad_phi += weight * (type == Moose::ElementNeighbor || type == Moose::NeighborNeighbor
                                   ? _grad_phi_neighbor(volume_column_datum, j, volume_qp)
                                   : _grad_phi(volume_column_datum, j, volume_qp));
   }
@@ -260,16 +330,8 @@ KokkosSCZMInterfaceKernelTotalLagrangian::computeQpJacobianWithColumn(
     AssemblyDatum & neighbor_datum,
     const Moose::Kokkos::Real3 & avg_grad_phi) const
 {
-  auto jacobian = computeDResidualDDisplacement(
-                      type, i, j, _component, qp, neighbor_qp, elem_datum, neighbor_datum) +
-                  computeDResidualDDeformationGradient(
-                      type, i, j, _component, qp, neighbor_qp, elem_datum, neighbor_datum);
-
-  if (_shifted && _directional_correction)
-    jacobian += computeDirectionalCorrectionJacobian(
-        type, i, j, _component, qp, neighbor_qp, elem_datum, neighbor_datum, avg_grad_phi);
-
-  return jacobian;
+  return computeJacobianComponent(
+      type, i, j, _component, qp, neighbor_qp, elem_datum, neighbor_datum, avg_grad_phi);
 }
 
 template <typename Derived>
@@ -286,25 +348,15 @@ KokkosSCZMInterfaceKernelTotalLagrangian::computeQpOffDiagJacobian(
 {
   for (unsigned int component_j = 0; component_j < _ndisp; ++component_j)
     if (_disp_vars[component_j] == jvar)
-    {
-      auto jacobian = computeDResidualDDisplacement(
-                          type, i, j, component_j, qp, neighbor_qp, elem_datum, neighbor_datum) +
-                      computeDResidualDDeformationGradient(
-                          type, i, j, component_j, qp, neighbor_qp, elem_datum, neighbor_datum);
-
-      if (_shifted && _directional_correction)
-        jacobian += computeDirectionalCorrectionJacobian(type,
-                                                         i,
-                                                         j,
-                                                         component_j,
-                                                         qp,
-                                                         neighbor_qp,
-                                                         elem_datum,
-                                                         neighbor_datum,
-                                                         Moose::Kokkos::Real3(0));
-
-      return jacobian;
-    }
+      return computeJacobianComponent(type,
+                                      i,
+                                      j,
+                                      component_j,
+                                      qp,
+                                      neighbor_qp,
+                                      elem_datum,
+                                      neighbor_datum,
+                                      Moose::Kokkos::Real3(0));
 
   return 0;
 }
@@ -324,24 +376,14 @@ KokkosSCZMInterfaceKernelTotalLagrangian::computeQpOffDiagJacobianWithColumn(
 {
   for (unsigned int component_j = 0; component_j < _ndisp; ++component_j)
     if (_disp_vars[component_j] == jvar)
-    {
-      auto jacobian = computeDResidualDDisplacement(
-                          type, i, j, component_j, qp, neighbor_qp, elem_datum, neighbor_datum) +
-                      computeDResidualDDeformationGradient(
-                          type, i, j, component_j, qp, neighbor_qp, elem_datum, neighbor_datum);
-
-      if (_shifted && _directional_correction)
-        jacobian += computeDirectionalCorrectionJacobian(
-            type, i, j, component_j, qp, neighbor_qp, elem_datum, neighbor_datum, avg_grad_phi);
-
-      return jacobian;
-    }
+      return computeJacobianComponent(
+          type, i, j, component_j, qp, neighbor_qp, elem_datum, neighbor_datum, avg_grad_phi);
 
   return 0;
 }
 
 KOKKOS_FUNCTION inline Real
-KokkosSCZMInterfaceKernelTotalLagrangian::computeDResidualDDisplacement(
+KokkosSCZMInterfaceKernelTotalLagrangian::computeJacobianComponent(
     const Moose::DGJacobianType type,
     const unsigned int i,
     const unsigned int j,
@@ -349,9 +391,73 @@ KokkosSCZMInterfaceKernelTotalLagrangian::computeDResidualDDisplacement(
     const unsigned int qp,
     const unsigned int neighbor_qp,
     AssemblyDatum & elem_datum,
+    AssemblyDatum & neighbor_datum,
+    const Moose::Kokkos::Real3 & avg_grad_phi) const
+{
+  Real jacobian = 0.0;
+
+  if (_stabilization_weights.enabled)
+  {
+    // d/du of S t_c + (I - S) (P + P_neighbor) N / 2. Each side's PK1 stress depends only on that
+    // side's displacements, so the trial side selects the stress, tangent, and trial gradient.
+    const auto normal = stabilizationNormal(elem_datum, qp);
+    const bool trial_on_element = type == Moose::ElementElement || type == Moose::NeighborElement;
+    const auto grad_phi = trial_on_element ? _grad_phi(elem_datum, j, qp)
+                                           : _grad_phi_neighbor(neighbor_datum, j, neighbor_qp);
+    const Real signed_test = (type == Moose::ElementElement || type == Moose::ElementNeighbor)
+                                 ? -_test(elem_datum, i, qp)
+                                 : _test_neighbor(neighbor_datum, i, neighbor_qp);
+
+    Real average_traction_derivative = 0.0;
+    for (unsigned int b = 0; b < _ndisp; ++b)
+    {
+      const Real weight = stabilizationWeight(normal, _component, b);
+      jacobian +=
+          weight *
+          (computeDResidualDDisplacement(
+               type, i, j, b, component_j, qp, neighbor_qp, elem_datum, neighbor_datum) +
+           computeDResidualDDeformationGradient(
+               type, i, j, b, component_j, qp, neighbor_qp, elem_datum, neighbor_datum));
+      average_traction_derivative +=
+          ((b == _component ? 1.0 : 0.0) - weight) *
+          stressDerivative(trial_on_element,
+                           b,
+                           component_j,
+                           trial_on_element ? qp : neighbor_qp,
+                           trial_on_element ? elem_datum : neighbor_datum,
+                           normal,
+                           grad_phi,
+                           avg_grad_phi);
+    }
+    jacobian += 0.5 * (_shifted ? areaCorrection(elem_datum, qp) : 1.0) * signed_test *
+                average_traction_derivative;
+  }
+  else
+    jacobian = computeDResidualDDisplacement(
+                   type, i, j, _component, component_j, qp, neighbor_qp, elem_datum, neighbor_datum) +
+               computeDResidualDDeformationGradient(
+                   type, i, j, _component, component_j, qp, neighbor_qp, elem_datum, neighbor_datum);
+
+  if (_shifted && _directional_correction)
+    jacobian += computeDirectionalCorrectionJacobian(
+        type, i, j, component_j, qp, neighbor_qp, elem_datum, neighbor_datum, avg_grad_phi);
+
+  return jacobian;
+}
+
+KOKKOS_FUNCTION inline Real
+KokkosSCZMInterfaceKernelTotalLagrangian::computeDResidualDDisplacement(
+    const Moose::DGJacobianType type,
+    const unsigned int i,
+    const unsigned int j,
+    const unsigned int traction_component,
+    const unsigned int component_j,
+    const unsigned int qp,
+    const unsigned int neighbor_qp,
+    AssemblyDatum & elem_datum,
     AssemblyDatum & neighbor_datum) const
 {
-  const auto tangent = _dtraction_djump_global(elem_datum, qp)(_component, component_j);
+  const auto tangent = _dtraction_djump_global(elem_datum, qp)(traction_component, component_j);
 
   if (!_shifted)
   {
@@ -402,6 +508,7 @@ KokkosSCZMInterfaceKernelTotalLagrangian::computeDResidualDDeformationGradient(
     const Moose::DGJacobianType type,
     const unsigned int i,
     const unsigned int j,
+    const unsigned int traction_component,
     const unsigned int component_j,
     const unsigned int qp,
     const unsigned int neighbor_qp,
@@ -416,7 +523,7 @@ KokkosSCZMInterfaceKernelTotalLagrangian::computeDResidualDDeformationGradient(
   Real derivative = 0.0;
   const auto dPK1_dF = _dPK1traction_dF(elem_datum, qp);
   for (unsigned int k = 0; k < _ndisp; ++k)
-    derivative += dPK1_dF(_component, component_j, k) * 0.5 * grad_phi(k);
+    derivative += dPK1_dF(traction_component, component_j, k) * 0.5 * grad_phi(k);
 
   if (_shifted)
     derivative *= areaCorrection(elem_datum, qp);
@@ -443,49 +550,61 @@ KokkosSCZMInterfaceKernelTotalLagrangian::computeDirectionalCorrectionJacobian(
     return 0.0;
 
   const auto normal_tangent = normalTangent(elem_datum, qp);
+  const bool on_element = type == Moose::ElementElement;
+  const Real test =
+      on_element ? _test(elem_datum, i, qp) : _test_neighbor(neighbor_datum, i, neighbor_qp);
+  const auto grad_phi =
+      on_element ? _grad_phi(elem_datum, j, qp) : _grad_phi_neighbor(neighbor_datum, j, neighbor_qp);
 
-  Real test;
-  Moose::Kokkos::Real3 grad_phi;
-  Real part = 0.0;
-  if (type == Moose::ElementElement)
-  {
-    test = _test(elem_datum, i, qp);
-    grad_phi = _grad_phi(elem_datum, j, qp);
-    const auto tangent = _tangent(elem_datum, qp);
-    for (unsigned int jj = 0; jj < _ndisp; ++jj)
-      for (unsigned int ll = 0; ll < _ndisp; ++ll)
-        part += normal_tangent(jj) * tangent(_component, jj, component_j, ll) * grad_phi(ll);
-  }
-  else
-  {
-    test = _test_neighbor(neighbor_datum, i, neighbor_qp);
-    grad_phi = _grad_phi_neighbor(neighbor_datum, j, neighbor_qp);
-    const auto tangent = _tangent_neighbor(neighbor_datum, neighbor_qp);
-    for (unsigned int jj = 0; jj < _ndisp; ++jj)
-      for (unsigned int ll = 0; ll < _ndisp; ++ll)
-        part += normal_tangent(jj) * tangent(_component, jj, component_j, ll) * grad_phi(ll);
-  }
+  const Real correction_jacobian = stressDerivative(on_element,
+                                                    _component,
+                                                    component_j,
+                                                    on_element ? qp : neighbor_qp,
+                                                    on_element ? elem_datum : neighbor_datum,
+                                                    normal_tangent,
+                                                    grad_phi,
+                                                    avg_grad_phi) *
+                                   test;
+
+  return on_element ? -correction_jacobian : correction_jacobian;
+}
+
+KOKKOS_FUNCTION inline Real
+KokkosSCZMInterfaceKernelTotalLagrangian::stressDerivative(
+    const bool on_element,
+    const unsigned int stress_row,
+    const unsigned int component_j,
+    const unsigned int side_qp,
+    AssemblyDatum & side_datum,
+    const Moose::Kokkos::Real3 & direction,
+    const Moose::Kokkos::Real3 & grad_phi,
+    const Moose::Kokkos::Real3 & avg_grad_phi) const
+{
+  const auto tangent =
+      on_element ? _tangent(side_datum, side_qp) : _tangent_neighbor(side_datum, side_qp);
+
+  Real derivative = 0.0;
+  for (unsigned int jj = 0; jj < _ndisp; ++jj)
+    for (unsigned int ll = 0; ll < _ndisp; ++ll)
+      derivative += direction(jj) * tangent(stress_row, jj, component_j, ll) * grad_phi(ll);
 
   if (_volumetric_locking_correction)
-  {
-    const bool on_element = type == Moose::ElementElement;
-    part += computeFbarDirectionalCorrection(on_element,
-                                             component_j,
-                                             on_element ? qp : neighbor_qp,
-                                             on_element ? elem_datum : neighbor_datum,
-                                             normal_tangent,
-                                             grad_phi,
-                                             avg_grad_phi);
-  }
+    derivative += computeFbarDirectionalCorrection(on_element,
+                                                   stress_row,
+                                                   component_j,
+                                                   side_qp,
+                                                   side_datum,
+                                                   direction,
+                                                   grad_phi,
+                                                   avg_grad_phi);
 
-  const Real correction_jacobian = part * test;
-
-  return type == Moose::ElementElement ? -correction_jacobian : correction_jacobian;
+  return derivative;
 }
 
 KOKKOS_FUNCTION inline Real
 KokkosSCZMInterfaceKernelTotalLagrangian::computeFbarDirectionalCorrection(
     const bool on_element,
+    const unsigned int stress_row,
     const unsigned int component_j,
     const unsigned int row_qp,
     AssemblyDatum & row_datum,
@@ -531,9 +650,9 @@ KokkosSCZMInterfaceKernelTotalLagrangian::computeFbarDirectionalCorrection(
     Real stabilized_tangent_dU = 0.0;
     for (unsigned int L = 0; L < 3; ++L)
     {
-      stabilized_tangent_dU += stabilized_tangent(_component, J, component_j, L) * grad_phi(L);
+      stabilized_tangent_dU += stabilized_tangent(stress_row, J, component_j, L) * grad_phi(L);
       for (unsigned int k = 0; k < 3; ++k)
-        Q += stabilized_tangent(_component, J, k, L) * U(k, L);
+        Q += stabilized_tangent(stress_row, J, k, L) * U(k, L);
     }
     correction += normal_tangent(J) *
                   (gamma * stabilized_tangent_dU + gamma / 3.0 * Q * (M_invT_dM - U_invT_dU));

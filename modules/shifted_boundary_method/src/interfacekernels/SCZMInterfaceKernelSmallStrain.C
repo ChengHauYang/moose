@@ -145,16 +145,21 @@ template <bool is_ad>
 GenericReal<is_ad>
 SCZMInterfaceKernelSmallStrainTempl<is_ad>::computeQpResidual(Moose::DGResidualType type)
 {
-  if (!this->_shifted)
+  if (!this->_shifted && !this->_stabilization)
     return SCZMInterfaceKernelBaseTempl<is_ad>::computeQpResidual(type);
 
-  const RealVectorValue true_normal(this->trueNormal());
+  const RealVectorValue true_normal(this->stabilizationNormal());
   const Real true_normal_dot_surrogate_normal = true_normal * this->_normals[this->_qp];
 
-  auto residual = SCZMInterfaceKernelBaseTempl<is_ad>::computeQpResidual(type);
-  residual *= true_normal_dot_surrogate_normal;
+  auto residual =
+      this->_stabilization
+          ? this->stabilizedTraction(true_normal, _stress[this->_qp], _stress_neighbor[this->_qp])
+          : this->_traction_global[this->_qp](this->_component);
+  residual *= true_normal_dot_surrogate_normal * (type == Moose::Element
+                                                      ? -this->_test[this->_i][this->_qp]
+                                                      : this->_test_neighbor[this->_i][this->_qp]);
 
-  if (_directional_correction)
+  if (this->_shifted && _directional_correction)
   {
     const auto stress = _stress[this->_qp].row(this->_component);
     const auto stress_neighbor = _stress_neighbor[this->_qp].row(this->_component);
@@ -182,7 +187,9 @@ SCZMInterfaceKernelSmallStrainTempl<is_ad>::computeQpResidual(Moose::DGResidualT
 template <>
 Real
 SCZMInterfaceKernelSmallStrainTempl<true>::computeDResidualDDisplacement(
-    unsigned int /*component_j*/, Moose::DGJacobianType /*type*/) const
+    unsigned int /*traction_component*/,
+    unsigned int /*component_j*/,
+    Moose::DGJacobianType /*type*/) const
 {
   return 0;
 }
@@ -190,9 +197,9 @@ SCZMInterfaceKernelSmallStrainTempl<true>::computeDResidualDDisplacement(
 template <>
 Real
 SCZMInterfaceKernelSmallStrainTempl<false>::computeDResidualDDisplacement(
-    unsigned int component_j, Moose::DGJacobianType type) const
+    unsigned int traction_component, unsigned int component_j, Moose::DGJacobianType type) const
 {
-  const auto jacsd = (*_dtraction_djump_global)[this->_qp](this->_component, component_j);
+  const auto jacsd = (*_dtraction_djump_global)[this->_qp](traction_component, component_j);
   Real jac = jacsd;
 
   if (!_shifted)
@@ -247,31 +254,21 @@ SCZMInterfaceKernelSmallStrainTempl<false>::computeDResidualDDisplacement(
 
 template <>
 Real
-SCZMInterfaceKernelSmallStrainTempl<false>::calculateDirectionalCorrectionJacobian(
-    unsigned int ivar, unsigned int jvar, Moose::DGJacobianType type) const
+SCZMInterfaceKernelSmallStrainTempl<false>::stressDerivative(const unsigned int ivar,
+                                                             const unsigned int jvar,
+                                                             const RealVectorValue & direction,
+                                                             const bool trial_on_element) const
 {
-  const auto true_normal =
-      _shifted ? RealVectorValue(trueNormal()) : RealVectorValue(_normals[_qp]);
-
-  const bool trial_on_element = type == Moose::ElementElement || type == Moose::NeighborElement;
   const auto grad_phi = trial_on_element ? _grad_phi[_j][_qp] : _grad_phi_neighbor[_j][_qp];
+  const auto & r4t = trial_on_element ? (*_Jacobian_mult)[_qp] : (*_Jacobian_mult_neighbor)[_qp];
 
-  const auto nt_tangent = _normals[_qp] - (true_normal * _normals[_qp]) * true_normal;
+  const Real origin_part =
+      ElasticityTensorTools::elasticJacobian(
+      r4t, ivar, jvar, direction /*transpose later (w^T n^T)*/, grad_phi /*B*/);
 
-  const auto test = (type == Moose::ElementElement || type == Moose::ElementNeighbor)
-                        ? _test[_i][_qp]
-                        : _test_neighbor[_i][_qp];
-
-  const auto & r4t = (type == Moose::ElementElement || type == Moose::ElementNeighbor)
-                         ? (*_Jacobian_mult)[_qp]
-                         : (*_Jacobian_mult_neighbor)[_qp];
-
-  const Real origin_part = ElasticityTensorTools::elasticJacobian(
-      r4t, ivar, jvar, nt_tangent * test /*transpose later (w^T n^T)*/, grad_phi /*B*/);
-
-  const Real n0 = nt_tangent(0);
-  const Real n1 = nt_tangent(1);
-  const Real n2 = nt_tangent(2);
+  const Real n0 = direction(0);
+  const Real n1 = direction(1);
+  const Real n2 = direction(2);
 
   const Real gp0 = grad_phi(0);
   const Real gp1 = grad_phi(1);
@@ -281,14 +278,13 @@ SCZMInterfaceKernelSmallStrainTempl<false>::calculateDirectionalCorrectionJacobi
   const auto k = jvar;
 
   const Real symmetric_part =
-      ((r4t(i, 0, 0, k) * gp0 + r4t(i, 0, 1, k) * gp1 + r4t(i, 0, 2, k) * gp2) * n0 +
-       (r4t(i, 1, 0, k) * gp0 + r4t(i, 1, 1, k) * gp1 + r4t(i, 1, 2, k) * gp2) * n1 +
-       (r4t(i, 2, 0, k) * gp0 + r4t(i, 2, 1, k) * gp1 + r4t(i, 2, 2, k) * gp2) * n2) *
-      test;
+      (r4t(i, 0, 0, k) * gp0 + r4t(i, 0, 1, k) * gp1 + r4t(i, 0, 2, k) * gp2) * n0 +
+      (r4t(i, 1, 0, k) * gp0 + r4t(i, 1, 1, k) * gp1 + r4t(i, 1, 2, k) * gp2) * n1 +
+      (r4t(i, 2, 0, k) * gp0 + r4t(i, 2, 1, k) * gp1 + r4t(i, 2, 2, k) * gp2) * n2;
 
   // dP/dF acts on the full displacement gradient. A strain-based tangent instead acts on the
   // symmetric gradient, which contributes the transposed contraction as well.
-  Real jacobian = _tangent_is_dpk1_df ? origin_part : (origin_part + symmetric_part) * 0.5;
+  Real derivative = _tangent_is_dpk1_df ? origin_part : (origin_part + symmetric_part) * 0.5;
 
   if (_volumetric_locking_correction)
   {
@@ -311,9 +307,74 @@ SCZMInterfaceKernelSmallStrainTempl<false>::calculateDirectionalCorrectionJacobi
     const Real volumetric_increment = (avg_grad_op.trace() - grad_op.trace()) / 3.0;
 
     for (const auto m : make_range(3))
-      jacobian += (r4t(i, 0, m, m) * n0 + r4t(i, 1, m, m) * n1 + r4t(i, 2, m, m) * n2) * test *
-                  volumetric_increment;
+      derivative +=
+          (r4t(i, 0, m, m) * n0 + r4t(i, 1, m, m) * n1 + r4t(i, 2, m, m) * n2) * volumetric_increment;
   }
+
+  return derivative;
+}
+
+template <>
+Real
+SCZMInterfaceKernelSmallStrainTempl<false>::calculateDirectionalCorrectionJacobian(
+    unsigned int ivar, unsigned int jvar, Moose::DGJacobianType type) const
+{
+  const auto true_normal =
+      _shifted ? RealVectorValue(trueNormal()) : RealVectorValue(_normals[_qp]);
+  const auto nt_tangent = _normals[_qp] - (true_normal * _normals[_qp]) * true_normal;
+
+  const auto test = (type == Moose::ElementElement || type == Moose::ElementNeighbor)
+                        ? _test[_i][_qp]
+                        : _test_neighbor[_i][_qp];
+
+  // Only the same-side blocks call this, so the row side is also the trial side.
+  const bool trial_on_element = type == Moose::ElementElement || type == Moose::NeighborElement;
+  return test * stressDerivative(ivar, jvar, nt_tangent, trial_on_element);
+}
+
+template <>
+Real
+SCZMInterfaceKernelSmallStrainTempl<false>::computeJacobianComponent(
+    const unsigned int component_j, const Moose::DGJacobianType type) const
+{
+  Real jacobian = 0;
+
+  if (_stabilization)
+  {
+    // d/du of S t_c + (I - S) (stress + stress_neighbor) N / 2. Each side's stress depends only on
+    // that side's displacements, so the trial side selects the stress, tangent, and trial gradient.
+    const auto normal = stabilizationNormal();
+    const bool trial_on_element = type == Moose::ElementElement || type == Moose::NeighborElement;
+    const Real signed_test = (type == Moose::ElementElement || type == Moose::ElementNeighbor)
+                                 ? -_test[_i][_qp]
+                                 : _test_neighbor[_i][_qp];
+
+    Real average_traction_derivative = 0;
+    for (const auto b : make_range(_ndisp))
+    {
+      const Real weight = stabilizationWeight(normal, _component, b);
+      jacobian += weight * computeDResidualDDisplacement(b, component_j, type);
+      average_traction_derivative += ((b == _component ? 1.0 : 0.0) - weight) *
+                                     stressDerivative(b, component_j, normal, trial_on_element);
+    }
+    jacobian += 0.5 * (normal * _normals[_qp]) * signed_test * average_traction_derivative;
+  }
+  else
+    jacobian = computeDResidualDDisplacement(_component, component_j, type);
+
+  if (_shifted && _directional_correction)
+    switch (type)
+    {
+      case Moose::ElementElement:
+        jacobian -= calculateDirectionalCorrectionJacobian(_component, component_j, type);
+        break;
+      case Moose::NeighborNeighbor:
+        jacobian += calculateDirectionalCorrectionJacobian(_component, component_j, type);
+        break;
+      case Moose::ElementNeighbor:
+      case Moose::NeighborElement:
+        break;
+    }
 
   return jacobian;
 }
@@ -329,23 +390,7 @@ template <>
 Real
 SCZMInterfaceKernelSmallStrainTempl<false>::computeQpJacobian(Moose::DGJacobianType type)
 {
-  Real jacobian = computeDResidualDDisplacement(this->_component, type);
-
-  if (_shifted && _directional_correction)
-    switch (type)
-    {
-      case Moose::ElementElement:
-        jacobian -= calculateDirectionalCorrectionJacobian(_component, _component, type);
-        break;
-      case Moose::NeighborNeighbor:
-        jacobian += calculateDirectionalCorrectionJacobian(_component, _component, type);
-        break;
-      case Moose::ElementNeighbor:
-      case Moose::NeighborElement:
-        break;
-    }
-
-  return jacobian;
+  return computeJacobianComponent(_component, type);
 }
 
 template <>
@@ -364,34 +409,35 @@ SCZMInterfaceKernelSmallStrainTempl<false>::computeQpOffDiagJacobian(Moose::DGJa
   if (this->getJvarMap()[jvar] < 0)
     return 0;
 
-  Real jacobian = 0;
   for (const auto coupled_component : make_range(this->_ndisp))
     if (jvar == _disp_var[coupled_component])
-      jacobian = computeDResidualDDisplacement(coupled_component, type);
+      return computeJacobianComponent(coupled_component, type);
 
-  if (_shifted && _directional_correction)
-    for (const auto coupled_component : make_range(_ndisp))
-      if (jvar == _disp_var[coupled_component])
-        switch (type)
-        {
-          case Moose::ElementElement:
-            jacobian -= calculateDirectionalCorrectionJacobian(_component, coupled_component, type);
-            break;
-          case Moose::NeighborNeighbor:
-            jacobian += calculateDirectionalCorrectionJacobian(_component, coupled_component, type);
-            break;
-          case Moose::ElementNeighbor:
-          case Moose::NeighborElement:
-            break;
-        }
-
-  return jacobian;
+  return 0;
 }
 
 template <>
 Real
 SCZMInterfaceKernelSmallStrainTempl<true>::calculateDirectionalCorrectionJacobian(
     unsigned int, unsigned int, Moose::DGJacobianType) const
+{
+  return 0;
+}
+
+template <>
+Real
+SCZMInterfaceKernelSmallStrainTempl<true>::stressDerivative(unsigned int,
+                                                            unsigned int,
+                                                            const RealVectorValue &,
+                                                            bool) const
+{
+  return 0;
+}
+
+template <>
+Real
+SCZMInterfaceKernelSmallStrainTempl<true>::computeJacobianComponent(unsigned int,
+                                                                    Moose::DGJacobianType) const
 {
   return 0;
 }

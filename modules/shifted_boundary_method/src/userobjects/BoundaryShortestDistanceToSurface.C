@@ -33,7 +33,8 @@ BoundaryShortestDistanceToSurface::validParams()
       "interface_subdomain_pairs",
       {},
       "Ordered subdomain pair for each boundary. If omitted, pairs are inferred from boundary "
-      "names of the form grainX_grainY or blockX_blockY.");
+      "names of the form grainX_grainY or blockX_blockY (case-insensitive, e.g. the BlockX_BlockY "
+      "names of BreakMeshByBlockGenerator).");
   params.addParam<bool>("suppress_distance_warning",
                         false,
                         "If true, warnings about large distances will be suppressed.");
@@ -77,7 +78,9 @@ BoundaryShortestDistanceToSurface::BoundaryShortestDistanceToSurface(
     if (!pairs.empty() && pairs.size() != boundary_names.size())
       paramError("interface_subdomain_pairs", "Provide exactly one subdomain pair per boundary.");
 
-    const std::regex pair_pattern("^(?:grain|block)([0-9]+)_(?:grain|block)([0-9]+)$");
+    // Case-insensitive, so the default BreakMeshByBlockGenerator names (BlockX_BlockY) match
+    const std::regex pair_pattern("^(?:grain|block)([0-9]+)_(?:grain|block)([0-9]+)$",
+                                  std::regex::ECMAScript | std::regex::icase);
     for (const auto i : index_range(boundary_names))
     {
       SubdomainID first;

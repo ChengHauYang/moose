@@ -43,13 +43,14 @@ PropertyReadFile::validParams()
       "ngrain", "Number of grains.", "ngrain is deprecated, use nvoronoi instead");
   params.addParam<unsigned int>("nblock", 0, "Number of blocks");
   params.addRequiredParam<MooseEnum>("read_type",
-                                     MooseEnum("element voronoi block node grain"),
+                                     MooseEnum("element voronoi block node grain extra_element_id"),
                                      "Type of property distribution: "
                                      "element:by element "
                                      "node: by node "
                                      "voronoi:nearest neighbor / voronoi grain structure "
                                      "block:by mesh block "
-                                     "grain: deprecated, use voronoi");
+                                     "grain: deprecated, use voronoi "
+                                     "extra_element_id: by the value of an extra element integer");
   params.addParam<bool>("use_random_voronoi",
                         false,
                         "Wether to generate random positions for the Voronoi tesselation");
@@ -60,6 +61,15 @@ PropertyReadFile::validParams()
       "Periodic or non-periodic grain distribution: Default is non-periodic");
   params.addParam<bool>(
       "use_zero_based_block_indexing", true, "Are the blocks numbered starting at zero?");
+  params.addParam<std::string>(
+      "extra_element_id",
+      "Name of the extra element integer whose value selects the data row, for read_type = "
+      "extra_element_id");
+  params.addParam<unsigned int>(
+      "n_extra_element_ids", 0, "Number of extra element ID values (rows) in the data file");
+  params.addParam<bool>("use_zero_based_extra_element_id_indexing",
+                        true,
+                        "Are the extra element ID values numbered starting at zero?");
 
   // Data reading schedule
   params.addParam<bool>(
@@ -97,6 +107,9 @@ PropertyReadFile::PropertyReadFile(const InputParameters & parameters)
     _nvoronoi(isParamValid("ngrain") ? getParam<unsigned int>("ngrain")
                                      : getParam<unsigned int>("nvoronoi")),
     _nblock(getParam<unsigned int>("nblock")),
+    _extra_element_id_index(libMesh::invalid_uint),
+    _n_extra_element_ids(getParam<unsigned int>("n_extra_element_ids")),
+    _extra_element_id_zero(getParam<bool>("use_zero_based_extra_element_id_indexing")),
     _initialize_called_once(declareRestartableData<bool>("initialize_called", false)),
     _load_on_construction(getParam<bool>("load_first_file_on_construction"))
 {
@@ -111,6 +124,18 @@ PropertyReadFile::PropertyReadFile(const InputParameters & parameters)
     mesh_max(i) = _mesh.getMaxInDimension(i);
   }
   _bounding_box = MooseUtils::buildBoundingBox(mesh_min, mesh_max);
+
+  if (_read_type == ReadTypeEnum::EXTRA_ELEMENT_ID)
+  {
+    if (!isParamValid("extra_element_id"))
+      paramError("extra_element_id", "Required for read_type = extra_element_id.");
+    const auto & id_name = getParam<std::string>("extra_element_id");
+    if (!_mesh.getMesh().has_elem_integer(id_name))
+      paramError("extra_element_id", "The mesh has no extra element integer '", id_name, "'.");
+    _extra_element_id_index = _mesh.getMesh().get_elem_integer_index(id_name);
+  }
+  else if (isParamValid("extra_element_id"))
+    paramError("extra_element_id", "Only used with read_type = extra_element_id.");
 
   if (_load_on_construction)
     readData();
@@ -206,6 +231,12 @@ PropertyReadFile::readData()
         paramError("nblock", "Provide non-zero number of blocks.");
       nobjects = _nblock;
       break;
+
+    case ReadTypeEnum::EXTRA_ELEMENT_ID:
+      if (_n_extra_element_ids <= 0)
+        paramError("n_extra_element_ids", "Provide a non-zero number of extra element ID values.");
+      nobjects = _n_extra_element_ids;
+      break;
   }
 
   // make sure the data from file has enough rows and columns
@@ -286,6 +317,10 @@ PropertyReadFile::getData(const Elem * const elem, const unsigned int prop_num) 
       data = getBlockData(elem, prop_num);
       break;
 
+    case ReadTypeEnum::EXTRA_ELEMENT_ID:
+      data = getExtraElementIDData(elem, prop_num);
+      break;
+
     case ReadTypeEnum::NODE:
       mooseError(
           "PropertyReadFile has data sorted by node, it should note be retrieved by element");
@@ -341,6 +376,25 @@ PropertyReadFile::getBlockData(const SubdomainID subdomain_id, unsigned int prop
                _nblock,
                ". Blocks should be numbered consecutively, starting from 0.");
   return _reader.getData(subdomain_id - offset)[prop_num];
+}
+
+Real
+PropertyReadFile::getExtraElementIDData(const Elem * const elem, const unsigned int prop_num) const
+{
+  mooseAssert(_extra_element_id_index != libMesh::invalid_uint,
+              "Extra element ID data requested without read_type = extra_element_id");
+  const auto id = elem->get_extra_integer(_extra_element_id_index);
+  const unsigned int offset = _extra_element_id_zero ? 0 : 1;
+  if (id == DofObject::invalid_id || id < offset || id - offset >= _n_extra_element_ids)
+    paramError("n_extra_element_ids",
+               "Element ",
+               elem->id(),
+               " has extra element ID ",
+               id,
+               ", which has no row among the ",
+               _n_extra_element_ids,
+               " rows of data.");
+  return _reader.getData(id - offset)[prop_num];
 }
 
 Real

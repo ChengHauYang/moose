@@ -131,7 +131,8 @@ NEML2Action::validParams()
       "interface_material_inputs",
       {},
       "MATERIAL inputs supplied by a true InterfaceMaterial (read from interface material data "
-      "instead of the volume/side material data). Ignored for non-MATERIAL inputs.");
+      "instead of the volume/side material data). Ignored for non-MATERIAL inputs. With "
+      "input_backend = kokkos, these must be current-state vector inputs.");
   return params;
 }
 
@@ -352,10 +353,6 @@ NEML2Action::act()
                  "The Kokkos input backend is unavailable because MOOSE was built "
                  "without Kokkos support.");
 #else
-      if (!_interface_material_inputs.empty())
-        paramError("input_backend",
-                   "The Kokkos input backend does not support true interface material data. "
-                   "Use block material properties on the interface sides instead.");
       if (!getParam<std::vector<std::string>>("input_kernels").empty())
         paramError("input_backend",
                    "The Kokkos input backend does not support input_kernels in its first "
@@ -421,6 +418,31 @@ NEML2Action::act()
 #ifndef MOOSE_KOKKOS_ENABLED
         mooseError("Unreachable: Kokkos input backend was rejected during setup.");
 #else
+        // A true interface material input (one value per interface QP, e.g. a cohesive
+        // displacement jump) gathers from the interface material data
+        if (moose_type == NEML2Utils::MOOSEIOType::MATERIAL &&
+            std::find(_interface_material_inputs.begin(),
+                      _interface_material_inputs.end(),
+                      moose_name) != _interface_material_inputs.end())
+        {
+          if (moose_tensor_type != "RealVectorValue" || type_prefix != "" || suffix != "0")
+            paramError("interface_material_inputs",
+                       "The Kokkos input backend supports only current-state vector interface "
+                       "material inputs. Input '",
+                       moose_name,
+                       "' is mapped as ",
+                       moose_tensor_type,
+                       ".");
+          const auto obj_type = "KokkosInterfaceMaterialVectorToNEML2";
+          auto obj_params = _factory.getValidParams(obj_type);
+          obj_params.set<std::string>("to_neml2") = neml2_name;
+          obj_params.set<UserObjectName>("batch_index_generator") = _idx_generator_name;
+          obj_params.set<std::vector<BoundaryName>>("boundary") = _interface;
+          obj_params.set<MaterialPropertyName>("from_moose") = moose_name;
+          _problem->addUserObject(obj_type, obj_name, obj_params);
+          return obj_name;
+        }
+
         const auto symmetric = moose_tensor_type == "SymmetricRankTwoTensor";
         if (moose_type != NEML2Utils::MOOSEIOType::MATERIAL ||
             (moose_tensor_type != "RankTwoTensor" && !symmetric) || type_prefix != "" ||
@@ -571,22 +593,24 @@ NEML2Action::act()
                  "support.");
 #else
       const bool scalar = moose_tensor_type == "Real";
+      const bool vector = moose_tensor_type == "RealVectorValue";
       const bool full_tensor =
           moose_tensor_type == "RankTwoTensor" || moose_tensor_type == "RankFourTensor";
       const bool rank_two =
           moose_tensor_type == "SymmetricRankTwoTensor" || moose_tensor_type == "RankTwoTensor";
-      if (!scalar && !full_tensor && moose_tensor_type != "SymmetricRankTwoTensor" &&
+      if (!scalar && !vector && !full_tensor && moose_tensor_type != "SymmetricRankTwoTensor" &&
           moose_tensor_type != "SymmetricRankFourTensor")
         paramError("output_backend",
                    "The Kokkos output backend does not support NEML2 output '",
                    moose_name,
                    "' mapped to ",
                    moose_tensor_type,
-                   ". Only scalar, rank-two, and rank-four outputs are supported.");
+                   ". Only scalar, vector, rank-two, and rank-four outputs are supported.");
 
-      const auto kind = scalar ? std::string("Real")
-                               : std::string(full_tensor ? "Full" : "") +
-                                     std::string(rank_two ? "RankTwo" : "RankFour");
+      const auto kind = scalar   ? std::string("Real")
+                        : vector ? std::string("Vector")
+                                 : std::string(full_tensor ? "Full" : "") +
+                                       std::string(rank_two ? "RankTwo" : "RankFour");
       const auto obj_type =
           "NEML2ToKokkos" + std::string(interface_only ? "Side" : "") + kind + "MaterialProperty";
       auto obj_params = _factory.getValidParams(obj_type);
@@ -603,13 +627,15 @@ NEML2Action::act()
         obj_params.set<std::vector<OutputName>>("outputs") = _export_output_targets[moose_name];
       extra(obj_params);
 
-      // A scalar maps from a model output only; derivatives are rank-two or rank-four.
-      if (scalar && (obj_params.isParamValid("neml2_input_derivative") ||
-                     obj_params.isParamValid("neml2_parameter_derivative")))
+      // A scalar or vector maps from a model output only; derivatives are rank-two or rank-four.
+      if ((scalar || vector) && (obj_params.isParamValid("neml2_input_derivative") ||
+                                 obj_params.isParamValid("neml2_parameter_derivative")))
         paramError("output_backend",
                    "The Kokkos output backend cannot map the derivative '",
                    moose_name,
-                   "' to a scalar material property.");
+                   "' to a ",
+                   scalar ? "scalar" : "vector",
+                   " material property.");
 
       const auto obj_name = obscureObjectName(moose_name, "neml2_to_kokkos", "", name());
       if (!interface_only)

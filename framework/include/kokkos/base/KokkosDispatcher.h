@@ -480,6 +480,27 @@ registerResidualObjectDispatchers(const std::string & objectname)
         &Object::template computeQpOffDiagJacobianScalar<Object> !=
             Object::template defaultOffDiagJacobianScalar<Object>());
   }
+
+  if constexpr (Object::supports_scalar_residual)
+  {
+    DispatcherRegistry::addReducer<typename Object::ScalarResidualLoop, Object>(objectname);
+    DispatcherRegistry::addReducer<typename Object::ScalarJacobianLoop, Object>(objectname);
+    DispatcherRegistry::addDispatcher<typename Object::ScalarOffDiagJacobianLoop, Object>(
+        objectname);
+    DispatcherRegistry::addDispatcher<typename Object::ScalarAccumulateLoop, Object>(objectname);
+    DispatcherRegistry::hasUserMethod<typename Object::ScalarResidualLoop>(
+        objectname,
+        &Object::template computeQpScalarResidual<Object> !=
+            Object::template defaultScalarResidual<Object>());
+    DispatcherRegistry::hasUserMethod<typename Object::ScalarJacobianLoop>(
+        objectname,
+        &Object::template computeQpScalarJacobian<Object> !=
+            Object::template defaultScalarJacobian<Object>());
+    DispatcherRegistry::hasUserMethod<typename Object::ScalarOffDiagJacobianLoop>(
+        objectname,
+        &Object::template computeQpScalarOffDiagJacobian<Object> !=
+            Object::template defaultScalarOffDiagJacobian<Object>());
+  }
 }
 
 } // namespace Moose::Kokkos

@@ -119,6 +119,17 @@ QuasiStaticSolidMechanicsPhysics::validParams()
       true,
       "Whether to include the off-diagonal scalar contributions to the homogenized jacobian");
 
+  params.addParam<bool>(
+      "use_kokkos",
+      false,
+      "Add the Kokkos versions of the total-Lagrangian stress divergence kernels and kinematics "
+      "materials (KokkosComputeDeformationGradient, KokkosComputeFbarAverage, and "
+      "KokkosComputeHomogenizedLagrangianStrain as needed). Requires new_system = true, "
+      "formulation = TOTAL, and Cartesian coordinates. The stress must be provided by a Kokkos "
+      "material publishing pk1_stress and dpk1_d_grad_u, for example "
+      "KokkosComputeLagrangianStressCustomPK2 (large kinematics) or "
+      "KokkosComputeLagrangianStressCustomSmall (small kinematics).");
+
   params.addParamNamesToGroup("scaling", "Variables");
   params.addParamNamesToGroup("strain_base_name automatic_eigenstrain_names", "Strain");
   params.addParamNamesToGroup(
@@ -163,7 +174,8 @@ QuasiStaticSolidMechanicsPhysics::QuasiStaticSolidMechanicsPhysics(const InputPa
     _lk_homogenization(false),
     _constraint_types(getParam<MultiMooseEnum>("constraint_types")),
     _targets(getParam<std::vector<FunctionName>>("targets")),
-    _lk_h_off_jac(getParam<bool>("homogenized_off_diagonal_jacobian"))
+    _lk_h_off_jac(getParam<bool>("homogenized_off_diagonal_jacobian")),
+    _use_kokkos(getParam<bool>("use_kokkos"))
 {
   // determine if incremental strains are to be used
   if (isParamValid("incremental"))
@@ -292,6 +304,24 @@ QuasiStaticSolidMechanicsPhysics::QuasiStaticSolidMechanicsPhysics(const InputPa
     if (_lk_homogenization && (_lk_formulation == LKFormulation::Updated))
       mooseError("The Lagrangian kernel homogenization system requires the "
                  "use of formulation = TOTAL");
+  }
+
+  if (_use_kokkos)
+  {
+    if (!getParam<bool>("new_system") || _compatibility_mode)
+      paramError("use_kokkos", "The Kokkos kernels require new_system = true.");
+    if (_lk_formulation != LKFormulation::Total)
+      paramError("use_kokkos", "The Kokkos kernels require formulation = TOTAL.");
+    for (const auto & p : {"eigenstrain_names",
+                           "automatic_eigenstrain_names",
+                           "save_in",
+                           "diag_save_in",
+                           "generate_output",
+                           "strain_base_name",
+                           "base_name",
+                           "planar_formulation"})
+      if (params.isParamSetByUser(p))
+        paramError(p, "This parameter is not supported with use_kokkos = true.");
   }
 
   // The action drives two mutually exclusive kernel systems: the legacy
@@ -504,11 +534,17 @@ QuasiStaticSolidMechanicsPhysics::act()
 
     // Easiest just to branch on type here, as the strain systems are completely
     // different
-    if (_lagrangian_kernels)
+    if (_use_kokkos)
+      actKokkosLagrangianKernelStrain();
+    else if (_lagrangian_kernels)
       actLagrangianKernelStrain();
     else
       actStressDivergenceTensorsStrain();
   }
+
+  // Add the Kokkos stress divergence kernels
+  else if (_current_task == "add_kernel" && _use_kokkos)
+    actKokkosLagrangianKernels();
 
   // Add Stress Divergence (and optionally WeakPlaneStress) Kernels
   else if (_current_task == "add_kernel")
@@ -1115,6 +1151,77 @@ QuasiStaticSolidMechanicsPhysics::actLagrangianKernelStrain()
     params.set<std::vector<FunctionName>>("targets") = _targets;
 
     _problem->addMaterial(type, name() + "_compute_" + _homogenization_strain_name, params);
+  }
+}
+
+void
+QuasiStaticSolidMechanicsPhysics::actKokkosLagrangianKernelStrain()
+{
+  if (_coord_system != Moose::COORD_XYZ)
+    paramError("use_kokkos", "The Kokkos kernels support only Cartesian coordinates.");
+  if (_problem->mesh().hasSecondOrderElements() && _lk_locking)
+    mooseError("Volumetric locking correction should not be used for higher-order elements.");
+
+  {
+    auto params = _factory.getValidParams("KokkosComputeDeformationGradient");
+    params.set<std::vector<VariableName>>("displacements") = _coupled_displacements;
+    params.set<std::vector<SubdomainName>>("block") = _subdomain_names;
+    params.set<bool>("large_kinematics") = _lk_large_kinematics;
+    params.set<bool>("stabilize_strain") = _lk_locking;
+    if (_lk_homogenization)
+      params.set<std::vector<MaterialPropertyName>>("homogenization_gradient_names") = {
+          _homogenization_strain_name};
+    _problem->addMaterial("KokkosComputeDeformationGradient", name() + "_strain", params);
+  }
+
+  // The element average of F consumed by the large-kinematics F-bar Jacobian chain
+  if (_lk_locking && _lk_large_kinematics)
+  {
+    auto params = _factory.getValidParams("KokkosComputeFbarAverage");
+    params.set<std::vector<VariableName>>("displacements") = _coupled_displacements;
+    params.set<std::vector<SubdomainName>>("block") = _subdomain_names;
+    _problem->addMaterial("KokkosComputeFbarAverage", name() + "_fbar_average", params);
+  }
+
+  if (_lk_homogenization)
+  {
+    auto params = _factory.getValidParams("KokkosComputeHomogenizedLagrangianStrain");
+    params.set<std::vector<SubdomainName>>("block") = _subdomain_names;
+    params.set<MaterialPropertyName>("homogenization_gradient_name") = _homogenization_strain_name;
+    params.set<std::vector<VariableName>>("macro_gradient") = {_hname};
+    params.set<MultiMooseEnum>("constraint_types") = _constraint_types;
+    params.set<std::vector<FunctionName>>("targets") = _targets;
+    _problem->addMaterial("KokkosComputeHomogenizedLagrangianStrain",
+                          name() + "_compute_" + _homogenization_strain_name,
+                          params);
+  }
+}
+
+void
+QuasiStaticSolidMechanicsPhysics::actKokkosLagrangianKernels()
+{
+  const std::string type = _lk_homogenization ? "KokkosHomogenizedTotalLagrangianStressDivergence"
+                                              : "KokkosTotalLagrangianStressDivergence";
+
+  for (const auto i : make_range(_ndisp))
+  {
+    auto params = _factory.getValidParams(type);
+    params.set<std::vector<SubdomainName>>("block") = _subdomain_names;
+    params.set<std::vector<VariableName>>("displacements") = _coupled_displacements;
+    params.set<NonlinearVariableName>("variable") = _displacements[i];
+    params.set<unsigned int>("component") = i;
+    params.set<bool>("large_kinematics") = _lk_large_kinematics;
+    params.set<bool>("stabilize_strain") = _lk_locking;
+
+    if (_lk_homogenization)
+    {
+      params.set<std::vector<VariableName>>("macro_var") = {_hname};
+      params.set<MultiMooseEnum>("constraint_types") = _constraint_types;
+      params.set<std::vector<FunctionName>>("targets") = _targets;
+      params.set<bool>("off_diagonal_jacobian") = _lk_h_off_jac;
+    }
+
+    _problem->addKernel(type, "TM_" + name() + Moose::stringify(i), params);
   }
 }
 

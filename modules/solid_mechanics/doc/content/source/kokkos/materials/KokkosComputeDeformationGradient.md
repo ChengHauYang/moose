@@ -25,6 +25,15 @@ properties provide the F-bar kinematics for the
 [ShiftedCohesiveZone](syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md) directional
 correction. [ComputeDeformationGradient](ComputeDeformationGradient.md) is the host counterpart.
 
+With [!param](/Materials/KokkosComputeDeformationGradient/large_kinematics) set to `false`, the
+F-bar correction is the additive (small kinematics) trace correction
+$\mathbf{B} = \mathbf{U} + \left(\operatorname{tr}\mathbf{M} - \operatorname{tr}\mathbf{U}\right)
+\mathbf{I} / 3$. A homogenization gradient listed in
+[!param](/Materials/KokkosComputeDeformationGradient/homogenization_gradient_names), for example from
+[KokkosComputeHomogenizedLagrangianStrain](KokkosComputeHomogenizedLagrangianStrain.md), is added to
+$\mathbf{U}$ and $\mathbf{B}$ after the F-bar correction, as in the host
+[ComputeLagrangianStrain](ComputeLagrangianStrain.md).
+
 ## Example Input File Syntax
 
 In this example, the material supplies $\mathbf{U}$ and $\mathbf{B}$ on both sides of a shifted

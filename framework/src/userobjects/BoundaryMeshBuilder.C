@@ -11,6 +11,7 @@
 #include "MooseMesh.h"
 #include "MeshGeneratorSystem.h"
 
+#include "libmesh/replicated_mesh.h"
 #include "libmesh/unstructured_mesh.h"
 
 registerMooseObject("MooseApp", BoundaryMeshBuilder);
@@ -26,7 +27,12 @@ BoundaryMeshBuilder::validParams()
   params.addParam<MeshGeneratorName>(
       "boundary_mesh",
       "The name of the boundary mesh saved via the MeshGenerator's `save_with_name` parameter. "
-      "Mutually exclusive with 'boundary_meshes'.");
+      "Mutually exclusive with 'boundary_meshes' and 'boundary_mesh_file'.");
+  params.addParam<FileName>(
+      "boundary_mesh_file",
+      "A file holding the boundary mesh, read directly instead of a mesh saved by a mesh "
+      "generator. Use this when the mesh generators do not run, e.g. with a pre-split mesh. "
+      "Mutually exclusive with 'boundary_mesh' and 'boundary_meshes'.");
   params.addParam<std::vector<MeshGeneratorName>>(
       "boundary_meshes",
       "Names of per-subdomain boundary meshes saved via `save_with_name`, one per subdomain. Each "
@@ -52,8 +58,12 @@ BoundaryMeshBuilder::BoundaryMeshBuilder(const InputParameters & parameters)
     _bnd_mesh_names(isParamValid("boundary_meshes")
                         ? getParam<std::vector<MeshGeneratorName>>("boundary_meshes")
                         : std::vector<MeshGeneratorName>()),
-    _bnd_mesh_name(_bnd_mesh_names.empty() ? getParam<MeshGeneratorName>("boundary_mesh")
-                                           : MeshGeneratorName()),
+    _bnd_mesh_name(_bnd_mesh_names.empty() && isParamValid(renamedParam("boundary_mesh"))
+                       ? getParam<MeshGeneratorName>("boundary_mesh")
+                       : MeshGeneratorName()),
+    _bnd_mesh_file(isParamValid(renamedParam("boundary_mesh_file"))
+                       ? getParam<FileName>("boundary_mesh_file")
+                       : FileName()),
     _subdomain_ids(isParamValid("subdomain_ids")
                        ? getParam<std::vector<subdomain_id_type>>("subdomain_ids")
                        : std::vector<subdomain_id_type>()),
@@ -61,6 +71,16 @@ BoundaryMeshBuilder::BoundaryMeshBuilder(const InputParameters & parameters)
     _dim_embedding_mesh(_fe_problem.mesh().dimension() /*MooseMesh*/)
 {
   const bool has_list = !_bnd_mesh_names.empty();
+  const bool has_file = !_bnd_mesh_file.empty();
+  if (static_cast<int>(has_list) + static_cast<int>(has_file) +
+          static_cast<int>(!_bnd_mesh_name.empty()) !=
+      1)
+    paramError(renamedParam("boundary_mesh_file"),
+               "Specify exactly one of '",
+               renamedParam("boundary_mesh"),
+               "', 'boundary_meshes', and '",
+               renamedParam("boundary_mesh_file"),
+               "'.");
   if (has_list)
   {
     if (!isParamValid("subdomain_ids"))
@@ -77,12 +97,28 @@ BoundaryMeshBuilder::BoundaryMeshBuilder(const InputParameters & parameters)
     paramError("subdomain_ids", "'subdomain_ids' is only valid with 'boundary_meshes'.");
 }
 
+std::string
+BoundaryMeshBuilder::renamedParam(std::string name) const
+{
+  // InputParameters resolves one rename per lookup, so follow the chain
+  for (auto next = parameters().checkForRename(name); next != name;
+       next = parameters().checkForRename(name))
+    name = next;
+  return name;
+}
+
 void
 BoundaryMeshBuilder::initialSetup()
 {
   // A saved mesh has single-retrieval semantics: getSavedMesh() std::move()s it
   // out and errors on a second retrieval. This builder is the sole owner.
-  if (_bnd_mesh_names.empty())
+  if (!_bnd_mesh_file.empty())
+  {
+    // A replicated mesh is read on one processor and broadcast to the others
+    _mesh = std::make_unique<libMesh::ReplicatedMesh>(_communicator);
+    _mesh->read(_bnd_mesh_file);
+  }
+  else if (_bnd_mesh_names.empty())
     _mesh = _app.getMeshGeneratorSystem().getSavedMesh(_bnd_mesh_name);
   else
     _mesh = assembleFromPerSubdomainMeshes();

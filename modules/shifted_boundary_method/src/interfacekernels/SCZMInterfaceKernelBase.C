@@ -31,6 +31,7 @@ SCZMInterfaceKernelBaseTempl<is_ad>::validParams()
       "cohesive-zone model. Shifted integration is enabled by default and is the intended SBM "
       "mode; disable it only to isolate the effect of the correction terms for verification and "
       "comparison.");
+  SCZMWeightedTractionStabilization::addParams(params);
 
   return params;
 }
@@ -47,7 +48,9 @@ SCZMInterfaceKernelBaseTempl<is_ad>::SCZMInterfaceKernelBaseTempl(
     _ndisp(this->coupledComponents("displacements")),
     _traction_global(this->template getGenericMaterialPropertyByName<RealVectorValue, is_ad>(
         _base_name + this->template getParam<std::string>("traction_global_name"))),
-    _shifted(!this->template getParam<bool>("no_shifted"))
+    _shifted(!this->template getParam<bool>("no_shifted")),
+    _stabilization_weights(SCZMWeightedTractionStabilization::weights(*this)),
+    _stabilization(_stabilization_weights.enabled)
 {
   if (_ndisp != this->_mesh.dimension())
     this->paramError("displacements", "Number of displacements must match problem dimension.");
@@ -75,6 +78,34 @@ SCZMInterfaceKernelBaseTempl<is_ad>::computeQpResidual(Moose::DGResidualType typ
   }
 
   return residual;
+}
+
+template <bool is_ad>
+RealVectorValue
+SCZMInterfaceKernelBaseTempl<is_ad>::stabilizationNormal() const
+{
+  return _shifted ? RealVectorValue(this->trueNormal()) : RealVectorValue(this->_normals[this->_qp]);
+}
+
+template <bool is_ad>
+GenericReal<is_ad>
+SCZMInterfaceKernelBaseTempl<is_ad>::stabilizedTraction(
+    const RealVectorValue & normal,
+    const GenericRankTwoTensor<is_ad> & stress,
+    const GenericRankTwoTensor<is_ad> & stress_neighbor) const
+{
+  const auto & traction = _traction_global[this->_qp];
+  GenericReal<is_ad> result = 0;
+  for (const auto b : make_range(_ndisp))
+  {
+    GenericReal<is_ad> average_traction = 0;
+    for (const auto J : make_range(_ndisp))
+      average_traction += 0.5 * (stress(b, J) + stress_neighbor(b, J)) * normal(J);
+
+    const Real weight = stabilizationWeight(normal, _component, b);
+    result += weight * traction(b) + ((b == _component ? 1.0 : 0.0) - weight) * average_traction;
+  }
+  return result;
 }
 
 template class SCZMInterfaceKernelBaseTempl<false>;

@@ -59,16 +59,19 @@ kokkosTorchDevice()
 #endif
 
 registerKokkosMaterial("MooseApp", NEML2ToKokkosRealMaterialProperty);
+registerKokkosMaterial("MooseApp", NEML2ToKokkosVectorMaterialProperty);
 registerKokkosMaterial("MooseApp", NEML2ToKokkosRankTwoMaterialProperty);
 registerKokkosMaterial("MooseApp", NEML2ToKokkosRankFourMaterialProperty);
 registerKokkosMaterial("MooseApp", NEML2ToKokkosFullRankTwoMaterialProperty);
 registerKokkosMaterial("MooseApp", NEML2ToKokkosFullRankFourMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideRealMaterialProperty);
+registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideVectorMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideRankTwoMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideRankFourMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideFullRankTwoMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosSideFullRankFourMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosNeighborRealMaterialProperty);
+registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosNeighborVectorMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosNeighborRankTwoMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosNeighborRankFourMaterialProperty);
 registerKokkosInterfaceMaterial("MooseApp", NEML2ToKokkosNeighborFullRankTwoMaterialProperty);
@@ -87,10 +90,11 @@ NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::validParams()
     params.template set<Moose::MaterialDataType>("_material_data_type") =
         Moose::INTERFACE_MATERIAL_DATA;
   params.addClassDescription(
-      rank == 0 ? "Provides a scalar (Real) NEML2 output as a Kokkos material property."
-                : "Provides a " + std::string(full ? "full" : "symmetric") + " rank-" +
-                      std::to_string(rank) +
-                      " NEML2 output or derivative as a Kokkos material property.");
+      rank == 0   ? "Provides a scalar (Real) NEML2 output as a Kokkos material property."
+      : rank == 1 ? "Provides a vector NEML2 output as a Kokkos material property."
+                  : "Provides a " + std::string(full ? "full" : "symmetric") + " rank-" +
+                        std::to_string(rank) +
+                        " NEML2 output or derivative as a Kokkos material property.");
   params.template addRequiredParam<MaterialPropertyName>(
       "to_moose", "Kokkos material property used to store the NEML2 output or derivative.");
   params.template addParam<MaterialPropertyName>(
@@ -151,7 +155,7 @@ NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::computePropertie
 {
 #ifdef NEML2_ENABLED
   constexpr unsigned int num_components =
-      rank == 0 ? 1 : (full ? (rank == 2 ? 9 : 81) : (rank == 2 ? 6 : 36));
+      rank == 0 ? 1 : (rank == 1 ? 3 : (full ? (rank == 2 ? 9 : 81) : (rank == 2 ? 6 : 36)));
   if (!outputReady())
   {
     // The executor marks no output ready at t == 0 (it solves at EXEC_INITIAL but does not publish
@@ -250,21 +254,21 @@ NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::stageOutput(
     const at::Tensor & tensor)
 {
   constexpr unsigned int num_components =
-      rank == 0 ? 1 : (full ? (rank == 2 ? 9 : 81) : (rank == 2 ? 6 : 36));
-  const auto base_ndim = static_cast<int64_t>(rank == 0 ? 0 : (full ? rank : rank / 2));
+      rank == 0 ? 1 : (rank == 1 ? 3 : (full ? (rank == 2 ? 9 : 81) : (rank == 2 ? 6 : 36)));
+  const auto base_ndim = static_cast<int64_t>(rank < 2 ? rank : (full ? rank : rank / 2));
   const auto batch_ndim = tensor.dim() - base_ndim;
-  const auto expected_shape = rank == 0   ? std::vector<int64_t>{}
-                              : full      ? std::vector<int64_t>(rank, 3)
-                              : rank == 2 ? std::vector<int64_t>{6}
-                                          : std::vector<int64_t>{6, 6};
+  const auto expected_shape = rank == 0             ? std::vector<int64_t>{}
+                              : (rank == 1 || full) ? std::vector<int64_t>(rank, 3)
+                              : rank == 2           ? std::vector<int64_t>{6}
+                                                    : std::vector<int64_t>{6, 6};
   const auto actual_shape = tensor.sizes().slice(batch_ndim);
   if (batch_ndim < 0 || batch_ndim > 2 || !actual_shape.equals(expected_shape))
     mooseError("Cannot copy NEML2 tensor with shape ",
                tensor.sizes(),
                " into a ",
-               rank == 0 ? "scalar" : (full ? "full" : "symmetric"),
-               rank == 0 ? "" : " rank-",
-               rank == 0 ? "" : std::to_string(rank),
+               rank == 0 ? "scalar" : (rank == 1 ? "vector" : (full ? "full" : "symmetric")),
+               rank < 2 ? "" : " rank-",
+               rank < 2 ? "" : std::to_string(rank),
                " Kokkos material property; expected base shape ",
                expected_shape,
                ".");
@@ -371,6 +375,9 @@ NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::stageOutput(
 template class NEML2ToKokkosMaterialProperty<0>;
 template class NEML2ToKokkosMaterialProperty<0, false, true>;
 template class NEML2ToKokkosMaterialProperty<0, false, true, true>;
+template class NEML2ToKokkosMaterialProperty<1>;
+template class NEML2ToKokkosMaterialProperty<1, false, true>;
+template class NEML2ToKokkosMaterialProperty<1, false, true, true>;
 template class NEML2ToKokkosMaterialProperty<2>;
 template class NEML2ToKokkosMaterialProperty<4>;
 template class NEML2ToKokkosMaterialProperty<2, true>;

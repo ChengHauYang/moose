@@ -30,16 +30,38 @@ protected:
   Real computeQpJacobian(Moose::DGJacobianType type) override;
   Real computeQpOffDiagJacobian(Moose::DGJacobianType type, unsigned int jvar) override;
 
-  Real computeDResidualDDisplacement(unsigned int component_j, Moose::DGJacobianType type) const;
-  Real computeDResidualDDeformationGradient(unsigned int component_j,
+  /// Jacobian of this component's residual with respect to displacement component component_j
+  Real computeJacobianComponent(unsigned int component_j, Moose::DGJacobianType type);
+
+  /**
+   * Derivatives of the residual through the cohesive traction component traction_component with
+   * respect to displacement component component_j, through the displacement jump and through the
+   * deformation gradient, including test function, sign, and area correction.
+   */
+  ///@{
+  Real computeDResidualDDisplacement(unsigned int traction_component,
+                                     unsigned int component_j,
+                                     Moose::DGJacobianType type) const;
+  Real computeDResidualDDeformationGradient(unsigned int traction_component,
+                                            unsigned int component_j,
                                             Moose::DGJacobianType type) const;
+  ///@}
   Real calculateDirectionalCorrectionJacobian(unsigned int ivar,
                                               unsigned int jvar,
                                               Moose::DGJacobianType type);
 
   /**
+   * Derivative of P.row(ivar) . direction on the trial side with respect to the trial function of
+   * displacement component jvar, including the F-bar terms with volumetric_locking_correction.
+   */
+  Real stressDerivative(unsigned int ivar,
+                        unsigned int jvar,
+                        const RealVectorValue & direction,
+                        bool trial_on_element);
+
+  /**
    * Contribution of the F-bar deformation gradient B = (det(M) / det(U))^(1/3) U to
-   * n_t . dP / du_j for the row-side stress P = P(U, B), given the stabilized tangent C_B = dP/dB,
+   * n_t . dP / du_j for the trial-side stress P = P(U, B), given the stabilized tangent C_B = dP/dB,
    * U, M, and the local and element-volume averaged trial gradients.
    */
   Real fbarDirectionalCorrection(unsigned int ivar,
@@ -59,7 +81,8 @@ protected:
                                                             const Elem *& cached_elem,
                                                             std::vector<RealVectorValue> & cache);
 
-  /// The PK1 stress tensor on the element and neighbor sides, when directional correction is used
+  /// The PK1 stress tensor on the element and neighbor sides, when directional correction or
+  /// stabilization is used
   ///@{
   const GenericMaterialProperty<RankTwoTensor, is_ad> * _stress;
   const GenericMaterialProperty<RankTwoTensor, is_ad> * _stress_neighbor;
