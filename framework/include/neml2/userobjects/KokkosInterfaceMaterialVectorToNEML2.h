@@ -99,13 +99,16 @@ KokkosInterfaceMaterialVectorToNEML2::executeInterface(
   for (unsigned int qp = 0; qp < face.n_qps; ++qp)
   {
     const auto & val = _mat_prop(primary, qp);
-    // Batch rows of both sides are keyed by the primary QP
+    const unsigned int n_comp = val.n(0);
+    KOKKOS_ASSERT(n_comp <= 3);
+    // Batch rows of both sides are keyed by the primary QP; 1D/2D vectors pad trailing entries
+    // with zero to match the 3-component NEML2 vector layout.
     if (pri_batch != invalid)
       for (unsigned int i = 0; i < 3; ++i)
-        _buffer((pri_batch + qp) * 3 + i) = val(i);
+        _buffer((pri_batch + qp) * 3 + i) = i < n_comp ? val(i) : 0.0;
     if (nbr_batch != invalid)
       for (unsigned int i = 0; i < 3; ++i)
-        _buffer((nbr_batch + qp) * 3 + i) = val(i);
+        _buffer((nbr_batch + qp) * 3 + i) = i < n_comp ? val(i) : 0.0;
   }
 }
 
