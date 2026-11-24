@@ -195,8 +195,14 @@ NEML2ToKokkosMaterialProperty<rank, full, interface, neighbor>::computeQpPropert
     const unsigned int qp, Datum & datum) const
 {
   const auto storage_qp = qp;
-  const auto batch_index =
-      _broadcast_output ? 0 : _batch_offset[datum.elemID()] + static_cast<dof_id_type>(storage_qp);
+  // NEML2 evaluates the element-interior quadrature points of local elements only. A block
+  // material can also be computed on element sides, e.g. on the neighbor side of an interface,
+  // whose element may be a ghost with no batch entry; there is no NEML2 output for those points.
+  const auto elem = datum.elemID();
+  const auto batch_index = _broadcast_output ? 0
+                           : (datum.isSide() || elem >= _batch_offset.size())
+                               ? libMesh::DofObject::invalid_id
+                               : _batch_offset[elem] + static_cast<dof_id_type>(storage_qp);
   writeOutputToProperty(batch_index, datum, storage_qp);
 }
 
