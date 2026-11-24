@@ -1,0 +1,70 @@
+[Tests]
+  issues = '#34529'
+  design = 'EqualValueBoundaryDofConstraint.md'
+  [equal_value]
+    requirement = 'The system shall make a nodal variable uniform on a boundary with exact DOF '
+                  'constraints that tie every boundary DOF to one primary DOF, for several '
+                  'variables and boundaries,'
+    [host]
+      type = CSVDiff
+      input = equal_value.i
+      csvdiff = equal_value_out.csv
+      detail = 'with host assembly,'
+    []
+    [host_jacobian]
+      type = PetscJacobianTester
+      input = equal_value.i
+      run_sim = true
+      prereq = equal_value/host
+      detail = 'with an exact host Jacobian,'
+    []
+    [kokkos]
+      type = CSVDiff
+      input = equal_value.i
+      cli_args = 'diffusion=KokkosDiffusion dirichlet=KokkosDirichletBC neumann=KokkosNeumannBC '
+                 'Outputs/file_base=kokkos_out'
+      # The gold is a symlink to equal_value_out.csv
+      csvdiff = kokkos_out.csv
+      capabilities = 'kokkos'
+      compute_devices = 'cpu cuda xpu'
+      prereq = equal_value/host_jacobian
+      detail = 'with Kokkos assembly, and'
+    []
+    [kokkos_jacobian]
+      type = PetscJacobianTester
+      input = equal_value.i
+      cli_args = 'diffusion=KokkosDiffusion dirichlet=KokkosDirichletBC neumann=KokkosNeumannBC'
+      run_sim = true
+      capabilities = 'kokkos'
+      compute_devices = 'cpu cuda xpu'
+      prereq = equal_value/kokkos
+      detail = 'with an exact Kokkos Jacobian.'
+    []
+  []
+  [errors]
+    requirement = 'The system shall report an error if the variables made uniform on boundaries'
+    [count]
+      type = RunException
+      input = equal_value.i
+      cli_args = "UserObjects/equal_value/variable='u v u'"
+      expect_err = 'Provide either one variable or one variable per boundary.'
+      detail = 'do not pair with the boundaries,'
+    []
+    [family]
+      type = RunException
+      input = equal_value.i
+      cli_args = 'Variables/v/family=MONOMIAL Variables/v/order=CONSTANT '
+                 'Kernels/inactive="diff_v diff_v_stiff" BCs/inactive="v_bottom v_top"'
+      expect_err = "Variable 'v' must be a scalar Lagrange variable."
+      detail = 'are not scalar Lagrange variables, or'
+    []
+    [two_objects]
+      type = RunException
+      input = equal_value.i
+      cli_args = "UserObjects/second/type=EqualValueBoundaryDofConstraint "
+                 "UserObjects/second/boundary=bottom UserObjects/second/variable=u"
+      expect_err = "already has a libMesh constraint object"
+      detail = 'are split across several objects acting on one system.'
+    []
+  []
+[]
