@@ -979,6 +979,7 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30"
+      compute_devices = 'cpu cuda xpu'
       detail = 'with small-strain kinematics, the directional correction, and different bulk properties on the two sides,'
     []
     [small_strain_no_shifted]
@@ -989,6 +990,7 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30"
+      compute_devices = 'cpu cuda xpu'
       detail = 'with small-strain kinematics and shifted terms disabled,'
     []
     [total_lagrangian]
@@ -1169,10 +1171,181 @@
       detail = 'in the host total-Lagrangian formulation with the F-bar deformation gradient.'
     []
   []
+  [weighted_traction_stabilization_cuda]
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall assemble Jacobian entries consistent with its residual, and reproduce the CPU solution, for the weighted traction stabilization with the bulk NEML2 model evaluated on the CUDA device'
+    # Same tolerances as the CPU children in weighted_traction_stabilization
+    ratio_tol = 1e-7
+    difference_tol = 1e-7
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cuda
+    [total_lagrangian]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "Outputs/csv=false NEML2/device=cuda "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10"
+      difference_tol = 1e-4
+      detail = 'with total-Lagrangian kinematics,'
+    []
+    [total_lagrangian_automatic_beta]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "Outputs/csv=false NEML2/device=cuda Materials/bulk_pk1/dpk1_d_grad_u=custom_volume_tangent "
+                 "Kernels/stress_x/dpk1_d_grad_u=custom_volume_tangent "
+                 "Kernels/stress_y/dpk1_d_grad_u=custom_volume_tangent "
+                 "Kernels/stress_z/dpk1_d_grad_u=custom_volume_tangent "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volume_tangent=custom_volume_tangent "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction"
+      difference_tol = 1e-4
+      detail = 'with beta derived once from custom-named adjacent directional bulk tangents and element normal sizes,'
+    []
+    [total_lagrangian_automatic_beta_together]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "Outputs/csv=false NEML2/device=cuda Materials/bulk_pk1/dpk1_d_grad_u=custom_volume_tangent "
+                 "Kernels/stress_x/dpk1_d_grad_u=custom_volume_tangent "
+                 "Kernels/stress_y/dpk1_d_grad_u=custom_volume_tangent "
+                 "Kernels/stress_z/dpk1_d_grad_u=custom_volume_tangent "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volume_tangent=custom_volume_tangent "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Executioner/residual_and_jacobian_together=true"
+      difference_tol = 1e-4
+      detail = 'with beta derived once and residual and Jacobian assembled together,'
+    []
+    [total_lagrangian_automatic_beta_nonpositive]
+      type = RunException
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "NEML2/input=sczm_tl_fbar_negative_bulk_neml2.i NEML2/device=cuda fbar=false "
+                 "interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "Outputs/csv=false "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction"
+      expect_err = 'SCZM automatic stabilization_beta must be finite and positive; check the normal directional bulk tangents and adjacent element volumes.'
+      detail = 'rejecting a nonpositive automatic beta derived from nonpositive directional bulk stiffness,'
+    []
+    [total_lagrangian_coupled_cubic]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "Outputs/csv=false NEML2/device=cuda Materials/local_traction/cohesive_law=coupled_cubic "
+                 "Materials/local_traction/linear_stiffness=8 "
+                 "Materials/local_traction/cubic_stiffness=40 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_cohesive_law=coupled_cubic "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_linear_stiffness=8 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_cubic_stiffness=40"
+      difference_tol = 1e-4
+      detail = 'with a native memoryless coupled-cubic cohesive law evaluated at each auxiliary separation,'
+    []
+    [total_lagrangian_no_shifted]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "Outputs/csv=false NEML2/device=cuda "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/no_shifted=true "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10"
+      difference_tol = 1e-4
+      detail = 'with total-Lagrangian kinematics and shifted terms disabled,'
+    []
+    [total_lagrangian_fbar]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "Outputs/csv=false NEML2/device=cuda "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10"
+      difference_tol = 1e-4
+      detail = 'with total-Lagrangian kinematics and the F-bar deformation gradient,'
+    []
+    [total_lagrangian_fbar_together]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "Outputs/csv=false NEML2/device=cuda "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Executioner/residual_and_jacobian_together=true"
+      difference_tol = 1e-4
+      detail = 'with total-Lagrangian kinematics, the F-bar deformation gradient, and residual and Jacobian assembled together,'
+    []
+    [total_lagrangian_fbar_recovery]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "Outputs/csv=false NEML2/device=cuda "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stress_recovery=element_linear"
+      difference_tol = 1e-4
+      min_parallel = 2
+      max_parallel = 2
+      mesh_mode = distributed
+      detail = 'with element-local affine recovery of each side volume stress on distorted HEX8 elements, owner-to-ghost volume property synchronization, and the complete local and nonlocal F-bar derivatives,'
+    []
+    [total_lagrangian_fbar_recovery_together]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "Outputs/csv=false NEML2/device=cuda "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stress_recovery=element_linear "
+                 "Executioner/residual_and_jacobian_together=true"
+      difference_tol = 1e-4
+      min_parallel = 2
+      max_parallel = 2
+      mesh_mode = distributed
+      detail = 'with element-local affine recovery, F-bar derivatives, and residual and Jacobian assembled together,'
+    []
+    [total_lagrangian_fbar_recovery_solution]
+      type = CSVDiff
+      input = sczm_tl_fbar_kokkos.i
+      # Same gold file as the CPU child in weighted_traction_stabilization
+      csvdiff = sczm_tl_fbar_recovery_kokkos_out.csv
+      cli_args = "Outputs/exodus=false NEML2/device=cuda "
+                 "file_base=sczm_tl_fbar_recovery_kokkos_out "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stress_recovery=element_linear"
+      detail = 'with element-local affine recovery evaluated at the true interface rather than the surrogate interface, reproducing the CPU solution,'
+    []
+    [total_lagrangian_fbar_recovery_no_interface]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_recovery_kokkos.i
+      cli_args = 'NEML2/device=cuda'
+      difference_tol = 1e-4
+      min_parallel = 2
+      max_parallel = 2
+      mesh_mode = distributed
+      detail = 'with element-local affine recovery of stabilization and directional-correction stress on distorted HEX8 elements and no interface bulk-stress or NEML2 evaluation, and'
+    []
+    [total_lagrangian_fbar_2d_recovery_no_interface]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_2d_recovery_kokkos.i
+      cli_args = 'NEML2/device=cuda'
+      difference_tol = 1e-4
+      min_parallel = 2
+      max_parallel = 2
+      mesh_mode = distributed
+      detail = 'with least-squares element-local affine recovery of stabilization and directional-correction stress on distorted QUAD4 elements and no interface bulk-stress or NEML2 evaluation.'
+    []
+  []
   [coupled_cubic_rejections]
     requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reject incomplete or invalid coupled-cubic cohesive-law configurations'
     capabilities = 'kokkos & libtorch & neml2'
-    compute_devices = cpu
+    compute_devices = 'cpu cuda xpu'
     recover = false
     [missing_material_linear_coefficient]
       type = RunException
