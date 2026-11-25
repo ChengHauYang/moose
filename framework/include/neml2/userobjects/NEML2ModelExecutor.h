@@ -62,6 +62,17 @@ public:
                                                   const std::string & traction_output,
                                                   const at::Tensor & local_jump) const;
 
+  /// Whether the model reads the old value of any variable, i.e. carries history between steps
+  bool hasHistory() const;
+
+  /// Re-evaluate the model with the current jump input replaced by \p local_jump on the rows
+  /// flagged in \p replace_rows, and publish the result as the executor's current evaluation: the
+  /// replaced input, the retrieved outputs and derivatives, and the outputs that advanceState()
+  /// saves as the next old state. Throws a MooseException when the evaluation fails.
+  void publishTrial(const std::string & jump_input,
+                    const at::Tensor & local_jump,
+                    const at::Tensor & replace_rows);
+
   /// Return the current NEML2 input gathered from a MOOSE material property, or an empty string.
   std::string inputForMaterialProperty(const std::string & prop_name) const;
 
@@ -235,6 +246,12 @@ protected:
 
 private:
   friend class NEML2OutputInterface;
+
+  /// Throw unless \p local_jump is a Float64 [batch, 3] trial jump
+  void checkTrialJump(const at::Tensor & local_jump) const;
+
+  /// The gathered \p jump_input that a trial replaces; throws unless it is a [batch, 3] vector
+  const at::Tensor & gatheredTrialInput(const std::string & jump_input) const;
 
   /// Whether an error was encountered
   bool _error;

@@ -320,29 +320,51 @@ NEML2ModelExecutor::inputForMaterialProperty(const std::string & prop_name) cons
   return input;
 }
 
-std::pair<at::Tensor, at::Tensor>
-NEML2ModelExecutor::evaluateTrial(const std::string & jump_input,
-                                  const std::string & traction_output,
-                                  const at::Tensor & local_jump) const
+bool
+NEML2ModelExecutor::hasHistory() const
+{
+  const auto & inputs = model().input_names();
+  return std::any_of(
+      inputs.begin(), inputs.end(), [](const auto & input) { return parseLag(input).second > 0; });
+}
+
+void
+NEML2ModelExecutor::checkTrialJump(const at::Tensor & local_jump) const
 {
   const auto rows = static_cast<int64_t>(_batch_index_generator.getBatchIndex());
   if (!local_jump.defined() || local_jump.sizes() != at::IntArrayRef({rows, 3}) ||
       local_jump.scalar_type() != at::kDouble)
     throw MooseException(
         "NEML2 trial jump for executor '", name(), "' must be Float64 [batch, 3].");
+}
 
-  const auto cpu_double = at::TensorOptions().device(at::kCPU).dtype(at::kDouble);
-  if (rows == 0)
-    return {at::empty({0, 3}, cpu_double), at::empty({0, 3, 3}, cpu_double)};
-
+const at::Tensor &
+NEML2ModelExecutor::gatheredTrialInput(const std::string & jump_input) const
+{
+  const auto rows = static_cast<int64_t>(_batch_index_generator.getBatchIndex());
   const auto original = _in.find(jump_input);
   if (original == _in.end() || !original->second.defined() || original->second.dim() == 0 ||
-      original->second.size(-1) != 3 || original->second.numel() != local_jump.numel())
+      original->second.size(-1) != 3 || original->second.numel() != rows * 3)
     throw MooseException("NEML2 executor '",
                          name(),
                          "' has no compatible gathered vector for trial input '",
                          jump_input,
                          "'.");
+  return original->second;
+}
+
+std::pair<at::Tensor, at::Tensor>
+NEML2ModelExecutor::evaluateTrial(const std::string & jump_input,
+                                  const std::string & traction_output,
+                                  const at::Tensor & local_jump) const
+{
+  checkTrialJump(local_jump);
+  const auto rows = static_cast<int64_t>(_batch_index_generator.getBatchIndex());
+  const auto cpu_double = at::TensorOptions().device(at::kCPU).dtype(at::kDouble);
+  if (rows == 0)
+    return {at::empty({0, 3}, cpu_double), at::empty({0, 3, 3}, cpu_double)};
+
+  gatheredTrialInput(jump_input);
 
   try
   {
@@ -387,7 +409,8 @@ NEML2ModelExecutor::evaluateTrial(const std::string & jump_input,
     const auto published_row = _retrieved_derivatives.find(traction_output);
     if (_output_ready && published != _retrieved_outputs.end() && published->second.defined() &&
         published_row != _retrieved_derivatives.end() &&
-        at::equal(local_jump.to(cpu_double), original->second.to(cpu_double).reshape({rows, 3})))
+        at::equal(local_jump.to(cpu_double),
+                  gatheredTrialInput(jump_input).to(cpu_double).reshape({rows, 3})))
     {
       const auto published_tangent = published_row->second.find(jump_input);
       mooseAssert(at::allclose(traction, as_cpu_batch(published->second, false)),
@@ -403,6 +426,44 @@ NEML2ModelExecutor::evaluateTrial(const std::string & jump_input,
   {
     throw MooseException("NEML2 trial evaluation in executor '", name(), "' failed: ", e.what());
   }
+}
+
+void
+NEML2ModelExecutor::publishTrial(const std::string & jump_input,
+                                 const at::Tensor & local_jump,
+                                 const at::Tensor & replace_rows)
+{
+  checkTrialJump(local_jump);
+  const auto rows = static_cast<int64_t>(_batch_index_generator.getBatchIndex());
+  if (!replace_rows.defined() || replace_rows.sizes() != at::IntArrayRef({rows}) ||
+      replace_rows.scalar_type() != at::kBool)
+    throw MooseException("NEML2 trial rows for executor '", name(), "' must be Bool [batch].");
+  if (rows == 0)
+    return;
+
+  gatheredTrialInput(jump_input);
+  auto & gathered = _in[jump_input];
+  const auto sizes = gathered.sizes().vec();
+  const auto options = gathered.options();
+  // Rows outside the trial keep the gathered jump
+  gathered = at::where(replace_rows.to(options.device()).unsqueeze(-1),
+                       local_jump.to(options),
+                       gathered.reshape({rows, 3}))
+                 .reshape(sizes)
+                 .contiguous();
+
+  const NEML2Utils::ScopedNumThreads scoped_threads(neml2NumThreads());
+  const NEML2Utils::ScopedDefaultDtype scoped_dtype;
+  const bool compute_derivative = !_retrieved_derivatives.empty();
+  if (!solve(compute_derivative))
+  {
+    // finalize() has already run for this update and will not see the failure, so the caller
+    // handles it; the flag is cleared to leave the executor as finalize() left it
+    _error = false;
+    throw MooseException(
+        "NEML2 trial publication in executor '", name(), "' failed: ", _error_message);
+  }
+  extractOutputs(compute_derivative);
 }
 
 void
