@@ -11,8 +11,45 @@
 
 #include "SCZMCohesiveLawEvaluators.h"
 
+#include <cmath>
+#include <iterator>
+#include <vector>
+
 using namespace Moose::Kokkos;
 using namespace Moose::Kokkos::SCZM;
+
+namespace
+{
+/**
+ * Memoryless isotropic exponential softening law f(j) = k j exp(-||j||^2 / delta^2). Its tangent
+ * k exp(-r) (I - 2 j j^T / delta^2), r = ||j||^2 / delta^2, turns negative for r > 1/2, with the
+ * most negative eigenvalue -2 k exp(-3/2) ~ -0.446 k at r = 3/2. beta > 0.446 k keeps the Robin
+ * tangent I + K / beta positive definite.
+ */
+struct ExponentialSofteningLaw
+{
+  Real stiffness = 0.0;
+  Real opening_scale = 1.0;
+
+  CohesiveEvaluation evaluate(const Real3 & jump, const unsigned int ndisp) const
+  {
+    CohesiveEvaluation result;
+    Real squared_norm = 0.0;
+    for (const auto i : make_range(ndisp))
+      squared_norm += jump.v[i] * jump.v[i];
+    const Real secant = stiffness * std::exp(-squared_norm / (opening_scale * opening_scale));
+    for (const auto i : make_range(ndisp))
+    {
+      result.traction.v[i] = secant * jump.v[i];
+      for (const auto j : make_range(ndisp))
+        result.jump_tangent.a[i][j] =
+            secant *
+            ((i == j ? 1.0 : 0.0) - 2.0 * jump.v[i] * jump.v[j] / (opening_scale * opening_scale));
+    }
+    return result;
+  }
+};
+} // namespace
 
 TEST(SCZMGeneralizedRobinSolverTest, AffineAnisotropicWithOffset)
 {
@@ -248,4 +285,197 @@ TEST(SCZMGeneralizedRobinSolverTest, RejectsNearlySingularRobinTangent)
   // Same cancellation in one direction of a 2D diagonal tangent.
   law.stiffness.a[1][1] = 4.0;
   EXPECT_FALSE(GeneralizedRobinSolver::solve(law, jump, Real3{}, beta, 2, true).converged);
+}
+
+namespace
+{
+using PointStatus = GeneralizedRobinSolver::PointStatus;
+
+void
+expectIdentical(const StabilizedTractionResult & actual, const StabilizedTractionResult & expected)
+{
+  EXPECT_EQ(actual.converged, expected.converged);
+  EXPECT_EQ(actual.iterations, expected.iterations);
+  for (const auto i : make_range(3))
+  {
+    EXPECT_EQ(actual.auxiliary_jump.v[i], expected.auxiliary_jump.v[i]);
+    EXPECT_EQ(actual.traction.v[i], expected.traction.v[i]);
+    for (const auto j : make_range(3))
+    {
+      EXPECT_EQ(actual.inverse_robin_tangent.a[i][j], expected.inverse_robin_tangent.a[i][j]);
+      EXPECT_EQ(actual.dtraction_djump.a[i][j], expected.dtraction_djump.a[i][j]);
+      EXPECT_EQ(actual.dtraction_dbulk_traction.a[i][j], expected.dtraction_dbulk_traction.a[i][j]);
+    }
+  }
+}
+
+/// Drives begin()/consume() as a batch caller would and counts the requested evaluations.
+template <typename Law>
+StabilizedTractionResult
+solvePointwise(const Law & law,
+               const Real3 & shifted_jump,
+               const Real3 & bulk_traction,
+               const Real beta,
+               const unsigned int ndisp,
+               const bool affine,
+               unsigned int & evaluations)
+{
+  auto state = GeneralizedRobinSolver::begin(shifted_jump, bulk_traction, beta, ndisp, affine);
+  evaluations = 0;
+  while (state.status == PointStatus::Active)
+  {
+    ++evaluations;
+    const auto status =
+        GeneralizedRobinSolver::consume(state, law.evaluate(state.requested_jump, ndisp));
+    EXPECT_EQ(status, state.status);
+  }
+  EXPECT_EQ(state.status == PointStatus::Converged, state.result.converged);
+  return state.result;
+}
+} // namespace
+
+TEST(SCZMGeneralizedRobinSolverTest, ResumableIterationMatchesSolve)
+{
+  AffineCohesiveLaw affine;
+  affine.stiffness.a[0][0] = 12.0;
+  affine.stiffness.a[0][1] = 2.0;
+  affine.stiffness.a[1][0] = 2.0;
+  affine.stiffness.a[1][1] = 5.0;
+  affine.offset.v[0] = 0.3;
+  affine.offset.v[1] = -0.2;
+  CoupledCubicCohesiveLaw cubic;
+  cubic.linear_stiffness = 2.0;
+  cubic.cubic_stiffness = 40.0;
+  // beta = 5 > 0.446 k keeps the softening Robin tangent positive definite.
+  ExponentialSofteningLaw softening;
+  softening.stiffness = 10.0;
+  softening.opening_scale = 0.5;
+
+  const Real3 small_jump{{0.1, -0.04, 0.0}};
+  const Real3 small_traction{{0.8, -0.1, 0.0}};
+  const Real3 large_jump{{0.6, -0.35, 0.2}};
+  const Real3 large_traction{{0.4, -0.1, 0.3}};
+  const Real3 softening_jump{{0.6, 0.1, 0.0}};
+  unsigned int evaluations = 0;
+
+  // The affine path requests the initial and the updated jump only.
+  auto result = solvePointwise(affine, small_jump, small_traction, 7.0, 2, true, evaluations);
+  ASSERT_TRUE(result.converged);
+  EXPECT_EQ(evaluations, 2);
+  expectIdentical(result,
+                  GeneralizedRobinSolver::solve(affine, small_jump, small_traction, 7.0, 2, true));
+
+  result = solvePointwise(cubic, large_jump, large_traction, 5.0, 3, false, evaluations);
+  ASSERT_TRUE(result.converged);
+  expectIdentical(result,
+                  GeneralizedRobinSolver::solve(cubic, large_jump, large_traction, 5.0, 3, false));
+
+  // Without backtracking each iterate costs one evaluation plus the initial one, so more requests
+  // show that the line search rejected trial iterates on the softening branch.
+  result = solvePointwise(softening, softening_jump, Real3{}, 5.0, 3, false, evaluations);
+  ASSERT_TRUE(result.converged);
+  EXPECT_GT(evaluations, result.iterations + 1);
+  expectIdentical(result,
+                  GeneralizedRobinSolver::solve(softening, softening_jump, Real3{}, 5.0, 3, false));
+
+  // beta = 2 < 0.446 k admits a non-monotone Robin operator on which the line search fails.
+  result = solvePointwise(softening, large_jump, large_traction, 2.0, 3, false, evaluations);
+  EXPECT_FALSE(result.converged);
+  expectIdentical(
+      result, GeneralizedRobinSolver::solve(softening, large_jump, large_traction, 2.0, 3, false));
+}
+
+TEST(SCZMGeneralizedRobinSolverTest, BatchFreezesTerminalPoints)
+{
+  ExponentialSofteningLaw law;
+  law.stiffness = 10.0;
+  law.opening_scale = 0.5;
+
+  struct Point
+  {
+    Real3 shifted_jump;
+    Real3 bulk_traction;
+    Real beta;
+  };
+  const Real3 settled_jump{{0.3, -0.2, 0.1}};
+  // The settled point starts at the Robin solution, the beta = 2 point fails in the line search,
+  // and beta = 0 is rejected by begin().
+  const Point points[] = {{settled_jump, law.evaluate(settled_jump, 3).traction, 5.0},
+                          {Real3{{0.1, -0.04, 0.0}}, Real3{{0.8, -0.1, 0.0}}, 20.0},
+                          {Real3{{0.6, 0.1, 0.0}}, Real3{}, 5.0},
+                          {Real3{{0.6, -0.35, 0.2}}, Real3{{0.4, -0.1, 0.3}}, 2.0},
+                          {Real3{{0.6, 0.1, 0.0}}, Real3{}, 0.0}};
+  const auto n_points = std::size(points);
+
+  std::vector<GeneralizedRobinSolver::PointState> states;
+  for (const auto & point : points)
+    states.push_back(GeneralizedRobinSolver::begin(
+        point.shifted_jump, point.bulk_traction, point.beta, 3, false));
+  EXPECT_EQ(states.back().status, PointStatus::Failed);
+
+  // Every round evaluates the whole batch, as one tensor evaluation would, and hands every row to
+  // consume(); terminal rows must ignore it. finish_round records when each row became terminal.
+  std::vector<GeneralizedRobinSolver::PointState> frozen(n_points);
+  std::vector<unsigned int> finish_round(n_points, 0);
+  for (const auto p : make_range(n_points))
+    if (states[p].status != PointStatus::Active)
+      frozen[p] = states[p];
+
+  unsigned int round = 0;
+  // The default budget allows at most 1 + 20 * (8 + 1) = 181 evaluations per point (initial
+  // iterate, then up to 9 trial iterates for each of 20 iterations); the cap only guards against
+  // a driver that never terminates.
+  const unsigned int max_rounds = 200;
+  auto any_active = [&states]()
+  {
+    for (const auto & state : states)
+      if (state.status == PointStatus::Active)
+        return true;
+    return false;
+  };
+  while (any_active() && round < max_rounds)
+  {
+    ++round;
+    for (const auto p : make_range(n_points))
+    {
+      const bool was_active = states[p].status == PointStatus::Active;
+      const auto evaluation = law.evaluate(states[p].requested_jump, 3);
+      GeneralizedRobinSolver::consume(states[p], evaluation);
+      if (!was_active)
+      {
+        EXPECT_EQ(states[p].status, frozen[p].status);
+        for (const auto i : make_range(3))
+          EXPECT_EQ(states[p].requested_jump.v[i], frozen[p].requested_jump.v[i]);
+        expectIdentical(states[p].result, frozen[p].result);
+      }
+      else if (states[p].status != PointStatus::Active)
+      {
+        frozen[p] = states[p];
+        finish_round[p] = round;
+      }
+    }
+  }
+  ASSERT_FALSE(any_active());
+
+  const PointStatus expected_status[] = {PointStatus::Converged,
+                                         PointStatus::Converged,
+                                         PointStatus::Converged,
+                                         PointStatus::Failed,
+                                         PointStatus::Failed};
+  for (const auto p : make_range(n_points))
+  {
+    EXPECT_EQ(states[p].status, expected_status[p]);
+    // A terminal row keeps requesting its last accepted jump.
+    for (const auto i : make_range(3))
+      EXPECT_EQ(states[p].requested_jump.v[i], states[p].result.auxiliary_jump.v[i]);
+    expectIdentical(
+        states[p].result,
+        GeneralizedRobinSolver::solve(
+            law, points[p].shifted_jump, points[p].bulk_traction, points[p].beta, 3, false));
+  }
+  EXPECT_EQ(finish_round[0], 1);
+  EXPECT_EQ(states[0].result.iterations, 0);
+  EXPECT_EQ(finish_round[4], 0);
+  // The rows converge at different rounds, so the earlier ones stayed frozen above.
+  EXPECT_LT(finish_round[1], finish_round[2]);
 }

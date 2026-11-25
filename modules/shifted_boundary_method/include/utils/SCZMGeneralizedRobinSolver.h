@@ -54,10 +54,61 @@ struct GeneralizedRobinSolverOptions
  * Evaluator must provide `CohesiveEvaluation evaluate(const Real3 &, unsigned int) const`. Only the
  * first ndisp entries are used. An affine evaluator takes one Newton update and therefore preserves
  * the analytical fast path without a local iteration loop.
+ *
+ * The Newton iteration is also exposed as a resumable per-point state machine (begin()/consume())
+ * for cohesive laws that can only be evaluated for a whole batch of points at once. The caller
+ * evaluates the law at PointState::requested_jump and passes the evaluation to consume() until the
+ * status is terminal; solve() is that loop for a pointwise evaluator.
  */
 class GeneralizedRobinSolver
 {
 public:
+  enum class PointStatus
+  {
+    Active,
+    Converged,
+    Failed
+  };
+
+  /// Resumable Newton state of one point; terminal points are never modified by consume().
+  struct PointState
+  {
+    /// The step the next evaluation is consumed by
+    enum class Stage
+    {
+      /// Evaluation at the accepted iterate: convergence check and Newton update
+      Newton,
+      /// Evaluation at a damped trial iterate
+      LineSearch,
+      /// Evaluation at the single affine update, which must satisfy the tolerance
+      AffineCheck
+    };
+
+    /// Jump at which the caller evaluates the cohesive law next; frozen once terminal
+    Real3 requested_jump{};
+    /// Accepted iterate in auxiliary_jump; complete result once status is Converged
+    StabilizedTractionResult result{};
+    PointStatus status = PointStatus::Failed;
+    Stage stage = Stage::Newton;
+
+    Real3 right_hand_side{};
+    /// Newton update of the accepted iterate
+    Real3 update{};
+    /// Residual norm of the accepted iterate
+    Real residual_norm = 0.0;
+    /// Convergence tolerance, fixed by the residual norm of the initial iterate
+    Real tolerance = 0.0;
+    /// Line-search multiplier of the current trial iterate
+    Real damping = 1.0;
+    unsigned int iteration = 0;
+    unsigned int backtrack = 0;
+
+    Real beta = 0.0;
+    unsigned int ndisp = 0;
+    bool affine = false;
+    GeneralizedRobinSolverOptions options{};
+  };
+
   template <typename Evaluator>
   SCZM_KOKKOS_FUNCTION static StabilizedTractionResult
   solve(const Evaluator & evaluator,
@@ -68,97 +119,189 @@ public:
         const bool affine,
         const GeneralizedRobinSolverOptions & options = {})
   {
-    StabilizedTractionResult result;
-    result.auxiliary_jump = shifted_jump;
-    if (!(beta > 0.0) || ndisp < 1 || ndisp > 3 || !finite(beta))
-      return result;
+    auto state = begin(shifted_jump, bulk_traction, beta, ndisp, affine, options);
+    while (state.status == PointStatus::Active)
+      consume(state, evaluator.evaluate(state.requested_jump, ndisp));
+    return state.result;
+  }
 
-    Real3 right_hand_side{};
+  /// Starts the Newton iteration at the shifted jump; Failed for inadmissible beta or ndisp.
+  SCZM_KOKKOS_FUNCTION static PointState begin(const Real3 & shifted_jump,
+                                               const Real3 & bulk_traction,
+                                               const Real beta,
+                                               const unsigned int ndisp,
+                                               const bool affine,
+                                               const GeneralizedRobinSolverOptions & options = {})
+  {
+    PointState state;
+    state.result.auxiliary_jump = shifted_jump;
+    state.requested_jump = shifted_jump;
+    state.beta = beta;
+    state.ndisp = ndisp;
+    state.affine = affine;
+    state.options = options;
+    if (!(beta > 0.0) || ndisp < 1 || ndisp > 3 || !finite(beta) || options.max_iterations == 0)
+      return state;
+
     for (unsigned int i = 0; i < ndisp; ++i)
-      right_hand_side.v[i] = shifted_jump.v[i] + bulk_traction.v[i] / beta;
+      state.right_hand_side.v[i] = shifted_jump.v[i] + bulk_traction.v[i] / beta;
+    state.status = PointStatus::Active;
+    return state;
+  }
 
-    CohesiveEvaluation evaluation;
-    Real initial_norm = 0.0;
-    for (unsigned int iteration = 0; iteration < options.max_iterations; ++iteration)
+  /// Advances an active point with the cohesive evaluation at its requested jump.
+  SCZM_KOKKOS_FUNCTION static PointStatus consume(PointState & state,
+                                                  const CohesiveEvaluation & evaluation)
+  {
+    if (state.status != PointStatus::Active)
+      return state.status;
+
+    switch (state.stage)
     {
-      evaluation = evaluator.evaluate(result.auxiliary_jump, ndisp);
-      if (!validEvaluation(evaluation, ndisp))
-        return result;
-
-      Real3 residual{};
-      for (unsigned int i = 0; i < ndisp; ++i)
-        residual.v[i] =
-            result.auxiliary_jump.v[i] + evaluation.traction.v[i] / beta - right_hand_side.v[i];
-      const Real residual_norm = norm(residual, ndisp);
-      if (!finite(residual_norm))
-        return result;
-      if (iteration == 0)
-        initial_norm = residual_norm;
-
-      const Real tolerance = options.absolute_tolerance + options.relative_tolerance * initial_norm;
-      if (residual_norm <= tolerance)
-      {
-        result.iterations = iteration;
-        return consistentResult(result, evaluation, beta, ndisp, options.minimum_pivot);
-      }
-
-      Real33 robin_tangent{};
-      const Real pivot_tolerance =
-          robinTangent(evaluation, beta, ndisp, options.minimum_pivot, robin_tangent);
-
-      Real3 update{};
-      for (unsigned int i = 0; i < ndisp; ++i)
-        update.v[i] = -residual.v[i];
-      if (!solveDense(robin_tangent, update, ndisp, pivot_tolerance))
-        return result;
-
-      if (affine)
-      {
-        for (unsigned int i = 0; i < ndisp; ++i)
-          result.auxiliary_jump.v[i] += update.v[i];
-        result.iterations = 1;
-        evaluation = evaluator.evaluate(result.auxiliary_jump, ndisp);
-        if (!validEvaluation(evaluation, ndisp))
-          return result;
-        for (unsigned int i = 0; i < ndisp; ++i)
-          residual.v[i] =
-              result.auxiliary_jump.v[i] + evaluation.traction.v[i] / beta - right_hand_side.v[i];
-        if (norm(residual, ndisp) > tolerance)
-          return result;
-        return consistentResult(result, evaluation, beta, ndisp, options.minimum_pivot);
-      }
-
-      Real damping = 1.0;
-      bool accepted = false;
-      for (unsigned int backtrack = 0; backtrack <= options.max_backtracks; ++backtrack)
-      {
-        Real3 trial_jump{};
-        for (unsigned int i = 0; i < ndisp; ++i)
-          trial_jump.v[i] = result.auxiliary_jump.v[i] + damping * update.v[i];
-        const auto trial_evaluation = evaluator.evaluate(trial_jump, ndisp);
-        if (validEvaluation(trial_evaluation, ndisp))
-        {
-          Real3 trial_residual{};
-          for (unsigned int i = 0; i < ndisp; ++i)
-            trial_residual.v[i] =
-                trial_jump.v[i] + trial_evaluation.traction.v[i] / beta - right_hand_side.v[i];
-          if (norm(trial_residual, ndisp) < residual_norm)
-          {
-            result.auxiliary_jump = trial_jump;
-            accepted = true;
-            break;
-          }
-        }
-        damping *= 0.5;
-      }
-      if (!accepted)
-        return result;
+      case PointState::Stage::Newton:
+        newtonStep(state, evaluation);
+        break;
+      case PointState::Stage::LineSearch:
+        lineSearchStep(state, evaluation);
+        break;
+      case PointState::Stage::AffineCheck:
+        affineCheck(state, evaluation);
+        break;
     }
 
-    return result;
+    if (state.status != PointStatus::Active)
+      state.requested_jump = state.result.auxiliary_jump;
+    return state.status;
   }
 
 private:
+  /// Robin residual r = j + f(j) / beta - (shifted_jump + bulk_traction / beta).
+  SCZM_KOKKOS_FUNCTION static Real3
+  robinResidual(const PointState & state, const Real3 & jump, const CohesiveEvaluation & evaluation)
+  {
+    Real3 residual{};
+    for (unsigned int i = 0; i < state.ndisp; ++i)
+      residual.v[i] =
+          jump.v[i] + evaluation.traction.v[i] / state.beta - state.right_hand_side.v[i];
+    return residual;
+  }
+
+  SCZM_KOKKOS_FUNCTION static void finish(PointState & state, const CohesiveEvaluation & evaluation)
+  {
+    state.result = consistentResult(
+        state.result, evaluation, state.beta, state.ndisp, state.options.minimum_pivot);
+    state.status = state.result.converged ? PointStatus::Converged : PointStatus::Failed;
+  }
+
+  /// Convergence check and Newton update at the accepted iterate result.auxiliary_jump.
+  SCZM_KOKKOS_FUNCTION static void newtonStep(PointState & state,
+                                              const CohesiveEvaluation & evaluation)
+  {
+    const auto ndisp = state.ndisp;
+    if (!validEvaluation(evaluation, ndisp))
+    {
+      state.status = PointStatus::Failed;
+      return;
+    }
+
+    const auto residual = robinResidual(state, state.result.auxiliary_jump, evaluation);
+    state.residual_norm = norm(residual, ndisp);
+    if (!finite(state.residual_norm))
+    {
+      state.status = PointStatus::Failed;
+      return;
+    }
+    if (state.iteration == 0)
+      state.tolerance =
+          state.options.absolute_tolerance + state.options.relative_tolerance * state.residual_norm;
+
+    if (state.residual_norm <= state.tolerance)
+    {
+      state.result.iterations = state.iteration;
+      finish(state, evaluation);
+      return;
+    }
+
+    Real33 robin_tangent{};
+    const Real pivot_tolerance =
+        robinTangent(evaluation, state.beta, ndisp, state.options.minimum_pivot, robin_tangent);
+
+    for (unsigned int i = 0; i < ndisp; ++i)
+      state.update.v[i] = -residual.v[i];
+    if (!solveDense(robin_tangent, state.update, ndisp, pivot_tolerance))
+    {
+      state.status = PointStatus::Failed;
+      return;
+    }
+
+    if (state.affine)
+    {
+      for (unsigned int i = 0; i < ndisp; ++i)
+        state.result.auxiliary_jump.v[i] += state.update.v[i];
+      state.result.iterations = 1;
+      state.requested_jump = state.result.auxiliary_jump;
+      state.stage = PointState::Stage::AffineCheck;
+      return;
+    }
+
+    state.damping = 1.0;
+    state.backtrack = 0;
+    for (unsigned int i = 0; i < ndisp; ++i)
+      state.requested_jump.v[i] =
+          state.result.auxiliary_jump.v[i] + state.damping * state.update.v[i];
+    state.stage = PointState::Stage::LineSearch;
+  }
+
+  /**
+   * Accepts the trial iterate when it is admissible and decreases the residual norm, otherwise
+   * halves the damping. The accepted trial evaluation is the evaluation at the next iterate, so it
+   * is reused for that iterate's Newton step instead of being requested again.
+   */
+  SCZM_KOKKOS_FUNCTION static void lineSearchStep(PointState & state,
+                                                  const CohesiveEvaluation & evaluation)
+  {
+    const auto ndisp = state.ndisp;
+    if (validEvaluation(evaluation, ndisp) &&
+        norm(robinResidual(state, state.requested_jump, evaluation), ndisp) < state.residual_norm)
+    {
+      state.result.auxiliary_jump = state.requested_jump;
+      ++state.iteration;
+      if (state.iteration >= state.options.max_iterations)
+      {
+        state.status = PointStatus::Failed;
+        return;
+      }
+      state.stage = PointState::Stage::Newton;
+      newtonStep(state, evaluation);
+      return;
+    }
+
+    state.damping *= 0.5;
+    ++state.backtrack;
+    if (state.backtrack > state.options.max_backtracks)
+    {
+      state.status = PointStatus::Failed;
+      return;
+    }
+    for (unsigned int i = 0; i < ndisp; ++i)
+      state.requested_jump.v[i] =
+          state.result.auxiliary_jump.v[i] + state.damping * state.update.v[i];
+  }
+
+  /// Accepts the affine update only when it satisfies the tolerance of the initial iterate.
+  SCZM_KOKKOS_FUNCTION static void affineCheck(PointState & state,
+                                               const CohesiveEvaluation & evaluation)
+  {
+    if (!validEvaluation(evaluation, state.ndisp) ||
+        norm(robinResidual(state, state.result.auxiliary_jump, evaluation), state.ndisp) >
+            state.tolerance)
+    {
+      state.status = PointStatus::Failed;
+      return;
+    }
+    finish(state, evaluation);
+  }
+
   SCZM_KOKKOS_FUNCTION static bool finite(const Real value)
   {
 #ifdef MOOSE_KOKKOS_SCOPE

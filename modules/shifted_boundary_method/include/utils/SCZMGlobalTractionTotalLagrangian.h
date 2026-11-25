@@ -36,13 +36,36 @@ struct GlobalTractionTotalLagrangian
   KOKKOS_FUNCTION CohesiveEvaluation evaluate(const Real3 & global_jump,
                                               const unsigned int active_components) const
   {
-    CohesiveEvaluation result;
+    return toGlobal(
+        local_law.evaluate(toLocalJump(global_jump, active_components), active_components),
+        active_components);
+  }
+
+  KOKKOS_FUNCTION GlobalTractionEvaluation evaluateWithDeformationGradientDerivative(
+      const Real3 & global_jump, const unsigned int active_components) const
+  {
+    return toGlobalWithDF(
+        global_jump,
+        local_law.evaluate(toLocalJump(global_jump, active_components), active_components),
+        active_components);
+  }
+
+  /// Local jump R^T global_jump at which the local law is evaluated
+  KOKKOS_FUNCTION Real3 toLocalJump(const Real3 & global_jump,
+                                    const unsigned int active_components) const
+  {
     Real3 local_jump{};
     for (unsigned int i = 0; i < active_components; ++i)
       for (unsigned int j = 0; j < active_components; ++j)
         local_jump(i) += total_rotation(j, i) * global_jump(j);
+    return local_jump;
+  }
 
-    const auto local = local_law.evaluate(local_jump, active_components);
+  /// Global PK1 traction and jump tangent from a local-law evaluation at toLocalJump()
+  KOKKOS_FUNCTION CohesiveEvaluation toGlobal(const CohesiveEvaluation & local,
+                                              const unsigned int active_components) const
+  {
+    CohesiveEvaluation result;
     result.valid = local.valid;
     if (!local.valid)
       return result;
@@ -62,16 +85,16 @@ struct GlobalTractionTotalLagrangian
     return result;
   }
 
-  KOKKOS_FUNCTION GlobalTractionEvaluation evaluateWithDeformationGradientDerivative(
-      const Real3 & global_jump, const unsigned int active_components) const
+  /**
+   * toGlobal() plus the Cauchy traction and the PK1 traction derivative with respect to F, from a
+   * local-law evaluation at toLocalJump(global_jump).
+   */
+  KOKKOS_FUNCTION GlobalTractionEvaluation
+  toGlobalWithDF(const Real3 & global_jump,
+                 const CohesiveEvaluation & local,
+                 const unsigned int active_components) const
   {
     GlobalTractionEvaluation result;
-    Real3 local_jump{};
-    for (unsigned int i = 0; i < active_components; ++i)
-      for (unsigned int j = 0; j < active_components; ++j)
-        local_jump(i) += total_rotation(j, i) * global_jump(j);
-
-    const auto local = local_law.evaluate(local_jump, active_components);
     result.cohesive.valid = local.valid;
     if (!local.valid)
       return result;
