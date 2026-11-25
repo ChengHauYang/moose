@@ -64,7 +64,10 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const InputParameters &
     _settings(SCZMWeightedTractionStabilization::settings(*this)),
     _sbm_distance_uo(isParamValid("sbm_distance_uo")
                          ? &getUserObject<BoundaryShortestDistanceToSurface>("sbm_distance_uo")
-                         : nullptr)
+                         : nullptr),
+    _stabilization_beta(
+        declareRestartableData<Moose::Kokkos::Array<Real>>("stabilization_beta")),
+    _beta_initialized(declareRestartableData<bool>("beta_initialized", false))
 {
   if (!_settings.enabled)
     paramError("stabilization",
@@ -208,7 +211,13 @@ KokkosSCZMStabilizationData::allocateArrays()
   _robin_weighted_dF.create(n_qps, 27);
   _prepass_failure.create(1);
   if (!_settings.beta_override)
-    _stabilization_beta.create(n_qps);
+  {
+    if (_stabilization_beta->size() == 0)
+      _stabilization_beta->create(n_qps);
+    else if (_stabilization_beta->size() != n_qps)
+      mooseError("Recovered SCZM stabilization_beta size does not match the interface QP layout.");
+    _stabilization_beta->copyToDevice();
+  }
 }
 
 void
@@ -244,9 +253,9 @@ KokkosSCZMStabilizationData::ensurePrepared(const bool need_tangents)
   {
     _initialize_beta_only = true;
     dispatch();
-    _stabilization_beta.copyToHost();
-    for (const auto i : index_range(_stabilization_beta))
-      if (!(_stabilization_beta[i] > 0.0) || !std::isfinite(_stabilization_beta[i]))
+    _stabilization_beta->copyToHost();
+    for (const auto i : index_range(*_stabilization_beta))
+      if (!(_stabilization_beta(i) > 0.0) || !std::isfinite(_stabilization_beta(i)))
         mooseError(
             "SCZM automatic stabilization_beta must be finite and positive; check the normal "
             "directional bulk tangents and adjacent element volumes.");

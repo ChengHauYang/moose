@@ -100,6 +100,8 @@ KokkosSCZMInterfaceKernelTotalLagrangian::validParams()
                              MooseEnum("affine coupled_cubic", "affine"),
                              "Native memoryless cohesive evaluator used by generalized Robin "
                              "stabilization.");
+  params.addParam<Real>("stabilization_linear_stiffness", "Coupled-cubic linear coefficient.");
+  params.addParam<Real>("stabilization_cubic_stiffness", "Coupled-cubic cubic coefficient.");
   params.addClassDescription("Kokkos shifted cohesive-zone interface kernel for total-Lagrangian "
                              "finite-strain displacements.");
   return params;
@@ -288,6 +290,23 @@ KokkosSCZMInterfaceKernelTotalLagrangian::initialSetup()
   ShiftedInterfaceKernel::initialSetup();
   if (!_stabilization_settings.enabled)
     return;
+
+  const auto & producer_settings = _stabilization_data->stabilizationSettings();
+  const bool beta_mismatch =
+      producer_settings.beta_override != _stabilization_settings.beta_override ||
+      (producer_settings.beta_override && producer_settings.beta != _stabilization_settings.beta);
+  const bool cohesive_law_mismatch =
+      _stabilization_data->coupledCubicStabilization() != _coupled_cubic_stabilization ||
+      (_coupled_cubic_stabilization &&
+       (_stabilization_data->stabilizationLinearStiffness() !=
+            getParam<Real>("stabilization_linear_stiffness") ||
+        _stabilization_data->stabilizationCubicStiffness() !=
+            getParam<Real>("stabilization_cubic_stiffness")));
+  if (beta_mismatch || producer_settings.gamma != _stabilization_settings.gamma ||
+      cohesive_law_mismatch ||
+      _stabilization_data->elementLinearRecovery() != _element_linear_recovery ||
+      _stabilization_data->shifted() != _shifted)
+    mooseError("SCZM kernel and stabilization producer configurations differ.");
 
   dof_id_type n_qps = 0;
   for (const auto & face : kokkosInterfaceFaces())

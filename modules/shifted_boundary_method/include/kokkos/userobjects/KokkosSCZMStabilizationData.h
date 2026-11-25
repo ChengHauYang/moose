@@ -56,7 +56,7 @@ public:
   KOKKOS_FUNCTION Real stabilizationBeta(const Moose::Kokkos::InterfaceFaceRecord & face,
                                          unsigned int qp) const
   {
-    return _settings.beta_override ? _settings.beta : _stabilization_beta[face.qp_map_offset + qp];
+    return _settings.beta_override ? _settings.beta : _stabilization_beta(face.qp_map_offset + qp);
   }
 
   KOKKOS_FUNCTION Moose::Kokkos::Real3 trueNormal(const Moose::Kokkos::InterfaceFaceRecord & face,
@@ -84,7 +84,17 @@ public:
     return _bulk_traction;
   }
 
-  const Moose::Kokkos::Array<Real> & stabilizationBetas() const { return _stabilization_beta; }
+  const Moose::Kokkos::Array<Real> & stabilizationBetas() const { return *_stabilization_beta; }
+
+  const SCZMWeightedTractionStabilization::Settings & stabilizationSettings() const
+  {
+    return _settings;
+  }
+  bool shifted() const { return _shifted; }
+  bool elementLinearRecovery() const { return _element_linear_recovery; }
+  bool coupledCubicStabilization() const { return _coupled_cubic_stabilization; }
+  Real stabilizationLinearStiffness() const { return _stabilization_linear_stiffness; }
+  Real stabilizationCubicStiffness() const { return _stabilization_cubic_stiffness; }
 
   const Moose::Kokkos::Array<dof_id_type> & recoveryOffsets() const { return _recovery_offsets; }
 
@@ -128,7 +138,7 @@ protected:
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _surrogate_distance_vectors;
   Moose::Kokkos::Array2D<dof_id_type> _face_qp_offsets;
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _bulk_traction;
-  Moose::Kokkos::Array<Real> _stabilization_beta;
+  Moose::Kokkos::ReferenceWrapper<Moose::Kokkos::Array<Real>> _stabilization_beta;
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _stabilized_traction;
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _auxiliary_jump;
   Moose::Kokkos::Array<Moose::Kokkos::Real33> _robin_W;
@@ -152,7 +162,7 @@ protected:
   std::unique_ptr<Moose::Kokkos::DispatcherBase> _prepass_dispatcher;
   bool _mapping_ready = false;
   bool _recovery_initialized = false;
-  bool _beta_initialized = false;
+  Moose::Kokkos::Scalar<bool> _beta_initialized;
   bool _bulk_and_robin_valid = false;
   bool _robin_tangents_valid = false;
   bool _need_tangents = false;
@@ -244,7 +254,7 @@ KokkosSCZMStabilizationData::executeInterface(Datum & primary,
                                         neighbor_volume.JxW(volume_qp) / neighbor_volume_measure *
                                         _volume_tangent(neighbor_volume, volume_qp)(i, J, k, L);
               }
-      _stabilization_beta[index] = 0.5 * _settings.gamma * face_area *
+      _stabilization_beta(index) = 0.5 * _settings.gamma * face_area *
                                    (primary_stiffness / primary_volume_measure +
                                     neighbor_stiffness / neighbor_volume_measure);
     }
@@ -297,7 +307,7 @@ KokkosSCZMStabilizationData::executeInterface(Datum & primary,
         evaluator.local_law.affine.offset(i) -= local_tangent(i, j) * local_jump(j);
     }
 
-    const Real beta = _settings.beta_override ? _settings.beta : _stabilization_beta[index];
+    const Real beta = _settings.beta_override ? _settings.beta : _stabilization_beta(index);
     const auto stabilized = Moose::Kokkos::SCZM::GeneralizedRobinSolver::solve(
         evaluator, jump, average_traction, beta, _ndisp, !_coupled_cubic_stabilization);
     if (!stabilized.converged)
