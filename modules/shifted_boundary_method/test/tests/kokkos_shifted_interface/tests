@@ -1431,17 +1431,6 @@
       detail = 'with Kokkos, matching the host solution.'
     []
   []
-  [interface_neml2_weighted_traction_rejection]
-    type = RunException
-    input = sczm_tl_2d_neml2_traction.i
-    cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10'
-    expect_err = 'weighted_traction is not yet supported with an interface NEML2 traction-separation law'
-    capabilities = 'kokkos & libtorch & neml2'
-    compute_devices = 'cpu cuda xpu'
-    requirement = 'The Kokkos shifted cohesive-zone formulation shall reject weighted-traction stabilization with an interface NEML2 traction-separation law until trial evaluation is supported.'
-    design = 'KokkosSCZMInterfaceKernelTotalLagrangian.md ShiftedCohesiveZoneAction.md'
-    issues = '#33666 #30655'
-  []
   [kokkos_stress_recovery_rejections]
     requirement = 'The Kokkos shifted cohesive-zone formulation shall reject unsupported stress_recovery configurations with an explicit error'
     design = 'KokkosSCZMInterfaceKernelTotalLagrangian.md ShiftedCohesiveZoneAction.md'
@@ -1481,6 +1470,108 @@
       capabilities = 'kokkos & libtorch & neml2'
       compute_devices = 'cpu cuda xpu'
       detail = 'when shifted interface terms are disabled.'
+    []
+  []
+  [neml2_traction_weighted_traction]
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall evaluate a NEML2 traction-separation model during generalized weighted-traction stabilization, matching the native KokkosPureElasticTractionSeparation solution under fixed and automatic stabilization parameters in 2D and 3D and providing a consistent Jacobian'
+    design = 'KokkosSCZMStabilizationData.md KokkosSCZMInterfaceKernelTotalLagrangian.md'
+    issues = '#33666 #30655'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    [2d_fixed_native]
+      type = CSVDiff
+      # Recovery does not rebuild the Kokkos interface neighbor state; see
+      # sczm_angled_kokkos_matches_host
+      recover = false
+      input = sczm_tl_2d_weighted_native.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 file_base=sczm_tl_2d_weighted_native_out'
+      csvdiff = sczm_tl_2d_weighted_native_out.csv
+      detail = 'with the native 2D law and fixed beta,'
+    []
+    [2d_fixed_neml2]
+      type = CSVDiff
+      # Recovery does not rebuild the Kokkos interface neighbor state; see
+      # sczm_angled_kokkos_matches_host
+      recover = false
+      input = sczm_tl_2d_weighted_neml2.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 file_base=sczm_tl_2d_weighted_neml2_out'
+      # The gold is a symlink to sczm_tl_2d_weighted_native_out.csv: the same law, so the same solution
+      csvdiff = sczm_tl_2d_weighted_neml2_out.csv
+      detail = 'with the 2D NEML2 law and fixed beta matching the native gold,'
+    []
+    [2d_auto_native]
+      type = CSVDiff
+      # Recovery does not rebuild the Kokkos interface neighbor state; see
+      # sczm_angled_kokkos_matches_host
+      recover = false
+      input = sczm_tl_2d_weighted_native.i
+      cli_args = 'file_base=sczm_tl_2d_weighted_auto_native_out'
+      csvdiff = sczm_tl_2d_weighted_auto_native_out.csv
+      detail = 'with the native 2D law and automatic beta,'
+    []
+    [2d_auto_neml2]
+      type = CSVDiff
+      # Recovery does not rebuild the Kokkos interface neighbor state; see
+      # sczm_angled_kokkos_matches_host
+      recover = false
+      input = sczm_tl_2d_weighted_neml2.i
+      cli_args = 'file_base=sczm_tl_2d_weighted_auto_neml2_out'
+      # The gold is a symlink to sczm_tl_2d_weighted_auto_native_out.csv: the same law, so the same solution
+      csvdiff = sczm_tl_2d_weighted_auto_neml2_out.csv
+      detail = 'with the 2D NEML2 law and automatic beta matching the native gold,'
+    []
+    [3d_fixed_native]
+      type = CSVDiff
+      # Recovery does not rebuild the Kokkos interface neighbor state; see
+      # sczm_angled_kokkos_matches_host
+      recover = false
+      input = sczm_tl_3d_weighted_native.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 file_base=sczm_tl_3d_weighted_native_out'
+      csvdiff = sczm_tl_3d_weighted_native_out.csv
+      detail = 'with the native 3D law and fixed beta,'
+    []
+    [3d_fixed_neml2]
+      type = CSVDiff
+      # Recovery does not rebuild the Kokkos interface neighbor state; see
+      # sczm_angled_kokkos_matches_host
+      recover = false
+      input = sczm_tl_3d_weighted_neml2.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 file_base=sczm_tl_3d_weighted_neml2_out'
+      # The gold is a symlink to sczm_tl_3d_weighted_native_out.csv: the same law, so the same solution
+      csvdiff = sczm_tl_3d_weighted_neml2_out.csv
+      detail = 'with the 3D NEML2 law and fixed beta matching the native gold,'
+    []
+    [3d_auto_native]
+      type = CSVDiff
+      # Recovery does not rebuild the Kokkos interface neighbor state; see
+      # sczm_angled_kokkos_matches_host
+      recover = false
+      input = sczm_tl_3d_weighted_native.i
+      cli_args = 'file_base=sczm_tl_3d_weighted_auto_native_out'
+      csvdiff = sczm_tl_3d_weighted_auto_native_out.csv
+      detail = 'with the native 3D law and automatic beta,'
+    []
+    [3d_auto_neml2]
+      type = CSVDiff
+      # Recovery does not rebuild the Kokkos interface neighbor state; see
+      # sczm_angled_kokkos_matches_host
+      recover = false
+      input = sczm_tl_3d_weighted_neml2.i
+      cli_args = 'file_base=sczm_tl_3d_weighted_auto_neml2_out'
+      # The gold is a symlink to sczm_tl_3d_weighted_auto_native_out.csv: the same law, so the same solution
+      csvdiff = sczm_tl_3d_weighted_auto_neml2_out.csv
+      detail = 'with the 3D NEML2 law and automatic beta matching the native gold, and'
+    []
+    [2d_neml2_jacobian]
+      type = PetscJacobianTester
+      input = sczm_tl_2d_weighted_neml2.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 Outputs/csv=false'
+      run_sim = true
+      ratio_tol = 1e-7
+      # The St. Venant-Kirchhoff bulk gives ||J - Jfd||_F = 1.4e-4 (ratio 4.5e-8) with the native
+      # law at this state, above the 1e-4 of the other weighted-traction Jacobian tests
+      difference_tol = 5e-4
+      detail = 'with a consistent Jacobian for the 2D NEML2 weighted-traction formulation.'
     []
   []
 []

@@ -55,6 +55,42 @@ public:
   template <typename TSL>
   KOKKOS_FUNCTION void robinFace(const TSL & tsl, Moose::Kokkos::ThreadID tid) const;
 
+  /// Per-QP inputs of the generalized Robin solve in interface-face/QP order, for host trial laws
+  struct RobinInputs
+  {
+    Moose::Kokkos::Array<Moose::Kokkos::Real3> shifted_jump;
+    Moose::Kokkos::Array<Moose::Kokkos::Real3> bulk_traction;
+    Moose::Kokkos::Array<Moose::Kokkos::Real3> reference_normal;
+    Moose::Kokkos::Array<Real> beta;
+    Moose::Kokkos::Array<Moose::Kokkos::Real33> total_rotation;
+    /// Identity in small strain
+    Moose::Kokkos::Array<Moose::Kokkos::Real33> reference_rotation;
+    Moose::Kokkos::Array<Moose::Kokkos::Real33> rotation;
+    Moose::Kokkos::Array<Moose::Kokkos::Real33> deformation_gradient;
+  };
+
+  /// Per-QP results of a host generalized Robin solve in interface-face/QP order
+  struct RobinResults
+  {
+    Moose::Kokkos::Array<Moose::Kokkos::Real3> traction;
+    Moose::Kokkos::Array<Moose::Kokkos::Real3> auxiliary_jump;
+    Moose::Kokkos::Array<Moose::Kokkos::Real33> robin_W;
+    Moose::Kokkos::Array<Moose::Kokkos::Real33> inverse_robin_tangent;
+    /// S-weighted d(traction)/d(F), laid out as _robin_weighted_dF; finite strain only
+    Moose::Kokkos::Array2D<Real> robin_weighted_dF;
+    /// Nonzero where the local solve converged
+    Moose::Kokkos::Array<int> converged;
+  };
+
+  /// Gathers the Robin inputs of every interface QP on device and mirrors them on host
+  void gatherRobinInputs(RobinInputs & inputs) const;
+  KOKKOS_FUNCTION void gatherRobinInputsFace(const RobinInputs & inputs,
+                                             Moose::Kokkos::ThreadID tid) const;
+
+  /// Stores device-resident host Robin results, flagging a prepass failure for unconverged QPs
+  void storeRobinResults(const RobinResults & results) const;
+  KOKKOS_FUNCTION void storeRobinResult(const RobinResults & results, dof_id_type index) const;
+
   KOKKOS_FUNCTION const Moose::Kokkos::Real3 &
   bulkTraction(const Moose::Kokkos::InterfaceFaceRecord & face, unsigned int qp) const
   {
@@ -128,6 +164,11 @@ public:
   }
   std::size_t numFaces() const { return kokkosInterfaceFaces().size(); }
   dof_id_type numQps() const { return _bulk_traction.size(); }
+  const Moose::Kokkos::Array<Moose::Kokkos::InterfaceFaceRecord> & interfaceFaces() const
+  {
+    return kokkosInterfaceFaces();
+  }
+  unsigned int numDisplacements() const { return _ndisp; }
 
 protected:
   void initializeSurrogateInterfaceMapping();
@@ -172,6 +213,8 @@ protected:
   std::unique_ptr<Moose::Kokkos::DispatcherBase> _prepass_dispatcher;
   /// Traction-separation material on this interface that evaluates the cohesive law at trial jumps
   const SCZMTrialTractionProvider * _trial_provider = nullptr;
+  /// Owns _trial_provider when the law is not itself a provider, e.g. a NEML2 model
+  std::unique_ptr<SCZMTrialTractionProvider> _owned_trial_provider;
   bool _mapping_ready = false;
   bool _recovery_initialized = false;
   Moose::Kokkos::Scalar<bool> _beta_initialized;
@@ -309,8 +352,7 @@ KokkosSCZMStabilizationData::robinFace(const TSL & tsl, const Moose::Kokkos::Thr
     const auto & average_traction = _bulk_traction[index];
 
     const auto local_law = tsl.trialLaw(primary, qp);
-    Moose::Kokkos::SCZM::GlobalTractionTotalLagrangian<std::decay_t<decltype(local_law)>>
-        evaluator;
+    Moose::Kokkos::SCZM::GlobalTractionTotalLagrangian<std::decay_t<decltype(local_law)>> evaluator;
     evaluator.local_law = local_law;
     evaluator.ndisp = _ndisp;
     for (unsigned int i = 0; i < 3; ++i)

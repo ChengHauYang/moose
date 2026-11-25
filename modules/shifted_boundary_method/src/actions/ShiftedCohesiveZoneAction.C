@@ -463,18 +463,20 @@ ShiftedCohesiveZoneAction::act()
   if (_current_task == "add_interface_kernel" &&
       getParam<MooseEnum>("stabilization") == "weighted_traction")
   {
+    // The trial evaluation replaces the local-jump input of a NEML2 model producing the local
+    // interface_traction; a model producing a rotated traction cannot be evaluated that way
     const std::string prefix = _base_name.empty() ? "" : _base_name + "_";
     for (const auto * const neml2_action : _awh.getActions<NEML2Action>())
     {
       const auto & interfaces = neml2_action->getParam<std::vector<BoundaryName>>("interface");
       if (hasOverlap(_boundary, interfaces) &&
-          (neml2_action->producesProperty(prefix + "interface_traction") ||
-           neml2_action->producesProperty(prefix + "traction_local") ||
+          (neml2_action->producesProperty(prefix + "traction_local") ||
            neml2_action->producesProperty(prefix + "traction_global")))
         paramError("stabilization",
-                   "weighted_traction is not yet supported with an interface NEML2 "
-                   "traction-separation law; use a native cohesive law until the trial-evaluation "
-                   "provider is connected.");
+                   "weighted_traction requires an interface NEML2 traction-separation law to "
+                   "produce '",
+                   prefix,
+                   "interface_traction' from the local displacement jump.");
     }
   }
 

@@ -12,6 +12,14 @@
 #include "FEProblemBase.h"
 #include "KokkosInterfaceDatum.h"
 #include "MaterialBase.h"
+#include "SCZMNEML2TrialTractionProvider.h"
+
+#ifdef NEML2_ENABLED
+#include "MooseException.h"
+#include "NEML2BatchIndexGenerator.h"
+#include "NEML2ModelExecutor.h"
+#include "NEML2ToKokkosMaterialProperty.h"
+#endif
 
 #include "libmesh/fe_map.h"
 
@@ -72,8 +80,7 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const InputParameters &
     _sbm_distance_uo(isParamValid("sbm_distance_uo")
                          ? &getUserObject<BoundaryShortestDistanceToSurface>("sbm_distance_uo")
                          : nullptr),
-    _stabilization_beta(
-        declareRestartableData<Moose::Kokkos::Array<Real>>("stabilization_beta")),
+    _stabilization_beta(declareRestartableData<Moose::Kokkos::Array<Real>>("stabilization_beta")),
     _beta_initialized(declareRestartableData<bool>("beta_initialized", false))
 {
   if (!_settings.enabled)
@@ -234,7 +241,48 @@ KokkosSCZMStabilizationData::findTrialTractionProvider()
                "' found no Kokkos material supplying '",
                traction_name,
                "' on its interface.");
-  _trial_provider = dynamic_cast<const SCZMTrialTractionProvider *>(supplier);
+#ifdef NEML2_ENABLED
+  // A NEML2 cohesive model is evaluated at trial jumps by replacing its local-jump input
+  if (const auto * const neml2_supplier =
+          dynamic_cast<const NEML2ToKokkosSideVectorMaterialProperty *>(supplier))
+  {
+    if (neml2_supplier->isParamValid("neml2_input_derivative") ||
+        neml2_supplier->isParamValid("neml2_parameter_derivative"))
+      mooseError("Weighted traction stabilization on '",
+                 name(),
+                 "' requires '",
+                 traction_name,
+                 "' to be a NEML2 output, but '",
+                 supplier->name(),
+                 "' retrieves a derivative.");
+    const auto & executor = neml2_supplier->neml2Executor();
+    const auto jump_name = prefix + "interface_displacement_jump";
+    std::string jump_input;
+    try
+    {
+      jump_input = executor.inputForMaterialProperty(jump_name);
+    }
+    catch (const MooseException & e)
+    {
+      mooseError(e.what());
+    }
+    if (jump_input.empty())
+      mooseError("Weighted traction stabilization on '",
+                 name(),
+                 "' requires the NEML2 model of '",
+                 executor.name(),
+                 "' to gather its cohesive jump from the material property '",
+                 jump_name,
+                 "'.");
+    const auto & generator = _fe_problem.getUserObject<NEML2BatchIndexGenerator>(
+        executor.getParam<UserObjectName>("batch_index_generator"));
+    _owned_trial_provider = std::make_unique<SCZMNEML2TrialTractionProvider>(
+        executor, generator, jump_input, neml2_supplier->neml2OutputName());
+    _trial_provider = _owned_trial_provider.get();
+  }
+  else
+#endif
+    _trial_provider = dynamic_cast<const SCZMTrialTractionProvider *>(supplier);
   if (!_trial_provider)
     mooseError("Weighted traction stabilization requires the traction-separation material '",
                supplier->name(),
@@ -330,6 +378,150 @@ KokkosSCZMStabilizationData::ensurePrepared(const bool need_tangents)
 
   _bulk_and_robin_valid = true;
   _robin_tangents_valid = need_tangents;
+}
+
+/// Device functor gathering the generalized Robin inputs on one interface face
+struct SCZMGatherRobinInputs
+{
+  KokkosSCZMStabilizationData uo;
+  KokkosSCZMStabilizationData::RobinInputs inputs;
+
+  KOKKOS_FUNCTION void operator()(const Moose::Kokkos::ThreadID tid) const
+  {
+    uo.gatherRobinInputsFace(inputs, tid);
+  }
+};
+
+/// Device functor storing the host generalized Robin result of one interface QP
+struct SCZMStoreRobinResults
+{
+  KokkosSCZMStabilizationData uo;
+  KokkosSCZMStabilizationData::RobinResults results;
+
+  KOKKOS_FUNCTION void operator()(const Moose::Kokkos::ThreadID index) const
+  {
+    uo.storeRobinResult(results, index);
+  }
+};
+
+void
+KokkosSCZMStabilizationData::gatherRobinInputs(RobinInputs & inputs) const
+{
+  const auto n_qps = numQps();
+  if (inputs.shifted_jump.size() != n_qps)
+  {
+    inputs.shifted_jump.create(n_qps);
+    inputs.bulk_traction.create(n_qps);
+    inputs.reference_normal.create(n_qps);
+    inputs.beta.create(n_qps);
+    inputs.total_rotation.create(n_qps);
+    inputs.reference_rotation.create(n_qps);
+    inputs.rotation.create(n_qps);
+    inputs.deformation_gradient.create(n_qps);
+  }
+
+  ::Kokkos::parallel_for(Moose::Kokkos::Policy(0, static_cast<Moose::Kokkos::ThreadID>(numFaces())),
+                         SCZMGatherRobinInputs{*this, inputs});
+  ::Kokkos::fence();
+
+  inputs.shifted_jump.copyToHost();
+  inputs.bulk_traction.copyToHost();
+  inputs.reference_normal.copyToHost();
+  inputs.beta.copyToHost();
+  inputs.total_rotation.copyToHost();
+  inputs.reference_rotation.copyToHost();
+  inputs.rotation.copyToHost();
+  inputs.deformation_gradient.copyToHost();
+}
+
+KOKKOS_FUNCTION void
+KokkosSCZMStabilizationData::gatherRobinInputsFace(const RobinInputs & inputs,
+                                                   const Moose::Kokkos::ThreadID tid) const
+{
+  const auto & face = kokkosInterfaceFace(tid);
+  auto primary =
+      Moose::Kokkos::makePrimaryInterfaceDatum<Datum>(face, kokkosAssembly(), kokkosSystems());
+
+  for (unsigned int qp = 0; qp < face.n_qps; ++qp)
+  {
+    const auto index = face.qp_map_offset + qp;
+    const auto normal = _shifted ? _true_normals[index] : primary.normals(qp);
+    const auto jump_property = _displacement_jump_global(primary, qp);
+    const auto total_rotation_property = _czm_total_rotation(primary, qp);
+
+    Moose::Kokkos::Real3 jump{};
+    Moose::Kokkos::Real3 reference_normal{};
+    Moose::Kokkos::Real33 total_rotation{};
+    Moose::Kokkos::Real33 reference_rotation{};
+    Moose::Kokkos::Real33 rotation{};
+    Moose::Kokkos::Real33 deformation_gradient{};
+    for (unsigned int i = 0; i < 3; ++i)
+    {
+      total_rotation(i, i) = 1.0;
+      reference_rotation(i, i) = 1.0;
+      rotation(i, i) = 1.0;
+      deformation_gradient(i, i) = 1.0;
+    }
+    for (unsigned int i = 0; i < _ndisp; ++i)
+    {
+      jump(i) = jump_property(i);
+      reference_normal(i) = normal(i);
+      for (unsigned int j = 0; j < _ndisp; ++j)
+        total_rotation(i, j) = total_rotation_property(i, j);
+    }
+    // Small strain keeps F = I and the identity rotations, as in robinFace()
+    if (_finite_strain)
+    {
+      const auto reference_rotation_property = _czm_reference_rotation(primary, qp);
+      const auto rotation_property = _czm_rotation(primary, qp);
+      const auto deformation_gradient_property = _F_czm(primary, qp);
+      for (unsigned int i = 0; i < _ndisp; ++i)
+        for (unsigned int j = 0; j < _ndisp; ++j)
+        {
+          reference_rotation(i, j) = reference_rotation_property(i, j);
+          rotation(i, j) = rotation_property(i, j);
+          deformation_gradient(i, j) = deformation_gradient_property(i, j);
+        }
+    }
+
+    inputs.shifted_jump[index] = jump;
+    inputs.bulk_traction[index] = _bulk_traction[index];
+    inputs.reference_normal[index] = reference_normal;
+    inputs.beta[index] = _settings.beta_override ? _settings.beta : _stabilization_beta(index);
+    inputs.total_rotation[index] = total_rotation;
+    inputs.reference_rotation[index] = reference_rotation;
+    inputs.rotation[index] = rotation;
+    inputs.deformation_gradient[index] = deformation_gradient;
+  }
+}
+
+void
+KokkosSCZMStabilizationData::storeRobinResults(const RobinResults & results) const
+{
+  ::Kokkos::parallel_for(Moose::Kokkos::Policy(0, static_cast<Moose::Kokkos::ThreadID>(numQps())),
+                         SCZMStoreRobinResults{*this, results});
+  ::Kokkos::fence();
+}
+
+KOKKOS_FUNCTION void
+KokkosSCZMStabilizationData::storeRobinResult(const RobinResults & results,
+                                              const dof_id_type index) const
+{
+  if (!results.converged[index])
+  {
+    ::Kokkos::atomic_exchange(&_prepass_failure[0], 1);
+    return;
+  }
+  _stabilized_traction[index] = results.traction[index];
+  _auxiliary_jump[index] = results.auxiliary_jump[index];
+  if (!_need_tangents)
+    return;
+  _robin_W[index] = results.robin_W[index];
+  _inverse_robin_tangent[index] = results.inverse_robin_tangent[index];
+  // 27 = 3 x 3 x 3 entries (a, k, l) of the S-weighted d(traction_a)/d(F_kl)
+  if (_finite_strain)
+    for (unsigned int entry = 0; entry < 27; ++entry)
+      _robin_weighted_dF(index, entry) = results.robin_weighted_dF(index, entry);
 }
 
 void
