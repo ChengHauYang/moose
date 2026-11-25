@@ -19,8 +19,31 @@
 class BiLinearMixedModeTraction : public CZMComputeLocalTractionTotalBase
 {
 public:
+  /// Stateful and lagged history values consumed by computeTrialTraction()
+  struct OldState
+  {
+    Real damage = 0.0;
+    RealVectorValue interface_displacement_jump;
+  };
+
+  /// Local traction, derivative, candidate damage, and scratch scalar fields
+  struct TrialTractionResult
+  {
+    RealVectorValue traction;
+    RankTwoTensor dtraction_djump;
+    Real damage = 0.0;
+    Real beta = 0.0;
+    Real delta_init = 0.0;
+    Real delta_final = 0.0;
+    Real delta_m = 0.0;
+  };
+
   static InputParameters validParams();
   BiLinearMixedModeTraction(const InputParameters & parameters);
+
+  /// Evaluate the local traction, derivative, and candidate history for an explicit trial jump
+  TrialTractionResult computeTrialTraction(const RealVectorValue & trial_jump,
+                                           const OldState & old_state) const;
 
 protected:
   virtual void initQpStatefulProperties() override;
@@ -84,32 +107,10 @@ protected:
   } _criterion;
 
 private:
-  // Compute mode mixity ratio
-  void computeModeMixity();
-
-  // Compute relative displacement jump at damage initiation
-  void computeCriticalDisplacementJump();
-
-  // Compute relative displacement jump at full degradation
-  void computeFinalDisplacementJump();
-
-  // Compute mixed mode relative displacement
-  void computeEffectiveDisplacementJump();
-
   // @{
   // Parameters to improve numerical convergence
   const bool _lag_mode_mixity;
   const bool _lag_disp_jump;
   const Real _alpha;
-  // @}
-
-  // @{
-  // Intermediate derivatives used in the chain rule for computing the derivative of damage w.r.t.
-  // displacement jumps
-  RealVectorValue _dbeta_ddelta;
-  RealVectorValue _ddelta_init_ddelta;
-  RealVectorValue _ddelta_final_ddelta;
-  RealVectorValue _ddelta_m_ddelta;
-  RealVectorValue _dd_ddelta;
   // @}
 };
