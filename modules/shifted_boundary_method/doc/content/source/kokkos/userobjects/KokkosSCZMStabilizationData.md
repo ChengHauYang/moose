@@ -24,6 +24,21 @@ traction-separation material such as
 [KokkosBiLinearMixedModeTraction](KokkosBiLinearMixedModeTraction.md) records its history at the
 converged $\mathbf{j}$ of each quadrature point instead of in its own property evaluation.
 
+An interface `[NEML2]` traction-separation model that supplies the cohesive traction is itself
+the trial law: each Robin iteration evaluates it for the whole batch at the trial jumps. A model
+with history, i.e. one that reads an old value such as `interface_displacement_jump~1` or
+auto-declared damage, must set
+[!param](/NEML2/manage_state_advance) to `true`. Once every quadrature point
+converges, the model is re-evaluated at $\mathbf{j}$, and the executor advances its state from
+that evaluation at the end of the step. For example, the NEML2 version of the mixed-mode bilinear
+law
+
+!listing modules/shifted_boundary_method/test/tests/kokkos_shifted_interface/bilinear_traction_neml2.i block=Models/traction
+
+is coupled with
+
+!listing modules/shifted_boundary_method/test/tests/kokkos_shifted_interface/sczm_bilinear_neml2.i block=NEML2
+
 The object is passive with [!param](/UserObjects/KokkosSCZMStabilizationData/execute_on) set to `NONE`. The kernels prepare it for
 assembly and invalidate it in `residualSetup()` and `jacobianSetup()`. Residual-only
 assembly skips the tangents.

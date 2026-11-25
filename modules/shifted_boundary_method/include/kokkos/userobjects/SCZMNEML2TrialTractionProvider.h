@@ -22,12 +22,14 @@ class NEML2ModelExecutor;
  * The model maps a local jump to a local traction. The generalized Robin solve runs on the host:
  * every iteration replaces the model's jump input for the whole batch and evaluates it once with
  * NEML2ModelExecutor::evaluateTrial(), keeping all other inputs as last gathered by the executor.
- * The executor's published outputs are left untouched.
+ * The executor's published outputs are left untouched, except for a model with history: the law
+ * acts at the auxiliary jump, so once every point converges the model is re-evaluated there with
+ * NEML2ModelExecutor::publishTrial(), and the executor saves that state at the end of the step.
  */
 class SCZMNEML2TrialTractionProvider : public SCZMTrialTractionProvider
 {
 public:
-  SCZMNEML2TrialTractionProvider(const NEML2ModelExecutor & executor,
+  SCZMNEML2TrialTractionProvider(NEML2ModelExecutor & executor,
                                  const NEML2BatchIndexGenerator & generator,
                                  const std::string & jump_input,
                                  const std::string & traction_output);
@@ -39,12 +41,15 @@ private:
   /// Rebuilds the stabilization-QP-to-batch-row map whenever the generator rebuilds its batch
   void updateRowMap(const KokkosSCZMStabilizationData & uo) const;
 
-  const NEML2ModelExecutor & _executor;
+  /// Publishes the evaluation at the auxiliary jump of a model with history
+  NEML2ModelExecutor & _executor;
   const NEML2BatchIndexGenerator & _generator;
   /// NEML2 input variable holding the local cohesive jump
   const std::string _jump_input;
   /// NEML2 output variable holding the local cohesive traction
   const std::string _traction_output;
+  /// Whether the model carries history, whose state must come from the auxiliary jump
+  const bool _has_history;
 
   /// Primary-side batch row of each stabilization QP, in interface-face/QP order
   mutable std::vector<std::size_t> _primary_rows;

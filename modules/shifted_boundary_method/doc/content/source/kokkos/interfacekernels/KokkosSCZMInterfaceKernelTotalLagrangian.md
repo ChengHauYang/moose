@@ -67,8 +67,8 @@ $\mathbf{f}_\mathrm{loc}(\mathbf{j}_\mathrm{loc}) =
 k_0\mathbf{j}_\mathrm{loc} + a\lVert\mathbf{j}_\mathrm{loc}\rVert^2\mathbf{j}_\mathrm{loc}$
 at the trial jump with its exact Jacobian. This evaluator requires nonnegative
 [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_linear_stiffness) and [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_cubic_stiffness).
-Weighted traction with an interface NEML2 traction-separation law is unavailable until a
-trial-evaluation provider is connected. The local damped Newton solve reports failure on an
+An interface NEML2 traction-separation model is evaluated as the trial law with the `affine`
+evaluator; see [KokkosSCZMStabilizationData](KokkosSCZMStabilizationData.md). The local damped Newton solve reports failure on an
 invalid constitutive evaluation, singular or ill-conditioned Robin tangent, unsuccessful line
 search, or lack of convergence.
 

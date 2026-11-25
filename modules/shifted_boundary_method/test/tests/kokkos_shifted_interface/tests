@@ -1712,4 +1712,48 @@
       detail = 'with a consistent Jacobian for the 2D NEML2 weighted-traction formulation.'
     []
   []
+  [bilinear_mixed_mode_neml2_weighted_traction]
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall evaluate a stateful NEML2 traction-separation model during generalized weighted-traction stabilization, advancing its damage and history from the converged auxiliary jump to match the native KokkosBiLinearMixedModeTraction solution through softening and unloading'
+    design = 'KokkosSCZMStabilizationData.md'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    # Recovery does not rebuild the Kokkos interface neighbor state; see
+    # sczm_angled_kokkos_matches_host
+    recover = false
+    [matches_host]
+      type = Exodiff
+      input = sczm_bilinear_neml2.i
+      # The gold links to the host gold; see bilinear_mixed_mode_weighted_traction/matches_host
+      exodiff = sczm_bilinear_neml2_out.e
+      abs_zero = 1e-10
+      rel_err = 1e-8
+      detail = 'matching the unstabilized host solution as the stabilization parameter grows,'
+    []
+    [finite_beta]
+      type = Exodiff
+      input = sczm_bilinear_neml2.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=100 '
+                 'Outputs/file_base=sczm_bilinear_neml2_beta100_out'
+      # The gold links to the native Kokkos gold, which records the state at the auxiliary jump;
+      # advancing the NEML2 state from the shifted jump instead changes the solution by about 1e-2
+      exodiff = sczm_bilinear_neml2_beta100_out.e
+      detail = 'matching the native solution at a finite stabilization parameter,'
+    []
+    [jacobian_softening]
+      type = PetscJacobianTester
+      input = sczm_bilinear_neml2.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=100 '
+                 'Executioner/num_steps=1 opening_ic=0.15 slip_ic=0.05'
+      detail = 'with a consistent Jacobian in softening, and'
+    []
+    [manage_state_advance_required]
+      type = RunException
+      input = sczm_bilinear_neml2.i
+      # The Kokkos input backend rejects an old-state jump input without on-device state advance
+      # by itself, so the MOOSE input backend reaches the stabilization check
+      cli_args = 'NEML2/traction/input_backend=moose NEML2/traction/manage_state_advance=false'
+      expect_err = "requires 'manage_state_advance = true' for the NEML2 cohesive model"
+      detail = 'rejecting a model with history whose state the executor does not advance.'
+    []
+  []
 []

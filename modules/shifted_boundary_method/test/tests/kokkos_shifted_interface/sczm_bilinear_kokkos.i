@@ -1,4 +1,5 @@
 !include sczm_bilinear_common.i
+!include sczm_bilinear_traction.i
 
 [Kernels]
   [solid_x]

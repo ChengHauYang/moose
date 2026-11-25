@@ -31,14 +31,15 @@ using FrameMap = Moose::Kokkos::SCZM::GlobalTractionTotalLagrangian<BatchEvaluat
 }
 
 SCZMNEML2TrialTractionProvider::SCZMNEML2TrialTractionProvider(
-    const NEML2ModelExecutor & executor,
+    NEML2ModelExecutor & executor,
     const NEML2BatchIndexGenerator & generator,
     const std::string & jump_input,
     const std::string & traction_output)
   : _executor(executor),
     _generator(generator),
     _jump_input(jump_input),
-    _traction_output(traction_output)
+    _traction_output(traction_output),
+    _has_history(executor.hasHistory())
 {
 }
 
@@ -51,6 +52,15 @@ SCZMNEML2TrialTractionProvider::checkStabilizationLaw(const KokkosSCZMStabilizat
                "' must be 'affine' with the NEML2 cohesive model of '",
                _executor.name(),
                "', which supplies the trial law itself.");
+  // Without on-device state advance, the old state is read back from material properties that
+  // were computed at the shifted jump before the generalized Robin solve
+  if (_has_history && !_executor.getParam<bool>("manage_state_advance"))
+    mooseError("Weighted traction stabilization on '",
+               uo.name(),
+               "' requires 'manage_state_advance = true' for the NEML2 cohesive model of '",
+               _executor.name(),
+               "', which carries history: the state must be advanced from the auxiliary jump of "
+               "the generalized Robin solve.");
 }
 
 void
@@ -207,6 +217,39 @@ SCZMNEML2TrialTractionProvider::robinPrepass(const KokkosSCZMStabilizationData &
   {
     // A recoverable NEML2 failure has no per-point status, so the whole batch fails
     batch_failed = true;
+  }
+
+  // A model with history advances its state from the jump at which the law acts
+  const bool all_converged =
+      std::all_of(states.begin(),
+                  states.end(),
+                  [](const auto & state)
+                  { return state.status == GeneralizedRobinSolver::PointStatus::Converged; });
+  if (_has_history && !batch_failed && all_converged)
+  {
+    auto replace_rows = at::zeros({static_cast<int64_t>(_generator.getBatchIndex())},
+                                  at::TensorOptions().dtype(at::kBool));
+    auto replace = replace_rows.accessor<bool, 1>();
+    for (const auto i : make_range(n_qps))
+    {
+      const auto local = frames[i].toLocalJump(states[i].result.auxiliary_jump, ndisp);
+      for (const auto row : {_primary_rows[i], _neighbor_rows[i]})
+      {
+        if (row == invalid)
+          continue;
+        replace[row] = true;
+        for (const auto component : make_range(3))
+          jump[row][component] = local(component);
+      }
+    }
+    try
+    {
+      _executor.publishTrial(_jump_input, local_jump, replace_rows);
+    }
+    catch (const MooseException &)
+    {
+      batch_failed = true;
+    }
   }
 
   const bool finite_strain = uo.finiteStrain();

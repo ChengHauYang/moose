@@ -276,8 +276,10 @@ KokkosSCZMStabilizationData::findTrialTractionProvider()
                  "'.");
     const auto & generator = _fe_problem.getUserObject<NEML2BatchIndexGenerator>(
         executor.getParam<UserObjectName>("batch_index_generator"));
+    // The provider publishes the evaluation at the auxiliary jump of a model with history
+    auto & mutable_executor = _fe_problem.getUserObject<NEML2ModelExecutor>(executor.name());
     _owned_trial_provider = std::make_unique<SCZMNEML2TrialTractionProvider>(
-        executor, generator, jump_input, neml2_supplier->neml2OutputName());
+        mutable_executor, generator, jump_input, neml2_supplier->neml2OutputName());
     _trial_provider = _owned_trial_provider.get();
   }
   else
