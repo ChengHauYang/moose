@@ -47,6 +47,14 @@ public:
   void meshChanged() override;
   void computeProperties() override;
 
+  /// The NEML2 output variable this retriever copies
+  const std::string & neml2OutputName() const { return _from_neml2; }
+
+#ifdef NEML2_ENABLED
+  /// The executor producing the NEML2 output
+  const NEML2ModelExecutor & neml2Executor() const { return this->_execute_neml2_model; }
+#endif
+
   template <typename Derived>
   KOKKOS_FUNCTION void computeQpProperties(const unsigned int qp, Datum & datum) const;
 

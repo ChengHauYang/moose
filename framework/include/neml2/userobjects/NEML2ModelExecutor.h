@@ -56,6 +56,15 @@ public:
   NEML2BatchIndexGenerator::BatchSpan
   getSideBatchSpan(const NEML2BatchIndexGenerator::ElemSide & elem_side) const;
 
+  /// Evaluate traction and its jump derivative with only the current jump input replaced.
+  /// Returns CPU Float64 tensors of shape (batch, 3) and (batch, 3, 3), respectively.
+  std::pair<at::Tensor, at::Tensor> evaluateTrial(const std::string & jump_input,
+                                                  const std::string & traction_output,
+                                                  const at::Tensor & local_jump) const;
+
+  /// Return the current NEML2 input gathered from a MOOSE material property, or an empty string.
+  std::string inputForMaterialProperty(const std::string & prop_name) const;
+
   /// Get a reference(!) to the requested output view
   const at::Tensor & getOutput(const std::string & output_name) const;
 

@@ -9,6 +9,7 @@
 
 #include "NEML2ModelExecutor.h"
 #include "MOOSEToNEML2.h"
+#include "MooseException.h"
 #include "NEML2Utils.h"
 #include "NonlinearSystemBase.h"
 #include <algorithm>
@@ -283,6 +284,127 @@ NEML2ModelExecutor::getSideBatchSpan(const NEML2BatchIndexGenerator::ElemSide & 
   return _batch_index_generator.getSideBatchSpan(elem_side);
 }
 
+std::string
+NEML2ModelExecutor::inputForMaterialProperty(const std::string & prop_name) const
+{
+  std::string input;
+  // The caller can query the mappings during initialSetup before this executor has initialized.
+  for (const auto & name : getParam<std::vector<UserObjectName>>("gatherers"))
+  {
+    const auto & gatherer = getUserObjectByName<MOOSEToNEML2>(name, /*is_dependency=*/false);
+    if (parseLag(gatherer.NEML2Name()).second != 0)
+      continue;
+
+    const auto & params = dynamic_cast<const MooseObject &>(gatherer).parameters();
+    auto matches = [&](const std::string & param)
+    {
+      return params.have_parameter<MaterialPropertyName>(param) && params.isParamValid(param) &&
+             params.get<MaterialPropertyName>(param) == prop_name;
+    };
+    const bool host_material = params.have_parameter<MooseEnum>("quantity_type") &&
+                               params.get<MooseEnum>("quantity_type") == "MATERIAL" &&
+                               params.have_parameter<std::string>("from_moose") &&
+                               params.get<std::string>("from_moose") == prop_name;
+    if (host_material || matches("from_moose") || matches("primary_from_moose") ||
+        matches("neighbor_from_moose"))
+    {
+      if (!input.empty() && input != gatherer.NEML2Name())
+        throw MooseException("NEML2 executor '",
+                             this->name(),
+                             "' gathers material property '",
+                             prop_name,
+                             "' for more than one current input.");
+      input = gatherer.NEML2Name();
+    }
+  }
+  return input;
+}
+
+std::pair<at::Tensor, at::Tensor>
+NEML2ModelExecutor::evaluateTrial(const std::string & jump_input,
+                                  const std::string & traction_output,
+                                  const at::Tensor & local_jump) const
+{
+  const auto rows = static_cast<int64_t>(_batch_index_generator.getBatchIndex());
+  if (!local_jump.defined() || local_jump.sizes() != at::IntArrayRef({rows, 3}) ||
+      local_jump.scalar_type() != at::kDouble)
+    throw MooseException(
+        "NEML2 trial jump for executor '", name(), "' must be Float64 [batch, 3].");
+
+  const auto cpu_double = at::TensorOptions().device(at::kCPU).dtype(at::kDouble);
+  if (rows == 0)
+    return {at::empty({0, 3}, cpu_double), at::empty({0, 3, 3}, cpu_double)};
+
+  const auto original = _in.find(jump_input);
+  if (original == _in.end() || !original->second.defined() || original->second.dim() == 0 ||
+      original->second.size(-1) != 3 || original->second.numel() != local_jump.numel())
+    throw MooseException("NEML2 executor '",
+                         name(),
+                         "' has no compatible gathered vector for trial input '",
+                         jump_input,
+                         "'.");
+
+  try
+  {
+    const NEML2Utils::ScopedNumThreads scoped_threads(neml2NumThreads());
+    const NEML2Utils::ScopedDefaultDtype scoped_dtype;
+    std::map<std::string, at::Tensor> inputs;
+    // Each trial owns its tensors so a model's in-place updates cannot change the old state
+    // or the gathered data used by the next trial.
+    for (const auto & [key, value] : _in)
+    {
+      const auto input =
+          key == jump_input ? local_jump.to(value.options()).reshape(value.sizes()) : value;
+      inputs.emplace(key, input.defined() ? input.clone() : input);
+    }
+    const auto [outputs, derivatives] = model().jacobian(inputs);
+    const auto output = outputs.find(traction_output);
+    const auto derivative_row = derivatives.find(traction_output);
+    if (output == outputs.end() || derivative_row == derivatives.end())
+      throw MooseException("Missing traction or derivative for output '", traction_output, "'.");
+    const auto derivative = derivative_row->second.find(jump_input);
+    if (derivative == derivative_row->second.end())
+      throw MooseException(
+          "Missing derivative of '", traction_output, "' with respect to '", jump_input, "'.");
+
+    const auto as_cpu_batch = [&](const at::Tensor & tensor, bool jacobian)
+    {
+      if (!tensor.defined() || tensor.dim() < (jacobian ? 2 : 1) || tensor.size(-1) != 3 ||
+          (jacobian && tensor.size(-2) != 3))
+        throw MooseException("Unexpected NEML2 trial traction or jump derivative shape.");
+      const auto width = jacobian ? 9 : 3;
+      if (tensor.numel() != width && tensor.numel() != rows * width)
+        throw MooseException("Unexpected NEML2 trial traction or jump derivative batch size.");
+      const auto batch = tensor.numel() / width;
+      const auto cpu = tensor.to(cpu_double);
+      return jacobian ? cpu.reshape({batch, 3, 3}).expand({rows, 3, 3}).contiguous()
+                      : cpu.reshape({batch, 3}).expand({rows, 3}).contiguous();
+    };
+    auto traction = as_cpu_batch(output->second, false);
+    auto tangent = as_cpu_batch(derivative->second, true);
+#ifndef NDEBUG
+    const auto published = _retrieved_outputs.find(traction_output);
+    const auto published_row = _retrieved_derivatives.find(traction_output);
+    if (_output_ready && published != _retrieved_outputs.end() && published->second.defined() &&
+        published_row != _retrieved_derivatives.end() &&
+        at::equal(local_jump.to(cpu_double), original->second.to(cpu_double).reshape({rows, 3})))
+    {
+      const auto published_tangent = published_row->second.find(jump_input);
+      mooseAssert(at::allclose(traction, as_cpu_batch(published->second, false)),
+                  "NEML2 baseline trial traction differs from the published traction.");
+      if (published_tangent != published_row->second.end() && published_tangent->second.defined())
+        mooseAssert(at::allclose(tangent, as_cpu_batch(published_tangent->second, true)),
+                    "NEML2 baseline trial tangent differs from the published tangent.");
+    }
+#endif
+    return {std::move(traction), std::move(tangent)};
+  }
+  catch (const std::exception & e)
+  {
+    throw MooseException("NEML2 trial evaluation in executor '", name(), "' failed: ", e.what());
+  }
+}
+
 void
 NEML2ModelExecutor::addGatheredVariable(const UserObjectName & gatherer_name,
                                         const std::string & var)
@@ -404,6 +526,9 @@ NEML2ModelExecutor::fillInputs()
   TIME_SECTION("NEML2::fillInputs", 1, "Gathering NEML2 inputs and copying them to the device");
   try
   {
+    // Retain the last gather for trial evaluations until the next ordinary model update.
+    if (!_manage_state_advance)
+      _in.clear();
     for (const auto & uo : _gatherers)
       uo->insertInto(_in);
     if (_manage_state_advance && !_state_committed)
@@ -684,9 +809,6 @@ NEML2ModelExecutor::solve(bool compute_derivative)
     // NEML2 launches its kernels asynchronously on CUDA; block here so the compute time is
     // attributed to this section instead of leaking into the output D2H copy in extractOutputs().
     deviceSynchronize();
-
-    if (!_manage_state_advance)
-      _in.clear();
   }
   catch (const neml2::aoti::Exception & e)
   {
