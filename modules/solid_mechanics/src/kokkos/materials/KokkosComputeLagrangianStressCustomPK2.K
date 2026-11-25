@@ -132,8 +132,12 @@ template <bool interface, bool neighbor>
 void
 KokkosComputeLagrangianStressCustomPK2Templ<interface, neighbor>::computeProperties()
 {
-  _need_jacobian = this->_fe_problem.currentlyComputingJacobian() ||
-                   this->_fe_problem.currentlyComputingResidualAndJacobian();
+  // A ghosted bulk tangent is read by interface objects during residual-only passes as well.
+  _need_jacobian =
+      (!interface && this->_fe_problem.getKokkosMaterialPropertyStorage().isGhostedProperty(
+                         _dpk1_d_grad_u.name())) ||
+      this->_fe_problem.currentlyComputingJacobian() ||
+      this->_fe_problem.currentlyComputingResidualAndJacobian();
   Base::computeProperties();
 }
 
