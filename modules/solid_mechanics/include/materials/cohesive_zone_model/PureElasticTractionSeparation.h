@@ -18,8 +18,18 @@
 class PureElasticTractionSeparation : public CZMComputeLocalTractionTotalBase
 {
 public:
+  /// Local traction and displacement-jump derivative returned by computeTrialTraction()
+  struct TrialTractionResult
+  {
+    RealVectorValue traction;
+    RankTwoTensor dtraction_djump;
+  };
+
   static InputParameters validParams();
   PureElasticTractionSeparation(const InputParameters & parameters);
+
+  /// Evaluate the local traction and its derivative for an explicit trial displacement jump
+  TrialTractionResult computeTrialTraction(const RealVectorValue & trial_jump) const;
 
 protected:
   /// method computing the total traction and its derivatives

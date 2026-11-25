@@ -29,9 +29,16 @@ PureElasticTractionSeparation::PureElasticTractionSeparation(const InputParamete
 {
 }
 
+PureElasticTractionSeparation::TrialTractionResult
+PureElasticTractionSeparation::computeTrialTraction(const RealVectorValue & trial_jump) const
+{
+  return {_K * trial_jump, _K};
+}
+
 void
 PureElasticTractionSeparation::computeInterfaceTractionAndDerivatives()
 {
-  _interface_traction[_qp] = _K * _interface_displacement_jump[_qp];
-  _dinterface_traction_djump[_qp] = _K;
+  const auto result = computeTrialTraction(_interface_displacement_jump[_qp]);
+  _interface_traction[_qp] = result.traction;
+  _dinterface_traction_djump[_qp] = result.dtraction_djump;
 }
