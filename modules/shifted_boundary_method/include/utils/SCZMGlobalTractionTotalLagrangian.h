@@ -36,7 +36,30 @@ struct GlobalTractionTotalLagrangian
   KOKKOS_FUNCTION CohesiveEvaluation evaluate(const Real3 & global_jump,
                                               const unsigned int active_components) const
   {
-    return evaluateWithDeformationGradientDerivative(global_jump, active_components).cohesive;
+    CohesiveEvaluation result;
+    Real3 local_jump{};
+    for (unsigned int i = 0; i < active_components; ++i)
+      for (unsigned int j = 0; j < active_components; ++j)
+        local_jump(i) += total_rotation(j, i) * global_jump(j);
+
+    const auto local = local_law.evaluate(local_jump, active_components);
+    result.valid = local.valid;
+    if (!local.valid)
+      return result;
+
+    const Real area_ratio = deformation_gradient.determinant(3) *
+                            (deformation_gradient.inverse(3).transpose() * reference_normal).norm();
+    for (unsigned int i = 0; i < active_components; ++i)
+    {
+      for (unsigned int j = 0; j < active_components; ++j)
+        result.traction(i) += area_ratio * total_rotation(i, j) * local.traction(j);
+      for (unsigned int j = 0; j < active_components; ++j)
+        for (unsigned int k = 0; k < active_components; ++k)
+          for (unsigned int l = 0; l < active_components; ++l)
+            result.jump_tangent(i, j) +=
+                area_ratio * total_rotation(i, k) * local.jump_tangent(k, l) * total_rotation(j, l);
+    }
+    return result;
   }
 
   KOKKOS_FUNCTION GlobalTractionEvaluation evaluateWithDeformationGradientDerivative(

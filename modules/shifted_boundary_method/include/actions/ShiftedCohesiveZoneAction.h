@@ -50,6 +50,12 @@ protected:
   /// Returns the generated aggregate distance user object name.
   UserObjectName sbmDistanceUserObjectName() const;
 
+  /// Returns the shared total-Lagrangian stabilization producer name.
+  UserObjectName stabilizationDataUserObjectName() const;
+
+  /// Adds the shared total-Lagrangian stabilization producer.
+  void addStabilizationDataUserObject();
+
   /// Returns the generated single-mesh interface manager name.
   UserObjectName interfaceManagerName() const;
 

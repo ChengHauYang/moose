@@ -157,6 +157,14 @@ ShiftedCohesiveZoneAction::validParams()
       "Optional element-local affine recovery of each side's PK1 stress for Kokkos "
       "total-Lagrangian weighted stabilization.");
   SCZMWeightedTractionStabilization::addParams(params);
+  params.addParam<MooseEnum>("stabilization_cohesive_law",
+                             MooseEnum("affine coupled_cubic", "affine"),
+                             "Native memoryless cohesive evaluator used by Kokkos total-Lagrangian "
+                             "generalized Robin stabilization.");
+  params.addParam<Real>("stabilization_linear_stiffness",
+                        "Linear coefficient of the coupled-cubic stabilization evaluator.");
+  params.addParam<Real>("stabilization_cubic_stiffness",
+                        "Cubic coefficient of the coupled-cubic stabilization evaluator.");
   params.addParam<MaterialPropertyName>(
       "stress", "stress", "Name of the stress tensor material property for small strain SCZM.");
   params.addParam<MaterialPropertyName>("tangent",
@@ -451,15 +459,38 @@ ShiftedCohesiveZoneAction::act()
       validate_neml2_interface(tangent_name);
   }
 
+  if (_current_task == "add_interface_kernel" &&
+      getParam<MooseEnum>("stabilization") == "weighted_traction")
+  {
+    const std::string prefix = _base_name.empty() ? "" : _base_name + "_";
+    for (const auto * const neml2_action : _awh.getActions<NEML2Action>())
+    {
+      const auto & interfaces = neml2_action->getParam<std::vector<BoundaryName>>("interface");
+      if (hasOverlap(_boundary, interfaces) &&
+          (neml2_action->producesProperty(prefix + "interface_traction") ||
+           neml2_action->producesProperty(prefix + "traction_local") ||
+           neml2_action->producesProperty(prefix + "traction_global")))
+        paramError("stabilization",
+                   "weighted_traction is not yet supported with an interface NEML2 "
+                   "traction-separation law; use a native cohesive law until the trial-evaluation "
+                   "provider is connected.");
+    }
+  }
+
   // Call the base utility for parameter validation across multiple blocks
   chekMultipleActionParameters();
 
   // Task Routing
   if (_current_task == "add_function" && getParam<bool>("generate_sbm_distance"))
     addSBMDistanceFunctions();
-  else if (_current_task == "add_user_object" &&
-           (getParam<bool>("generate_sbm_distance") || usesInterfaceManager()))
-    addSBMDistanceUserObjects();
+  else if (_current_task == "add_user_object")
+  {
+    if (getParam<bool>("generate_sbm_distance") || usesInterfaceManager())
+      addSBMDistanceUserObjects();
+    if (_use_kokkos && _strain == Strain::Finite &&
+        getParam<MooseEnum>("stabilization") == "weighted_traction")
+      addStabilizationDataUserObject();
+  }
   else if (_current_task == "add_interface_kernel")
     addRequiredCZMInterfaceKernels();
   else if (_current_task == "add_master_action_material")
@@ -502,6 +533,12 @@ UserObjectName
 ShiftedCohesiveZoneAction::sbmDistanceUserObjectName() const
 {
   return name() + "_sbm_distance";
+}
+
+UserObjectName
+ShiftedCohesiveZoneAction::stabilizationDataUserObjectName() const
+{
+  return name() + "_stabilization_data";
 }
 
 UserObjectName
@@ -590,6 +627,27 @@ ShiftedCohesiveZoneAction::addSBMDistanceUserObjects()
       "BoundaryShortestDistanceToSurface", sbmDistanceUserObjectName(), distance_params);
 }
 
+void
+ShiftedCohesiveZoneAction::addStabilizationDataUserObject()
+{
+#ifdef MOOSE_KOKKOS_ENABLED
+  auto params = _factory.getValidParams("KokkosSCZMStabilizationData");
+  params.set<std::vector<BoundaryName>>("boundary") = _boundary;
+  params.set<std::vector<VariableName>>("displacements") = _displacements;
+  params.set<std::string>("base_name") = _base_name;
+  customizeCZMInterfaceKernelParameters(params);
+  if (needsPK2ToPK1Conversion())
+  {
+    params.set<MaterialPropertyName>("stress") = _name + "_pk1_stress";
+    params.set<MaterialPropertyName>("tangent") = _name + "_pk1_jacobian";
+  }
+  _problem->addKokkosUserObject(
+      "KokkosSCZMStabilizationData", stabilizationDataUserObjectName(), params);
+#else
+  mooseError("Kokkos SCZM was requested, but this MOOSE build does not enable Kokkos.");
+#endif
+}
+
 bool
 ShiftedCohesiveZoneAction::needsPK2ToPK1Conversion() const
 {
@@ -657,6 +715,8 @@ ShiftedCohesiveZoneAction::addRequiredCZMInterfaceKernels()
     params.set<std::vector<BoundaryName>>("boundary") = _boundary;
     params.set<std::string>("base_name") = _base_name;
     customizeCZMInterfaceKernelParameters(params);
+    if (_strain == Strain::Finite && getParam<MooseEnum>("stabilization") == "weighted_traction")
+      params.set<UserObjectName>("stabilization_data") = stabilizationDataUserObjectName();
     if (needsPK2ToPK1Conversion())
     {
       params.set<MaterialPropertyName>("stress") = _name + "_pk1_stress";
@@ -742,9 +802,13 @@ ShiftedCohesiveZoneAction::customizeCZMInterfaceKernelParameters(InputParameters
   if (params.have_parameter<MooseEnum>("stabilization"))
     params.applySpecificParameters(parameters(),
                                    {"stabilization",
+                                    "stabilization_gamma",
                                     "stabilization_beta",
                                     "stabilization_normal_stiffness",
-                                    "stabilization_tangential_stiffness"});
+                                    "stabilization_tangential_stiffness",
+                                    "stabilization_cohesive_law",
+                                    "stabilization_linear_stiffness",
+                                    "stabilization_cubic_stiffness"});
   if (params.isParamValid("stress"))
     params.set<MaterialPropertyName>("stress") =
         _strain == Strain::Finite && !isParamSetByUser("stress")

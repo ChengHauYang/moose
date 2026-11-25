@@ -998,12 +998,54 @@
                  "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
                  "Outputs/csv=false "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
-                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
-                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
-                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30"
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10"
       # Same tolerance as sczm_tl_fbar_off_kokkos_jacobian
       difference_tol = 1e-4
       detail = 'with total-Lagrangian kinematics,'
+    []
+    [total_lagrangian_automatic_beta]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "Outputs/csv=false Materials/bulk_pk1/dpk1_d_grad_u=custom_volume_tangent "
+                 "Kernels/stress_x/dpk1_d_grad_u=custom_volume_tangent "
+                 "Kernels/stress_y/dpk1_d_grad_u=custom_volume_tangent "
+                 "Kernels/stress_z/dpk1_d_grad_u=custom_volume_tangent "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volume_tangent=custom_volume_tangent "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction"
+      difference_tol = 1e-4
+      detail = 'with beta derived once from custom-named adjacent directional bulk tangents and element normal sizes,'
+    []
+    [total_lagrangian_automatic_beta_nonpositive]
+      type = RunException
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "NEML2/input=sczm_tl_fbar_negative_bulk_neml2.i fbar=false "
+                 "interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "Outputs/csv=false "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction"
+      expect_err = 'SCZM automatic stabilization_beta must be finite and positive; check the normal directional bulk tangents and adjacent element volumes.'
+      detail = 'and reject a nonpositive value derived from nonpositive directional bulk stiffness.'
+    []
+    [total_lagrangian_coupled_cubic]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "Outputs/csv=false Materials/local_traction/cohesive_law=coupled_cubic "
+                 "Materials/local_traction/linear_stiffness=8 "
+                 "Materials/local_traction/cubic_stiffness=40 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_cohesive_law=coupled_cubic "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_linear_stiffness=8 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_cubic_stiffness=40"
+      difference_tol = 1e-4
+      detail = 'with a native memoryless coupled-cubic cohesive law evaluated at each auxiliary separation,'
     []
     [total_lagrangian_no_shifted]
       type = PetscJacobianTester
@@ -1014,9 +1056,7 @@
                  "Outputs/csv=false "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/no_shifted=true "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
-                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
-                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
-                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30"
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10"
       difference_tol = 1e-4
       detail = 'with total-Lagrangian kinematics and shifted terms disabled,'
     []
@@ -1025,9 +1065,7 @@
       input = sczm_tl_fbar_kokkos.i
       cli_args = "Outputs/csv=false "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
-                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
-                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
-                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30"
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10"
       # Same tolerance as sczm_tl_fbar_kokkos_jacobian
       difference_tol = 1e-4
       detail = 'with total-Lagrangian kinematics and the F-bar deformation gradient, and'
@@ -1038,8 +1076,6 @@
       cli_args = "Outputs/csv=false "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
-                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
-                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30 "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stress_recovery=element_linear"
       # Same tolerance as sczm_tl_fbar_kokkos_jacobian
       difference_tol = 1e-4
@@ -1096,14 +1132,42 @@
       input = sczm_tl_fbar_kokkos.i
       cli_args = 'Materials/local_traction/cohesive_law=coupled_cubic Materials/local_traction/linear_stiffness=8'
       expect_err = 'cubic_stiffness: This parameter is required for the coupled_cubic law.'
-      detail = 'when the cohesive material omits its cubic coefficient, and'
+      detail = 'when the cohesive material omits its cubic coefficient,'
     []
     [negative_material_coefficient]
       type = RunException
       input = sczm_tl_fbar_kokkos.i
       cli_args = 'Materials/local_traction/cohesive_law=coupled_cubic Materials/local_traction/linear_stiffness=8 Materials/local_traction/cubic_stiffness=-1'
       expect_err = 'The coupled_cubic coefficients must be nonnegative.'
-      detail = 'when the cohesive material has a negative coefficient.'
+      detail = 'when the cohesive material has a negative coefficient,'
+    []
+    [without_weighted_traction]
+      type = RunException
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_cohesive_law=coupled_cubic'
+      expect_err = 'The coupled_cubic evaluator requires weighted traction stabilization.'
+      detail = 'when the stabilization evaluator is selected without weighted traction,'
+    []
+    [missing_stabilization_linear_coefficient]
+      type = RunException
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_cohesive_law=coupled_cubic'
+      expect_err = 'stabilization_linear_stiffness: This parameter is required for the coupled_cubic evaluator.'
+      detail = 'when the stabilization evaluator omits its linear coefficient,'
+    []
+    [missing_stabilization_cubic_coefficient]
+      type = RunException
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_cohesive_law=coupled_cubic Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_linear_stiffness=8'
+      expect_err = 'stabilization_cubic_stiffness: This parameter is required for the coupled_cubic evaluator.'
+      detail = 'when the stabilization evaluator omits its cubic coefficient, and'
+    []
+    [negative_stabilization_coefficient]
+      type = RunException
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_cohesive_law=coupled_cubic Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_linear_stiffness=8 Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_cubic_stiffness=-1'
+      expect_err = 'The coupled_cubic coefficients must be nonnegative.'
+      detail = 'when the stabilization evaluator has a negative coefficient.'
     []
   []
   [weighted_traction_stabilization_solution]
@@ -1138,6 +1202,17 @@
       compute_devices = 'cpu cuda xpu'
       detail = 'with Kokkos, matching the host solution.'
     []
+  []
+  [interface_neml2_weighted_traction_rejection]
+    type = RunException
+    input = sczm_tl_2d_neml2_traction.i
+    cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10'
+    expect_err = 'weighted_traction is not yet supported with an interface NEML2 traction-separation law'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = 'cpu cuda xpu'
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall reject weighted-traction stabilization with an interface NEML2 traction-separation law until trial evaluation is supported.'
+    design = 'KokkosSCZMInterfaceKernelTotalLagrangian.md ShiftedCohesiveZoneAction.md'
+    issues = '#33666 #30655'
   []
   [kokkos_stress_recovery_rejections]
     requirement = 'The Kokkos shifted cohesive-zone formulation shall reject unsupported stress_recovery configurations with an explicit error'

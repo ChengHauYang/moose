@@ -121,6 +121,23 @@ property name requires an explicit `tangent_definition`:
 The AD interface kernel differentiates its residual automatically and does not use `tangent` or
 `tangent_definition`; setting either parameter with AD enabled is an error.
 
+## Weighted-traction stabilization
+
+For the Kokkos total-Lagrangian formulation, `stabilization = weighted_traction` solves a local
+nonlinear Robin equation that combines the shifted cohesive traction with the average adjacent bulk
+PK1 traction. No reference cohesive stiffness is required. If `stabilization_beta` is omitted, beta
+is derived from the adjacent elements' normal directional volume tangents and normal sizes using
+`stabilization_gamma`, which defaults to 5; an explicit `stabilization_beta` overrides this automatic
+value. The automatically derived beta is frozen after the first stabilization prepass. See
+[KokkosSCZMInterfaceKernelTotalLagrangian](KokkosSCZMInterfaceKernelTotalLagrangian.md) for the
+equation, consistent derivatives, native nonlinear evaluator options, restrictions, and failure
+behavior.
+
+The `stabilization_normal_stiffness` and `stabilization_tangential_stiffness` parameters remain
+accepted for legacy small-strain and host inputs. They are deprecated and unused by generalized
+weighted traction in the Kokkos total-Lagrangian formulation. The small-strain Kokkos formulation
+still requires an explicit beta and reference normal stiffness.
+
 ## Coupling with NEML2 material models
 
 When using NEML2 constitutive models alongside shifted cohesive zone physics, the continuum

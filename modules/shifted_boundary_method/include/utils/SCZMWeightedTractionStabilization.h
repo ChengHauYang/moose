@@ -5,25 +5,13 @@
 //* https://github.com/idaholab/moose/blob/master/COPYRIGHT
 //*
 //* Licensed under LGPL 2.1, please see LICENSE for details
-//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #pragma once
 
 #include "MooseObject.h"
 #include "MooseEnum.h"
 
-/**
- * Weighted traction stabilization of the SCZM interface flux.
- *
- * The cohesive traction t_c in the interface residual is replaced by
- *   t_hat = S t_c + (I - S) T_h,   S = beta (K + beta I)^{-1},
- * where K = k_t I + (k_n - k_t) N (x) N is a reference cohesive stiffness, T_h = 1/2 (P^- + P^+) N
- * is the average bulk stress traction on the true normal N (the surrogate normal when unshifted),
- * and beta ~ gamma E / h is the Nitsche penalty. The cohesive contribution to the Jacobian is then
- * S K_c, bounded by beta I, so a stiff cohesive law no longer destroys the definiteness of the
- * shifted interface terms. With N the unit normal, S has the eigenvalues
- *   S_n = beta / (k_n + beta) along N and S_t = beta / (k_t + beta) in the tangent plane.
- */
+/** Configuration shared by the shifted cohesive-zone weighted-traction kernels. */
 namespace SCZMWeightedTractionStabilization
 {
 inline void
@@ -32,44 +20,49 @@ addParams(InputParameters & params)
   params.addParam<MooseEnum>(
       "stabilization",
       MooseEnum("none weighted_traction", "none"),
-      "Interface flux stabilization. 'weighted_traction' blends the cohesive traction with the "
-      "average bulk stress traction, t = S t_c + (I - S) (P^- + P^+) N / 2 with "
-      "S = beta (K + beta I)^-1, which caps the cohesive stiffness seen by the Jacobian at beta.");
+      "Interface flux stabilization. 'weighted_traction' solves a local Robin equation using the "
+      "cohesive law and average bulk stress traction.");
+  params.addRangeCheckedParam<Real>(
+      "stabilization_gamma",
+      5.0,
+      "stabilization_gamma > 0",
+      "Dimensionless multiplier used to derive beta from the directional bulk tangent and element "
+      "normal length.");
   params.addRangeCheckedParam<Real>(
       "stabilization_beta",
       "stabilization_beta > 0",
-      "Penalty beta of the weighted traction stabilization, typically gamma E / h with E the bulk "
-      "Young's modulus and h the element size.");
+      "Optional fixed beta override. If omitted, beta is derived once per paired interface "
+      "quadrature point and then frozen.");
+
+  // Accepted so existing input files continue to parse. Generalized Robin stabilization obtains the
+  // actual cohesive tangent from the constitutive evaluator and does not use these values.
   params.addRangeCheckedParam<Real>(
       "stabilization_normal_stiffness",
       "stabilization_normal_stiffness >= 0",
-      "Reference normal cohesive stiffness k_n defining the weight S of the weighted traction "
-      "stabilization.");
+      "Deprecated reference normal cohesive stiffness retained for input compatibility.");
   params.addRangeCheckedParam<Real>(
       "stabilization_tangential_stiffness",
       "stabilization_tangential_stiffness >= 0",
-      "Reference tangential cohesive stiffness k_t defining the weight S of the weighted traction "
-      "stabilization. Defaults to 'stabilization_normal_stiffness'.");
+      "Deprecated reference tangential cohesive stiffness retained for input compatibility.");
 }
 
-/// The eigenvalues of the stabilization weight S, or both zero when the stabilization is off
-struct Weights
+struct Settings
 {
   bool enabled = false;
-  /// S_n = beta / (k_n + beta), along the normal
-  Real normal = 0;
-  /// S_t = beta / (k_t + beta), in the tangent plane
-  Real tangential = 0;
+  bool beta_override = false;
+  Real beta = 0.0;
+  Real gamma = 5.0;
 };
 
-inline Weights
-weights(const MooseObject & object)
+inline Settings
+settings(const MooseObject & object)
 {
-  Weights result;
+  Settings result;
   result.enabled = object.getParam<MooseEnum>("stabilization") == "weighted_traction";
   if (!result.enabled)
   {
-    for (const auto & name : {"stabilization_beta",
+    for (const auto & name : {"stabilization_gamma",
+                              "stabilization_beta",
                               "stabilization_normal_stiffness",
                               "stabilization_tangential_stiffness"})
       if (object.isParamSetByUser(name))
@@ -77,17 +70,44 @@ weights(const MooseObject & object)
     return result;
   }
 
-  for (const auto & name : {"stabilization_beta", "stabilization_normal_stiffness"})
-    if (!object.isParamValid(name))
-      object.paramError(name, "This parameter is required with 'stabilization = weighted_traction'.");
-
-  const auto beta = object.getParam<Real>("stabilization_beta");
-  const auto normal_stiffness = object.getParam<Real>("stabilization_normal_stiffness");
-  const auto tangential_stiffness = object.isParamValid("stabilization_tangential_stiffness")
-                                        ? object.getParam<Real>("stabilization_tangential_stiffness")
-                                        : normal_stiffness;
-  result.normal = beta / (normal_stiffness + beta);
-  result.tangential = beta / (tangential_stiffness + beta);
+  result.gamma = object.getParam<Real>("stabilization_gamma");
+  result.beta_override = object.isParamValid("stabilization_beta");
+  if (result.beta_override)
+    result.beta = object.getParam<Real>("stabilization_beta");
   return result;
 }
+
+/** Legacy fixed weights used only by the small-strain kernel. */
+struct Weights
+{
+  bool enabled = false;
+  Real normal = 0.0;
+  Real tangential = 0.0;
+};
+
+inline Weights
+weights(const MooseObject & object)
+{
+  const auto configuration = settings(object);
+  Weights result;
+  result.enabled = configuration.enabled;
+  if (!result.enabled)
+    return result;
+
+  if (!configuration.beta_override || !object.isParamValid("stabilization_normal_stiffness"))
+    object.paramError(
+        "stabilization",
+        "Generalized weighted traction without reference cohesive stiffness is currently supported "
+        "by the total-Lagrangian Kokkos kernel. The small-strain kernel still requires "
+        "'stabilization_beta' and 'stabilization_normal_stiffness'.");
+
+  const auto normal_stiffness = object.getParam<Real>("stabilization_normal_stiffness");
+  const auto tangential_stiffness =
+      object.isParamValid("stabilization_tangential_stiffness")
+          ? object.getParam<Real>("stabilization_tangential_stiffness")
+          : normal_stiffness;
+  result.normal = configuration.beta / (normal_stiffness + configuration.beta);
+  result.tangential = configuration.beta / (tangential_stiffness + configuration.beta);
+  return result;
 }
+} // namespace SCZMWeightedTractionStabilization
