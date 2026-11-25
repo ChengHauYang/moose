@@ -8,6 +8,7 @@
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "KokkosPureElasticTractionSeparation.h"
+#include "KokkosSCZMStabilizationData.h"
 
 registerKokkosInterfaceMaterial("ShiftedBoundaryMethodApp", KokkosPureElasticTractionSeparation);
 
@@ -68,4 +69,25 @@ KokkosPureElasticTractionSeparation::KokkosPureElasticTractionSeparation(
       declareKokkosPropertyByName<Real, 1>(prefix + "interface_traction", {_ndisp});
   _dinterface_traction_djump =
       declareKokkosPropertyByName<Real, 2>(prefix + "dinterface_traction_djump", {_ndisp, _ndisp});
+}
+
+void
+KokkosPureElasticTractionSeparation::robinPrepass(const KokkosSCZMStabilizationData & uo) const
+{
+  uo.robinPrepass(*this);
+}
+
+void
+KokkosPureElasticTractionSeparation::checkStabilizationLaw(
+    const KokkosSCZMStabilizationData & uo) const
+{
+  // The stabilization law parameters duplicate this material's law; they must agree
+  if (uo.coupledCubicStabilization() != _coupled_cubic ||
+      (_coupled_cubic && (uo.stabilizationLinearStiffness() != _cubic_linear_stiffness ||
+                          uo.stabilizationCubicStiffness() != _cubic_stiffness)))
+    mooseError("The weighted traction stabilization law of '",
+               uo.name(),
+               "' must match the cohesive law of '",
+               name(),
+               "'.");
 }

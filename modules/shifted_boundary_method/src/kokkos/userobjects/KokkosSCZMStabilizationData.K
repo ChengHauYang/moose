@@ -11,9 +11,11 @@
 #include "BoundaryShortestDistanceToSurface.h"
 #include "FEProblemBase.h"
 #include "KokkosInterfaceDatum.h"
+#include "MaterialBase.h"
 
 #include "libmesh/fe_map.h"
 
+#include <algorithm>
 #include <cmath>
 
 registerKokkosInterfaceUserObject("ShiftedBoundaryMethodApp", KokkosSCZMStabilizationData);
@@ -130,9 +132,6 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const InputParameters &
     _czm_rotation = getKokkosMaterialPropertyByName<Real, 2>(prefix + "czm_rotation");
     _F_czm = getKokkosMaterialPropertyByName<Real, 2>(prefix + "F_czm");
   }
-  _interface_traction = getKokkosMaterialPropertyByName<Real, 1>(prefix + "interface_traction");
-  _dinterface_traction_djump =
-      getKokkosMaterialPropertyByName<Real, 2>(prefix + "dinterface_traction_djump");
 
   if (_sbm_distance_uo)
     _fe_problem.addKokkosMeshInitializationHook(
@@ -167,19 +166,17 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const KokkosSCZMStabili
     _czm_reference_rotation(object._czm_reference_rotation),
     _czm_rotation(object._czm_rotation),
     _F_czm(object._F_czm),
-    _interface_traction(object._interface_traction),
-    _dinterface_traction_djump(object._dinterface_traction_djump),
     _stress(object._stress),
     _stress_neighbor(object._stress_neighbor),
     _volume_stress(object._volume_stress),
     _volume_tangent(object._volume_tangent),
+    _trial_provider(object._trial_provider),
     _mapping_ready(object._mapping_ready),
     _recovery_initialized(object._recovery_initialized),
     _beta_initialized(object._beta_initialized),
     _bulk_and_robin_valid(object._bulk_and_robin_valid),
     _robin_tangents_valid(object._robin_tangents_valid),
     _need_tangents(object._need_tangents),
-    _initialize_beta_only(object._initialize_beta_only),
     _prepass_failure(object._prepass_failure)
 {
 }
@@ -199,6 +196,52 @@ KokkosSCZMStabilizationData::initialSetup()
 {
   Moose::Kokkos::InterfaceUserObject::initialSetup();
   allocateArrays();
+  findTrialTractionProvider();
+}
+
+void
+KokkosSCZMStabilizationData::findTrialTractionProvider()
+{
+  const auto prefix = isParamValid("base_name") && !getParam<std::string>("base_name").empty()
+                          ? getParam<std::string>("base_name") + "_"
+                          : "";
+  const auto traction_name = prefix + "interface_traction";
+  const MaterialBase * supplier = nullptr;
+  for (const auto & material : _fe_problem.getKokkosMaterialsWarehouse().getActiveObjects())
+  {
+    if (!material->getSuppliedItems().count(traction_name))
+      continue;
+    const auto & material_boundaries = material->boundaryIDs();
+    if (std::none_of(boundaryIDs().begin(),
+                     boundaryIDs().end(),
+                     [&](const auto id) { return material_boundaries.count(id); }))
+      continue;
+    if (supplier && supplier != material.get())
+      mooseError("Weighted traction stabilization on '",
+                 name(),
+                 "' found two materials supplying '",
+                 traction_name,
+                 "' on its interface: '",
+                 supplier->name(),
+                 "' and '",
+                 material->name(),
+                 "'.");
+    supplier = material.get();
+  }
+  if (!supplier)
+    mooseError("Weighted traction stabilization on '",
+               name(),
+               "' found no Kokkos material supplying '",
+               traction_name,
+               "' on its interface.");
+  _trial_provider = dynamic_cast<const SCZMTrialTractionProvider *>(supplier);
+  if (!_trial_provider)
+    mooseError("Weighted traction stabilization requires the traction-separation material '",
+               supplier->name(),
+               "' (",
+               supplier->type(),
+               ") to evaluate its cohesive law at trial jumps, which it does not support.");
+  _trial_provider->checkStabilizationLaw(*this);
 }
 
 void
@@ -263,7 +306,6 @@ KokkosSCZMStabilizationData::ensurePrepared(const bool need_tangents)
 
   if (!_settings.beta_override && !_beta_initialized)
   {
-    _initialize_beta_only = true;
     dispatch();
     _stabilization_beta->copyToHost();
     for (const auto i : index_range(*_stabilization_beta))
@@ -274,10 +316,10 @@ KokkosSCZMStabilizationData::ensurePrepared(const bool need_tangents)
     _beta_initialized = true;
   }
 
-  _initialize_beta_only = false;
   _prepass_failure[0] = 0;
   _prepass_failure.copyToDevice();
   dispatch();
+  _trial_provider->robinPrepass(*this);
   _prepass_failure.copyToHost();
   if (_prepass_failure[0])
   {

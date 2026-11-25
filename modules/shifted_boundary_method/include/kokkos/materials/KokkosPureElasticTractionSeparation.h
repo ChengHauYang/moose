@@ -11,9 +11,11 @@
 
 #include "KokkosInterfaceMaterial.h"
 #include "SCZMCohesiveLawEvaluators.h"
+#include "SCZMTrialTractionProvider.h"
 
 /// Computes a pure elastic local cohesive traction-separation law.
-class KokkosPureElasticTractionSeparation : public Moose::Kokkos::InterfaceMaterial
+class KokkosPureElasticTractionSeparation : public Moose::Kokkos::InterfaceMaterial,
+                                            public SCZMTrialTractionProvider
 {
 public:
   static InputParameters validParams();
@@ -60,6 +62,20 @@ public:
     law.cubic_stiffness = _cubic_stiffness;
     return law;
   }
+
+  /// The law is memoryless, so the trial law is the law itself at every QP
+  template <typename DatumType>
+  KOKKOS_FUNCTION Moose::Kokkos::SCZM::NativeCohesiveLaw trialLaw(DatumType &, unsigned int) const
+  {
+    Moose::Kokkos::SCZM::NativeCohesiveLaw law;
+    law.coupled_cubic = _coupled_cubic;
+    law.affine = cohesiveLaw();
+    law.cubic = coupledCubicLaw();
+    return law;
+  }
+
+  void robinPrepass(const KokkosSCZMStabilizationData & uo) const override;
+  void checkStabilizationLaw(const KokkosSCZMStabilizationData & uo) const override;
 
 private:
   const unsigned int _ndisp;

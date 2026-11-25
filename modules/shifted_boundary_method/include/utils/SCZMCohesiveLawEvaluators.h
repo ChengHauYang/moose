@@ -25,6 +25,8 @@ struct AffineCohesiveLaw
   Real33 stiffness{};
   Real3 offset{};
 
+  SCZM_KOKKOS_FUNCTION bool isAffine() const { return true; }
+
   SCZM_KOKKOS_FUNCTION CohesiveEvaluation evaluate(const Real3 & jump,
                                                    const unsigned int ndisp) const
   {
@@ -44,6 +46,8 @@ struct CoupledCubicCohesiveLaw
   Real linear_stiffness = 0.0;
   Real cubic_stiffness = 0.0;
   Real3 offset{};
+
+  SCZM_KOKKOS_FUNCTION bool isAffine() const { return false; }
 
   SCZM_KOKKOS_FUNCTION CohesiveEvaluation evaluate(const Real3 & jump,
                                                    const unsigned int ndisp) const
@@ -72,6 +76,8 @@ struct NativeCohesiveLaw
   bool coupled_cubic = false;
   AffineCohesiveLaw affine;
   CoupledCubicCohesiveLaw cubic;
+
+  SCZM_KOKKOS_FUNCTION bool isAffine() const { return !coupled_cubic; }
 
   SCZM_KOKKOS_FUNCTION CohesiveEvaluation evaluate(const Real3 & jump,
                                                    const unsigned int ndisp) const

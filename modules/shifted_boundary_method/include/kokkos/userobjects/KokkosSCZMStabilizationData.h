@@ -13,6 +13,7 @@
 #include "SCZMCohesiveLawEvaluators.h"
 #include "SCZMGeneralizedRobinSolver.h"
 #include "SCZMGlobalTractionTotalLagrangian.h"
+#include "SCZMTrialTractionProvider.h"
 #include "SCZMWeightedTractionStabilization.h"
 
 class BoundaryShortestDistanceToSurface;
@@ -46,6 +47,13 @@ public:
   KOKKOS_FUNCTION void executeInterface(Datum & primary,
                                         Datum & neighbor,
                                         const Moose::Kokkos::InterfaceFaceRecord & face) const;
+
+  /// Launches the generalized Robin solve with the trial law of the traction material tsl
+  template <typename TSL>
+  void robinPrepass(const TSL & tsl) const;
+
+  template <typename TSL>
+  KOKKOS_FUNCTION void robinFace(const TSL & tsl, Moose::Kokkos::ThreadID tid) const;
 
   KOKKOS_FUNCTION const Moose::Kokkos::Real3 &
   bulkTraction(const Moose::Kokkos::InterfaceFaceRecord & face, unsigned int qp) const
@@ -124,6 +132,7 @@ public:
 protected:
   void initializeSurrogateInterfaceMapping();
   void allocateArrays();
+  void findTrialTractionProvider();
   void initializeRecovery();
 
   const unsigned int _ndisp;
@@ -155,21 +164,20 @@ protected:
   Moose::Kokkos::MaterialProperty<Real, 2> _czm_reference_rotation;
   Moose::Kokkos::MaterialProperty<Real, 2> _czm_rotation;
   Moose::Kokkos::MaterialProperty<Real, 2> _F_czm;
-  Moose::Kokkos::MaterialProperty<Real, 1> _interface_traction;
-  Moose::Kokkos::MaterialProperty<Real, 2> _dinterface_traction_djump;
   Moose::Kokkos::MaterialProperty<Real, 2> _stress;
   Moose::Kokkos::MaterialProperty<Real, 2> _stress_neighbor;
   Moose::Kokkos::MaterialProperty<Real, 2> _volume_stress;
   Moose::Kokkos::MaterialProperty<Real, 4> _volume_tangent;
 
   std::unique_ptr<Moose::Kokkos::DispatcherBase> _prepass_dispatcher;
+  /// Traction-separation material on this interface that evaluates the cohesive law at trial jumps
+  const SCZMTrialTractionProvider * _trial_provider = nullptr;
   bool _mapping_ready = false;
   bool _recovery_initialized = false;
   Moose::Kokkos::Scalar<bool> _beta_initialized;
   bool _bulk_and_robin_valid = false;
   bool _robin_tangents_valid = false;
   bool _need_tangents = false;
-  bool _initialize_beta_only = false;
   Moose::Kokkos::Array<int> _prepass_failure;
 };
 
@@ -261,14 +269,49 @@ KokkosSCZMStabilizationData::executeInterface(Datum & primary,
                                    (primary_stiffness / primary_volume_measure +
                                     neighbor_stiffness / neighbor_volume_measure);
     }
-    if (_initialize_beta_only)
-      continue;
+  }
+}
 
-    Moose::Kokkos::SCZM::GlobalTractionTotalLagrangian<Moose::Kokkos::SCZM::NativeCohesiveLaw>
+/// Device functor solving the generalized Robin problem on one interface face with law TSL
+template <typename TSL>
+struct SCZMRobinPrepass
+{
+  KokkosSCZMStabilizationData uo;
+  TSL tsl;
+
+  KOKKOS_FUNCTION void operator()(const Moose::Kokkos::ThreadID tid) const
+  {
+    uo.robinFace(tsl, tid);
+  }
+};
+
+template <typename TSL>
+void
+KokkosSCZMStabilizationData::robinPrepass(const TSL & tsl) const
+{
+  // The functor holds copies, so every launch sees the current host state of both objects
+  ::Kokkos::parallel_for(Moose::Kokkos::Policy(0, static_cast<Moose::Kokkos::ThreadID>(numFaces())),
+                         SCZMRobinPrepass<TSL>{*this, tsl});
+  ::Kokkos::fence();
+}
+
+template <typename TSL>
+KOKKOS_FUNCTION void
+KokkosSCZMStabilizationData::robinFace(const TSL & tsl, const Moose::Kokkos::ThreadID tid) const
+{
+  const auto & face = kokkosInterfaceFace(tid);
+  auto primary = makePrimaryInterfaceDatum<Datum>(face, kokkosAssembly(), kokkosSystems());
+
+  for (unsigned int qp = 0; qp < face.n_qps; ++qp)
+  {
+    const auto index = face.qp_map_offset + qp;
+    const auto normal = _shifted ? _true_normals[index] : primary.normals(qp);
+    const auto & average_traction = _bulk_traction[index];
+
+    const auto local_law = tsl.trialLaw(primary, qp);
+    Moose::Kokkos::SCZM::GlobalTractionTotalLagrangian<std::decay_t<decltype(local_law)>>
         evaluator;
-    evaluator.local_law.coupled_cubic = _coupled_cubic_stabilization;
-    evaluator.local_law.cubic.linear_stiffness = _stabilization_linear_stiffness;
-    evaluator.local_law.cubic.cubic_stiffness = _stabilization_cubic_stiffness;
+    evaluator.local_law = local_law;
     evaluator.ndisp = _ndisp;
     for (unsigned int i = 0; i < 3; ++i)
     {
@@ -280,20 +323,13 @@ KokkosSCZMStabilizationData::executeInterface(Datum & primary,
 
     const auto jump_property = _displacement_jump_global(primary, qp);
     const auto total_rotation = _czm_total_rotation(primary, qp);
-    const auto local_traction = _interface_traction(primary, qp);
-    const auto local_tangent = _dinterface_traction_djump(primary, qp);
     Moose::Kokkos::Real3 jump{};
-    Moose::Kokkos::Real3 local_jump{};
     for (unsigned int i = 0; i < _ndisp; ++i)
     {
       jump(i) = jump_property(i);
       evaluator.reference_normal(i) = normal(i);
       for (unsigned int j = 0; j < _ndisp; ++j)
-      {
         evaluator.total_rotation(i, j) = total_rotation(i, j);
-        evaluator.local_law.affine.stiffness(i, j) = local_tangent(i, j);
-        local_jump(i) += total_rotation(j, i) * jump_property(j);
-      }
     }
     // Small strain keeps F = I and the identity rotations, so the area ratio is one and the
     // evaluator reduces to the small-strain traction Q0 t(Q0^T j)
@@ -312,16 +348,10 @@ KokkosSCZMStabilizationData::executeInterface(Datum & primary,
     }
     if (_ndisp < 3)
       evaluator.reference_normal(2) = 0.0;
-    for (unsigned int i = 0; i < _ndisp; ++i)
-    {
-      evaluator.local_law.affine.offset(i) = local_traction(i);
-      for (unsigned int j = 0; j < _ndisp; ++j)
-        evaluator.local_law.affine.offset(i) -= local_tangent(i, j) * local_jump(j);
-    }
 
     const Real beta = _settings.beta_override ? _settings.beta : _stabilization_beta(index);
     const auto stabilized = Moose::Kokkos::SCZM::GeneralizedRobinSolver::solve(
-        evaluator, jump, average_traction, beta, _ndisp, !_coupled_cubic_stabilization);
+        evaluator, jump, average_traction, beta, _ndisp, local_law.isAffine());
     if (!stabilized.converged)
     {
       ::Kokkos::atomic_exchange(&_prepass_failure[0], 1);
