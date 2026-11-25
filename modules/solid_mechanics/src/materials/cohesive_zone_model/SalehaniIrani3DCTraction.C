@@ -91,15 +91,3 @@ SalehaniIrani3DCTraction::computeTrialTraction(const RealVectorValue & trial_jum
 
   return result;
 }
-
-RealVectorValue
-SalehaniIrani3DCTraction::computeTraction()
-{
-  return computeTrialTraction(_interface_displacement_jump[_qp]).traction;
-}
-
-RankTwoTensor
-SalehaniIrani3DCTraction::computeTractionDerivatives()
-{
-  return computeTrialTraction(_interface_displacement_jump[_qp]).dtraction_djump;
-}

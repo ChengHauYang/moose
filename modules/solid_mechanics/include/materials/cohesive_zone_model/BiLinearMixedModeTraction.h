@@ -26,6 +26,17 @@ public:
     RealVectorValue interface_displacement_jump;
   };
 
+  /// Point-dependent strengths, critical fracture toughnesses, and time step consumed by
+  /// computeTrialTraction()
+  struct PointInputs
+  {
+    Real normal_strength = 0.0;
+    Real shear_strength = 0.0;
+    Real GI_c = 0.0;
+    Real GII_c = 0.0;
+    Real dt = 0.0;
+  };
+
   /// Local traction, derivative, candidate damage, and scratch scalar fields
   struct TrialTractionResult
   {
@@ -43,21 +54,13 @@ public:
 
   /// Evaluate the local traction, derivative, and candidate history for an explicit trial jump
   TrialTractionResult computeTrialTraction(const RealVectorValue & trial_jump,
-                                           const OldState & old_state) const;
+                                           const OldState & old_state,
+                                           const PointInputs & inputs) const;
 
 protected:
   virtual void initQpStatefulProperties() override;
 
   virtual void computeInterfaceTractionAndDerivatives() override;
-
-  /// The traction-separation law
-  virtual RealVectorValue computeTraction();
-
-  /// Compute the total traction derivatives w.r.t. the interface displacement jump
-  virtual RankTwoTensor computeTractionDerivatives();
-
-  // The damage evolution law
-  virtual void computeDamage();
 
   /// Penalty elastic stiffness
   const Real _K;

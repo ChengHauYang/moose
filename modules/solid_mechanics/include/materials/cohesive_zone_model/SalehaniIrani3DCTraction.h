@@ -34,12 +34,6 @@ public:
 protected:
   void computeInterfaceTractionAndDerivatives() override;
 
-  /// method computing the total traction
-  RealVectorValue computeTraction();
-
-  /// method computing the total traction derivatives w.r.t. the interface displacement jump
-  RankTwoTensor computeTractionDerivatives();
-
   /// the displacement jump associated to the maximum traction
   const RealVectorValue _delta_u0;
 
