@@ -126,6 +126,13 @@ public:
    */
   bool hasGhostedProperties() const { return !_ghosted_props.empty(); }
   /**
+   * Whether a volume material property requires ghost storage
+   */
+  bool isGhostedProperty(const std::string & prop_name) const
+  {
+    return _ghosted_props.count(prop_name);
+  }
+  /**
    * Allocate all the material property data storages
    */
   void allocateKokkosProperties();

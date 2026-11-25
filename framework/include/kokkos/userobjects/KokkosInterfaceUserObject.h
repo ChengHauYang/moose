@@ -71,6 +71,8 @@ protected:
 
   KOKKOS_FUNCTION ThreadID numKokkosInterfaceFaces() const { return _interface_faces.size(); }
 
+  const Array<InterfaceFaceRecord> & kokkosInterfaceFaces() const { return _interface_faces; }
+
   KOKKOS_FUNCTION const InterfaceFaceRecord & kokkosInterfaceFace(const ThreadID tid) const
   {
     return _interface_faces[tid];
