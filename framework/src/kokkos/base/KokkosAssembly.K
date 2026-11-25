@@ -151,9 +151,13 @@ Assembly::initQuadrature()
       kokkosMesh().getNumLocalAndPossiblyOneNeighborLayerGhostElements();
 
   _n_subdomain_qps.create(num_subdomains);
+  _n_subdomain_qps_with_ghosts.create(num_subdomains);
   _n_subdomain_qps_face.create(num_subdomains);
+  _n_elem_properties_with_ghosts.create(num_subdomains);
   _n_subdomain_qps = 0;
+  _n_subdomain_qps_with_ghosts = 0;
   _n_subdomain_qps_face = 0;
+  _n_elem_properties_with_ghosts = 0;
 
   _n_qps.create(num_elems_with_ghosts);
   _n_qps = 0;
@@ -162,6 +166,8 @@ Assembly::initQuadrature()
 
   _qp_offset.create(num_elems_with_ghosts);
   _qp_offset = libMesh::DofObject::invalid_id;
+  _elem_property_idx.create(num_elems_with_ghosts);
+  _elem_property_idx = libMesh::DofObject::invalid_id;
   _qp_offset_face.create(_mesh.getMaxSidesPerElem(), num_elems_with_ghosts);
   _qp_offset_face = libMesh::DofObject::invalid_id;
 
@@ -180,23 +186,41 @@ Assembly::initQuadrature()
     _n_qps[eid] = _q_points(sid, elem_type_id).size();
     _qp_offset[eid] = _n_subdomain_qps[sid];
     _n_subdomain_qps[sid] += _n_qps[eid];
+    _elem_property_idx[eid] = _n_elem_properties_with_ghosts[sid]++;
 
     for (const auto side : elem->side_index_range())
       _n_qps_face(side, eid) = _q_points_face(sid, elem_type_id)[side].size();
   }
 
-  for (const auto & [elem, eid] : kokkosMesh().getGhostElemIdMapping())
-  {
-    const auto sid = kokkosMesh().getContiguousSubdomainID(elem->subdomain_id());
-    const auto elem_type_id = kokkosMesh().getElementTypeID(elem);
+  for (const auto sid : make_range(num_subdomains))
+    _n_subdomain_qps_with_ghosts[sid] = _n_subdomain_qps[sid];
+  if (_problem.getKokkosMaterialPropertyStorage().hasGhostedProperties())
+    for (const auto & [elem, eid] : kokkosMesh().getGhostElemIdMapping())
+    {
+      const auto sid = kokkosMesh().getContiguousSubdomainID(elem->subdomain_id());
+      const auto elem_type_id = kokkosMesh().getElementTypeID(elem);
 
-    // Ghost volume geometry is computed directly in a device kernel, but its quadrature count is
-    // needed to average trial gradients for interface Jacobian columns.
-    _n_qps[eid] = _q_points(sid, elem_type_id).size();
+      _n_qps[eid] = _q_points(sid, elem_type_id).size();
+      _qp_offset[eid] = _n_subdomain_qps_with_ghosts[sid];
+      _n_subdomain_qps_with_ghosts[sid] += _n_qps[eid];
+      _elem_property_idx[eid] = _n_elem_properties_with_ghosts[sid]++;
 
-    for (const auto side : elem->side_index_range())
-      _n_qps_face(side, eid) = _q_points_face(sid, elem_type_id)[side].size();
-  }
+      for (const auto side : elem->side_index_range())
+        _n_qps_face(side, eid) = _q_points_face(sid, elem_type_id)[side].size();
+    }
+  else
+    for (const auto & [elem, eid] : kokkosMesh().getGhostElemIdMapping())
+    {
+      const auto sid = kokkosMesh().getContiguousSubdomainID(elem->subdomain_id());
+      const auto elem_type_id = kokkosMesh().getElementTypeID(elem);
+
+      // Ghost volume geometry is computed directly in a device kernel, but its quadrature count is
+      // needed to average trial gradients for interface Jacobian columns.
+      _n_qps[eid] = _q_points(sid, elem_type_id).size();
+
+      for (const auto side : elem->side_index_range())
+        _n_qps_face(side, eid) = _q_points_face(sid, elem_type_id)[side].size();
+    }
 
   for (auto boundary : _material_boundaries)
     for (auto elem_id : _mesh.getBoundaryActiveSemiLocalElemIds(boundary))
@@ -241,10 +265,8 @@ Assembly::initQuadrature()
 
             if (_qp_offset_face(neighbor_side, neighbor_eid) == libMesh::DofObject::invalid_id)
             {
-              _qp_offset_face(neighbor_side, neighbor_eid) =
-                  _n_subdomain_qps_face[neighbor_sid];
-              _n_subdomain_qps_face[neighbor_sid] +=
-                  _n_qps_face(neighbor_side, neighbor_eid);
+              _qp_offset_face(neighbor_side, neighbor_eid) = _n_subdomain_qps_face[neighbor_sid];
+              _n_subdomain_qps_face[neighbor_sid] += _n_qps_face(neighbor_side, neighbor_eid);
 
               _elem_face_property_idx(neighbor_side, neighbor_eid) =
                   _n_elem_face_properties[neighbor_sid];
@@ -263,8 +285,11 @@ Assembly::initQuadrature()
   _n_qps.copyToDevice();
   _n_qps_face.copyToDevice();
   _n_subdomain_qps.copyToDevice();
+  _n_subdomain_qps_with_ghosts.copyToDevice();
   _n_subdomain_qps_face.copyToDevice();
+  _n_elem_properties_with_ghosts.copyToDevice();
   _qp_offset.copyToDevice();
+  _elem_property_idx.copyToDevice();
   _qp_offset_face.copyToDevice();
 
   _elem_face_property_idx.copyToDevice();

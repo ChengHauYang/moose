@@ -10,6 +10,7 @@
 #include "KokkosMaterialPropertyStorage.h"
 
 #include "FEProblemBase.h"
+#include "KokkosMesh.h"
 #include "MaterialBase.h"
 
 namespace Moose::Kokkos
@@ -172,6 +173,26 @@ MaterialPropertyStorage::getKokkosProperty(std::string prop_name, unsigned int s
 }
 
 void
+MaterialPropertyStorage::requestGhostedProperty(const std::string & prop_name)
+{
+  if (!_kokkos_prop_records.count(prop_name))
+    mooseError("Cannot ghost undeclared Kokkos material property '", prop_name, "'.");
+
+  auto & record = _kokkos_prop_records[prop_name];
+  if (record.bnd)
+    mooseError("Ghost synchronization is supported only for volume Kokkos material properties.");
+  for (const auto & [_, option] : record.constant_option)
+    if (option == PropertyConstantOption::SUBDOMAIN)
+      mooseError(
+          "Ghost synchronization does not support subdomain-constant Kokkos material properties.");
+
+  record.ghosted = true;
+  _ghosted_props.insert(prop_name);
+  if (auto * const kokkos_mesh = _problem.mesh().getKokkosMesh())
+    kokkos_mesh->setNeedsElementSideGeometry();
+}
+
+void
 MaterialPropertyStorage::allocateKokkosProperties()
 {
   auto & mesh = *_problem.mesh().getKokkosMesh();
@@ -191,6 +212,19 @@ MaterialPropertyStorage::allocateKokkosProperties()
           prop->allocate(mesh, assembly, blocks, record.bnd, {});
         }
     }
+}
+
+void
+MaterialPropertyStorage::synchronizeGhostedProperties()
+{
+  if (_ghosted_props.empty())
+    return;
+
+  auto & mesh = *_problem.mesh().getKokkosMesh();
+  auto & assembly = _problem.kokkosAssembly();
+  for (const auto & name : _ghosted_props)
+    libmesh_map_find(_kokkos_props[0], name)
+        ->synchronizeGhosts(mesh, assembly, _problem.mesh(), {});
 }
 
 bool

@@ -152,8 +152,7 @@ NonlinearSystemBase::computeKokkosResidual(const std::set<TagID> & tags)
   const auto & kernels = _kokkos_kernels.getVectorTagsObjectWarehouse(tags, 0);
   const auto & nodal_kernels = _kokkos_nodal_kernels.getVectorTagsObjectWarehouse(tags, 0);
   const auto & integrated_bcs = _kokkos_integrated_bcs.getVectorTagsObjectWarehouse(tags, 0);
-  const auto & interface_kernels =
-      _kokkos_interface_kernels.getVectorTagsObjectWarehouse(tags, 0);
+  const auto & interface_kernels = _kokkos_interface_kernels.getVectorTagsObjectWarehouse(tags, 0);
 
   if (!kernels.size() && !nodal_kernels.size() && !integrated_bcs.size() &&
       !interface_kernels.size())
@@ -223,6 +222,7 @@ NonlinearSystemBase::computeKokkosResidual(const std::set<TagID> & tags)
     {
       _fe_problem.prepareKokkosMaterials(needed_mat_props);
       _fe_problem.reinitKokkosMaterials();
+      _fe_problem.synchronizeKokkosGhostedMaterialProperties();
     }
   }
 
@@ -338,8 +338,7 @@ NonlinearSystemBase::computeKokkosJacobian(const std::set<TagID> & tags)
   const auto & kernels = _kokkos_kernels.getMatrixTagsObjectWarehouse(tags, 0);
   const auto & nodal_kernels = _kokkos_nodal_kernels.getMatrixTagsObjectWarehouse(tags, 0);
   const auto & integrated_bcs = _kokkos_integrated_bcs.getMatrixTagsObjectWarehouse(tags, 0);
-  const auto & interface_kernels =
-      _kokkos_interface_kernels.getMatrixTagsObjectWarehouse(tags, 0);
+  const auto & interface_kernels = _kokkos_interface_kernels.getMatrixTagsObjectWarehouse(tags, 0);
   const auto & nodal_bcs = _kokkos_nodal_bcs.getMatrixTagsObjectWarehouse(tags, 0);
 
   if (!kernels.hasActiveObjects() && !nodal_kernels.hasActiveObjects() &&
@@ -414,6 +413,7 @@ NonlinearSystemBase::computeKokkosJacobian(const std::set<TagID> & tags)
     {
       _fe_problem.prepareKokkosMaterials(needed_mat_props);
       _fe_problem.reinitKokkosMaterials();
+      _fe_problem.synchronizeKokkosGhostedMaterialProperties();
     }
   }
 
@@ -537,6 +537,7 @@ NonlinearSystemBase::computeKokkosResidualAndJacobian(const std::set<TagID> & ve
     {
       _fe_problem.prepareKokkosMaterials(needed_mat_props);
       _fe_problem.reinitKokkosMaterials();
+      _fe_problem.synchronizeKokkosGhostedMaterialProperties();
     }
   }
 

@@ -964,7 +964,7 @@
 
   []
   [weighted_traction_stabilization]
-    requirement = 'The Kokkos shifted cohesive-zone formulation shall assemble Jacobian entries consistent with its residual, including the bulk stress derivatives of the average traction in all four interface blocks, for the weighted traction stabilization'
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall assemble Jacobian entries consistent with its residual, including the bulk stress derivatives of the average traction in all four interface blocks, for the weighted traction stabilization; in the total-Lagrangian F-bar formulation it shall optionally recover each side''s volume stress affinely to the true interface and synchronize required volume properties to ghost elements on distributed meshes'
     # beta = k_n and k_t = 3 k_n give the weights S_n = 1/2 and S_t = 1/4, so the cohesive and the
     # average bulk traction both contribute and the normal and tangential weights differ
     ratio_tol = 1e-7
@@ -1032,6 +1032,40 @@
       difference_tol = 1e-4
       detail = 'with total-Lagrangian kinematics and the F-bar deformation gradient, and'
     []
+    [total_lagrangian_fbar_recovery]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "Outputs/csv=false "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stress_recovery=element_linear"
+      # Same tolerance as sczm_tl_fbar_kokkos_jacobian
+      difference_tol = 1e-4
+      min_parallel = 2
+      max_parallel = 2
+      mesh_mode = distributed
+      detail = 'with element-local affine recovery of each side volume stress on distorted HEX8 elements, owner-to-ghost volume property synchronization, and the complete local and nonlocal F-bar derivatives,'
+    []
+    [total_lagrangian_fbar_recovery_no_interface]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_recovery_kokkos.i
+      difference_tol = 1e-4
+      min_parallel = 2
+      max_parallel = 2
+      mesh_mode = distributed
+      detail = 'with element-local affine recovery of stabilization and directional-correction stress on distorted HEX8 elements and no interface bulk-stress or NEML2 evaluation,'
+    []
+    [total_lagrangian_fbar_2d_recovery_no_interface]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_2d_recovery_kokkos.i
+      difference_tol = 1e-4
+      min_parallel = 2
+      max_parallel = 2
+      mesh_mode = distributed
+      detail = 'with least-squares element-local affine recovery of stabilization and directional-correction stress on distorted QUAD4 elements and no interface bulk-stress or NEML2 evaluation, and'
+    []
     [total_lagrangian_fbar_host]
       type = PetscJacobianTester
       input = sczm_tl_fbar_host.i
@@ -1076,6 +1110,47 @@
       capabilities = 'kokkos & libtorch & neml2'
       compute_devices = 'cpu cuda xpu'
       detail = 'with Kokkos, matching the host solution.'
+    []
+  []
+  [kokkos_stress_recovery_rejections]
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall reject unsupported stress_recovery configurations with an explicit error'
+    design = 'KokkosSCZMInterfaceKernelTotalLagrangian.md ShiftedCohesiveZoneAction.md'
+    issues = '#33666 #30655'
+    recover = false
+    [host_path]
+      type = RunException
+      input = sczm_tl_fbar_host.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stress_recovery=element_linear'
+      expect_err = 'Stress recovery is supported only by Kokkos total-Lagrangian SCZM'
+      capabilities = 'libtorch & neml2'
+      detail = 'on the host path,'
+    []
+    [small_strain]
+      type = RunException
+      input = sczm_hetero_kokkos.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stress_recovery=element_linear'
+      expect_err = 'Stress recovery is supported only by Kokkos total-Lagrangian SCZM'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      detail = 'with small-strain kinematics,'
+    []
+    [without_weighted_traction]
+      type = RunException
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stress_recovery=element_linear'
+      expect_err = 'requires weighted traction stabilization'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      detail = 'when weighted traction stabilization is disabled, and'
+    []
+    [without_shifted_mapping]
+      type = RunException
+      input = sczm_tl_fbar_recovery_kokkos.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/no_shifted=true'
+      expect_err = 'requires the true-interface mapping'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      detail = 'when shifted interface terms are disabled.'
     []
   []
 []

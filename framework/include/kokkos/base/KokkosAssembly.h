@@ -65,6 +65,15 @@ public:
     return _n_subdomain_qps[subdomain];
   }
   /**
+   * Get the total number of local and ghost elemental quadrature points in a subdomain
+   * @param subdomain The contiguous subdomain ID
+   * @returns The number of quadrature points
+   */
+  KOKKOS_FUNCTION dof_id_type getNumQpsWithGhosts(ContiguousSubdomainID subdomain) const
+  {
+    return _n_subdomain_qps_with_ghosts[subdomain];
+  }
+  /**
    * Get the number of quadrature points of an element
    * @param info The element information object
    * @returns The number of quadrature points
@@ -78,6 +87,40 @@ public:
   unsigned int getNumQpsHost(ContiguousElementID elem_id) const
   {
     return _n_qps.hostData()[elem_id];
+  }
+  /**
+   * Get an element's volume quadrature-point offset from host storage
+   */
+  dof_id_type getQpOffsetHost(ContiguousElementID elem_id) const
+  {
+    return _qp_offset.hostData()[elem_id];
+  }
+  /**
+   * Get an element's index into element-constant volume material property storage
+   * @param info The element information object
+   * @returns The property storage index
+   */
+  KOKKOS_FUNCTION dof_id_type getElemPropertyIndex(ElementInfo info) const
+  {
+    return _elem_property_idx[info.id];
+  }
+  /**
+   * Get an element's index into element-constant volume material property storage from host storage
+   * @param elem_id The contiguous element ID
+   * @returns The property storage index
+   */
+  dof_id_type getElemPropertyIndexHost(ContiguousElementID elem_id) const
+  {
+    return _elem_property_idx.hostData()[elem_id];
+  }
+  /**
+   * Get the number of local and ghost element-constant volume material property entries
+   * @param subdomain The contiguous subdomain ID
+   * @returns The property storage size
+   */
+  KOKKOS_FUNCTION dof_id_type getElemPropertySizeWithGhosts(ContiguousSubdomainID subdomain) const
+  {
+    return _n_elem_properties_with_ghosts[subdomain];
   }
   /**
    * Get the total number of facial quadrature points in a subdomain
@@ -391,6 +434,13 @@ private:
   Array2D<dof_id_type> _qp_offset_face;
   ///@}
   /**
+   * Index and storage size for element-constant volume material properties
+   */
+  ///@{
+  Array<dof_id_type> _elem_property_idx;
+  Array<dof_id_type> _n_elem_properties_with_ghosts;
+  ///@}
+  /**
    * Number of quadrature points
    */
   ///@{
@@ -400,6 +450,7 @@ private:
   unsigned int _max_qps_per_elem = 0;
 
   Array<dof_id_type> _n_subdomain_qps;
+  Array<dof_id_type> _n_subdomain_qps_with_ghosts;
   Array<dof_id_type> _n_subdomain_qps_face;
   ///@}
   /**

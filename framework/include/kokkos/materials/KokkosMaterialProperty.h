@@ -18,6 +18,11 @@
 #include "KokkosAssembly.h"
 #include "KokkosMesh.h"
 
+#include "libmesh/parallel_ghost_sync.h"
+
+#include <tuple>
+#include <type_traits>
+
 namespace Moose::Kokkos
 {
 
@@ -66,6 +71,104 @@ MaterialProperty<T, dimension>::init(const PropRecord & record, const StorageKey
 }
 
 #ifdef MOOSE_KOKKOS_SCOPE
+template <typename T, unsigned int dimension>
+void
+MaterialProperty<T, dimension>::synchronizeGhosts(const Mesh & mesh,
+                                                  const Assembly & assembly,
+                                                  const MooseMesh & moose_mesh,
+                                                  StorageKey)
+{
+  if (!_record->ghosted)
+    return;
+
+  if constexpr (!std::is_trivially_copyable_v<T>)
+    mooseError("Ghost synchronization requires a trivially copyable Kokkos material property "
+               "scalar type.");
+  else
+  {
+    for (const auto & [subdomain, _] : _record->dims)
+    {
+      const auto sid = mesh.getContiguousSubdomainID(subdomain);
+      if (_data[sid].isAlloc())
+        _data[sid].copyToHost();
+    }
+
+    auto elem_slice = [&](const dof_id_type elem_id)
+    {
+      const auto * const elem = moose_mesh.elemPtr(elem_id);
+      const auto eid = mesh.getContiguousElementID(elem);
+      const auto sid = mesh.getContiguousSubdomainID(elem->subdomain_id());
+      const auto constant_option = libmesh_map_find(_record->constant_option, elem->subdomain_id());
+      const auto n_values =
+          constant_option == PropertyConstantOption::NONE ? assembly.getNumQpsHost(eid) : 1;
+      const auto property_offset = constant_option == PropertyConstantOption::NONE
+                                       ? assembly.getQpOffsetHost(eid)
+                                       : assembly.getElemPropertyIndexHost(eid);
+      auto & array = _data[sid];
+      const auto n_components = array.size() / array.n(dimension);
+      return std::tuple{&array, n_components, n_values, property_offset};
+    };
+
+    using datum = std::vector<T>;
+    auto gather = [&](const std::vector<dof_id_type> & ids, std::vector<datum> & data)
+    {
+      data.resize(ids.size());
+      for (const auto i : index_range(ids))
+      {
+        const auto [array, n_components, n_values, property_offset] = elem_slice(ids[i]);
+        auto & values = data[i];
+        values.resize(n_components * n_values);
+        for (const auto value : make_range(n_values))
+          for (const auto component : make_range(n_components))
+            values[value * n_components + component] =
+                array->hostData()[(property_offset + value) * n_components + component];
+      }
+    };
+    auto act = [&](const std::vector<dof_id_type> & ids, const std::vector<datum> & data)
+    {
+      for (const auto i : index_range(ids))
+      {
+        const auto [array, n_components, n_values, property_offset] = elem_slice(ids[i]);
+        mooseAssert(data[i].size() == n_components * n_values,
+                    "Ghost material property data has an inconsistent size.");
+        for (const auto value : make_range(n_values))
+          for (const auto component : make_range(n_components))
+            array->hostData()[(property_offset + value) * n_components + component] =
+                data[i][value * n_components + component];
+      }
+    };
+    struct Synchronizer
+    {
+      using datum = std::vector<T>;
+      decltype(gather) & _gather;
+      decltype(act) & _act;
+      void gather_data(const std::vector<dof_id_type> & ids, std::vector<datum> & data) const
+      {
+        _gather(ids, data);
+      }
+      void act_on_data(const std::vector<dof_id_type> & ids, const std::vector<datum> & data) const
+      {
+        _act(ids, data);
+      }
+    } sync{gather, act};
+    const auto & ghosts = mesh.getGhostElemIdMapping();
+    std::vector<const Elem *> ghost_elements;
+    ghost_elements.reserve(ghosts.size());
+    for (const auto & [elem, _] : ghosts)
+      if (_record->dims.count(elem->subdomain_id()))
+        ghost_elements.push_back(elem);
+    libMesh::Parallel::sync_dofobject_data_by_id(
+        moose_mesh.getMesh().comm(), ghost_elements.begin(), ghost_elements.end(), sync);
+
+    for (const auto & [subdomain, _] : _record->dims)
+    {
+      const auto sid = mesh.getContiguousSubdomainID(subdomain);
+      if (_data[sid].isAlloc())
+        _data[sid].copyToDevice();
+    }
+  }
+}
+
 template <typename T, unsigned int dimension>
 void
 MaterialProperty<T, dimension>::copy(const MaterialPropertyBase & prop, StorageKey)
@@ -136,10 +239,13 @@ MaterialProperty<T, dimension>::allocate(const Mesh & mesh,
       n.push_back(libmesh_map_find(_record->dims, subdomain)[i]);
 
     if (constant_option == PropertyConstantOption::NONE)
-      n.push_back(bnd ? assembly.getNumFaceQps(sid) : assembly.getNumQps(sid));
+      n.push_back(
+          bnd ? assembly.getNumFaceQps(sid)
+              : (_record->ghosted ? assembly.getNumQpsWithGhosts(sid) : assembly.getNumQps(sid)));
     else if (constant_option == PropertyConstantOption::ELEMENT)
       n.push_back(bnd ? assembly.getElemFacePropertySize(sid)
-                      : mesh.getNumSubdomainLocalElements(subdomain));
+                      : (_record->ghosted ? assembly.getElemPropertySizeWithGhosts(sid)
+                                          : mesh.getNumSubdomainLocalElements(subdomain)));
     else
       n.push_back(1);
 

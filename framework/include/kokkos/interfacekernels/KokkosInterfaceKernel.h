@@ -52,6 +52,23 @@ public:
     return 0;
   }
 
+  KOKKOS_FUNCTION bool useVolumeResidual() const { return false; }
+  KOKKOS_FUNCTION bool useVolumeJacobian() const { return false; }
+
+  template <typename Derived>
+  KOKKOS_FUNCTION Real computeQpResidualWithVolume(const Moose::DGResidualType type,
+                                                   const unsigned int i,
+                                                   const unsigned int qp,
+                                                   const unsigned int neighbor_qp,
+                                                   AssemblyDatum & elem_datum,
+                                                   AssemblyDatum & neighbor_datum,
+                                                   AssemblyDatum &,
+                                                   AssemblyDatum &) const
+  {
+    return static_cast<const Derived &>(*this).template computeQpResidual<Derived>(
+        type, i, qp, neighbor_qp, elem_datum, neighbor_datum);
+  }
+
   template <typename Derived>
   KOKKOS_FUNCTION Real computeQpOffDiagJacobian(const Moose::DGJacobianType /* type */,
                                                 const unsigned int /* i */,
@@ -79,6 +96,25 @@ public:
     return Real3(0);
   }
 
+  struct JacobianQpData
+  {
+    Real33 primary;
+    Real33 secondary;
+  };
+
+  template <typename Derived>
+  KOKKOS_FUNCTION JacobianQpData prepareJacobianQp(const Moose::DGJacobianType,
+                                                   const unsigned int,
+                                                   const unsigned int,
+                                                   const unsigned int,
+                                                   AssemblyDatum &,
+                                                   AssemblyDatum &,
+                                                   AssemblyDatum &,
+                                                   const Real3 &) const
+  {
+    return {Real33(0), Real33(0)};
+  }
+
   template <typename Derived>
   KOKKOS_FUNCTION Real computeQpJacobianWithColumn(const Moose::DGJacobianType type,
                                                    const unsigned int i,
@@ -87,7 +123,8 @@ public:
                                                    const unsigned int neighbor_qp,
                                                    AssemblyDatum & elem_datum,
                                                    AssemblyDatum & neighbor_datum,
-                                                   const Real3 &) const
+                                                   const Real3 &,
+                                                   const JacobianQpData &) const
   {
     return static_cast<const Derived &>(*this).template computeQpJacobian<Derived>(
         type, i, j, qp, neighbor_qp, elem_datum, neighbor_datum);
@@ -102,7 +139,8 @@ public:
                                                           const unsigned int neighbor_qp,
                                                           AssemblyDatum & elem_datum,
                                                           AssemblyDatum & neighbor_datum,
-                                                          const Real3 &) const
+                                                          const Real3 &,
+                                                          const JacobianQpData &) const
   {
     return static_cast<const Derived &>(*this).template computeQpOffDiagJacobian<Derived>(
         type, i, j, jvar, qp, neighbor_qp, elem_datum, neighbor_datum);
@@ -151,6 +189,8 @@ private:
                                                const InterfaceFaceRecord & face,
                                                AssemblyDatum & elem_datum,
                                                AssemblyDatum & neighbor_datum,
+                                               AssemblyDatum & elem_volume_datum,
+                                               AssemblyDatum & neighbor_volume_datum,
                                                Moose::DGResidualType type) const;
 
   template <typename Derived>
@@ -177,12 +217,36 @@ InterfaceKernel::operator()(ResidualLoop, const ThreadID tid, const Derived & ke
       face, kokkosAssembly(), kokkosSystems(), _kokkos_var, _kokkos_var.var());
   auto neighbor_datum = makeNeighborInterfaceDatum<AssemblyDatum>(
       face, kokkosAssembly(), kokkosSystems(), _kokkos_neighbor_var, _kokkos_neighbor_var.var());
+  const bool use_volume_residual = kernel.useVolumeResidual();
+  AssemblyDatum elem_volume_datum(elem_datum,
+                                  face.elem,
+                                  use_volume_residual ? libMesh::invalid_uint : face.side,
+                                  face.neighbor,
+                                  use_volume_residual);
+  AssemblyDatum neighbor_volume_datum(neighbor_datum,
+                                      face.neighbor,
+                                      use_volume_residual ? libMesh::invalid_uint
+                                                          : face.neighbor_side,
+                                      face.elem,
+                                      use_volume_residual);
 
   elem_datum.set_local_parallel(_thread(tid, 0), _thread.size(0));
   neighbor_datum.set_local_parallel(_thread(tid, 0), _thread.size(0));
 
-  computeResidualInternal(kernel, face, elem_datum, neighbor_datum, Moose::Element);
-  computeResidualInternal(kernel, face, elem_datum, neighbor_datum, Moose::Neighbor);
+  computeResidualInternal(kernel,
+                          face,
+                          elem_datum,
+                          neighbor_datum,
+                          elem_volume_datum,
+                          neighbor_volume_datum,
+                          Moose::Element);
+  computeResidualInternal(kernel,
+                          face,
+                          elem_datum,
+                          neighbor_datum,
+                          elem_volume_datum,
+                          neighbor_volume_datum,
+                          Moose::Neighbor);
 }
 
 template <typename Derived>
@@ -274,6 +338,8 @@ InterfaceKernel::computeResidualInternal(const Derived & kernel,
                                          const InterfaceFaceRecord & face,
                                          AssemblyDatum & elem_datum,
                                          AssemblyDatum & neighbor_datum,
+                                         AssemblyDatum & elem_volume_datum,
+                                         AssemblyDatum & neighbor_volume_datum,
                                          const Moose::DGResidualType type) const
 {
   auto & row_datum = type == Moose::Element ? elem_datum : neighbor_datum;
@@ -307,8 +373,15 @@ InterfaceKernel::computeResidualInternal(const Derived & kernel,
       const auto neighbor_qp = kokkosInterfaceNeighborQp(face, qp);
       for (unsigned int i = ib; i < ie; ++i)
         local_re[i - ib] +=
-            elem_datum.JxW(qp) * kernel.template computeQpResidual<Derived>(
-                                     type, i, qp, neighbor_qp, elem_datum, neighbor_datum);
+            elem_datum.JxW(qp) *
+            kernel.template computeQpResidualWithVolume<Derived>(type,
+                                                                 i,
+                                                                 qp,
+                                                                 neighbor_qp,
+                                                                 elem_datum,
+                                                                 neighbor_datum,
+                                                                 elem_volume_datum,
+                                                                 neighbor_volume_datum);
     }
 
     for (unsigned int i = ib; i < ie; ++i)
@@ -336,14 +409,22 @@ InterfaceKernel::computeJacobianInternal(const Derived & kernel,
 
   const auto scaling_factor = kokkosSystem(row_var.sys()).getVariableScalingFactor(row_var.var());
 
+  const auto counterpart = column_is_neighbor ? face.elem : face.neighbor;
+  // The column element can be a one-layer ghost on distributed meshes. Its volume geometry is not
+  // guaranteed to be present in the assembly cache, so compute it directly when the kernel needs
+  // it.
+  const bool use_volume_jacobian = kernel.useVolumeJacobian();
+  AssemblyDatum volume_column_datum(column_datum,
+                                    col_elem,
+                                    use_volume_jacobian
+                                        ? libMesh::invalid_uint
+                                        : (column_is_neighbor ? face.neighbor_side : face.side),
+                                    counterpart,
+                                    use_volume_jacobian);
+
   for (unsigned int j = row_datum.local_thread_id(); j < column_datum.n_jdofs();
        j += row_datum.num_local_threads())
   {
-    const auto counterpart = column_is_neighbor ? face.elem : face.neighbor;
-    // The column element can be a one-layer ghost on distributed meshes. Its volume geometry is
-    // not guaranteed to be present in the assembly cache, so construct it directly from the mesh.
-    AssemblyDatum volume_column_datum(
-        column_datum, col_elem, libMesh::invalid_uint, counterpart, true);
     const auto column_data =
         kernel.template prepareJacobianColumn<Derived>(type, j, volume_column_datum);
 
@@ -361,11 +442,13 @@ InterfaceKernel::computeJacobianInternal(const Derived & kernel,
       for (unsigned int qp = 0; qp < face.n_qps; ++qp)
       {
         const auto neighbor_qp = kokkosInterfaceNeighborQp(face, qp);
+        const auto qp_data = kernel.template prepareJacobianQp<Derived>(
+            type, j, qp, neighbor_qp, elem_datum, neighbor_datum, volume_column_datum, column_data);
         for (unsigned int i = ib; i < ie; ++i)
           local_ke[i - ib] +=
               elem_datum.JxW(qp) *
               kernel.template computeQpJacobianWithColumn<Derived>(
-                  type, i, j, qp, neighbor_qp, elem_datum, neighbor_datum, column_data);
+                  type, i, j, qp, neighbor_qp, elem_datum, neighbor_datum, column_data, qp_data);
       }
 
       for (unsigned int i = ib; i < ie; ++i)
@@ -394,14 +477,22 @@ InterfaceKernel::computeOffDiagJacobianInternal(const Derived & kernel,
 
   const auto scaling_factor = kokkosSystem(row_var.sys()).getVariableScalingFactor(row_var.var());
 
+  const auto counterpart = column_is_neighbor ? face.elem : face.neighbor;
+  // The column element can be a one-layer ghost on distributed meshes. Its volume geometry is not
+  // guaranteed to be present in the assembly cache, so compute it directly when the kernel needs
+  // it.
+  const bool use_volume_jacobian = kernel.useVolumeJacobian();
+  AssemblyDatum volume_column_datum(column_datum,
+                                    col_elem,
+                                    use_volume_jacobian
+                                        ? libMesh::invalid_uint
+                                        : (column_is_neighbor ? face.neighbor_side : face.side),
+                                    counterpart,
+                                    use_volume_jacobian);
+
   for (unsigned int j = row_datum.local_thread_id(); j < column_datum.n_jdofs();
        j += row_datum.num_local_threads())
   {
-    const auto counterpart = column_is_neighbor ? face.elem : face.neighbor;
-    // The column element can be a one-layer ghost on distributed meshes. Its volume geometry is
-    // not guaranteed to be present in the assembly cache, so construct it directly from the mesh.
-    AssemblyDatum volume_column_datum(
-        column_datum, col_elem, libMesh::invalid_uint, counterpart, true);
     const auto column_data =
         kernel.template prepareJacobianColumn<Derived>(type, j, volume_column_datum);
 
@@ -419,6 +510,8 @@ InterfaceKernel::computeOffDiagJacobianInternal(const Derived & kernel,
       for (unsigned int qp = 0; qp < face.n_qps; ++qp)
       {
         const auto neighbor_qp = kokkosInterfaceNeighborQp(face, qp);
+        const auto qp_data = kernel.template prepareJacobianQp<Derived>(
+            type, j, qp, neighbor_qp, elem_datum, neighbor_datum, volume_column_datum, column_data);
         for (unsigned int i = ib; i < ie; ++i)
           local_ke[i - ib] +=
               elem_datum.JxW(qp) *
@@ -430,7 +523,8 @@ InterfaceKernel::computeOffDiagJacobianInternal(const Derived & kernel,
                                                                           neighbor_qp,
                                                                           elem_datum,
                                                                           neighbor_datum,
-                                                                          column_data);
+                                                                          column_data,
+                                                                          qp_data);
       }
 
       for (unsigned int i = ib; i < ie; ++i)

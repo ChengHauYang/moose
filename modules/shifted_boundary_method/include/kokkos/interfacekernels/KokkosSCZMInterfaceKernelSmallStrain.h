@@ -22,6 +22,10 @@ public:
 
   KokkosSCZMInterfaceKernelSmallStrain(const InputParameters & parameters);
 
+  /// prepareJacobianColumn averages trial gradients over the column element's volume quadrature
+  /// points for the volumetric locking correction, so it needs a volume datum
+  KOKKOS_FUNCTION bool useVolumeJacobian() const { return _volumetric_locking_correction; }
+
   template <typename Derived>
   KOKKOS_FUNCTION Real computeQpResidual(Moose::DGResidualType type,
                                          unsigned int i,
@@ -61,19 +65,20 @@ public:
                                                    unsigned int neighbor_qp,
                                                    AssemblyDatum & elem_datum,
                                                    AssemblyDatum & neighbor_datum,
-                                                   const Moose::Kokkos::Real3 & avg_grad_phi) const;
+                                                   const Moose::Kokkos::Real3 & avg_grad_phi,
+                                                   const JacobianQpData & qp_data) const;
 
   template <typename Derived>
-  KOKKOS_FUNCTION Real
-  computeQpOffDiagJacobianWithColumn(Moose::DGJacobianType type,
-                                     unsigned int i,
-                                     unsigned int j,
-                                     unsigned int jvar,
-                                     unsigned int qp,
-                                     unsigned int neighbor_qp,
-                                     AssemblyDatum & elem_datum,
-                                     AssemblyDatum & neighbor_datum,
-                                     const Moose::Kokkos::Real3 & avg_grad_phi) const;
+  KOKKOS_FUNCTION Real computeQpOffDiagJacobianWithColumn(Moose::DGJacobianType type,
+                                                          unsigned int i,
+                                                          unsigned int j,
+                                                          unsigned int jvar,
+                                                          unsigned int qp,
+                                                          unsigned int neighbor_qp,
+                                                          AssemblyDatum & elem_datum,
+                                                          AssemblyDatum & neighbor_datum,
+                                                          const Moose::Kokkos::Real3 & avg_grad_phi,
+                                                          const JacobianQpData & qp_data) const;
 
 protected:
   /// Jacobian of this component's residual with respect to displacement component component_j
@@ -257,15 +262,8 @@ KokkosSCZMInterfaceKernelSmallStrain::computeQpJacobian(const Moose::DGJacobianT
                                                         AssemblyDatum & elem_datum,
                                                         AssemblyDatum & neighbor_datum) const
 {
-  return computeJacobianComponent(type,
-                                  i,
-                                  j,
-                                  _component,
-                                  qp,
-                                  neighbor_qp,
-                                  elem_datum,
-                                  neighbor_datum,
-                                  Moose::Kokkos::Real3(0));
+  return computeJacobianComponent(
+      type, i, j, _component, qp, neighbor_qp, elem_datum, neighbor_datum, Moose::Kokkos::Real3(0));
 }
 
 template <typename Derived>
@@ -318,7 +316,8 @@ KokkosSCZMInterfaceKernelSmallStrain::computeQpJacobianWithColumn(
     const unsigned int neighbor_qp,
     AssemblyDatum & elem_datum,
     AssemblyDatum & neighbor_datum,
-    const Moose::Kokkos::Real3 & avg_grad_phi) const
+    const Moose::Kokkos::Real3 & avg_grad_phi,
+    const JacobianQpData &) const
 {
   return computeJacobianComponent(
       type, i, j, _component, qp, neighbor_qp, elem_datum, neighbor_datum, avg_grad_phi);
@@ -362,7 +361,8 @@ KokkosSCZMInterfaceKernelSmallStrain::computeQpOffDiagJacobianWithColumn(
     const unsigned int neighbor_qp,
     AssemblyDatum & elem_datum,
     AssemblyDatum & neighbor_datum,
-    const Moose::Kokkos::Real3 & avg_grad_phi) const
+    const Moose::Kokkos::Real3 & avg_grad_phi,
+    const JacobianQpData &) const
 {
   for (unsigned int component_j = 0; component_j < _ndisp; ++component_j)
     if (_disp_vars[component_j] == jvar)
@@ -402,8 +402,9 @@ KokkosSCZMInterfaceKernelSmallStrain::computeJacobianComponent(
     for (unsigned int b = 0; b < _ndisp; ++b)
     {
       const Real weight = stabilizationWeight(normal, _component, b);
-      jacobian += weight * computeDResidualDDisplacement(
-                               type, i, j, b, component_j, qp, neighbor_qp, elem_datum, neighbor_datum);
+      jacobian +=
+          weight * computeDResidualDDisplacement(
+                       type, i, j, b, component_j, qp, neighbor_qp, elem_datum, neighbor_datum);
       average_traction_derivative +=
           ((b == _component ? 1.0 : 0.0) - weight) *
           stressDerivative(trial_on_element,
@@ -513,8 +514,8 @@ KokkosSCZMInterfaceKernelSmallStrain::computeDirectionalCorrectionJacobian(
   const bool on_element = type == Moose::ElementElement;
   const Real test =
       on_element ? _test(elem_datum, i, qp) : _test_neighbor(neighbor_datum, i, neighbor_qp);
-  const auto grad_phi =
-      on_element ? _grad_phi(elem_datum, j, qp) : _grad_phi_neighbor(neighbor_datum, j, neighbor_qp);
+  const auto grad_phi = on_element ? _grad_phi(elem_datum, j, qp)
+                                   : _grad_phi_neighbor(neighbor_datum, j, neighbor_qp);
 
   const Real correction_jacobian = stressDerivative(on_element,
                                                     _component,
@@ -530,14 +531,15 @@ KokkosSCZMInterfaceKernelSmallStrain::computeDirectionalCorrectionJacobian(
 }
 
 KOKKOS_FUNCTION inline Real
-KokkosSCZMInterfaceKernelSmallStrain::stressDerivative(const bool on_element,
-                                                       const unsigned int stress_row,
-                                                       const unsigned int component_j,
-                                                       const unsigned int side_qp,
-                                                       AssemblyDatum & side_datum,
-                                                       const Moose::Kokkos::Real3 & direction,
-                                                       const Moose::Kokkos::Real3 & grad_phi,
-                                                       const Moose::Kokkos::Real3 & avg_grad_phi) const
+KokkosSCZMInterfaceKernelSmallStrain::stressDerivative(
+    const bool on_element,
+    const unsigned int stress_row,
+    const unsigned int component_j,
+    const unsigned int side_qp,
+    AssemblyDatum & side_datum,
+    const Moose::Kokkos::Real3 & direction,
+    const Moose::Kokkos::Real3 & grad_phi,
+    const Moose::Kokkos::Real3 & avg_grad_phi) const
 {
   const unsigned int dim = this->kokkosAssembly().getDimension();
   const auto tangent =

@@ -510,7 +510,7 @@ KOKKOS_FUNCTION inline Datum::Datum(const ContiguousElementID elem,
     _systems(systems),
     _n_qps(!isSide() ? assembly.getNumQps(_elem) : assembly.getNumFaceQps(_elem, side)),
     _qp_offset(!isSide() ? assembly.getQpOffset(_elem) : assembly.getQpFaceOffset(_elem, side)),
-    _elem_property_idx(!isSide() ? _elem.id - _mesh.getStartingContiguousElementID(_elem.subdomain)
+    _elem_property_idx(!isSide() ? assembly.getElemPropertyIndex(_elem)
                                  : assembly.getElemFacePropertyIndex(_elem, _side))
 {
 }
@@ -526,7 +526,7 @@ KOKKOS_FUNCTION inline Datum::Datum(const ContiguousElementID elem,
     _systems(systems),
     _n_qps(!isSide() ? assembly.getNumQps(_elem) : assembly.getNumFaceQps(_elem, side)),
     _qp_offset(!isSide() ? assembly.getQpOffset(_elem) : assembly.getQpFaceOffset(_elem, side)),
-    _elem_property_idx(!isSide() ? _elem.id - _mesh.getStartingContiguousElementID(_elem.subdomain)
+    _elem_property_idx(!isSide() ? assembly.getElemPropertyIndex(_elem)
                                  : assembly.getElemFacePropertyIndex(_elem, _side)),
     _compute_physical_map(compute_physical_map)
 {

@@ -1333,6 +1333,8 @@ public:
 #ifdef MOOSE_KOKKOS_ENABLED
   void prepareKokkosMaterials(const std::unordered_set<unsigned int> & consumer_needed_mat_props);
   void reinitKokkosMaterials();
+  /** Synchronize requested volume Kokkos material properties to ghost elements. */
+  void synchronizeKokkosGhostedMaterialProperties();
 #endif
 
   /*

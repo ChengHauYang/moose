@@ -75,10 +75,14 @@ protected:
 
 private:
   void initializeSurrogateInterfaceMapping();
+
+protected:
   void ensureSurrogateInterfaceMappingReady() const;
 
   /// The surrogate-interface mapping source; nullptr when the shift is disabled
   const BoundaryShortestDistanceToSurface * const _sbm_distance_uo;
+
+  /// Host/device mapping arrays shared with derived shifted kernels
   Array2D<dof_id_type> _qp_offsets;
   Array<Real3> _surrogate_distance_vectors;
   Array<Real3> _true_normals;

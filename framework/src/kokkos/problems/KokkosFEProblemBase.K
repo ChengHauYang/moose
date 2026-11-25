@@ -610,6 +610,12 @@ FEProblemBase::reinitKokkosMaterials()
 }
 
 void
+FEProblemBase::synchronizeKokkosGhostedMaterialProperties()
+{
+  _kokkos_material_props.synchronizeGhostedProperties();
+}
+
+void
 FEProblemBase::computeKokkosUserObjectsInternal(const ExecFlagType & type,
                                                 TheWarehouse::Query & query)
 {

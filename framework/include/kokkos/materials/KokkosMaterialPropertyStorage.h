@@ -117,9 +117,22 @@ public:
    */
   void registerLoadStore(std::type_index type, PropertyStore store, PropertyLoad load);
   /**
+   * Request owner-to-ghost synchronization for a volume material property
+   * @param prop_name The property name
+   */
+  void requestGhostedProperty(const std::string & prop_name);
+  /**
+   * Whether any volume material properties require ghost storage
+   */
+  bool hasGhostedProperties() const { return !_ghosted_props.empty(); }
+  /**
    * Allocate all the material property data storages
    */
   void allocateKokkosProperties();
+  /**
+   * Synchronize requested volume material properties from owners to ghosts
+   */
+  void synchronizeGhostedProperties();
 #endif
 
   /**
@@ -141,6 +154,10 @@ private:
    * Record of each material property
    */
   std::unordered_map<std::string, Moose::Kokkos::PropRecord> _kokkos_prop_records;
+  /**
+   * Volume properties requested on ghost elements
+   */
+  std::set<std::string> _ghosted_props;
   /**
    * Function pointer maps for load/store
    */

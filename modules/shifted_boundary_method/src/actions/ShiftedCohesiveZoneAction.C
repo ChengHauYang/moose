@@ -151,6 +151,11 @@ ShiftedCohesiveZoneAction::validParams()
   params.addParam<bool>("no_shifted", false, "Disable shifted terms.");
   params.addParam<bool>("use_kokkos", false, "Create Kokkos SCZM objects.");
   params.addParam<bool>("directional_correction", true, "Add the directional correction terms.");
+  params.addParam<MooseEnum>(
+      "stress_recovery",
+      MooseEnum("none element_linear", "none"),
+      "Optional element-local affine recovery of each side's PK1 stress for Kokkos "
+      "total-Lagrangian weighted stabilization.");
   SCZMWeightedTractionStabilization::addParams(params);
   params.addParam<MaterialPropertyName>(
       "stress", "stress", "Name of the stress tensor material property for small strain SCZM.");
@@ -179,6 +184,22 @@ ShiftedCohesiveZoneAction::validParams()
       "Name of the derivative of the PK1 stress with respect to the F-bar deformation gradient at "
       "fixed physical deformation gradient, used by the total-Lagrangian volumetric locking "
       "correction.");
+  params.addParam<MaterialPropertyName>(
+      "volume_stress", "pk1_stress", "Name of the volume PK1 stress used by stress recovery.");
+  params.addParam<MaterialPropertyName>(
+      "volume_tangent",
+      "dpk1_d_grad_u",
+      "Name of the complete local volume PK1 derivative used by stress recovery.");
+  params.addParam<MaterialPropertyName>(
+      "volume_F_avg_invT",
+      "F_avg_invT",
+      "Name of the inverse-transpose average deformation gradient used by recovered F-bar stress.");
+  params.addParam<MaterialPropertyName>(
+      "volume_fbar_A", "fbar_A", "Name of the volume F-bar A(qp) tensor used by stress recovery.");
+  params.addParam<MaterialPropertyName>(
+      "volume_fbar_gamma_over_3",
+      "fbar_gamma_over_3",
+      "Name of the volume F-bar gamma/3 scalar used by stress recovery.");
 
   return params;
 }
@@ -193,6 +214,11 @@ ShiftedCohesiveZoneAction::ShiftedCohesiveZoneAction(const InputParameters & par
   const bool has_mesh_list = isParamSetByUser("complete_interface_meshes");
   // The single-mesh, mesh-file, and per-grain-list forms all drive the interface manager.
   const bool uses_manager = has_single_mesh || has_mesh_file || has_mesh_list;
+
+  if (getParam<MooseEnum>("stress_recovery") != "none" &&
+      (!_use_kokkos || _strain != Strain::Finite))
+    paramError("stress_recovery",
+               "Stress recovery is supported only by Kokkos total-Lagrangian SCZM.");
 
   if (static_cast<unsigned int>(has_single_mesh) + static_cast<unsigned int>(has_mesh_file) +
           static_cast<unsigned int>(has_mesh_list) >
@@ -318,9 +344,9 @@ ShiftedCohesiveZoneAction::act()
   if (_ndisp != _mesh->dimension())
     paramError("displacements", "Number of displacements must match problem dimension.");
 
-  // Both the directional correction and the stabilization evaluate the bulk stress and tangent on
-  // the interface
-  if (_current_task == "add_interface_kernel" &&
+  // Directional correction and unrecovered weighted stabilization evaluate bulk stress and tangent
+  // on the interface
+  if (_current_task == "add_interface_kernel" && getParam<MooseEnum>("stress_recovery") == "none" &&
       (getParam<bool>("directional_correction") ||
        getParam<MooseEnum>("stabilization") == "weighted_traction"))
   {
@@ -567,9 +593,10 @@ ShiftedCohesiveZoneAction::addSBMDistanceUserObjects()
 bool
 ShiftedCohesiveZoneAction::needsPK2ToPK1Conversion() const
 {
-  const bool needs_stress = (getParam<bool>("directional_correction") &&
-                             !getParam<bool>("no_shifted")) ||
-                            getParam<MooseEnum>("stabilization") == "weighted_traction";
+  const bool needs_stress =
+      getParam<MooseEnum>("stress_recovery") == "none" &&
+      ((getParam<bool>("directional_correction") && !getParam<bool>("no_shifted")) ||
+       getParam<MooseEnum>("stabilization") == "weighted_traction");
   return needs_stress &&
          getParam<MooseEnum>("tangent_definition") == "pk2_wrt_deformation_gradient";
 }
@@ -701,6 +728,17 @@ ShiftedCohesiveZoneAction::customizeCZMInterfaceKernelParameters(InputParameters
     params.set<bool>("no_shifted") = getParam<bool>("no_shifted");
   if (params.isParamValid("directional_correction"))
     params.set<bool>("directional_correction") = getParam<bool>("directional_correction");
+  if (params.isParamValid("stress_recovery"))
+  {
+    params.set<MooseEnum>("stress_recovery") = getParam<MooseEnum>("stress_recovery");
+    for (const auto & name : {"volume_stress",
+                              "volume_tangent",
+                              "volume_F_avg_invT",
+                              "volume_fbar_A",
+                              "volume_fbar_gamma_over_3"})
+      if (params.isParamValid(name))
+        params.set<MaterialPropertyName>(name) = getParam<MaterialPropertyName>(name);
+  }
   if (params.have_parameter<MooseEnum>("stabilization"))
     params.applySpecificParameters(parameters(),
                                    {"stabilization",

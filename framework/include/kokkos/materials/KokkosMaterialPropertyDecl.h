@@ -16,6 +16,7 @@
 #include <typeindex>
 
 class MaterialBase;
+class MooseMesh;
 
 namespace Moose::Kokkos
 {
@@ -77,6 +78,10 @@ struct PropRecord
    * Flag whether this property is an on-demand property
    */
   bool on_demand = false;
+  /**
+   * Whether volume quadrature-point values are allocated and synchronized on ghost elements
+   */
+  bool ghosted = false;
   /**
    * Whether this property is constant over element or subdomain in each subdomain
    */
@@ -153,6 +158,13 @@ public:
                         const std::set<SubdomainID> & subdomains,
                         const bool bnd,
                         StorageKey) = 0;
+  /**
+   * Synchronize owner values to ghost elements when requested for this property
+   */
+  virtual void synchronizeGhosts(const Mesh & mesh,
+                                 const Assembly & assembly,
+                                 const MooseMesh & moose_mesh,
+                                 StorageKey) = 0;
   /**
    * Deep copy another property
    * @param prop The property to copy
@@ -307,6 +319,10 @@ public:
                         const std::set<SubdomainID> & subdomains,
                         const bool bnd,
                         StorageKey) override;
+  virtual void synchronizeGhosts(const Mesh & mesh,
+                                 const Assembly & assembly,
+                                 const MooseMesh & moose_mesh,
+                                 StorageKey) override;
   virtual void copy(const MaterialPropertyBase & prop, StorageKey) override;
   virtual void swap(MaterialPropertyBase & prop, StorageKey) override;
 #endif
