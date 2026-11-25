@@ -1018,6 +1018,22 @@
       difference_tol = 1e-4
       detail = 'with beta derived once from custom-named adjacent directional bulk tangents and element normal sizes,'
     []
+    [total_lagrangian_automatic_beta_together]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "Outputs/csv=false Materials/bulk_pk1/dpk1_d_grad_u=custom_volume_tangent "
+                 "Kernels/stress_x/dpk1_d_grad_u=custom_volume_tangent "
+                 "Kernels/stress_y/dpk1_d_grad_u=custom_volume_tangent "
+                 "Kernels/stress_z/dpk1_d_grad_u=custom_volume_tangent "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volume_tangent=custom_volume_tangent "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Executioner/residual_and_jacobian_together=true"
+      difference_tol = 1e-4
+      detail = 'with beta derived once and residual and Jacobian assembled together,'
+    []
     [total_lagrangian_automatic_beta_nonpositive]
       type = RunException
       input = sczm_tl_fbar_kokkos.i
@@ -1070,6 +1086,17 @@
       difference_tol = 1e-4
       detail = 'with total-Lagrangian kinematics and the F-bar deformation gradient, and'
     []
+    [total_lagrangian_fbar_together]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "Outputs/csv=false "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Executioner/residual_and_jacobian_together=true"
+      # Same tolerance as sczm_tl_fbar_kokkos_jacobian
+      difference_tol = 1e-4
+      detail = 'with total-Lagrangian kinematics, the F-bar deformation gradient, and residual and Jacobian assembled together,'
+    []
     [total_lagrangian_fbar_recovery]
       type = PetscJacobianTester
       input = sczm_tl_fbar_kokkos.i
@@ -1083,6 +1110,32 @@
       max_parallel = 2
       mesh_mode = distributed
       detail = 'with element-local affine recovery of each side volume stress on distorted HEX8 elements, owner-to-ghost volume property synchronization, and the complete local and nonlocal F-bar derivatives,'
+    []
+    [total_lagrangian_fbar_recovery_together]
+      type = PetscJacobianTester
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = "Outputs/csv=false "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stress_recovery=element_linear "
+                 "Executioner/residual_and_jacobian_together=true"
+      # Same tolerance as sczm_tl_fbar_kokkos_jacobian
+      difference_tol = 1e-4
+      min_parallel = 2
+      max_parallel = 2
+      mesh_mode = distributed
+      detail = 'with element-local affine recovery, F-bar derivatives, and residual and Jacobian assembled together,'
+    []
+    [total_lagrangian_fbar_recovery_solution]
+      type = CSVDiff
+      input = sczm_tl_fbar_kokkos.i
+      csvdiff = sczm_tl_fbar_recovery_kokkos_out.csv
+      cli_args = "Outputs/exodus=false "
+                 "file_base=sczm_tl_fbar_recovery_kokkos_out "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stress_recovery=element_linear"
+      detail = 'with element-local affine recovery evaluated at the true interface rather than the surrogate interface,'
     []
     [total_lagrangian_fbar_recovery_no_interface]
       type = PetscJacobianTester
