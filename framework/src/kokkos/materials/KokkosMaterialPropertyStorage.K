@@ -47,6 +47,7 @@ MaterialPropertyStorage::addKokkosProperty(const std::string & prop_name,
 
   if (record.id == libMesh::invalid_uint)
   {
+    record.name = prop_name;
     record.type = MooseUtils::prettyCppType(libMesh::demangle(type.name()));
     record.id = id;
   }
