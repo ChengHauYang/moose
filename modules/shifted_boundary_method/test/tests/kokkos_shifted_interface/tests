@@ -1431,6 +1431,81 @@
       detail = 'with Kokkos, matching the host solution.'
     []
   []
+  [salehani_irani_weighted_traction]
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall evaluate the nonlinear Salehani-Irani traction-separation law during generalized weighted-traction stabilization, matching the host SalehaniIrani3DCTraction solution and consistently linearizing the resulting residual'
+    design = 'KokkosSalehaniIraniTractionSeparation.md KokkosSCZMStabilizationData.md'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    # The Kokkos golds link to the host golds. The large gaps in both fixtures keep the law near its
+    # initial stiffness, where the host's fixed-weight stabilization and the Kokkos generalized Robin
+    # solve agree; the Jacobian test probes the nonlinear range.
+    [small_strain_host]
+      type = Exodiff
+      input = sczm_salehani_angled_host.i
+      exodiff = sczm_salehani_angled_host_out.e
+      # Recovery does not rebuild the interface neighbor state; see sczm_angled_kokkos_matches_host
+      recover = false
+      detail = 'computing the host reference solution for small-strain kinematics,'
+    []
+    [finite_strain_host]
+      type = Exodiff
+      input = sczm_salehani_tl_host.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU'"
+      exodiff = sczm_salehani_tl_host_out.e
+      # Recovery does not rebuild the interface neighbor state; see sczm_angled_kokkos_matches_host
+      recover = false
+      detail = 'computing the host reference solution for total-Lagrangian finite-strain kinematics,'
+    []
+    [small_strain]
+      type = Exodiff
+      # Recovery does not rebuild the Kokkos interface neighbor state; see
+      # sczm_angled_kokkos_matches_host
+      recover = false
+      input = sczm_salehani_angled_kokkos.i
+      exodiff = sczm_salehani_angled_kokkos_out.e
+      abs_zero = 1e-8
+      rel_err = 1e-8
+      detail = 'matching the host for small-strain kinematics,'
+    []
+    [finite_strain]
+      type = Exodiff
+      # Recovery does not rebuild the Kokkos interface neighbor state; see
+      # sczm_angled_kokkos_matches_host
+      recover = false
+      input = sczm_salehani_tl_kokkos.i
+      cli_args = "fbar=false interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU'"
+      exodiff = sczm_salehani_tl_kokkos_out.e
+      abs_zero = 1e-8
+      rel_err = 1e-8
+      detail = 'matching the host for total-Lagrangian finite-strain kinematics, and'
+    []
+    [jacobian]
+      type = PetscJacobianTester
+      input = sczm_salehani_tl_kokkos.i
+      # Recovery does not rebuild the Kokkos interface neighbor state; see
+      # sczm_angled_kokkos_matches_host
+      recover = false
+      cli_args = "Outputs/csv=false Outputs/exodus=false fbar=false "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
+                 "interface_model=interface_model_off interface_input_types=MATERIAL "
+                 "interface_inputs=deformation_gradient "
+                 "interface_derivatives='interface_pk1 deformation_gradient interface_pk1_dU' "
+                 "Materials/local_traction/normal_gap_at_maximum_normal_traction=0.1 "
+                 "Materials/local_traction/tangential_gap_at_maximum_shear_traction=0.1 "
+                 "Materials/local_traction/maximum_normal_traction=0.367879441171442 "
+                 "Materials/local_traction/maximum_shear_traction=0.485224527770107"
+      ratio_tol = 1e-7
+      # ||J - Jfd||_F is 1.5e-5 at the default finite-difference step and scales linearly with
+      # -snes_test_err (1e-3 at 1e-6, 1e-4 at 1e-7), i.e. it is the truncation error of the
+      # exponential law's curvature
+      difference_tol = 5e-5
+      detail = 'with a nonlinear finite-strain state and all diagonal and cross-component Jacobian blocks.'
+    []
+  []
   [kokkos_stress_recovery_rejections]
     requirement = 'The Kokkos shifted cohesive-zone formulation shall reject unsupported stress_recovery configurations with an explicit error'
     design = 'KokkosSCZMInterfaceKernelTotalLagrangian.md ShiftedCohesiveZoneAction.md'

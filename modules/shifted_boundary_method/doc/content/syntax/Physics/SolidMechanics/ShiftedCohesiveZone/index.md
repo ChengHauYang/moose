@@ -251,8 +251,9 @@ this instantiates `KokkosSCZMComputeDisplacementJumpSmallStrain`,
 For `strain = FINITE`, it instantiates `KokkosSCZMComputeDisplacementJumpTotalLagrangian`,
 `KokkosSCZMComputeGlobalTractionTotalLagrangian`, and `KokkosSCZMInterfaceKernelTotalLagrangian`.
 The constitutive traction law remains an explicit material; use a compatible Kokkos material
-such as `KokkosPureElasticTractionSeparation`. Kokkos SCZM supports non-AD evaluation with both
-small-strain and total-Lagrangian finite-strain kinematics.
+such as `KokkosPureElasticTractionSeparation` or `KokkosSalehaniIraniTractionSeparation`. Kokkos
+SCZM supports non-AD evaluation with both small-strain and total-Lagrangian finite-strain
+kinematics.
 
 ### Directional correction
 
