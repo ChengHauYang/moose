@@ -103,14 +103,13 @@ public:
       }
 
       Real33 robin_tangent{};
-      for (unsigned int i = 0; i < ndisp; ++i)
-        for (unsigned int j = 0; j < ndisp; ++j)
-          robin_tangent.a[i][j] = (i == j ? 1.0 : 0.0) + evaluation.jump_tangent.a[i][j] / beta;
+      const Real pivot_tolerance =
+          robinTangent(evaluation, beta, ndisp, options.minimum_pivot, robin_tangent);
 
       Real3 update{};
       for (unsigned int i = 0; i < ndisp; ++i)
         update.v[i] = -residual.v[i];
-      if (!solveDense(robin_tangent, update, ndisp, options.minimum_pivot))
+      if (!solveDense(robin_tangent, update, ndisp, pivot_tolerance))
         return result;
 
       if (affine)
@@ -220,10 +219,33 @@ private:
     return true;
   }
 
+  /**
+   * Builds the Robin tangent A = I + K / beta and returns the pivot tolerance for factoring it.
+   * A is singular only when I and K / beta cancel, so pivots are measured against the magnitude
+   * max(1, max |K_ij| / beta) of those summands rather than against the cancelled entries, which
+   * would accept any nonzero 1x1 or diagonal A.
+   */
+  SCZM_KOKKOS_FUNCTION static Real robinTangent(const CohesiveEvaluation & evaluation,
+                                                const Real beta,
+                                                const unsigned int ndisp,
+                                                const Real minimum_pivot,
+                                                Real33 & robin_tangent)
+  {
+    Real scale = 1.0;
+    for (unsigned int i = 0; i < ndisp; ++i)
+      for (unsigned int j = 0; j < ndisp; ++j)
+      {
+        robin_tangent.a[i][j] = (i == j ? 1.0 : 0.0) + evaluation.jump_tangent.a[i][j] / beta;
+        scale = maximum(scale, absolute(evaluation.jump_tangent.a[i][j]) / beta);
+      }
+    return minimum_pivot * scale;
+  }
+
+  /// LU factorization with partial pivoting; fails when a pivot is not above pivot_tolerance.
   SCZM_KOKKOS_FUNCTION static bool factorDense(Real33 & matrix,
                                                unsigned int permutation[3],
                                                const unsigned int ndisp,
-                                               const Real minimum_pivot)
+                                               const Real pivot_tolerance)
   {
     for (unsigned int row = 0; row < ndisp; ++row)
       permutation[row] = row;
@@ -238,10 +260,7 @@ private:
           pivot_magnitude = absolute(matrix.a[row][column]);
         }
 
-      Real row_scale = 0.0;
-      for (unsigned int entry = column; entry < ndisp; ++entry)
-        row_scale = maximum(row_scale, absolute(matrix.a[pivot_row][entry]));
-      if (!finite(pivot_magnitude) || pivot_magnitude <= minimum_pivot * row_scale)
+      if (!finite(pivot_magnitude) || pivot_magnitude <= pivot_tolerance)
         return false;
 
       if (pivot_row != column)
@@ -293,10 +312,10 @@ private:
   SCZM_KOKKOS_FUNCTION static bool solveDense(Real33 matrix,
                                               Real3 & right_hand_side,
                                               const unsigned int ndisp,
-                                              const Real minimum_pivot)
+                                              const Real pivot_tolerance)
   {
     unsigned int permutation[3]{};
-    return factorDense(matrix, permutation, ndisp, minimum_pivot) &&
+    return factorDense(matrix, permutation, ndisp, pivot_tolerance) &&
            solveFactored(matrix, permutation, right_hand_side, ndisp);
   }
 
@@ -309,12 +328,11 @@ private:
   {
     result.traction = evaluation.traction;
     Real33 robin_tangent{};
-    for (unsigned int i = 0; i < ndisp; ++i)
-      for (unsigned int j = 0; j < ndisp; ++j)
-        robin_tangent.a[i][j] = (i == j ? 1.0 : 0.0) + evaluation.jump_tangent.a[i][j] / beta;
+    const Real pivot_tolerance =
+        robinTangent(evaluation, beta, ndisp, minimum_pivot, robin_tangent);
 
     unsigned int permutation[3]{};
-    if (!factorDense(robin_tangent, permutation, ndisp, minimum_pivot))
+    if (!factorDense(robin_tangent, permutation, ndisp, pivot_tolerance))
       return result;
 
     for (unsigned int column = 0; column < ndisp; ++column)

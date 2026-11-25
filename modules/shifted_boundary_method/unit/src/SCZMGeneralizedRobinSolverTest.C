@@ -235,3 +235,17 @@ TEST(SCZMGeneralizedRobinSolverTest, RejectsSingularRobinTangent)
   const auto result = GeneralizedRobinSolver::solve(law, jump, Real3{}, 3.0, 1, true);
   EXPECT_FALSE(result.converged);
 }
+TEST(SCZMGeneralizedRobinSolverTest, RejectsNearlySingularRobinTangent)
+{
+  // k = -beta (1 - 1e-14) leaves 1 + k / beta = 1e-14: I and K / beta cancel to below
+  // minimum_pivot relative to their O(1) scale, so the Robin solution is not trustworthy.
+  AffineCohesiveLaw law;
+  const Real beta = 3.0;
+  law.stiffness.a[0][0] = -beta * (1.0 - 1e-14);
+  Real3 jump{};
+  jump.v[0] = 1.0;
+  EXPECT_FALSE(GeneralizedRobinSolver::solve(law, jump, Real3{}, beta, 1, true).converged);
+  // Same cancellation in one direction of a 2D diagonal tangent.
+  law.stiffness.a[1][1] = 4.0;
+  EXPECT_FALSE(GeneralizedRobinSolver::solve(law, jump, Real3{}, beta, 2, true).converged);
+}
