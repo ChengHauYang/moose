@@ -128,6 +128,104 @@ TEST(SCZMGeneralizedRobinSolverTest, CoupledNonlinearDerivativesAndCap)
   }
 }
 
+TEST(SCZMGeneralizedRobinSolverTest, LargeBetaTangentKeepsDigits)
+{
+  // beta >> |K| is the penalty-like limit where W = beta (I - S) would cancel about
+  // log10(beta / |K|) digits; W = S K must stay accurate to rounding.
+  AffineCohesiveLaw law;
+  const Real stiffness[3][3] = {{12.0, 2.0, 0.0}, {2.0, 5.0, 1.0}, {0.0, 1.0, 3.0}};
+  for (unsigned int i = 0; i < 3; ++i)
+    for (unsigned int j = 0; j < 3; ++j)
+      law.stiffness.a[i][j] = stiffness[i][j];
+
+  Real3 jump{};
+  jump.v[0] = 0.01;
+  jump.v[1] = -0.02;
+  jump.v[2] = 0.005;
+  const Real beta = 1e12;
+
+  const auto result = GeneralizedRobinSolver::solve(law, jump, Real3{}, beta, 3, true);
+  ASSERT_TRUE(result.converged);
+
+  for (unsigned int i = 0; i < 3; ++i)
+    for (unsigned int j = 0; j < 3; ++j)
+    {
+      // S = I - K / beta + O(|K|^2 / beta^2), so W = K - K K / beta with an O(1e-22) remainder.
+      Real expected = stiffness[i][j];
+      for (unsigned int k = 0; k < 3; ++k)
+        expected -= stiffness[i][k] * stiffness[k][j] / beta;
+      // 1e-13 is a few hundred ulps of |K| = 12; the cancelling form errs by about 1e-4.
+      EXPECT_NEAR(result.dtraction_djump.a[i][j], expected, 1e-13);
+      EXPECT_NEAR(result.dtraction_dbulk_traction.a[i][j] * beta, expected, 1e-13);
+    }
+}
+
+TEST(SCZMGeneralizedRobinSolverTest, PivotedRobinTangent)
+{
+  // K = [[-2, 1], [1, 0]] with beta = 2 gives A = I + K / beta = [[0, 0.5], [0.5, 1]], whose zero
+  // leading entry requires a row exchange.
+  AffineCohesiveLaw law;
+  law.stiffness.a[0][0] = -2.0;
+  law.stiffness.a[0][1] = 1.0;
+  law.stiffness.a[1][0] = 1.0;
+  law.offset.v[0] = 0.1;
+  law.offset.v[1] = -0.3;
+  const Real beta = 2.0;
+
+  Real3 jump{};
+  jump.v[0] = 0.2;
+  jump.v[1] = 0.4;
+  Real3 bulk_traction{};
+  bulk_traction.v[0] = -0.5;
+  bulk_traction.v[1] = 0.7;
+
+  const auto result = GeneralizedRobinSolver::solve(law, jump, bulk_traction, beta, 2, true);
+  ASSERT_TRUE(result.converged);
+
+  const auto evaluation = law.evaluate(result.auxiliary_jump, 2);
+  for (unsigned int i = 0; i < 2; ++i)
+  {
+    EXPECT_NEAR(result.auxiliary_jump.v[i] + evaluation.traction.v[i] / beta,
+                jump.v[i] + bulk_traction.v[i] / beta,
+                1e-14);
+    EXPECT_NEAR(result.traction.v[i], evaluation.traction.v[i], 1e-14);
+    for (unsigned int j = 0; j < 2; ++j)
+    {
+      // A W = K and A S = I.
+      Real robin_times_tangent = 0.0;
+      Real robin_times_inverse = 0.0;
+      for (unsigned int k = 0; k < 2; ++k)
+      {
+        const Real robin = (i == k ? 1.0 : 0.0) + law.stiffness.a[i][k] / beta;
+        robin_times_tangent += robin * result.dtraction_djump.a[k][j];
+        robin_times_inverse += robin * result.inverse_robin_tangent.a[k][j];
+      }
+      EXPECT_NEAR(robin_times_tangent, law.stiffness.a[i][j], 1e-14);
+      EXPECT_NEAR(robin_times_inverse, i == j ? 1.0 : 0.0, 1e-14);
+    }
+  }
+}
+
+TEST(SCZMGeneralizedRobinSolverTest, SofteningSlopeIsPreserved)
+{
+  // A softening slope k = -1 with beta = 4 keeps 1 + k / beta = 3/4 > 0, so the Robin equation
+  // has the unique solution j = (0.2 + 0.1 / 4) / (3/4) = 0.3 and W = k / (3/4) = -4/3.
+  AffineCohesiveLaw law;
+  law.stiffness.a[0][0] = -1.0;
+  Real3 jump{};
+  jump.v[0] = 0.2;
+  Real3 bulk_traction{};
+  bulk_traction.v[0] = 0.1;
+  const Real beta = 4.0;
+
+  const auto result = GeneralizedRobinSolver::solve(law, jump, bulk_traction, beta, 1, true);
+  ASSERT_TRUE(result.converged);
+  EXPECT_NEAR(result.auxiliary_jump.v[0], 0.3, 1e-15);
+  EXPECT_NEAR(result.traction.v[0], -0.3, 1e-15);
+  EXPECT_NEAR(result.dtraction_djump.a[0][0], -4.0 / 3.0, 1e-15);
+  EXPECT_NEAR(result.dtraction_dbulk_traction.a[0][0], -1.0 / 3.0, 1e-15);
+}
+
 TEST(SCZMGeneralizedRobinSolverTest, RejectsSingularRobinTangent)
 {
   AffineCohesiveLaw law;

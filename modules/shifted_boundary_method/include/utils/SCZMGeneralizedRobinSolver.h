@@ -220,11 +220,13 @@ private:
     return true;
   }
 
-  SCZM_KOKKOS_FUNCTION static bool solveDense(Real33 matrix,
-                                              Real3 & right_hand_side,
-                                              const unsigned int ndisp,
-                                              const Real minimum_pivot)
+  SCZM_KOKKOS_FUNCTION static bool factorDense(Real33 & matrix,
+                                               unsigned int permutation[3],
+                                               const unsigned int ndisp,
+                                               const Real minimum_pivot)
   {
+    for (unsigned int row = 0; row < ndisp; ++row)
+      permutation[row] = row;
     for (unsigned int column = 0; column < ndisp; ++column)
     {
       unsigned int pivot_row = column;
@@ -244,36 +246,58 @@ private:
 
       if (pivot_row != column)
       {
-        for (unsigned int entry = column; entry < ndisp; ++entry)
+        for (unsigned int entry = 0; entry < ndisp; ++entry)
         {
           const Real temporary = matrix.a[column][entry];
           matrix.a[column][entry] = matrix.a[pivot_row][entry];
           matrix.a[pivot_row][entry] = temporary;
         }
-        const Real temporary = right_hand_side.v[column];
-        right_hand_side.v[column] = right_hand_side.v[pivot_row];
-        right_hand_side.v[pivot_row] = temporary;
+        const auto temporary = permutation[column];
+        permutation[column] = permutation[pivot_row];
+        permutation[pivot_row] = temporary;
       }
 
       for (unsigned int row = column + 1; row < ndisp; ++row)
       {
-        const Real factor = matrix.a[row][column] / matrix.a[column][column];
+        matrix.a[row][column] /= matrix.a[column][column];
         for (unsigned int entry = column + 1; entry < ndisp; ++entry)
-          matrix.a[row][entry] -= factor * matrix.a[column][entry];
-        right_hand_side.v[row] -= factor * right_hand_side.v[column];
+          matrix.a[row][entry] -= matrix.a[row][column] * matrix.a[column][entry];
       }
     }
+    return true;
+  }
 
+  SCZM_KOKKOS_FUNCTION static bool solveFactored(const Real33 & matrix,
+                                                 const unsigned int permutation[3],
+                                                 Real3 & right_hand_side,
+                                                 const unsigned int ndisp)
+  {
+    Real3 permuted{};
+    for (unsigned int row = 0; row < ndisp; ++row)
+      permuted.v[row] = right_hand_side.v[permutation[row]];
+    for (unsigned int row = 0; row < ndisp; ++row)
+      for (unsigned int column = 0; column < row; ++column)
+        permuted.v[row] -= matrix.a[row][column] * permuted.v[column];
     for (int row = static_cast<int>(ndisp) - 1; row >= 0; --row)
     {
-      Real value = right_hand_side.v[row];
       for (unsigned int column = row + 1; column < ndisp; ++column)
-        value -= matrix.a[row][column] * right_hand_side.v[column];
-      right_hand_side.v[row] = value / matrix.a[row][row];
-      if (!finite(right_hand_side.v[row]))
+        permuted.v[row] -= matrix.a[row][column] * permuted.v[column];
+      permuted.v[row] /= matrix.a[row][row];
+      if (!finite(permuted.v[row]))
         return false;
     }
+    right_hand_side = permuted;
     return true;
+  }
+
+  SCZM_KOKKOS_FUNCTION static bool solveDense(Real33 matrix,
+                                              Real3 & right_hand_side,
+                                              const unsigned int ndisp,
+                                              const Real minimum_pivot)
+  {
+    unsigned int permutation[3]{};
+    return factorDense(matrix, permutation, ndisp, minimum_pivot) &&
+           solveFactored(matrix, permutation, right_hand_side, ndisp);
   }
 
   SCZM_KOKKOS_FUNCTION static StabilizedTractionResult
@@ -289,26 +313,29 @@ private:
       for (unsigned int j = 0; j < ndisp; ++j)
         robin_tangent.a[i][j] = (i == j ? 1.0 : 0.0) + evaluation.jump_tangent.a[i][j] / beta;
 
+    unsigned int permutation[3]{};
+    if (!factorDense(robin_tangent, permutation, ndisp, minimum_pivot))
+      return result;
+
     for (unsigned int column = 0; column < ndisp; ++column)
     {
       Real3 inverse_column{};
       inverse_column.v[column] = 1.0;
-      if (!solveDense(robin_tangent, inverse_column, ndisp, minimum_pivot))
+      if (!solveFactored(robin_tangent, permutation, inverse_column, ndisp))
         return result;
-
-      Real3 traction_column{};
       for (unsigned int row = 0; row < ndisp; ++row)
-        traction_column.v[row] = evaluation.jump_tangent.a[row][column];
-      if (!solveDense(robin_tangent, traction_column, ndisp, minimum_pivot))
-        return result;
-
-      for (unsigned int row = 0; row < ndisp; ++row)
-      {
         result.inverse_robin_tangent.a[row][column] = inverse_column.v[row];
-        result.dtraction_djump.a[row][column] = traction_column.v[row];
-        result.dtraction_dbulk_traction.a[row][column] = traction_column.v[row] / beta;
-      }
     }
+
+    for (unsigned int row = 0; row < ndisp; ++row)
+      for (unsigned int column = 0; column < ndisp; ++column)
+      {
+        for (unsigned int inner = 0; inner < ndisp; ++inner)
+          result.dtraction_djump.a[row][column] +=
+              result.inverse_robin_tangent.a[row][inner] * evaluation.jump_tangent.a[inner][column];
+        result.dtraction_dbulk_traction.a[row][column] =
+            result.dtraction_djump.a[row][column] / beta;
+      }
 
     result.converged = true;
     return result;
