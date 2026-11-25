@@ -10,7 +10,8 @@
 #pragma once
 
 #include "KokkosInterfaceMaterial.h"
-#include "KokkosCohesiveZoneModelTools.h"
+#include "SCZMCohesiveLawEvaluators.h"
+#include "SCZMGlobalTractionTotalLagrangian.h"
 
 class BoundaryShortestDistanceToSurface;
 
@@ -38,7 +39,6 @@ public:
   {
     const auto index = face.qp_map_offset + qp;
     const auto normal_ref = _shifted ? _true_normals[index] : elem_datum.normals(qp);
-
     const auto prop_jump_global = _displacement_jump_global(elem_datum, qp);
     const auto prop_Rtot = _czm_total_rotation(elem_datum, qp);
     const auto prop_Rref = _czm_reference_rotation(elem_datum, qp);
@@ -47,123 +47,60 @@ public:
     const auto prop_t_local = _interface_traction(elem_datum, qp);
     const auto prop_dt_local = _dinterface_traction_djump(elem_datum, qp);
 
+    Moose::Kokkos::SCZM::GlobalTractionTotalLagrangian<Moose::Kokkos::SCZM::AffineCohesiveLaw>
+        evaluator;
+    evaluator.ndisp = _ndisp;
+    for (unsigned int i = 0; i < 3; ++i)
+    {
+      evaluator.deformation_gradient(i, i) = 1.0;
+      evaluator.rotation(i, i) = 1.0;
+      evaluator.reference_rotation(i, i) = 1.0;
+      evaluator.total_rotation(i, i) = 1.0;
+    }
+
+    Moose::Kokkos::Real3 global_jump{};
+    Moose::Kokkos::Real3 local_jump{};
+    for (unsigned int i = 0; i < _ndisp; ++i)
+    {
+      global_jump(i) = prop_jump_global(i);
+      evaluator.reference_normal(i) = normal_ref(i);
+      for (unsigned int j = 0; j < _ndisp; ++j)
+      {
+        evaluator.deformation_gradient(i, j) = prop_F(i, j);
+        evaluator.rotation(i, j) = prop_R(i, j);
+        evaluator.reference_rotation(i, j) = prop_Rref(i, j);
+        evaluator.total_rotation(i, j) = prop_Rtot(i, j);
+        evaluator.local_law.stiffness(i, j) = prop_dt_local(i, j);
+        local_jump(i) += prop_Rtot(j, i) * prop_jump_global(j);
+      }
+    }
+    if (_ndisp < 3)
+      evaluator.reference_normal(2) = 0.0;
+
+    for (unsigned int i = 0; i < _ndisp; ++i)
+    {
+      evaluator.local_law.offset(i) = prop_t_local(i);
+      for (unsigned int j = 0; j < _ndisp; ++j)
+        evaluator.local_law.offset(i) -= evaluator.local_law.stiffness(i, j) * local_jump(j);
+    }
+
+    const auto evaluation =
+        evaluator.evaluateWithDeformationGradientDerivative(global_jump, _ndisp);
     auto prop_t_global = _traction_global(elem_datum, qp);
     auto prop_PK1 = _PK1traction(elem_datum, qp);
     auto prop_dt_djump_global = _dtraction_djump_global(elem_datum, qp);
     auto prop_dPK1_dF = _dPK1traction_dF(elem_datum, qp);
-
-    Moose::Kokkos::Real33 F = 0.0;
-    F(0, 0) = 1.0;
-    F(1, 1) = 1.0;
-    F(2, 2) = 1.0;
-    Moose::Kokkos::Real33 R = 0.0;
-    R(0, 0) = 1.0;
-    R(1, 1) = 1.0;
-    R(2, 2) = 1.0;
-    Moose::Kokkos::Real33 Rref = 0.0;
-    Rref(0, 0) = 1.0;
-    Rref(1, 1) = 1.0;
-    Rref(2, 2) = 1.0;
-    Moose::Kokkos::Real33 Rtot = 0.0;
-    Rtot(0, 0) = 1.0;
-    Rtot(1, 1) = 1.0;
-    Rtot(2, 2) = 1.0;
-
-    Real jump_global[3] = {0, 0, 0};
-    Real t_local[3] = {0, 0, 0};
-    Real dt_local[3][3] = {{0}};
-
     for (unsigned int i = 0; i < _ndisp; ++i)
     {
-      jump_global[i] = prop_jump_global(i);
-      t_local[i] = prop_t_local(i);
+      prop_t_global(i) = evaluation.cauchy_traction(i);
+      prop_PK1(i) = evaluation.cohesive.traction(i);
       for (unsigned int j = 0; j < _ndisp; ++j)
       {
-        F(i, j) = prop_F(i, j);
-        R(i, j) = prop_R(i, j);
-        Rref(i, j) = prop_Rref(i, j);
-        Rtot(i, j) = prop_Rtot(i, j);
-        dt_local[i][j] = prop_dt_local(i, j);
-      }
-    }
-
-    Moose::Kokkos::Real3 N = normal_ref;
-    if (_ndisp < 3)
-      N(2) = 0.0;
-
-    const Moose::Kokkos::Real33 U = R.transpose() * F;
-    const Real J = F.determinant(3);
-    const Moose::Kokkos::Real33 FinvT = F.inverse(3).transpose();
-
-    const Moose::Kokkos::Real3 Fitr_N = FinvT * N;
-    const Real Fitr_N_norm = Fitr_N.norm();
-    const Real area_ratio = J * Fitr_N_norm;
-
-    // Cauchy-like global traction: t_global = R_tot * t_local
-    Real t_global[3] = {0, 0, 0};
-    for (unsigned int i = 0; i < _ndisp; ++i)
-    {
-      for (unsigned int j = 0; j < _ndisp; ++j)
-        t_global[i] += Rtot(i, j) * t_local[j];
-      prop_t_global(i) = t_global[i];
-      prop_PK1(i) = t_global[i] * area_ratio;
-    }
-
-    // dtraction_djump_global = area_ratio * R_tot * dt_local * R_tot^T
-    for (unsigned int i = 0; i < _ndisp; ++i)
-      for (unsigned int j = 0; j < _ndisp; ++j)
-      {
-        Real sum = 0.0;
+        prop_dt_djump_global(i, j) = evaluation.cohesive.jump_tangent(i, j);
         for (unsigned int k = 0; k < _ndisp; ++k)
-          for (unsigned int l = 0; l < _ndisp; ++l)
-            sum += Rtot(i, k) * dt_local[k][l] * Rtot(j, l);
-        prop_dt_djump_global(i, j) = area_ratio * sum;
+          prop_dPK1_dF(i, j, k) = evaluation.dtraction_dF[i][j][k];
       }
-
-    Real dFinv[3][3][3][3];
-    Moose::Kokkos::CohesiveZoneModelTools::computedFinversedF(FinvT, dFinv);
-
-    Real dArea_dF[3][3];
-    Moose::Kokkos::CohesiveZoneModelTools::computeDAreaRatioDF(FinvT, N, J, dFinv, dArea_dF);
-
-    Real dR_dF[3][3][3][3];
-    Moose::Kokkos::CohesiveZoneModelTools::computedRdF(R, U, dR_dF);
-
-    Real dczm_tot_rot_dF[3][3][3][3] = {{{{0}}}};
-    for (unsigned int i = 0; i < 3; ++i)
-      for (unsigned int j = 0; j < 3; ++j)
-        for (unsigned int k = 0; k < 3; ++k)
-          for (unsigned int l = 0; l < 3; ++l)
-            for (unsigned int m = 0; m < 3; ++m)
-              dczm_tot_rot_dF[i][j][k][l] += Rref(m, j) * dR_dF[i][m][k][l];
-
-    Real djump_dF[3][3][3] = {{{0}}};
-    for (unsigned int a = 0; a < 3; ++a)
-      for (unsigned int k = 0; k < 3; ++k)
-        for (unsigned int l = 0; l < 3; ++l)
-          for (unsigned int b = 0; b < 3; ++b)
-            djump_dF[a][k][l] += dczm_tot_rot_dF[b][a][k][l] * jump_global[b];
-
-    Real M[3][3] = {{0}};
-    for (unsigned int i = 0; i < 3; ++i)
-      for (unsigned int j = 0; j < 3; ++j)
-        for (unsigned int k = 0; k < 3; ++k)
-          M[i][j] += Rtot(i, k) * dt_local[k][j];
-
-    for (unsigned int i = 0; i < _ndisp; ++i)
-      for (unsigned int k = 0; k < _ndisp; ++k)
-        for (unsigned int l = 0; l < _ndisp; ++l)
-        {
-          const Real term1 = dArea_dF[k][l] * t_global[i];
-          Real term2 = 0.0;
-          for (unsigned int j = 0; j < 3; ++j)
-            term2 += dczm_tot_rot_dF[i][j][k][l] * t_local[j];
-          Real term3 = 0.0;
-          for (unsigned int j = 0; j < 3; ++j)
-            term3 += M[i][j] * djump_dF[j][k][l];
-
-          prop_dPK1_dF(i, k, l) = term1 + area_ratio * (term2 + term3);
-        }
+    }
   }
 
 private:
