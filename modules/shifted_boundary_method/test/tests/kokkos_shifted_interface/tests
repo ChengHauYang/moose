@@ -1079,6 +1079,33 @@
       detail = 'in the host total-Lagrangian formulation with the F-bar deformation gradient.'
     []
   []
+  [coupled_cubic_rejections]
+    requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reject incomplete or invalid coupled-cubic cohesive-law configurations'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    recover = false
+    [missing_material_linear_coefficient]
+      type = RunException
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = 'Materials/local_traction/cohesive_law=coupled_cubic'
+      expect_err = 'linear_stiffness: This parameter is required for the coupled_cubic law.'
+      detail = 'when the cohesive material omits its linear coefficient,'
+    []
+    [missing_material_cubic_coefficient]
+      type = RunException
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = 'Materials/local_traction/cohesive_law=coupled_cubic Materials/local_traction/linear_stiffness=8'
+      expect_err = 'cubic_stiffness: This parameter is required for the coupled_cubic law.'
+      detail = 'when the cohesive material omits its cubic coefficient, and'
+    []
+    [negative_material_coefficient]
+      type = RunException
+      input = sczm_tl_fbar_kokkos.i
+      cli_args = 'Materials/local_traction/cohesive_law=coupled_cubic Materials/local_traction/linear_stiffness=8 Materials/local_traction/cubic_stiffness=-1'
+      expect_err = 'The coupled_cubic coefficients must be nonnegative.'
+      detail = 'when the cohesive material has a negative coefficient.'
+    []
+  []
   [weighted_traction_stabilization_solution]
     requirement = 'The shifted cohesive-zone formulation shall compute the displacement solution with the weighted traction stabilization on a two-dimensional angled interface including the directional correction'
     # The Kokkos gold file is a copy of the host one: both evaluate identical double-precision
