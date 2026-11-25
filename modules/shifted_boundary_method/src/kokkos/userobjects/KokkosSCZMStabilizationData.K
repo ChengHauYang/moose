@@ -26,9 +26,6 @@ KokkosSCZMStabilizationData::validParams()
   params.addParam<std::string>("base_name", "Material property base name.");
   params.addParam<bool>("no_shifted", false, "Disable shifted geometry.");
   params.addParam<UserObjectName>("sbm_distance_uo", "Surrogate-interface mapping provider.");
-  params.addParam<UserObjectName>("batch_index_generator",
-                                  "Optional interface-only NEML2 batch generator used to enforce "
-                                  "primary-side state ownership.");
   params.addParam<MooseEnum>("stress_recovery",
                              MooseEnum("none element_linear", "none"),
                              "Optional element-local affine recovery of adjacent PK1 stress.");
@@ -67,10 +64,7 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const InputParameters &
     _settings(SCZMWeightedTractionStabilization::settings(*this)),
     _sbm_distance_uo(isParamValid("sbm_distance_uo")
                          ? &getUserObject<BoundaryShortestDistanceToSurface>("sbm_distance_uo")
-                         : nullptr),
-    _batch_index_generator(isParamValid("batch_index_generator")
-                               ? &getUserObject<NEML2BatchIndexGenerator>("batch_index_generator")
-                               : nullptr)
+                         : nullptr)
 {
   if (!_settings.enabled)
     paramError("stabilization",
@@ -142,7 +136,6 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const KokkosSCZMStabili
     _stabilization_cubic_stiffness(object._stabilization_cubic_stiffness),
     _settings(object._settings),
     _sbm_distance_uo(object._sbm_distance_uo),
-    _batch_index_generator(object._batch_index_generator),
     _true_normals(object._true_normals),
     _surrogate_distance_vectors(object._surrogate_distance_vectors),
     _face_qp_offsets(object._face_qp_offsets),
@@ -173,8 +166,7 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const KokkosSCZMStabili
     _robin_tangents_valid(object._robin_tangents_valid),
     _need_tangents(object._need_tangents),
     _initialize_beta_only(object._initialize_beta_only),
-    _prepass_failure(object._prepass_failure),
-    _validated_map_generation(object._validated_map_generation)
+    _prepass_failure(object._prepass_failure)
 {
 }
 
@@ -193,7 +185,6 @@ KokkosSCZMStabilizationData::initialSetup()
 {
   Moose::Kokkos::InterfaceUserObject::initialSetup();
   allocateArrays();
-  validateCanonicalBatchOwnership();
 }
 
 void
@@ -276,29 +267,6 @@ KokkosSCZMStabilizationData::ensurePrepared(const bool need_tangents)
 
   _bulk_and_robin_valid = true;
   _robin_tangents_valid = need_tangents;
-}
-
-void
-KokkosSCZMStabilizationData::validateCanonicalBatchOwnership()
-{
-  if (!_batch_index_generator || _batch_index_generator->mapGeneration() == 0 ||
-      _validated_map_generation == _batch_index_generator->mapGeneration())
-    return;
-
-  auto primary = _batch_index_generator->kokkosFacePrimaryBatchIndices();
-  auto neighbor = _batch_index_generator->kokkosFaceNeighborBatchIndices();
-  primary.copyToHost();
-  neighbor.copyToHost();
-  const auto invalid = NEML2BatchIndexGenerator::invalidKokkosBatchIndex();
-  for (const auto & face : kokkosInterfaceFaces())
-  {
-    if (primary[face.face_index] == invalid)
-      mooseError("NEML2 SCZM requires a primary-side batch row for every cohesive face.");
-    if (neighbor[face.face_index] != invalid)
-      mooseError("NEML2 SCZM cohesive state must be owned only by the canonical primary side; the "
-                 "batch generator includes both sides of one cohesive face.");
-  }
-  _validated_map_generation = _batch_index_generator->mapGeneration();
 }
 
 void

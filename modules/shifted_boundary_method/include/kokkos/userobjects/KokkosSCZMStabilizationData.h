@@ -10,7 +10,6 @@
 
 #include "KokkosInterfaceUserObject.h"
 #include "KokkosMaterialPropertyValue.h"
-#include "NEML2BatchIndexGenerator.h"
 #include "SCZMCohesiveLawEvaluators.h"
 #include "SCZMGeneralizedRobinSolver.h"
 #include "SCZMGlobalTractionTotalLagrangian.h"
@@ -115,7 +114,6 @@ protected:
   void initializeSurrogateInterfaceMapping();
   void allocateArrays();
   void initializeRecovery();
-  void validateCanonicalBatchOwnership();
 
   const unsigned int _ndisp;
   const bool _shifted;
@@ -125,7 +123,6 @@ protected:
   const Real _stabilization_cubic_stiffness;
   const SCZMWeightedTractionStabilization::Settings _settings;
   const BoundaryShortestDistanceToSurface * const _sbm_distance_uo;
-  const NEML2BatchIndexGenerator * const _batch_index_generator;
 
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _true_normals;
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _surrogate_distance_vectors;
@@ -161,7 +158,6 @@ protected:
   bool _need_tangents = false;
   bool _initialize_beta_only = false;
   Moose::Kokkos::Array<int> _prepass_failure;
-  std::size_t _validated_map_generation = 0;
 };
 
 template <typename Derived>
