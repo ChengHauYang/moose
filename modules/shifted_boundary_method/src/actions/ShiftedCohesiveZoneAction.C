@@ -159,8 +159,8 @@ ShiftedCohesiveZoneAction::validParams()
   SCZMWeightedTractionStabilization::addParams(params);
   params.addParam<MooseEnum>("stabilization_cohesive_law",
                              MooseEnum("affine coupled_cubic", "affine"),
-                             "Native memoryless cohesive evaluator used by Kokkos total-Lagrangian "
-                             "generalized Robin stabilization.");
+                             "Native memoryless cohesive evaluator used by Kokkos generalized Robin "
+                             "stabilization.");
   params.addParam<Real>("stabilization_linear_stiffness",
                         "Linear coefficient of the coupled-cubic stabilization evaluator.");
   params.addParam<Real>("stabilization_cubic_stiffness",
@@ -197,7 +197,8 @@ ShiftedCohesiveZoneAction::validParams()
   params.addParam<MaterialPropertyName>(
       "volume_tangent",
       "dpk1_d_grad_u",
-      "Name of the complete local volume PK1 derivative used by stress recovery.");
+      "Name of the complete local volume PK1 derivative used by stress recovery and automatic "
+      "stabilization beta. Small strain defaults to the 'tangent' property.");
   params.addParam<MaterialPropertyName>(
       "volume_F_avg_invT",
       "F_avg_invT",
@@ -487,8 +488,7 @@ ShiftedCohesiveZoneAction::act()
   {
     if (getParam<bool>("generate_sbm_distance") || usesInterfaceManager())
       addSBMDistanceUserObjects();
-    if (_use_kokkos && _strain == Strain::Finite &&
-        getParam<MooseEnum>("stabilization") == "weighted_traction")
+    if (_use_kokkos && getParam<MooseEnum>("stabilization") == "weighted_traction")
       addStabilizationDataUserObject();
   }
   else if (_current_task == "add_interface_kernel")
@@ -636,6 +636,10 @@ ShiftedCohesiveZoneAction::addStabilizationDataUserObject()
   params.set<std::vector<VariableName>>("displacements") = _displacements;
   params.set<std::string>("base_name") = _base_name;
   customizeCZMInterfaceKernelParameters(params);
+  params.set<MooseEnum>("strain") = _strain == Strain::Finite ? "FINITE" : "SMALL";
+  // Automatic beta reads the small-strain bulk tangent d(stress)/d(strain) by default
+  if (_strain != Strain::Finite && !isParamSetByUser("volume_tangent"))
+    params.set<MaterialPropertyName>("volume_tangent") = getParam<MaterialPropertyName>("tangent");
   if (needsPK2ToPK1Conversion())
   {
     params.set<MaterialPropertyName>("stress") = _name + "_pk1_stress";
@@ -715,7 +719,7 @@ ShiftedCohesiveZoneAction::addRequiredCZMInterfaceKernels()
     params.set<std::vector<BoundaryName>>("boundary") = _boundary;
     params.set<std::string>("base_name") = _base_name;
     customizeCZMInterfaceKernelParameters(params);
-    if (_strain == Strain::Finite && getParam<MooseEnum>("stabilization") == "weighted_traction")
+    if (getParam<MooseEnum>("stabilization") == "weighted_traction")
       params.set<UserObjectName>("stabilization_data") = stabilizationDataUserObjectName();
     if (needsPK2ToPK1Conversion())
     {

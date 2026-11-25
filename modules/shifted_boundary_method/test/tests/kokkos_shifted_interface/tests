@@ -965,8 +965,9 @@
   []
   [weighted_traction_stabilization]
     requirement = 'The Kokkos shifted cohesive-zone formulation shall assemble Jacobian entries consistent with its residual, including the bulk stress derivatives of the average traction in all four interface blocks, for the weighted traction stabilization; in the total-Lagrangian F-bar formulation it shall optionally recover each side''s volume stress affinely to the true interface and synchronize required volume properties to ghost elements on distributed meshes'
-    # beta = k_n and k_t = 3 k_n give the weights S_n = 1/2 and S_t = 1/4, so the cohesive and the
-    # average bulk traction both contribute and the normal and tangential weights differ
+    # beta = 10 is comparable to the cohesive stiffnesses (k_n = 10, k_t = 8), so the cohesive and
+    # the average bulk traction both contribute. The Kokkos kernels take the Robin weights from the
+    # cohesive tangent and ignore the reference stiffnesses, which only the host test uses.
     ratio_tol = 1e-7
     difference_tol = 1e-7
     capabilities = 'kokkos & libtorch & neml2'
@@ -1225,8 +1226,9 @@
   []
   [weighted_traction_stabilization_solution]
     requirement = 'The shifted cohesive-zone formulation shall compute the displacement solution with the weighted traction stabilization on a two-dimensional angled interface including the directional correction'
-    # The Kokkos gold file is a copy of the host one: both evaluate identical double-precision
-    # discrete equations, so they must agree tightly.
+    # The Kokkos gold file is a copy of the host one. The host reference stiffnesses equal the
+    # cohesive law stiffnesses, so its legacy weighted traction equals the Kokkos generalized Robin
+    # traction for this linear law and both must agree tightly.
     abs_zero = 1e-8
     rel_err = 1e-8
     # See sczm_angled_kokkos_matches_host for why recovery is disabled.
@@ -1237,7 +1239,7 @@
       cli_args = "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
-                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=8 "
                  "Outputs/file_base=sczm_angled_stabilization_host_out"
       exodiff = sczm_angled_stabilization_host_out.e
       detail = 'on the host, and'
@@ -1248,7 +1250,7 @@
       cli_args = "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=10 "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_normal_stiffness=10 "
-                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=30 "
+                 "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_tangential_stiffness=8 "
                  "Outputs/file_base=sczm_angled_stabilization_kokkos_out"
       exodiff = sczm_angled_stabilization_kokkos_out.e
       capabilities = 'kokkos & libtorch & neml2'

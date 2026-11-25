@@ -305,7 +305,7 @@ KokkosSCZMInterfaceKernelTotalLagrangian::initialSetup()
   if (beta_mismatch || producer_settings.gamma != _stabilization_settings.gamma ||
       cohesive_law_mismatch ||
       _stabilization_data->elementLinearRecovery() != _element_linear_recovery ||
-      _stabilization_data->shifted() != _shifted)
+      _stabilization_data->shifted() != _shifted || !_stabilization_data->finiteStrain())
     mooseError("SCZM kernel and stabilization producer configurations differ.");
 
   dof_id_type n_qps = 0;

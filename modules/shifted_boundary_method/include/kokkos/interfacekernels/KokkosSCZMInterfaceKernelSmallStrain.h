@@ -10,6 +10,7 @@
 #pragma once
 
 #include "KokkosShiftedInterfaceKernel.h"
+#include "KokkosSCZMStabilizationData.h"
 #include "SCZMWeightedTractionStabilization.h"
 
 /**
@@ -21,6 +22,12 @@ public:
   static InputParameters validParams();
 
   KokkosSCZMInterfaceKernelSmallStrain(const InputParameters & parameters);
+
+  virtual void initialSetup() override;
+  virtual void residualSetup() override;
+  virtual void jacobianSetup() override;
+  virtual void computeResidual() override;
+  virtual void computeJacobian() override;
 
   /// prepareJacobianColumn averages trial gradients over the column element's volume quadrature
   /// points for the volumetric locking correction, so it needs a volume datum
@@ -93,19 +100,18 @@ protected:
                                                 const Moose::Kokkos::Real3 & avg_grad_phi) const;
 
   /**
-   * Derivative of the residual through the cohesive traction component traction_component with
-   * respect to displacement component component_j, including test function, sign, and area
+   * Derivative of the residual through a traction whose derivative with respect to the global
+   * displacement jump component component_j is tangent, including test function, sign, and area
    * correction.
    */
   KOKKOS_FUNCTION Real computeDResidualDDisplacement(Moose::DGJacobianType type,
                                                      unsigned int i,
                                                      unsigned int j,
-                                                     unsigned int traction_component,
-                                                     unsigned int component_j,
                                                      unsigned int qp,
                                                      unsigned int neighbor_qp,
                                                      AssemblyDatum & elem_datum,
-                                                     AssemblyDatum & neighbor_datum) const;
+                                                     AssemblyDatum & neighbor_datum,
+                                                     Real tangent) const;
 
   /**
    * The signed directional-correction contribution to one Jacobian block.
@@ -152,16 +158,6 @@ protected:
     return _shifted ? trueNormal(datum, qp) : datum.normals(qp);
   }
 
-  /// Entry (a, b) of the weighted traction stabilization weight S = beta (K + beta I)^{-1}
-  KOKKOS_FUNCTION Real stabilizationWeight(const Moose::Kokkos::Real3 & normal,
-                                           unsigned int a,
-                                           unsigned int b) const
-  {
-    return (a == b ? _stabilization_weights.tangential : 0.0) +
-           (_stabilization_weights.normal - _stabilization_weights.tangential) * normal(a) *
-               normal(b);
-  }
-
   /**
    * The component of the true normal lying in the surrogate face plane:
    * normals - dot(true_normal, normals) * true_normal.
@@ -178,8 +174,14 @@ protected:
   const bool _shifted;
   const bool _directional_correction;
   const bool _volumetric_locking_correction;
-  /// Weights of the weighted traction stabilization; disabled by default
-  const SCZMWeightedTractionStabilization::Weights _stabilization_weights;
+  const SCZMWeightedTractionStabilization::Settings _stabilization_settings;
+  /// Shared producer of the generalized Robin traction and tangents
+  KokkosSCZMStabilizationData * const _stabilization_data;
+  Moose::Kokkos::Array2D<dof_id_type> _face_qp_offsets;
+  Moose::Kokkos::Array<Real> _stabilization_beta;
+  Moose::Kokkos::Array<Moose::Kokkos::Real3> _stabilized_traction;
+  /// W = (I + K / beta)^{-1} K, the derivative of the stabilized traction with respect to the jump
+  Moose::Kokkos::Array<Moose::Kokkos::Real33> _robin_W;
   bool _tangent_is_dpk1_df;
   Moose::Kokkos::Array<unsigned int> _disp_vars;
   const Moose::Kokkos::MaterialProperty<Real, 1> _traction_global;
@@ -208,28 +210,15 @@ KokkosSCZMInterfaceKernelSmallStrain::computeQpResidual(const Moose::DGResidualT
   // With no_shifted the host falls back to the plain interface residual, which carries neither the
   // area correction nor the directional correction. See computeQpResidual of the host
   // SCZMInterfaceKernelSmallStrainTempl.
-  if (!_shifted && !_stabilization_weights.enabled)
+  if (!_shifted && !_stabilization_settings.enabled)
     return sign * test * _traction_global(elem_datum, qp)(_component);
 
-  const auto traction = _traction_global(elem_datum, qp);
-  Real interface_traction = traction(_component);
-  if (_stabilization_weights.enabled)
-  {
-    // S t_c + (I - S) (stress + stress_neighbor) N / 2, see the host stabilizedTraction
-    const auto normal = stabilizationNormal(elem_datum, qp);
-    const auto stress = _stress(elem_datum, qp);
-    const auto stress_neighbor = _stress_neighbor(neighbor_datum, neighbor_qp);
-    interface_traction = 0.0;
-    for (unsigned int b = 0; b < _ndisp; ++b)
-    {
-      Real average_traction = 0.0;
-      for (unsigned int J = 0; J < _ndisp; ++J)
-        average_traction += 0.5 * (stress(b, J) + stress_neighbor(b, J)) * normal(J);
-      const Real weight = stabilizationWeight(normal, _component, b);
-      interface_traction +=
-          weight * traction(b) + ((b == _component ? 1.0 : 0.0) - weight) * average_traction;
-    }
-  }
+  // The stabilized traction solves the generalized Robin equation in KokkosSCZMStabilizationData
+  const Real interface_traction =
+      _stabilization_settings.enabled
+          ? _stabilized_traction[_face_qp_offsets(elem_datum.side(), elem_datum.elemID()) + qp](
+                _component)
+          : _traction_global(elem_datum, qp)(_component);
 
   const auto residual =
       sign * test * (_shifted ? areaCorrection(elem_datum, qp) : 1.0) * interface_traction;
@@ -277,7 +266,7 @@ KokkosSCZMInterfaceKernelSmallStrain::prepareJacobianColumn(
   // also differentiates the counterpart stress in the cross blocks
   const bool cross_block = type == Moose::ElementNeighbor || type == Moose::NeighborElement;
   if (!_volumetric_locking_correction ||
-      !(_stabilization_weights.enabled || (_shifted && _directional_correction && !cross_block)))
+      !(_stabilization_settings.enabled || (_shifted && _directional_correction && !cross_block)))
     return Moose::Kokkos::Real3(0);
 
   bool is_displacement = false;
@@ -386,11 +375,16 @@ KokkosSCZMInterfaceKernelSmallStrain::computeJacobianComponent(
 {
   Real jacobian = 0.0;
 
-  if (_stabilization_weights.enabled)
+  if (_stabilization_settings.enabled)
   {
-    // d/du of S t_c + (I - S) (stress + stress_neighbor) N / 2. Each side's stress depends only on
-    // that side's displacements, so the trial side selects the stress, tangent, and trial gradient.
+    // d(t)/d(J_d) = W and d(t)/d(T_h) = W / beta with T_h = (stress + stress_neighbor) N / 2. Each
+    // side's stress depends only on that side's displacements, so the trial side selects the
+    // stress, tangent, and trial gradient.
     const auto normal = stabilizationNormal(elem_datum, qp);
+    const auto index = _face_qp_offsets(elem_datum.side(), elem_datum.elemID()) + qp;
+    const auto & W = _robin_W[index];
+    const Real beta = _stabilization_settings.beta_override ? _stabilization_settings.beta
+                                                            : _stabilization_beta[index];
     const bool trial_on_element = type == Moose::ElementElement || type == Moose::NeighborElement;
     const auto grad_phi = trial_on_element ? _grad_phi(elem_datum, j, qp)
                                            : _grad_phi_neighbor(neighbor_datum, j, neighbor_qp);
@@ -398,15 +392,12 @@ KokkosSCZMInterfaceKernelSmallStrain::computeJacobianComponent(
                                  ? -_test(elem_datum, i, qp)
                                  : _test_neighbor(neighbor_datum, i, neighbor_qp);
 
+    jacobian = computeDResidualDDisplacement(
+        type, i, j, qp, neighbor_qp, elem_datum, neighbor_datum, W(_component, component_j));
     Real average_traction_derivative = 0.0;
     for (unsigned int b = 0; b < _ndisp; ++b)
-    {
-      const Real weight = stabilizationWeight(normal, _component, b);
-      jacobian +=
-          weight * computeDResidualDDisplacement(
-                       type, i, j, b, component_j, qp, neighbor_qp, elem_datum, neighbor_datum);
       average_traction_derivative +=
-          ((b == _component ? 1.0 : 0.0) - weight) *
+          W(_component, b) / beta *
           stressDerivative(trial_on_element,
                            b,
                            component_j,
@@ -415,13 +406,19 @@ KokkosSCZMInterfaceKernelSmallStrain::computeJacobianComponent(
                            normal,
                            grad_phi,
                            avg_grad_phi);
-    }
     jacobian += 0.5 * (_shifted ? areaCorrection(elem_datum, qp) : 1.0) * signed_test *
                 average_traction_derivative;
   }
   else
-    jacobian = computeDResidualDDisplacement(
-        type, i, j, _component, component_j, qp, neighbor_qp, elem_datum, neighbor_datum);
+    jacobian = computeDResidualDDisplacement(type,
+                                             i,
+                                             j,
+                                             qp,
+                                             neighbor_qp,
+                                             elem_datum,
+                                             neighbor_datum,
+                                             _dtraction_djump_global(elem_datum, qp)(_component,
+                                                                                     component_j));
 
   if (_shifted && _directional_correction)
     jacobian += computeDirectionalCorrectionJacobian(
@@ -435,15 +432,12 @@ KokkosSCZMInterfaceKernelSmallStrain::computeDResidualDDisplacement(
     const Moose::DGJacobianType type,
     const unsigned int i,
     const unsigned int j,
-    const unsigned int traction_component,
-    const unsigned int component_j,
     const unsigned int qp,
     const unsigned int neighbor_qp,
     AssemblyDatum & elem_datum,
-    AssemblyDatum & neighbor_datum) const
+    AssemblyDatum & neighbor_datum,
+    const Real tangent) const
 {
-  const auto tangent = _dtraction_djump_global(elem_datum, qp)(traction_component, component_j);
-
   // With no_shifted the host uses the natural test functions and applies no area correction, see
   // computeDResidualDDisplacement of the host SCZMInterfaceKernelSmallStrainTempl<false>.
   if (!_shifted)

@@ -598,7 +598,7 @@
     cli_args = "Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=weighted_traction "
                "Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization_normal_stiffness=1e3 "
                "Executioner/num_steps=1 Outputs/active=''"
-    expect_err = "Generalized weighted traction without reference cohesive stiffness is currently supported by the total-Lagrangian Kokkos kernel. The small-strain kernel still requires 'stabilization_beta' and 'stabilization_normal_stiffness'."
+    expect_err = "Generalized weighted traction without reference cohesive stiffness is supported only by the Kokkos kernels. The host kernels still require 'stabilization_beta' and 'stabilization_normal_stiffness'."
     mesh_mode = REPLICATED
     requirement = 'The system shall report an error if the weighted traction stabilization of the '
                   'shifted cohesive zone is requested without its penalty.'

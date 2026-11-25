@@ -24,6 +24,10 @@ KokkosSCZMStabilizationData::validParams()
   auto params = Moose::Kokkos::InterfaceUserObject::validParams();
   params.addRequiredCoupledVar("displacements", "The displacement variables.");
   params.addParam<std::string>("base_name", "Material property base name.");
+  params.addParam<MooseEnum>("strain",
+                             MooseEnum("SMALL FINITE", "FINITE"),
+                             "Kinematics of the cohesive zone. SMALL uses the fixed reference "
+                             "rotation and no area change.");
   params.addParam<bool>("no_shifted", false, "Disable shifted geometry.");
   params.addParam<UserObjectName>("sbm_distance_uo", "Surrogate-interface mapping provider.");
   params.addParam<MooseEnum>("stress_recovery",
@@ -51,6 +55,7 @@ KokkosSCZMStabilizationData::validParams()
 KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const InputParameters & parameters)
   : Moose::Kokkos::InterfaceUserObject(parameters),
     _ndisp(coupledComponents("displacements")),
+    _finite_strain(getParam<MooseEnum>("strain") == "FINITE"),
     _shifted(!getParam<bool>("no_shifted")),
     _element_linear_recovery(getParam<MooseEnum>("stress_recovery") == "element_linear"),
     _coupled_cubic_stabilization(getParam<MooseEnum>("stabilization_cohesive_law") ==
@@ -78,6 +83,8 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const InputParameters &
     paramError("sbm_distance_uo", "This parameter is required unless 'no_shifted = true'.");
   if (_element_linear_recovery && !_shifted)
     paramError("stress_recovery", "'element_linear' requires the true-interface mapping.");
+  if (_element_linear_recovery && !_finite_strain)
+    paramError("stress_recovery", "'element_linear' requires finite strain.");
   if (_coupled_cubic_stabilization && !isParamValid("stabilization_linear_stiffness"))
     paramError("stabilization_linear_stiffness",
                "This parameter is required for the coupled_cubic evaluator.");
@@ -116,10 +123,13 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const InputParameters &
   _displacement_jump_global =
       getKokkosMaterialPropertyByName<Real, 1>(prefix + "displacement_jump_global");
   _czm_total_rotation = getKokkosMaterialPropertyByName<Real, 2>(prefix + "czm_total_rotation");
-  _czm_reference_rotation =
-      getKokkosMaterialPropertyByName<Real, 2>(prefix + "czm_reference_rotation");
-  _czm_rotation = getKokkosMaterialPropertyByName<Real, 2>(prefix + "czm_rotation");
-  _F_czm = getKokkosMaterialPropertyByName<Real, 2>(prefix + "F_czm");
+  if (_finite_strain)
+  {
+    _czm_reference_rotation =
+        getKokkosMaterialPropertyByName<Real, 2>(prefix + "czm_reference_rotation");
+    _czm_rotation = getKokkosMaterialPropertyByName<Real, 2>(prefix + "czm_rotation");
+    _F_czm = getKokkosMaterialPropertyByName<Real, 2>(prefix + "F_czm");
+  }
   _interface_traction = getKokkosMaterialPropertyByName<Real, 1>(prefix + "interface_traction");
   _dinterface_traction_djump =
       getKokkosMaterialPropertyByName<Real, 2>(prefix + "dinterface_traction_djump");
@@ -132,6 +142,7 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const InputParameters &
 KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const KokkosSCZMStabilizationData & object)
   : Moose::Kokkos::InterfaceUserObject(object),
     _ndisp(object._ndisp),
+    _finite_strain(object._finite_strain),
     _shifted(object._shifted),
     _element_linear_recovery(object._element_linear_recovery),
     _coupled_cubic_stabilization(object._coupled_cubic_stabilization),
@@ -208,7 +219,8 @@ KokkosSCZMStabilizationData::allocateArrays()
   _auxiliary_jump.create(n_qps);
   _robin_W.create(n_qps);
   _inverse_robin_tangent.create(n_qps);
-  _robin_weighted_dF.create(n_qps, 27);
+  if (_finite_strain)
+    _robin_weighted_dF.create(n_qps, 27);
   _prepass_failure.create(1);
   if (!_settings.beta_override)
   {

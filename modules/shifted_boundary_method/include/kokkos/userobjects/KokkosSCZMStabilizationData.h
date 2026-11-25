@@ -91,6 +91,7 @@ public:
     return _settings;
   }
   bool shifted() const { return _shifted; }
+  bool finiteStrain() const { return _finite_strain; }
   bool elementLinearRecovery() const { return _element_linear_recovery; }
   bool coupledCubicStabilization() const { return _coupled_cubic_stabilization; }
   Real stabilizationLinearStiffness() const { return _stabilization_linear_stiffness; }
@@ -126,6 +127,8 @@ protected:
   void initializeRecovery();
 
   const unsigned int _ndisp;
+  /// Total-Lagrangian kinematics; small strain keeps the identity deformation gradient and rotation
+  const bool _finite_strain;
   const bool _shifted;
   const bool _element_linear_recovery;
   const bool _coupled_cubic_stabilization;
@@ -277,9 +280,6 @@ KokkosSCZMStabilizationData::executeInterface(Datum & primary,
 
     const auto jump_property = _displacement_jump_global(primary, qp);
     const auto total_rotation = _czm_total_rotation(primary, qp);
-    const auto reference_rotation = _czm_reference_rotation(primary, qp);
-    const auto rotation = _czm_rotation(primary, qp);
-    const auto deformation_gradient = _F_czm(primary, qp);
     const auto local_traction = _interface_traction(primary, qp);
     const auto local_tangent = _dinterface_traction_djump(primary, qp);
     Moose::Kokkos::Real3 jump{};
@@ -290,13 +290,25 @@ KokkosSCZMStabilizationData::executeInterface(Datum & primary,
       evaluator.reference_normal(i) = normal(i);
       for (unsigned int j = 0; j < _ndisp; ++j)
       {
-        evaluator.deformation_gradient(i, j) = deformation_gradient(i, j);
-        evaluator.rotation(i, j) = rotation(i, j);
-        evaluator.reference_rotation(i, j) = reference_rotation(i, j);
         evaluator.total_rotation(i, j) = total_rotation(i, j);
         evaluator.local_law.affine.stiffness(i, j) = local_tangent(i, j);
         local_jump(i) += total_rotation(j, i) * jump_property(j);
       }
+    }
+    // Small strain keeps F = I and the identity rotations, so the area ratio is one and the
+    // evaluator reduces to the small-strain traction Q0 t(Q0^T j)
+    if (_finite_strain)
+    {
+      const auto reference_rotation = _czm_reference_rotation(primary, qp);
+      const auto rotation = _czm_rotation(primary, qp);
+      const auto deformation_gradient = _F_czm(primary, qp);
+      for (unsigned int i = 0; i < _ndisp; ++i)
+        for (unsigned int j = 0; j < _ndisp; ++j)
+        {
+          evaluator.deformation_gradient(i, j) = deformation_gradient(i, j);
+          evaluator.rotation(i, j) = rotation(i, j);
+          evaluator.reference_rotation(i, j) = reference_rotation(i, j);
+        }
     }
     if (_ndisp < 3)
       evaluator.reference_normal(2) = 0.0;
@@ -321,6 +333,8 @@ KokkosSCZMStabilizationData::executeInterface(Datum & primary,
     {
       _robin_W[index] = stabilized.dtraction_djump;
       _inverse_robin_tangent[index] = stabilized.inverse_robin_tangent;
+      if (!_finite_strain)
+        continue;
       const auto auxiliary =
           evaluator.evaluateWithDeformationGradientDerivative(stabilized.auxiliary_jump, _ndisp);
       for (unsigned int a = 0; a < _ndisp; ++a)

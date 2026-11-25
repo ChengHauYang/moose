@@ -4,8 +4,8 @@
 
 This kernel assembles the small-strain SCZM traction-jump contribution on the Kokkos
 backend. It consumes device-resident global traction and its derivative with respect
-to the global shifted displacement jump. The properties must be produced by compatible
-Kokkos materials; this kernel does not evaluate a cohesive traction law itself.
+to the global shifted displacement jump from compatible Kokkos materials. With weighted
+traction, it reads the stabilized traction and tangent from a shared user object.
 
 The kernel derives from the generic Kokkos shifted-interface base, which caches static
 surrogate-to-true geometry from `sbm_distance_uo`. It assembles both residual rows and
@@ -18,18 +18,35 @@ traction vector. The `dtraction_djump_global` property is a `MaterialProperty<Re
 containing the global traction tangent. `base_name` prefixes these property names.
 The number of displacement variables must match the mesh dimension.
 
+## Weighted-traction stabilization
+
+Set [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/stabilization) to `weighted_traction` to use the generalized Robin
+formulation described in [KokkosSCZMInterfaceKernelTotalLagrangian](KokkosSCZMInterfaceKernelTotalLagrangian.md#weighted-traction-stabilization).
+The small-strain bulk traction is
+$\mathbf{T}_h = \frac{1}{2}(\boldsymbol{\sigma}^-+\boldsymbol{\sigma}^+)\mathbf{N}$,
+where $\boldsymbol{\sigma}^\pm$ are the adjacent Cauchy stresses. The shared evaluator uses
+$\mathbf{F} = \mathbf{I}$ and identity deformation rotations, so the Nanson area ratio is one
+and the cohesive frame remains the fixed reference rotation $\mathbf{Q}_0$.
+
+The action supplies a shared [KokkosSCZMStabilizationData](KokkosSCZMStabilizationData.md)
+user object through [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/stabilization_data). Without a fixed
+[!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/stabilization_beta), the user object derives and freezes $\beta$ on its first
+evaluation using [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/volume_tangent). For small strain, the action defaults
+this to the [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/tangent) property, typically `Jacobian_mult`.
+The kernel accepts [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/stabilization_normal_stiffness) and
+[!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/stabilization_tangential_stiffness) for input compatibility and ignores their values.
+
 ## Directional correction
 
-With `directional_correction = true` (the default) this kernel reproduces the residual
-and Jacobian of the host `SCZMInterfaceKernelSmallStrainTempl<false>`. The bulk response
-is read from the `stress` and `tangent` Kokkos material properties named by the `stress`
+With [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/directional_correction) enabled (the default), the correction reproduces
+the corresponding contribution of the host `SCZMInterfaceKernelSmallStrainTempl<false>`.
+The bulk response is read from the `stress` and `tangent` Kokkos material properties named by the `stress`
 and `tangent` parameters, `base_name`-prefixed; the primary side is read from the element
 storage and the neighbor side from the neighbor storage of the same property name. A
 heterogeneous interface is represented by producing these properties independently on the
 primary and neighbor sides, for example with two `[NEML2]` blocks using
 `interface_output_side = primary` and `interface_output_side = neighbor`. They are
-retrieved only when the correction is enabled, so a run with `directional_correction =
-false` does not require them.
+required for directional correction and weighted-traction stabilization.
 
 The correction adds `-test * sum_j stress_primary(i,j) * n_tangent(j)` to the element
 residual row and `+test_neighbor * sum_j stress_neighbor(i,j) * n_tangent(j)` to the
@@ -47,22 +64,20 @@ the formula.
 
 ## `no_shifted`
 
-Setting `no_shifted = true` makes this object a complete switch that reproduces the host
-behavior. The base cohesive traction then drops the `areaCorrection()` factor and its
+Setting [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/no_shifted) to `true` disables shifted terms. The base cohesive
+traction then drops the `areaCorrection()` factor and its
 Jacobian uses the natural test functions rather than `shiftedPhi()`. Following the host,
 `no_shifted` suppresses the directional correction entirely, so `directional_correction`
-has no effect while it is enabled and the `stress`/`tangent` properties are not retrieved.
+has no effect while it is enabled. Weighted traction still uses the bulk stress and tangent.
 The paired displacement-jump material applies the matching change: it omits the
 `grad_u dot distance` contribution to the jump and builds the reference rotation from the
 surrogate face normal instead of the true normal.
 
-## Limitations
+## Supported configurations
 
-Volumetric locking correction, non-Cartesian coordinate systems, and a deformation-gradient
-`tangent_definition` are not implemented. The [ShiftedCohesiveZone
-action](ShiftedCohesiveZoneAction.md) rejects each of these explicitly rather than silently
-ignoring it. Do not read this kernel as full host parity while those items remain
-outstanding.
+The [ShiftedCohesiveZone action](ShiftedCohesiveZoneAction.md) requires Cartesian coordinates
+and a stress-strain tangent for small-strain Kokkos kernels. Volumetric locking correction
+and element-linear stress recovery are available only for total-Lagrangian kinematics.
 
 The [ShiftedCohesiveZone action](ShiftedCohesiveZoneAction.md) selects host objects by
 default; the Kokkos path is opt-in through `use_kokkos = true`. Focused tests also

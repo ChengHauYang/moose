@@ -46,6 +46,9 @@ KokkosSCZMInterfaceKernelSmallStrain::validParams()
       "Jacobian_mult property as d(stress)/d(strain) and pk1_jacobian as d(PK1)/d(F). Select "
       "'stress_wrt_strain' or 'pk1_wrt_deformation_gradient' explicitly for a custom tangent "
       "property; use the latter only when the property is known to be d(PK1)/d(F).");
+  params.addParam<UserObjectName>(
+      "stabilization_data",
+      "Shared weighted-traction bulk stress, automatic beta, and generalized Robin data producer.");
   SCZMWeightedTractionStabilization::addParams(params);
   params.addClassDescription(
       "Kokkos shifted cohesive-zone interface kernel for small-strain displacements.");
@@ -60,7 +63,11 @@ KokkosSCZMInterfaceKernelSmallStrain::KokkosSCZMInterfaceKernelSmallStrain(
     _shifted(!getParam<bool>("no_shifted")),
     _directional_correction(getParam<bool>("directional_correction")),
     _volumetric_locking_correction(getParam<bool>("volumetric_locking_correction")),
-    _stabilization_weights(SCZMWeightedTractionStabilization::weights(*this)),
+    _stabilization_settings(SCZMWeightedTractionStabilization::settings(*this)),
+    _stabilization_data(isParamValid("stabilization_data")
+                            ? &const_cast<KokkosSCZMStabilizationData &>(
+                                  getUserObject<KokkosSCZMStabilizationData>("stabilization_data"))
+                            : nullptr),
     _tangent_is_dpk1_df(false),
     _traction_global(getKokkosMaterialPropertyByName<Real, 1>(
         (isParamValid("base_name") && !getParam<std::string>("base_name").empty()
@@ -79,6 +86,9 @@ KokkosSCZMInterfaceKernelSmallStrain::KokkosSCZMInterfaceKernelSmallStrain(
     paramError("displacements", "One, two, or three displacement variables are required.");
   if (_component >= _ndisp)
     paramError("component", "Component must be smaller than the number of displacements.");
+  if (_stabilization_settings.enabled && !_stabilization_data)
+    paramError("stabilization_data",
+               "Weighted-traction stabilization requires a shared stabilization data producer.");
 
   _disp_vars.create(_ndisp);
   for (unsigned int i = 0; i < _ndisp; ++i)
@@ -107,7 +117,7 @@ KokkosSCZMInterfaceKernelSmallStrain::KokkosSCZMInterfaceKernelSmallStrain(
     paramError("sbm_distance_uo",
                "The 'sbm_distance_uo' parameter is required unless 'no_shifted = true'.");
 
-  if ((_shifted && _directional_correction) || _stabilization_weights.enabled)
+  if ((_shifted && _directional_correction) || _stabilization_settings.enabled)
   {
     const auto prefix = isParamValid("base_name") && !getParam<std::string>("base_name").empty()
                             ? getParam<std::string>("base_name") + "_"
@@ -120,5 +130,81 @@ KokkosSCZMInterfaceKernelSmallStrain::KokkosSCZMInterfaceKernelSmallStrain(
                                                         getParam<MaterialPropertyName>("tangent"));
     _tangent_neighbor = getKokkosNeighborMaterialPropertyByName<Real, 4>(
         prefix + getParam<MaterialPropertyName>("tangent"));
+
+    // The passive stabilization producer reads these interface properties, but
+    // KokkosNonlinearSystemBase gathers needed properties only from kernels, so the kernel must
+    // request them for the producer.
+    if (_stabilization_settings.enabled)
+    {
+      getKokkosMaterialPropertyByName<Real, 1>(prefix + "displacement_jump_global");
+      getKokkosMaterialPropertyByName<Real, 2>(prefix + "czm_total_rotation");
+      getKokkosMaterialPropertyByName<Real, 1>(prefix + "interface_traction");
+      getKokkosMaterialPropertyByName<Real, 2>(prefix + "dinterface_traction_djump");
+    }
   }
+}
+
+void
+KokkosSCZMInterfaceKernelSmallStrain::initialSetup()
+{
+  ShiftedInterfaceKernel::initialSetup();
+  if (!_stabilization_settings.enabled)
+    return;
+
+  const auto & producer_settings = _stabilization_data->stabilizationSettings();
+  const bool beta_mismatch =
+      producer_settings.beta_override != _stabilization_settings.beta_override ||
+      (producer_settings.beta_override && producer_settings.beta != _stabilization_settings.beta);
+  if (beta_mismatch || producer_settings.gamma != _stabilization_settings.gamma ||
+      _stabilization_data->shifted() != _shifted || _stabilization_data->finiteStrain())
+    mooseError("SCZM kernel and stabilization producer configurations differ.");
+
+  dof_id_type n_qps = 0;
+  for (const auto & face : kokkosInterfaceFaces())
+    n_qps += face.n_qps;
+  if (_stabilization_data->numFaces() != kokkosInterfaceFaces().size() ||
+      _stabilization_data->numQps() != n_qps)
+    mooseError("SCZM kernel and stabilization producer interface face/QP layouts differ.");
+
+  _face_qp_offsets = _stabilization_data->faceQpOffsets();
+  _stabilization_beta = _stabilization_data->stabilizationBetas();
+  _stabilized_traction = _stabilization_data->stabilizedTractions();
+  _robin_W = _stabilization_data->robinTangents();
+}
+
+void
+KokkosSCZMInterfaceKernelSmallStrain::residualSetup()
+{
+  ShiftedInterfaceKernel::residualSetup();
+  if (_stabilization_data)
+    _stabilization_data->invalidateAssemblyCache();
+}
+
+void
+KokkosSCZMInterfaceKernelSmallStrain::jacobianSetup()
+{
+  ShiftedInterfaceKernel::jacobianSetup();
+  if (_stabilization_data)
+    _stabilization_data->invalidateAssemblyCache();
+}
+
+void
+KokkosSCZMInterfaceKernelSmallStrain::computeResidual()
+{
+  ensureSurrogateInterfaceMappingReady();
+  if (_stabilization_data)
+    _stabilization_data->ensurePrepared(_fe_problem.currentlyComputingResidualAndJacobian());
+  _residual_dispatcher.reset();
+  InterfaceKernel::computeResidual();
+}
+
+void
+KokkosSCZMInterfaceKernelSmallStrain::computeJacobian()
+{
+  ensureSurrogateInterfaceMappingReady();
+  if (_stabilization_data)
+    _stabilization_data->ensurePrepared(true);
+  _jacobian_dispatcher.reset();
+  _offdiag_jacobian_dispatcher.reset();
+  InterfaceKernel::computeJacobian();
 }

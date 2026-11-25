@@ -77,7 +77,7 @@ settings(const MooseObject & object)
   return result;
 }
 
-/** Legacy fixed weights used only by the small-strain kernel. */
+/** Legacy fixed weights used only by the host SCZMInterfaceKernelBase. */
 struct Weights
 {
   bool enabled = false;
@@ -97,9 +97,9 @@ weights(const MooseObject & object)
   if (!configuration.beta_override || !object.isParamValid("stabilization_normal_stiffness"))
     object.paramError(
         "stabilization",
-        "Generalized weighted traction without reference cohesive stiffness is currently supported "
-        "by the total-Lagrangian Kokkos kernel. The small-strain kernel still requires "
-        "'stabilization_beta' and 'stabilization_normal_stiffness'.");
+        "Generalized weighted traction without reference cohesive stiffness is supported only by "
+        "the Kokkos kernels. The host kernels still require 'stabilization_beta' and "
+        "'stabilization_normal_stiffness'.");
 
   const auto normal_stiffness = object.getParam<Real>("stabilization_normal_stiffness");
   const auto tangential_stiffness =

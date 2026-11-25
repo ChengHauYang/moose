@@ -121,22 +121,78 @@ property name requires an explicit `tangent_definition`:
 The AD interface kernel differentiates its residual automatically and does not use `tangent` or
 `tangent_definition`; setting either parameter with AD enabled is an error.
 
-## Weighted-traction stabilization
+## Weighted-traction stabilization id=weighted-traction-stabilization
 
-For the Kokkos total-Lagrangian formulation, `stabilization = weighted_traction` solves a local
-nonlinear Robin equation that combines the shifted cohesive traction with the average adjacent bulk
-PK1 traction. No reference cohesive stiffness is required. If `stabilization_beta` is omitted, beta
-is derived from the adjacent elements' normal directional volume tangents and normal sizes using
-`stabilization_gamma`, which defaults to 5; an explicit `stabilization_beta` overrides this automatic
-value. The automatically derived beta is frozen after the first stabilization prepass. See
-[KokkosSCZMInterfaceKernelTotalLagrangian](KokkosSCZMInterfaceKernelTotalLagrangian.md) for the
-equation, consistent derivatives, native nonlinear evaluator options, restrictions, and failure
-behavior.
+Set [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization) to `weighted_traction` to combine the shifted cohesive traction
+with the average adjacent bulk traction. In both Kokkos formulations,
+[KokkosSCZMStabilizationData](KokkosSCZMStabilizationData.md) solves a generalized Robin equation
+at each paired interface quadrature point once per assembly. The
+[small-strain kernel](KokkosSCZMInterfaceKernelSmallStrain.md) uses Cauchy stress and the
+[total-Lagrangian kernel](KokkosSCZMInterfaceKernelTotalLagrangian.md) uses PK1 stress.
 
-The `stabilization_normal_stiffness` and `stabilization_tangential_stiffness` parameters remain
-accepted for legacy small-strain and host inputs. They are deprecated and unused by generalized
-weighted traction in the Kokkos total-Lagrangian formulation. The small-strain Kokkos formulation
-still requires an explicit beta and reference normal stiffness.
+Supply [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_beta) for a fixed $\beta$. Otherwise the first
+stabilization evaluation derives $\beta$ from the adjacent elements' normal directional volume
+tangents and normal sizes, scales it by [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_gamma) (default 5), and freezes it
+for subsequent assemblies. The [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/volume_tangent) property defaults to the
+[!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/tangent) property (typically `Jacobian_mult`) for small strain and to
+`dpk1_d_grad_u` for total Lagrangian. Setting [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stress_recovery) to
+`element_linear` is available only for the total-Lagrangian formulation.
+
+The host kernels use the legacy linear weighted traction
+$\widehat{\mathbf{t}} = \mathbf{S}\mathbf{t}_c + (\mathbf{I}-\mathbf{S})\mathbf{T}_h$,
+with $\mathbf{S} = \beta(\mathbf{K}_{\mathrm{ref}}+\beta\mathbf{I})^{-1}$.
+Here $\mathbf{t}_c$ is the cohesive traction at the shifted jump and $\mathbf{T}_h$ is the
+average adjacent bulk traction. The host requires [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_beta) and
+[!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_normal_stiffness). The optional
+[!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_tangential_stiffness) defaults to the normal stiffness. Kokkos accepts
+both reference stiffness parameters for input compatibility and ignores their values.
+The legacy blend is the affine Robin solution with $\mathbf{K}_{\mathrm{ref}}$.
+The host and Kokkos formulations agree only when $\mathbf{K}_{\mathrm{ref}}$ equals the actual
+cohesive tangent and $\beta$ matches.
+
+### Interface normal under large deformation id=weighted-traction-normal
+
+Both sides of the Robin equation of
+[KokkosSCZMInterfaceKernelTotalLagrangian](KokkosSCZMInterfaceKernelTotalLagrangian.md) use one
+fixed reference unit normal $\mathbf{N}$: the true-interface reference normal when shifted, and the
+surrogate face reference normal with `no_shifted = true`. Hence $\partial\mathbf{N}/\partial\mathbf{u} = \mathbf{0}$. The average bulk traction is
+
+!equation
+\mathbf{T}_h = \frac{1}{2}\left(\mathbf{P}^- + \mathbf{P}^+\right)\mathbf{N},
+
+where $\mathbf{P}^\pm$ is the first Piola-Kirchhoff stress of the adjacent element on each side. No
+current normal is needed, because Nanson's relation gives on each side
+
+!equation
+\boldsymbol{\sigma}^\pm\mathbf{n}^\pm\,da^\pm = \mathbf{P}^\pm\mathbf{N}\,dA, \qquad
+\mathbf{n}^\pm = \frac{\mathbf{F}^{\pm,-T}\mathbf{N}}{\lVert\mathbf{F}^{\pm,-T}\mathbf{N}\rVert}.
+
+Thus $\mathbf{P}^\pm\mathbf{N}$ is already the traction per unit reference area, including the
+current normal and area change of its own side. The two current normals generally differ under large
+deformation, and $\mathbf{P}^\pm = \mathbf{F}^\pm\mathbf{S}^\pm$, with $\mathbf{S}^\pm$ the second
+Piola-Kirchhoff stress, carries that difference exactly; rescaling $\mathbf{P}^\pm\mathbf{N}$ by a
+separately computed current normal would count it twice. The cohesive traction is mapped to the same
+measure,
+
+!equation
+\mathbf{f}(\mathbf{j}) = a_N\,\mathbf{Q}\,\mathbf{f}_\mathrm{loc}(\mathbf{Q}^T\mathbf{j}), \qquad
+\mathbf{Q} = \bar{\mathbf{R}}\mathbf{Q}_0, \qquad
+a_N = \det\bar{\mathbf{F}}\,\lVert\bar{\mathbf{F}}^{-T}\mathbf{N}\rVert,
+
+where $\bar{\mathbf{F}} = \frac{1}{2}(\mathbf{F}^- + \mathbf{F}^+) = \bar{\mathbf{R}}\bar{\mathbf{U}}$
+is the polar decomposition of the average deformation gradient, $\mathbf{Q}_0$ is the reference
+rotation built from $\mathbf{N}$, and $\mathbf{f}_\mathrm{loc}$ is the local cohesive traction per
+unit current area. Both sides of the Robin equation are therefore tractions per unit reference area.
+
+The linearization keeps $\mathbf{N}$ fixed. The bulk side gives
+$\delta\mathbf{T}_h = \frac{1}{2}(\delta\mathbf{P}^- + \delta\mathbf{P}^+)\mathbf{N}$, with the
+deformation entering through $\partial\mathbf{P}/\partial\mathbf{F}$ (`tangent`, or
+`volume_tangent` with `stress_recovery = element_linear`). The cohesive side includes $\delta a_N$,
+$\delta\mathbf{Q} = \delta\bar{\mathbf{R}}\,\mathbf{Q}_0$, and the $\delta\mathbf{Q}^T\mathbf{j}$
+term of the local jump. The automatic beta uses the same normal,
+$\kappa_N^\pm = N_i N_J C^\pm_{iJkL} N_k N_L$, with
+$\mathbf{C}^\pm = \partial\mathbf{P}^\pm/\partial\mathbf{F}$ taken from each adjacent element's
+`volume_tangent`.
 
 ## Coupling with NEML2 material models
 
