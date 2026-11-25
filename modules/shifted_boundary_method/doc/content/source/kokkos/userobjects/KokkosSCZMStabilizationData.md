@@ -19,6 +19,11 @@ $\mathbf{S}$, and, for total Lagrangian, the cohesive traction derivative with r
 surrogate-interface deformation gradient left-multiplied by $\mathbf{S}$. Each kernel reads these
 entries using the interface face's quadrature-point offset.
 
+The cohesive law acts at $\mathbf{j}$ rather than at the interface jump, so a stateful
+traction-separation material such as
+[KokkosBiLinearMixedModeTraction](KokkosBiLinearMixedModeTraction.md) records its history at the
+converged $\mathbf{j}$ of each quadrature point instead of in its own property evaluation.
+
 The object is passive with [!param](/UserObjects/KokkosSCZMStabilizationData/execute_on) set to `NONE`. The kernels prepare it for
 assembly and invalidate it in `residualSetup()` and `jacobianSetup()`. Residual-only
 assembly skips the tangents.

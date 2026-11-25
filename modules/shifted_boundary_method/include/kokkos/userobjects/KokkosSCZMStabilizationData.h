@@ -16,7 +16,31 @@
 #include "SCZMTrialTractionProvider.h"
 #include "SCZMWeightedTractionStabilization.h"
 
+#include <type_traits>
+#include <utility>
+
 class BoundaryShortestDistanceToSurface;
+
+namespace Moose::Kokkos::SCZM
+{
+/**
+ * Detects a trial law material with recordTrialState(datum, qp, local_jump), which records the
+ * state of a stateful law at the converged local auxiliary jump of the generalized Robin solve
+ */
+template <typename TSL, typename DatumType, typename = void>
+struct RecordsTrialState : std::false_type
+{
+};
+
+template <typename TSL, typename DatumType>
+struct RecordsTrialState<TSL,
+                         DatumType,
+                         std::void_t<decltype(std::declval<const TSL &>().recordTrialState(
+                             std::declval<DatumType &>(), 0u, std::declval<const Real3 &>()))>>
+  : std::true_type
+{
+};
+} // namespace Moose::Kokkos::SCZM
 
 /**
  * Computes the bulk-side data shared by weighted-traction SCZM kernels and NEML2 executors.
@@ -401,6 +425,9 @@ KokkosSCZMStabilizationData::robinFace(const TSL & tsl, const Moose::Kokkos::Thr
     }
     _stabilized_traction[index] = stabilized.traction;
     _auxiliary_jump[index] = stabilized.auxiliary_jump;
+    // A stateful law acts at the auxiliary jump, so it records its state there
+    if constexpr (Moose::Kokkos::SCZM::RecordsTrialState<TSL, decltype(primary)>::value)
+      tsl.recordTrialState(primary, qp, evaluator.toLocalJump(stabilized.auxiliary_jump, _ndisp));
     if (_need_tangents)
     {
       _robin_W[index] = stabilized.dtraction_djump;

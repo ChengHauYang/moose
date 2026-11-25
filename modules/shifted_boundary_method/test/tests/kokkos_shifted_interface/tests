@@ -1506,6 +1506,69 @@
       detail = 'with a nonlinear finite-strain state and all diagonal and cross-component Jacobian blocks.'
     []
   []
+  [bilinear_mixed_mode_weighted_traction]
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall evaluate the stateful mixed-mode bilinear traction-separation law during generalized weighted-traction stabilization, recording its damage and history at the converged auxiliary jump through softening and unloading'
+    design = 'KokkosBiLinearMixedModeTraction.md KokkosSCZMStabilizationData.md'
+    capabilities = 'kokkos'
+    compute_devices = cpu
+    [host]
+      type = Exodiff
+      input = sczm_bilinear_host.i
+      exodiff = sczm_bilinear_host_out.e
+      # Recovery does not rebuild the interface neighbor state; see sczm_angled_kokkos_matches_host
+      recover = false
+      detail = 'computing the unstabilized host BiLinearMixedModeTraction reference solution,'
+    []
+    [matches_host]
+      type = Exodiff
+      input = sczm_bilinear_kokkos.i
+      # The Kokkos gold links to the host gold. The beta of 1e12 perturbs the solution by about
+      # 1e-10 relative.
+      exodiff = sczm_bilinear_kokkos_out.e
+      abs_zero = 1e-10
+      rel_err = 1e-8
+      # Recovery does not rebuild the Kokkos interface neighbor state; see
+      # sczm_angled_kokkos_matches_host
+      recover = false
+      detail = 'matching the host solution as the stabilization parameter grows,'
+    []
+    [finite_beta]
+      type = Exodiff
+      input = sczm_bilinear_kokkos.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=100 '
+                 'Outputs/file_base=sczm_bilinear_beta100_out'
+      exodiff = sczm_bilinear_beta100_out.e
+      # Recovery does not rebuild the Kokkos interface neighbor state; see
+      # sczm_angled_kokkos_matches_host
+      recover = false
+      detail = 'reproducing the reference solution at a finite stabilization parameter,'
+    []
+    [jacobian_elastic]
+      type = PetscJacobianTester
+      input = sczm_bilinear_kokkos.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=100 '
+                 'Executioner/num_steps=1 opening_ic=0.02 slip_ic=0.01'
+      detail = 'with a consistent Jacobian below damage onset,'
+    []
+    [jacobian_softening]
+      type = PetscJacobianTester
+      input = sczm_bilinear_kokkos.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=100 '
+                 'Executioner/num_steps=1 opening_ic=0.15 slip_ic=0.05'
+      # ||J - Jfd||_F / ||J||_F is 4e-8 at the default finite-difference step and scales linearly
+      # with -snes_test_err (2.7e-6 at 1e-6, 2.7e-7 at 1e-7), i.e. it is the truncation error of the
+      # softening curvature
+      detail = 'with a consistent Jacobian in softening with lagged mode mixity, and'
+    []
+    [jacobian_softening_current_mixity]
+      type = PetscJacobianTester
+      input = sczm_bilinear_kokkos.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=100 '
+                 'Executioner/num_steps=1 opening_ic=0.15 slip_ic=0.05 '
+                 'Materials/local_traction/lag_mode_mixity=false'
+      detail = 'with a consistent Jacobian in softening with the current mode mixity.'
+    []
+  []
   [kokkos_stress_recovery_rejections]
     requirement = 'The Kokkos shifted cohesive-zone formulation shall reject unsupported stress_recovery configurations with an explicit error'
     design = 'KokkosSCZMInterfaceKernelTotalLagrangian.md ShiftedCohesiveZoneAction.md'
