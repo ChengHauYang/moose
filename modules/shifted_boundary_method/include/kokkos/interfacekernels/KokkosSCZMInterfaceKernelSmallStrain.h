@@ -383,8 +383,7 @@ KokkosSCZMInterfaceKernelSmallStrain::computeJacobianComponent(
     const auto normal = stabilizationNormal(elem_datum, qp);
     const auto index = _face_qp_offsets(elem_datum.side(), elem_datum.elemID()) + qp;
     const auto & W = _robin_W[index];
-    const Real beta = _stabilization_settings.beta_override ? _stabilization_settings.beta
-                                                            : _stabilization_beta[index];
+    const Real beta = _stabilization_beta[index];
     const bool trial_on_element = type == Moose::ElementElement || type == Moose::NeighborElement;
     const auto grad_phi = trial_on_element ? _grad_phi(elem_datum, j, qp)
                                            : _grad_phi_neighbor(neighbor_datum, j, neighbor_qp);
@@ -410,15 +409,15 @@ KokkosSCZMInterfaceKernelSmallStrain::computeJacobianComponent(
                 average_traction_derivative;
   }
   else
-    jacobian = computeDResidualDDisplacement(type,
-                                             i,
-                                             j,
-                                             qp,
-                                             neighbor_qp,
-                                             elem_datum,
-                                             neighbor_datum,
-                                             _dtraction_djump_global(elem_datum, qp)(_component,
-                                                                                     component_j));
+    jacobian = computeDResidualDDisplacement(
+        type,
+        i,
+        j,
+        qp,
+        neighbor_qp,
+        elem_datum,
+        neighbor_datum,
+        _dtraction_djump_global(elem_datum, qp)(_component, component_j));
 
   if (_shifted && _directional_correction)
     jacobian += computeDirectionalCorrectionJacobian(

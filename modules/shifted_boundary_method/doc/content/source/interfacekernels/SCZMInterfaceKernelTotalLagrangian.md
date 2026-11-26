@@ -15,19 +15,12 @@ that element.
 
 ## Weighted-traction stabilization
 
-Set [!param](/InterfaceKernels/SCZMInterfaceKernelTotalLagrangian/stabilization) to `weighted_traction` to use the host's legacy linear blend
-$\widehat{\mathbf{t}} = \mathbf{S}\mathbf{t}_c + (\mathbf{I}-\mathbf{S})\mathbf{T}_h$, where
-$\mathbf{t}_c$ is the cohesive traction at the shifted jump, $\mathbf{T}_h$ is the average
-adjacent bulk PK1 traction, and
-$\mathbf{S} = \beta(\mathbf{K}_{\mathrm{ref}}+\beta\mathbf{I})^{-1}$.
-Supply both [!param](/InterfaceKernels/SCZMInterfaceKernelTotalLagrangian/stabilization_beta) and
-[!param](/InterfaceKernels/SCZMInterfaceKernelTotalLagrangian/stabilization_normal_stiffness). The optional
-[!param](/InterfaceKernels/SCZMInterfaceKernelTotalLagrangian/stabilization_tangential_stiffness) defaults to the normal stiffness.
-The reference stiffnesses define $\mathbf{K}_{\mathrm{ref}}$ in the interface frame.
-
-This blend is the affine Robin solution with $\mathbf{K}_{\mathrm{ref}}$. It agrees with the
-[Kokkos formulation](syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md#weighted-traction-stabilization) only when the reference stiffness
-tensor equals the actual cohesive tangent and $\beta$ matches.
+Set [!param](/InterfaceKernels/SCZMInterfaceKernelTotalLagrangian/stabilization) to
+`weighted_traction` to assemble the cohesive traction at the auxiliary jump of the
+[generalized Robin equation](syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md#weighted-traction-stabilization),
+with the average adjacent bulk PK1 traction. The paired displacement-jump material solves that
+equation and supplies the inverse Robin tangent with which this kernel weights the cohesive traction
+derivatives. The material, not the kernel, takes `stabilization_gamma`.
 
 !syntax parameters /InterfaceKernels/SCZMInterfaceKernelTotalLagrangian
 

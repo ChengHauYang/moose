@@ -96,12 +96,6 @@ KokkosSCZMInterfaceKernelTotalLagrangian::validParams()
                                        "pk1_wrt_deformation_gradient"),
                              "Mathematical definition of the tangent material property.");
   SCZMWeightedTractionStabilization::addParams(params);
-  params.addParam<MooseEnum>("stabilization_cohesive_law",
-                             MooseEnum("affine coupled_cubic", "affine"),
-                             "Native memoryless cohesive evaluator used by generalized Robin "
-                             "stabilization.");
-  params.addParam<Real>("stabilization_linear_stiffness", "Coupled-cubic linear coefficient.");
-  params.addParam<Real>("stabilization_cubic_stiffness", "Coupled-cubic cubic coefficient.");
   params.addClassDescription("Kokkos shifted cohesive-zone interface kernel for total-Lagrangian "
                              "finite-strain displacements.");
   return params;
@@ -116,8 +110,6 @@ KokkosSCZMInterfaceKernelTotalLagrangian::KokkosSCZMInterfaceKernelTotalLagrangi
     _directional_correction(getParam<bool>("directional_correction")),
     _volumetric_locking_correction(getParam<bool>("volumetric_locking_correction")),
     _element_linear_recovery(getParam<MooseEnum>("stress_recovery") == "element_linear"),
-    _coupled_cubic_stabilization(getParam<MooseEnum>("stabilization_cohesive_law") ==
-                                 "coupled_cubic"),
     _stabilization_settings(SCZMWeightedTractionStabilization::settings(*this)),
     _stabilization_data(isParamValid("stabilization_data")
                             ? &const_cast<KokkosSCZMStabilizationData &>(
@@ -183,12 +175,6 @@ KokkosSCZMInterfaceKernelTotalLagrangian::KokkosSCZMInterfaceKernelTotalLagrangi
   if (_stabilization_settings.enabled && !_stabilization_data)
     paramError("stabilization_data",
                "Weighted-traction stabilization requires a shared stabilization data producer.");
-  if (_coupled_cubic_stabilization)
-  {
-    if (!_stabilization_settings.enabled)
-      paramError("stabilization_cohesive_law",
-                 "The coupled_cubic evaluator requires weighted traction stabilization.");
-  }
 
   _disp_vars.create(_ndisp);
   for (unsigned int i = 0; i < _ndisp; ++i)
@@ -205,8 +191,7 @@ KokkosSCZMInterfaceKernelTotalLagrangian::KokkosSCZMInterfaceKernelTotalLagrangi
   if (_element_linear_recovery && !_shifted)
     paramError("stress_recovery", "'element_linear' requires the true-interface mapping.");
 
-  if (_element_linear_recovery ||
-      (_stabilization_settings.enabled && !_stabilization_settings.beta_override))
+  if (_element_linear_recovery || _stabilization_settings.enabled)
   {
     auto & volume_material_data =
         _fe_problem.getKokkosMaterialData(Moose::BLOCK_MATERIAL_DATA, this);
@@ -292,18 +277,7 @@ KokkosSCZMInterfaceKernelTotalLagrangian::initialSetup()
     return;
 
   const auto & producer_settings = _stabilization_data->stabilizationSettings();
-  const bool beta_mismatch =
-      producer_settings.beta_override != _stabilization_settings.beta_override ||
-      (producer_settings.beta_override && producer_settings.beta != _stabilization_settings.beta);
-  const bool cohesive_law_mismatch =
-      _stabilization_data->coupledCubicStabilization() != _coupled_cubic_stabilization ||
-      (_coupled_cubic_stabilization &&
-       (_stabilization_data->stabilizationLinearStiffness() !=
-            getParam<Real>("stabilization_linear_stiffness") ||
-        _stabilization_data->stabilizationCubicStiffness() !=
-            getParam<Real>("stabilization_cubic_stiffness")));
-  if (beta_mismatch || producer_settings.gamma != _stabilization_settings.gamma ||
-      cohesive_law_mismatch ||
+  if (producer_settings.gamma != _stabilization_settings.gamma ||
       _stabilization_data->elementLinearRecovery() != _element_linear_recovery ||
       _stabilization_data->shifted() != _shifted || !_stabilization_data->finiteStrain())
     mooseError("SCZM kernel and stabilization producer configurations differ.");

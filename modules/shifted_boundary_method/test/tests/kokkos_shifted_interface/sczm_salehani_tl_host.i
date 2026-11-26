@@ -38,11 +38,6 @@ file_base = sczm_salehani_tl_host_out
 [Physics/SolidMechanics/ShiftedCohesiveZone/sczm]
   use_automatic_differentiation = false
   stabilization = weighted_traction
-  # Match the generalized Robin formulation in the cohesive-traction limit; the nonlinear Jacobian
-  # test separately uses beta = 10.
-  stabilization_beta = 1e12
-  stabilization_normal_stiffness = 10
-  stabilization_tangential_stiffness = 8
 []
 
 [Materials]
@@ -75,8 +70,7 @@ file_base = sczm_salehani_tl_host_out
     dpk1_d_grad_u = bulk_pk1_jacobian
     stabilize_strain = ${fbar}
   []
-  # These peaks give initial normal/tangential stiffnesses of 10 and 8. The large gap scale keeps
-  # the generalized Robin solution comparable to the host's legacy fixed-weight formulation.
+  # These peaks give initial normal/tangential stiffnesses of 10 and 8
   [local_traction]
     type = SalehaniIrani3DCTraction
     boundary = 'Block0_Block1'

@@ -76,18 +76,3 @@ KokkosPureElasticTractionSeparation::robinPrepass(const KokkosSCZMStabilizationD
 {
   uo.robinPrepass(*this);
 }
-
-void
-KokkosPureElasticTractionSeparation::checkStabilizationLaw(
-    const KokkosSCZMStabilizationData & uo) const
-{
-  // The stabilization law parameters duplicate this material's law; they must agree
-  if (uo.coupledCubicStabilization() != _coupled_cubic ||
-      (_coupled_cubic && (uo.stabilizationLinearStiffness() != _cubic_linear_stiffness ||
-                          uo.stabilizationCubicStiffness() != _cubic_stiffness)))
-    mooseError("The weighted traction stabilization law of '",
-               uo.name(),
-               "' must match the cohesive law of '",
-               name(),
-               "'.");
-}

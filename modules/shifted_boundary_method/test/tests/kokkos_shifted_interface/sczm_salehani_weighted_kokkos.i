@@ -26,7 +26,9 @@
 [Physics/SolidMechanics/ShiftedCohesiveZone/sczm]
   use_kokkos = true
   stabilization = weighted_traction
-  stabilization_beta = 100
+  # beta = gamma |face| E / V = 100 with E = 1000 and a face-to-volume ratio of 2, as in the
+  # bilinear_mixed_mode_weighted_traction tests
+  stabilization_gamma = 0.05
 []
 
 [Materials]

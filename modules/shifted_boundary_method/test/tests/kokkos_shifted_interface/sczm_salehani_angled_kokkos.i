@@ -51,7 +51,6 @@ theta_rad = '${fparse theta * pi / 180}'
     tangent = tangent
     tangent_definition = stress_wrt_strain
     stabilization = weighted_traction
-    stabilization_beta = 10
   []
 []
 
@@ -65,8 +64,7 @@ theta_rad = '${fparse theta * pi / 180}'
     from = mechanical_strain
     to = neml2_strain
   []
-  # These peaks give initial normal/tangential stiffnesses of 10 and 8. The large gap scale keeps
-  # the generalized Robin solution comparable to the host's legacy fixed-weight formulation.
+  # These peaks give initial normal/tangential stiffnesses of 10 and 8
   [local_traction]
     type = KokkosSalehaniIraniTractionSeparation
     boundary = 'Block0_Block1'

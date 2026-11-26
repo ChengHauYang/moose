@@ -72,8 +72,8 @@ The object is passive with [!param](/UserObjects/KokkosSCZMStabilizationData/exe
 assembly and invalidate it in `residualSetup()` and `jacobianSetup()`. Residual-only
 assembly skips the tangents.
 
-Supply [!param](/UserObjects/KokkosSCZMStabilizationData/stabilization_beta) for a fixed $\beta$. Otherwise the first evaluation computes
-and freezes $\beta$ at each quadrature point from the normal stiffness
+The first evaluation computes and freezes $\beta$ at each quadrature point, scaled by
+[!param](/UserObjects/KokkosSCZMStabilizationData/stabilization_gamma), from the normal stiffness
 $k = n_i n_J n_k n_L C_{iJkL}$ of the bulk tangent on each side, taken from the face
 [!param](/UserObjects/KokkosSCZMStabilizationData/tangent), or from the recovered
 [!param](/UserObjects/KokkosSCZMStabilizationData/volume_tangent) with stress recovery. Automatic

@@ -29,12 +29,11 @@ $\mathbf{F} = \mathbf{I}$ and identity deformation rotations, so the Nanson area
 and the cohesive frame remains the fixed reference rotation $\mathbf{Q}_0$.
 
 The action supplies a shared [KokkosSCZMStabilizationData](KokkosSCZMStabilizationData.md)
-user object through [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/stabilization_data). Without a fixed
-[!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/stabilization_beta), the user object derives and freezes $\beta$ on its first
-evaluation using [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/volume_tangent). For small strain, the action defaults
-this to the [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/tangent) property, typically `Jacobian_mult`.
-The kernel accepts [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/stabilization_normal_stiffness) and
-[!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/stabilization_tangential_stiffness) for input compatibility and ignores their values.
+user object through [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/stabilization_data).
+The user object derives and freezes $\beta$ on its first evaluation from the normal stiffness of the
+face [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/tangent) property, typically
+`Jacobian_mult`, scaled by
+[!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/stabilization_gamma).
 
 ## Directional correction
 

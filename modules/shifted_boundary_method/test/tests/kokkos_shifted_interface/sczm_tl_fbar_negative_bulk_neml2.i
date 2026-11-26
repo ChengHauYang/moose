@@ -10,8 +10,8 @@
 # interface_model_off evaluates P = F PK2(F) from the single physical deformation gradient F for
 # the tests with F-bar disabled.
 #
-# Both Young's moduli are negative so that the normal bulk stiffness, and with it the automatic
-# stabilization_beta, is negative.
+# Both Young's moduli are negative so that the normal bulk stiffness, and with it the stabilization
+# beta, is negative.
 [Models]
   [bulk_strain]
     type = GreenLagrangeStrain

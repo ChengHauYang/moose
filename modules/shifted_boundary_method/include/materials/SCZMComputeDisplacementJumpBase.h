@@ -64,7 +64,10 @@ protected:
   /// Global cohesive traction and its jump derivative at the trial global jump
   Moose::Kokkos::SCZM::CohesiveEvaluation evaluateTrialTraction(const Moose::Kokkos::Real3 & jump);
 
-  /// The Robin parameter, computed from the bulk tangents on first use and then frozen
+  /**
+   * The Robin parameter, computed from the bulk tangents on first use and then frozen. Zero on an
+   * EXEC_INITIAL evaluation whose bulk tangents are not yet available.
+   */
   Real stabilizationBeta(const RealVectorValue & normal);
 
   /**
@@ -94,13 +97,13 @@ protected:
   const MaterialProperty<RankTwoTensor> * _stress_neighbor = nullptr;
   ///@}
 
-  /// Bulk tangent on the element and neighbor sides, with automatic beta
+  /// Bulk tangent on the element and neighbor sides, with stabilization
   ///@{
   const MaterialProperty<RankFourTensor> * _tangent = nullptr;
   const MaterialProperty<RankFourTensor> * _tangent_neighbor = nullptr;
   ///@}
 
-  /// Current and old frozen Robin parameter, with automatic beta; zero until first computed
+  /// Current and old frozen Robin parameter, with stabilization; zero until first computed
   ///@{
   MaterialProperty<Real> * _beta = nullptr;
   const MaterialProperty<Real> * _beta_old = nullptr;

@@ -6,9 +6,6 @@ file_base = sczm_salehani_tl_kokkos_out
 
 [Physics/SolidMechanics/ShiftedCohesiveZone/sczm]
   stabilization = weighted_traction
-  # In this host-comparison fixture, a large beta makes both the legacy fixed-weight and generalized
-  # Robin formulations converge to the cohesive traction. The Jacobian test overrides beta to 10.
-  stabilization_beta = 1e12
 []
 
 [Outputs]
@@ -69,8 +66,7 @@ file_base = sczm_salehani_tl_kokkos_out
     custom_pk2_jacobian = bulk_pk2_jacobian
     stabilize_strain = ${fbar}
   []
-  # These peaks give initial normal/tangential stiffnesses of 10 and 8. The large gap scale keeps
-  # the generalized Robin solution comparable to the host's legacy fixed-weight formulation.
+  # These peaks give initial normal/tangential stiffnesses of 10 and 8
   [local_traction]
     type = KokkosSalehaniIraniTractionSeparation
     boundary = 'Block0_Block1'

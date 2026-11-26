@@ -47,9 +47,6 @@ theta_rad = '${fparse theta * pi / 180}'
     sbm_distance_uo = distance
     directional_correction = true
     stabilization = weighted_traction
-    stabilization_beta = 10
-    stabilization_normal_stiffness = 10
-    stabilization_tangential_stiffness = 8
   []
 []
 
@@ -67,8 +64,7 @@ theta_rad = '${fparse theta * pi / 180}'
   [stress]
     type = ComputeLinearElasticStress
   []
-  # These peaks give initial normal/tangential stiffnesses of 10 and 8. The large gap scale keeps
-  # the generalized Robin solution comparable to the host's legacy fixed-weight formulation.
+  # These peaks give initial normal/tangential stiffnesses of 10 and 8
   [local_traction]
     type = SalehaniIrani3DCTraction
     boundary = 'Block0_Block1'

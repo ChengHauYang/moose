@@ -65,16 +65,13 @@ SCZMComputeDisplacementJumpBase<is_ad>::SCZMComputeDisplacementJumpBase(
       const auto stress = _base_name + this->template getParam<MaterialPropertyName>("stress");
       _stress = &this->template getMaterialPropertyByName<RankTwoTensor>(stress);
       _stress_neighbor = &this->template getNeighborMaterialPropertyByName<RankTwoTensor>(stress);
-      if (!_stabilization.beta_override)
-      {
-        const auto tangent = _base_name + this->template getParam<MaterialPropertyName>("tangent");
-        _tangent = &this->template getMaterialPropertyByName<RankFourTensor>(tangent);
-        _tangent_neighbor =
-            &this->template getNeighborMaterialPropertyByName<RankFourTensor>(tangent);
-        _beta = &this->template declarePropertyByName<Real>(_base_name + "stabilization_beta");
-        _beta_old =
-            &this->template getMaterialPropertyOldByName<Real>(_base_name + "stabilization_beta");
-      }
+      const auto tangent = _base_name + this->template getParam<MaterialPropertyName>("tangent");
+      _tangent = &this->template getMaterialPropertyByName<RankFourTensor>(tangent);
+      _tangent_neighbor =
+          &this->template getNeighborMaterialPropertyByName<RankFourTensor>(tangent);
+      _beta = &this->template declarePropertyByName<Real>(_base_name + "stabilization_beta");
+      _beta_old =
+          &this->template getMaterialPropertyOldByName<Real>(_base_name + "stabilization_beta");
       _inverse_robin_tangent = &this->template declarePropertyByName<RankTwoTensor>(
           _base_name + "inverse_robin_tangent");
 
@@ -256,14 +253,22 @@ SCZMComputeDisplacementJumpBase<is_ad>::computeWeightedTractionJump()
       }
       SCZMComputeDisplacementJumpBase<is_ad> & material;
     };
+    auto & S = (*_inverse_robin_tangent)[_qp];
+    const Real beta = stabilizationBeta(normal);
+    if (beta == 0.0)
+    {
+      // No beta yet on an initial evaluation: keep the shifted jump
+      S = RankTwoTensor::Identity();
+      return;
+    }
+
     const auto result = GeneralizedRobinSolver::solve(
-        Evaluator{*this}, shifted_jump, bulk_traction, stabilizationBeta(normal), _ndisp, false);
+        Evaluator{*this}, shifted_jump, bulk_traction, beta, _ndisp, false);
     if (!result.converged)
       throw MooseException("SCZM weighted traction stabilization did not converge, reducing time "
                            "step");
 
     // The traction materials sorted after this one evaluate the cohesive law at j
-    auto & S = (*_inverse_robin_tangent)[_qp];
     S.zero();
     for (const auto i : make_range(_ndisp))
     {
@@ -299,9 +304,6 @@ template <bool is_ad>
 Real
 SCZMComputeDisplacementJumpBase<is_ad>::stabilizationBeta(const RealVectorValue & normal)
 {
-  if (_stabilization.beta_override)
-    return _stabilization.beta;
-
   // Stored every evaluation so that the frozen value is carried to the next time step
   auto & beta = (*_beta)[_qp];
   if ((*_beta_old)[_qp] > 0.0)
@@ -319,8 +321,16 @@ SCZMComputeDisplacementJumpBase<is_ad>::stabilizationBeta(const RealVectorValue 
         Moose::Kokkos::SCZM::normalStiffness((*_tangent_neighbor)[_qp], normal, _ndisp),
         this->_neighbor_elem->volume());
     if (!(beta > 0.0) || !std::isfinite(beta))
-      mooseError("SCZM automatic stabilization_beta must be finite and positive; check the normal "
-                 "directional bulk tangents and adjacent element volumes.");
+    {
+      // A user object producing the bulk tangent, such as a NEML2 model executor whose input
+      // gathering evaluates these interface materials, may not have run yet on EXEC_INITIAL. Leave
+      // beta unset so that the first evaluation after it runs derives and freezes beta.
+      if (this->_fe_problem.getCurrentExecuteOnFlag() == EXEC_INITIAL)
+        beta = 0.0;
+      else
+        mooseError("SCZM stabilization beta must be finite and positive; check the normal "
+                   "directional bulk tangents and adjacent element volumes.");
+    }
   }
   return beta;
 }

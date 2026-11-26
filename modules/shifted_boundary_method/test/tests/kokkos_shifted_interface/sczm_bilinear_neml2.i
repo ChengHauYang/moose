@@ -19,11 +19,11 @@
   []
 []
 
-# As in sczm_bilinear_kokkos.i, this beta reproduces the unstabilized host interface
+# As in sczm_bilinear_kokkos.i, this gamma reproduces the unstabilized host interface
 [Physics/SolidMechanics/ShiftedCohesiveZone/sczm]
   use_kokkos = true
   stabilization = weighted_traction
-  stabilization_beta = 1e12
+  stabilization_gamma = 5e8
 []
 
 # The NEML2 gatherer evaluates the jump material on INITIAL, which needs the distance first

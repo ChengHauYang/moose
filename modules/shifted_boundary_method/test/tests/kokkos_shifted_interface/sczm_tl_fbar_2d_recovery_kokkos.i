@@ -120,9 +120,9 @@ theta_rad = '${fparse theta * pi / 180}'
     directional_correction = true
     volumetric_locking_correction = true
     stabilization = weighted_traction
-    stabilization_beta = 10
-    stabilization_normal_stiffness = 10
-    stabilization_tangential_stiffness = 30
+    # beta = gamma |face| (lambda + 2 mu) / V of about 11 (E = 100, nu = 0.3, face-to-volume ratio
+    # 2), comparable to the cohesive stiffnesses, so both tractions enter the Jacobian
+    stabilization_gamma = 0.04
     stress_recovery = element_linear
     tangent_definition = pk2_wrt_deformation_gradient
   []

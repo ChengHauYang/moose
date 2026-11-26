@@ -21,11 +21,12 @@
 []
 
 # As beta grows, the auxiliary jump of the generalized Robin solve tends to the interface jump, so
-# this beta reproduces the unstabilized host interface. The Jacobian tests override it.
+# this gamma, which gives beta = gamma |face| E / V = 1e12 (face-to-volume ratio 2), reproduces the
+# unstabilized host interface. The Jacobian tests override it.
 [Physics/SolidMechanics/ShiftedCohesiveZone/sczm]
   use_kokkos = true
   stabilization = weighted_traction
-  stabilization_beta = 1e12
+  stabilization_gamma = 5e8
 []
 
 [Materials]

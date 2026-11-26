@@ -47,19 +47,14 @@ KokkosSCZMStabilizationData::validParams()
   params.addParam<MaterialPropertyName>(
       "tangent",
       "pk1_jacobian",
-      "Interface derivative d(PK1)/d(F), whose normal stiffness sets the automatic "
-      "stabilization_beta without recovery.");
+      "Interface derivative d(PK1)/d(F), whose normal stiffness sets the stabilization beta "
+      "without recovery.");
   params.addParam<MaterialPropertyName>(
       "volume_stress", "pk1_stress", "Volume PK1 stress used by affine recovery.");
   params.addParam<MaterialPropertyName>(
       "volume_tangent",
       "dpk1_d_grad_u",
       "Complete volume derivative d(PK1)/d(grad(u)) used by affine recovery.");
-  params.addParam<MooseEnum>("stabilization_cohesive_law",
-                             MooseEnum("affine coupled_cubic", "affine"),
-                             "Native cohesive evaluator used by the generalized Robin solve.");
-  params.addParam<Real>("stabilization_linear_stiffness", "Coupled-cubic linear coefficient.");
-  params.addParam<Real>("stabilization_cubic_stiffness", "Coupled-cubic cubic coefficient.");
   SCZMWeightedTractionStabilization::addParams(params);
   params.set<ExecFlagEnum>("execute_on", true) = {EXEC_NONE};
   params.addClassDescription(
@@ -73,14 +68,6 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const InputParameters &
     _finite_strain(getParam<MooseEnum>("strain") == "FINITE"),
     _shifted(!getParam<bool>("no_shifted")),
     _element_linear_recovery(getParam<MooseEnum>("stress_recovery") == "element_linear"),
-    _coupled_cubic_stabilization(getParam<MooseEnum>("stabilization_cohesive_law") ==
-                                 "coupled_cubic"),
-    _stabilization_linear_stiffness(isParamValid("stabilization_linear_stiffness")
-                                        ? getParam<Real>("stabilization_linear_stiffness")
-                                        : 0.0),
-    _stabilization_cubic_stiffness(isParamValid("stabilization_cubic_stiffness")
-                                       ? getParam<Real>("stabilization_cubic_stiffness")
-                                       : 0.0),
     _settings(SCZMWeightedTractionStabilization::settings(*this)),
     _sbm_distance_uo(isParamValid("sbm_distance_uo")
                          ? &getUserObject<BoundaryShortestDistanceToSurface>("sbm_distance_uo")
@@ -100,15 +87,6 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const InputParameters &
     paramError("stress_recovery", "'element_linear' requires the true-interface mapping.");
   if (_element_linear_recovery && !_finite_strain)
     paramError("stress_recovery", "'element_linear' requires finite strain.");
-  if (_coupled_cubic_stabilization && !isParamValid("stabilization_linear_stiffness"))
-    paramError("stabilization_linear_stiffness",
-               "This parameter is required for the coupled_cubic evaluator.");
-  if (_coupled_cubic_stabilization && !isParamValid("stabilization_cubic_stiffness"))
-    paramError("stabilization_cubic_stiffness",
-               "This parameter is required for the coupled_cubic evaluator.");
-  if (_coupled_cubic_stabilization &&
-      (_stabilization_linear_stiffness < 0.0 || _stabilization_cubic_stiffness < 0.0))
-    paramError("stabilization_cohesive_law", "The coupled_cubic coefficients must be nonnegative.");
 
   const auto prefix = isParamValid("base_name") && !getParam<std::string>("base_name").empty()
                           ? getParam<std::string>("base_name") + "_"
@@ -119,24 +97,18 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const InputParameters &
     const auto volume_stress_name = prefix + getParam<MaterialPropertyName>("volume_stress");
     _volume_stress = getKokkosMaterialPropertyByName<Real, 2>(volume_stress_name, volume_data);
     _fe_problem.getKokkosMaterialPropertyStorage().requestGhostedProperty(volume_stress_name);
-    if (!_settings.beta_override)
-    {
-      const auto volume_tangent_name = prefix + getParam<MaterialPropertyName>("volume_tangent");
-      _volume_tangent = getKokkosMaterialPropertyByName<Real, 4>(volume_tangent_name, volume_data);
-      _fe_problem.getKokkosMaterialPropertyStorage().requestGhostedProperty(volume_tangent_name);
-    }
+    const auto volume_tangent_name = prefix + getParam<MaterialPropertyName>("volume_tangent");
+    _volume_tangent = getKokkosMaterialPropertyByName<Real, 4>(volume_tangent_name, volume_data);
+    _fe_problem.getKokkosMaterialPropertyStorage().requestGhostedProperty(volume_tangent_name);
   }
   else
   {
     const auto stress_name = prefix + getParam<MaterialPropertyName>("stress");
     _stress = getKokkosMaterialPropertyByName<Real, 2>(stress_name);
     _stress_neighbor = getKokkosNeighborMaterialPropertyByName<Real, 2>(stress_name);
-    if (!_settings.beta_override)
-    {
-      const auto tangent_name = prefix + getParam<MaterialPropertyName>("tangent");
-      _tangent = getKokkosMaterialPropertyByName<Real, 4>(tangent_name);
-      _tangent_neighbor = getKokkosNeighborMaterialPropertyByName<Real, 4>(tangent_name);
-    }
+    const auto tangent_name = prefix + getParam<MaterialPropertyName>("tangent");
+    _tangent = getKokkosMaterialPropertyByName<Real, 4>(tangent_name);
+    _tangent_neighbor = getKokkosNeighborMaterialPropertyByName<Real, 4>(tangent_name);
   }
 
   _displacement_jump_global =
@@ -161,9 +133,6 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const KokkosSCZMStabili
     _finite_strain(object._finite_strain),
     _shifted(object._shifted),
     _element_linear_recovery(object._element_linear_recovery),
-    _coupled_cubic_stabilization(object._coupled_cubic_stabilization),
-    _stabilization_linear_stiffness(object._stabilization_linear_stiffness),
-    _stabilization_cubic_stiffness(object._stabilization_cubic_stiffness),
     _settings(object._settings),
     _sbm_distance_uo(object._sbm_distance_uo),
     _true_normals(object._true_normals),
@@ -328,18 +297,14 @@ KokkosSCZMStabilizationData::allocateArrays()
   if (_finite_strain)
     _robin_weighted_dF.create(n_qps, 27);
   _prepass_failure.create(1);
-  if (!_settings.beta_override)
+  _stabilization_beta.create(n_qps);
+  if (_beta_initialized)
   {
-    _stabilization_beta.create(n_qps);
-    if (_beta_initialized)
-    {
-      if (_restartable_stabilization_beta.size() != n_qps)
-        mooseError(
-            "Recovered SCZM stabilization_beta size does not match the interface QP layout.");
-      for (const auto i : index_range(_restartable_stabilization_beta))
-        _stabilization_beta(i) = _restartable_stabilization_beta[i];
-      _stabilization_beta.copyToDevice();
-    }
+    if (_restartable_stabilization_beta.size() != n_qps)
+      mooseError("Recovered SCZM stabilization beta size does not match the interface QP layout.");
+    for (const auto i : index_range(_restartable_stabilization_beta))
+      _stabilization_beta(i) = _restartable_stabilization_beta[i];
+    _stabilization_beta.copyToDevice();
   }
 }
 
@@ -372,15 +337,14 @@ KokkosSCZMStabilizationData::ensurePrepared(const bool need_tangents)
     ::Kokkos::fence();
   };
 
-  if (!_settings.beta_override && !_beta_initialized)
+  if (!_beta_initialized)
   {
     dispatch();
     _stabilization_beta.copyToHost();
     for (const auto i : index_range(_stabilization_beta))
       if (!(_stabilization_beta(i) > 0.0) || !std::isfinite(_stabilization_beta(i)))
-        mooseError(
-            "SCZM automatic stabilization_beta must be finite and positive; check the normal "
-            "directional bulk tangents and adjacent element volumes.");
+        mooseError("SCZM stabilization beta must be finite and positive; check the normal "
+                   "directional bulk tangents and adjacent element volumes.");
     _restartable_stabilization_beta.assign(_stabilization_beta.begin(), _stabilization_beta.end());
     _beta_initialized = true;
   }
@@ -508,7 +472,7 @@ KokkosSCZMStabilizationData::gatherRobinInputsFace(const RobinInputs & inputs,
     inputs.shifted_jump[index] = jump;
     inputs.bulk_traction[index] = _bulk_traction[index];
     inputs.reference_normal[index] = reference_normal;
-    inputs.beta[index] = _settings.beta_override ? _settings.beta : _stabilization_beta(index);
+    inputs.beta[index] = _stabilization_beta(index);
     inputs.total_rotation[index] = total_rotation;
     inputs.reference_rotation[index] = reference_rotation;
     inputs.rotation[index] = rotation;

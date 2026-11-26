@@ -124,7 +124,7 @@ public:
   KOKKOS_FUNCTION Real stabilizationBeta(const Moose::Kokkos::InterfaceFaceRecord & face,
                                          unsigned int qp) const
   {
-    return _settings.beta_override ? _settings.beta : _stabilization_beta(face.qp_map_offset + qp);
+    return _stabilization_beta(face.qp_map_offset + qp);
   }
 
   KOKKOS_FUNCTION Moose::Kokkos::Real3 trueNormal(const Moose::Kokkos::InterfaceFaceRecord & face,
@@ -161,9 +161,6 @@ public:
   bool shifted() const { return _shifted; }
   bool finiteStrain() const { return _finite_strain; }
   bool elementLinearRecovery() const { return _element_linear_recovery; }
-  bool coupledCubicStabilization() const { return _coupled_cubic_stabilization; }
-  Real stabilizationLinearStiffness() const { return _stabilization_linear_stiffness; }
-  Real stabilizationCubicStiffness() const { return _stabilization_cubic_stiffness; }
 
   const Moose::Kokkos::Array<dof_id_type> & recoveryOffsets() const { return _recovery_offsets; }
 
@@ -205,9 +202,6 @@ protected:
   const bool _finite_strain;
   const bool _shifted;
   const bool _element_linear_recovery;
-  const bool _coupled_cubic_stabilization;
-  const Real _stabilization_linear_stiffness;
-  const Real _stabilization_cubic_stiffness;
   const SCZMWeightedTractionStabilization::Settings _settings;
   const BoundaryShortestDistanceToSurface * const _sbm_distance_uo;
 
@@ -216,7 +210,7 @@ protected:
   Moose::Kokkos::Array2D<dof_id_type> _face_qp_offsets;
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _bulk_traction;
   Moose::Kokkos::Array<Real> _stabilization_beta;
-  /// Host copy of the automatic stabilization_beta, which carries it through restart and recovery
+  /// Host copy of the stabilization beta, which carries it through restart and recovery
   /// because restartable data is restored before initialSetup sizes the device array
   std::vector<Real> & _restartable_stabilization_beta;
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _stabilized_traction;
@@ -234,7 +228,7 @@ protected:
   Moose::Kokkos::MaterialProperty<Real, 2> _F_czm;
   Moose::Kokkos::MaterialProperty<Real, 2> _stress;
   Moose::Kokkos::MaterialProperty<Real, 2> _stress_neighbor;
-  /// Face bulk tangent on each side, for the automatic stabilization_beta without recovery
+  /// Face bulk tangent on each side, for the stabilization beta without recovery
   Moose::Kokkos::MaterialProperty<Real, 4> _tangent;
   Moose::Kokkos::MaterialProperty<Real, 4> _tangent_neighbor;
   Moose::Kokkos::MaterialProperty<Real, 2> _volume_stress;
@@ -306,7 +300,7 @@ KokkosSCZMStabilizationData::executeInterface(Datum & primary,
       }
     _bulk_traction[index] = average_traction;
 
-    if (!_settings.beta_override && !_beta_initialized)
+    if (!_beta_initialized)
     {
       // The normal stiffness is taken from the same tangent as the bulk traction: the recovered
       // volume tangent with recovery, else the face tangent on each side
@@ -418,9 +412,13 @@ KokkosSCZMStabilizationData::robinFace(const TSL & tsl, const Moose::Kokkos::Thr
     if (_ndisp < 3)
       evaluator.reference_normal(2) = 0.0;
 
-    const Real beta = _settings.beta_override ? _settings.beta : _stabilization_beta(index);
-    const auto stabilized = Moose::Kokkos::SCZM::GeneralizedRobinSolver::solve(
-        evaluator, jump, average_traction, beta, _ndisp, local_law.isAffine());
+    const auto stabilized =
+        Moose::Kokkos::SCZM::GeneralizedRobinSolver::solve(evaluator,
+                                                           jump,
+                                                           average_traction,
+                                                           _stabilization_beta(index),
+                                                           _ndisp,
+                                                           local_law.isAffine());
     if (!stabilized.converged)
     {
       ::Kokkos::atomic_exchange(&_prepass_failure[0], 1);

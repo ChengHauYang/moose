@@ -152,10 +152,7 @@ KokkosSCZMInterfaceKernelSmallStrain::initialSetup()
     return;
 
   const auto & producer_settings = _stabilization_data->stabilizationSettings();
-  const bool beta_mismatch =
-      producer_settings.beta_override != _stabilization_settings.beta_override ||
-      (producer_settings.beta_override && producer_settings.beta != _stabilization_settings.beta);
-  if (beta_mismatch || producer_settings.gamma != _stabilization_settings.gamma ||
+  if (producer_settings.gamma != _stabilization_settings.gamma ||
       _stabilization_data->shifted() != _shifted || _stabilization_data->finiteStrain())
     mooseError("SCZM kernel and stabilization producer configurations differ.");
 

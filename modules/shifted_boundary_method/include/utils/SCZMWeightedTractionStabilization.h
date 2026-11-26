@@ -33,31 +33,14 @@ addParams(InputParameters & params)
       "stabilization_gamma",
       5.0,
       "stabilization_gamma > 0",
-      "Dimensionless multiplier used to derive beta from the directional bulk tangent and element "
-      "normal length.");
-  params.addRangeCheckedParam<Real>(
-      "stabilization_beta",
-      "stabilization_beta > 0",
-      "Optional fixed beta override. If omitted, beta is derived once per paired interface "
-      "quadrature point and then frozen.");
-
-  // Accepted so existing input files continue to parse. Generalized Robin stabilization obtains the
-  // actual cohesive tangent from the constitutive evaluator and does not use these values.
-  params.addRangeCheckedParam<Real>(
-      "stabilization_normal_stiffness",
-      "stabilization_normal_stiffness >= 0",
-      "Deprecated reference normal cohesive stiffness retained for input compatibility.");
-  params.addRangeCheckedParam<Real>(
-      "stabilization_tangential_stiffness",
-      "stabilization_tangential_stiffness >= 0",
-      "Deprecated reference tangential cohesive stiffness retained for input compatibility.");
+      "Dimensionless multiplier of the Robin parameter beta, which is derived once per paired "
+      "interface quadrature point from the normal bulk stiffness over the element normal length on "
+      "each side and then frozen.");
 }
 
 struct Settings
 {
   bool enabled = false;
-  bool beta_override = false;
-  Real beta = 0.0;
   Real gamma = 5.0;
 };
 
@@ -68,19 +51,13 @@ settings(const MooseObject & object)
   result.enabled = object.getParam<MooseEnum>("stabilization") == "weighted_traction";
   if (!result.enabled)
   {
-    for (const auto & name : {"stabilization_gamma",
-                              "stabilization_beta",
-                              "stabilization_normal_stiffness",
-                              "stabilization_tangential_stiffness"})
-      if (object.isParamSetByUser(name))
-        object.paramError(name, "This parameter requires 'stabilization = weighted_traction'.");
+    if (object.isParamSetByUser("stabilization_gamma"))
+      object.paramError("stabilization_gamma",
+                        "This parameter requires 'stabilization = weighted_traction'.");
     return result;
   }
 
   result.gamma = object.getParam<Real>("stabilization_gamma");
-  result.beta_override = object.isParamValid("stabilization_beta");
-  if (result.beta_override)
-    result.beta = object.getParam<Real>("stabilization_beta");
   return result;
 }
 } // namespace SCZMWeightedTractionStabilization

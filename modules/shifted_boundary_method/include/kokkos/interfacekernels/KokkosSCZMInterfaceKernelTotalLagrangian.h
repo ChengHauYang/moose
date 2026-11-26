@@ -247,7 +247,6 @@ protected:
   const bool _directional_correction;
   const bool _volumetric_locking_correction;
   const bool _element_linear_recovery;
-  const bool _coupled_cubic_stabilization;
   const SCZMWeightedTractionStabilization::Settings _stabilization_settings;
   KokkosSCZMStabilizationData * const _stabilization_data;
   Moose::Kokkos::Array2D<dof_id_type> _face_qp_offsets;
@@ -627,8 +626,7 @@ KokkosSCZMInterfaceKernelTotalLagrangian::computeJacobianComponent(
                                                      neighbor_datum,
                                                      weighted_dF);
 
-    const Real beta = _stabilization_settings.beta_override ? _stabilization_settings.beta
-                                                            : _stabilization_beta[index];
+    const Real beta = _stabilization_beta[index];
     for (unsigned int b = 0; b < _ndisp; ++b)
     {
       Real bulk_derivative = 0.0;

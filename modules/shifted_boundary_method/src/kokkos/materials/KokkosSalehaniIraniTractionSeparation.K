@@ -70,15 +70,3 @@ KokkosSalehaniIraniTractionSeparation::robinPrepass(const KokkosSCZMStabilizatio
 {
   uo.robinPrepass(*this);
 }
-
-void
-KokkosSalehaniIraniTractionSeparation::checkStabilizationLaw(
-    const KokkosSCZMStabilizationData & uo) const
-{
-  if (uo.coupledCubicStabilization())
-    mooseError("The weighted traction stabilization law of '",
-               uo.name(),
-               "' cannot select coupled_cubic with Salehani-Irani material '",
-               name(),
-               "'.");
-}

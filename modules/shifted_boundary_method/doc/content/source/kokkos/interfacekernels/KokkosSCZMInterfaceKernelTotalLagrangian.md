@@ -38,8 +38,7 @@ For $\mathbf{K} = \partial\mathbf{f}/\partial\mathbf{j}$, the derivatives are
 The assembled Jacobian also includes the shifted-geometry, Nanson, bulk-stress, and F-bar
 derivatives in all four interface blocks.
 
-Supply [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelTotalLagrangian/stabilization_beta) to fix $\beta$. Otherwise the user object derives $\beta$
-on its first evaluation and freezes it for subsequent assemblies.
+The user object derives $\beta$ on its first evaluation and freezes it for subsequent assemblies.
 
 !equation
 \beta = \frac{\gamma A}{2}\left(\frac{\kappa_N^-}{V^-}
@@ -48,29 +47,16 @@ on its first evaluation and freezes it for subsequent assemblies.
 
 Here $A$ is the surrogate face area and $V^\pm$ are the adjacent element volumes.
 [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelTotalLagrangian/stabilization_gamma) sets $\gamma$
-(default 5). Each $\mathbf{C}^\pm$ is the element-volume average of the tangent, or the tangent
-recovered at the true-interface quadrature point when using element-linear stress recovery.
-The [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelTotalLagrangian/volume_tangent) property
-defaults to `dpk1_d_grad_u` and is synchronized to ghost elements on distributed meshes.
-Automatic $\beta$ must be finite and positive. The kernel accepts
-[!param](/InterfaceKernels/KokkosSCZMInterfaceKernelTotalLagrangian/stabilization_normal_stiffness) and
-[!param](/InterfaceKernels/KokkosSCZMInterfaceKernelTotalLagrangian/stabilization_tangential_stiffness) for input compatibility and ignores their values.
+(default 5). Each $\mathbf{C}^\pm$ is the face `tangent` of its side, or the
+[!param](/InterfaceKernels/KokkosSCZMInterfaceKernelTotalLagrangian/volume_tangent) recovered at the
+true-interface quadrature point when using element-linear stress recovery. Automatic $\beta$ must
+be finite and positive.
 
-The default `affine` evaluator uses
-$\mathbf{f}(\mathbf{j}) = \mathbf{t}_c + \mathbf{K}(\mathbf{j}-\mathbf{J}_d)$, with the traction
-$\mathbf{t}_c$ and tangent $\mathbf{K}$ evaluated at the shifted jump. This gives an exact
-Jacobian for linear cohesive laws. For a nonlinear law evaluated in affine mode, the Jacobian
-holds the current local cohesive tangent fixed. Set
-[!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_cohesive_law) to
-`coupled_cubic` to evaluate the native nonlinear law
-$\mathbf{f}_\mathrm{loc}(\mathbf{j}_\mathrm{loc}) =
-k_0\mathbf{j}_\mathrm{loc} + a\lVert\mathbf{j}_\mathrm{loc}\rVert^2\mathbf{j}_\mathrm{loc}$
-at the trial jump with its exact Jacobian. This evaluator requires nonnegative
-[!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_linear_stiffness) and [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_cubic_stiffness).
-An interface NEML2 traction-separation model is evaluated as the trial law with the `affine`
-evaluator; see [KokkosSCZMStabilizationData](KokkosSCZMStabilizationData.md). The local damped Newton solve reports failure on an
-invalid constitutive evaluation, singular or ill-conditioned Robin tangent, unsuccessful line
-search, or lack of convergence.
+The Robin solve evaluates the traction-separation law itself at each trial jump, native or NEML2,
+so its Jacobian is exact for any law that supplies its jump derivative; see
+[KokkosSCZMStabilizationData](KokkosSCZMStabilizationData.md). The local damped Newton solve
+reports failure on an invalid constitutive evaluation, singular or ill-conditioned Robin tangent,
+unsuccessful line search, or lack of convergence.
 
 Setting [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelTotalLagrangian/stress_recovery) to
 `element_linear` evaluates the stabilization's bulk PK1 stress at the true-interface

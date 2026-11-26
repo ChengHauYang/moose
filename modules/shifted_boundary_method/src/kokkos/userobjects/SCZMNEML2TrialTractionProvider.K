@@ -46,12 +46,6 @@ SCZMNEML2TrialTractionProvider::SCZMNEML2TrialTractionProvider(
 void
 SCZMNEML2TrialTractionProvider::checkStabilizationLaw(const KokkosSCZMStabilizationData & uo) const
 {
-  if (uo.coupledCubicStabilization())
-    mooseError("The weighted traction stabilization law of '",
-               uo.name(),
-               "' must be 'affine' with the NEML2 cohesive model of '",
-               _executor.name(),
-               "', which supplies the trial law itself.");
   // Without on-device state advance, the old state is read back from material properties that
   // were computed at the shifted jump before the generalized Robin solve
   if (_has_history && !_executor.getParam<bool>("manage_state_advance"))

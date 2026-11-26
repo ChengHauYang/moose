@@ -138,14 +138,3 @@ KokkosBiLinearMixedModeTraction::robinPrepass(const KokkosSCZMStabilizationData 
 {
   uo.robinPrepass(*this);
 }
-
-void
-KokkosBiLinearMixedModeTraction::checkStabilizationLaw(const KokkosSCZMStabilizationData & uo) const
-{
-  if (uo.coupledCubicStabilization())
-    mooseError("The weighted traction stabilization law of '",
-               uo.name(),
-               "' must not be coupled_cubic when used with KokkosBiLinearMixedModeTraction '",
-               name(),
-               "'.");
-}

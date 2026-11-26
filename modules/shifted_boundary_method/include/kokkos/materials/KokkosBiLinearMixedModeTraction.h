@@ -67,7 +67,6 @@ public:
   }
 
   void robinPrepass(const KokkosSCZMStabilizationData & uo) const override;
-  void checkStabilizationLaw(const KokkosSCZMStabilizationData & uo) const override;
 
 private:
   template <typename DatumType>

@@ -124,31 +124,61 @@ The AD interface kernel differentiates its residual automatically and does not u
 ## Weighted-traction stabilization id=weighted-traction-stabilization
 
 Set [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization) to `weighted_traction` to combine the shifted cohesive traction
-with the average adjacent bulk traction. In both Kokkos formulations,
-[KokkosSCZMStabilizationData](KokkosSCZMStabilizationData.md) solves a generalized Robin equation
-at each paired interface quadrature point once per assembly. The
-[small-strain kernel](KokkosSCZMInterfaceKernelSmallStrain.md) uses Cauchy stress and the
-[total-Lagrangian kernel](KokkosSCZMInterfaceKernelTotalLagrangian.md) uses PK1 stress.
+with the average adjacent bulk traction. At each paired interface quadrature point, the host and
+Kokkos paths solve the same generalized Robin equation for the auxiliary jump $\mathbf{j}$,
 
-Supply [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_beta) for a fixed $\beta$. Otherwise the first
-stabilization evaluation derives $\beta$ from the adjacent elements' normal directional volume
-tangents and normal sizes, scales it by [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_gamma) (default 5), and freezes it
-for subsequent assemblies. The [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/volume_tangent) property defaults to the
-[!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/tangent) property (typically `Jacobian_mult`) for small strain and to
-`dpk1_d_grad_u` for total Lagrangian. Setting [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stress_recovery) to
-`element_linear` is available only for the total-Lagrangian formulation.
+!equation
+\mathbf{j} + \frac{1}{\beta}\mathbf{f}(\mathbf{j}) = \mathbf{J}_d + \frac{1}{\beta}\mathbf{T}_h,
 
-The host kernels use the legacy linear weighted traction
-$\widehat{\mathbf{t}} = \mathbf{S}\mathbf{t}_c + (\mathbf{I}-\mathbf{S})\mathbf{T}_h$,
-with $\mathbf{S} = \beta(\mathbf{K}_{\mathrm{ref}}+\beta\mathbf{I})^{-1}$.
-Here $\mathbf{t}_c$ is the cohesive traction at the shifted jump and $\mathbf{T}_h$ is the
-average adjacent bulk traction. The host requires [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_beta) and
-[!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_normal_stiffness). The optional
-[!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_tangential_stiffness) defaults to the normal stiffness. Kokkos accepts
-both reference stiffness parameters for input compatibility and ignores their values.
-The legacy blend is the affine Robin solution with $\mathbf{K}_{\mathrm{ref}}$.
-The host and Kokkos formulations agree only when $\mathbf{K}_{\mathrm{ref}}$ equals the actual
-cohesive tangent and $\beta$ matches.
+where $\mathbf{J}_d$ is the shifted displacement jump, $\mathbf{f}$ is the global cohesive traction,
+and $\mathbf{T}_h$ is the average adjacent bulk traction. The kernels then assemble
+$\mathbf{f}(\mathbf{j})$ and weight its derivatives with
+$\mathbf{S} = (\mathbf{I} + \beta^{-1}\partial\mathbf{f}/\partial\mathbf{j})^{-1}$. The solve only
+evaluates the traction law and its jump derivative, so any traction-separation law works without a
+law-specific setting (see [#generic-traction-law]). The small-strain formulation uses Cauchy stress
+and the total-Lagrangian formulation uses PK1 stress. On Kokkos,
+[KokkosSCZMStabilizationData](KokkosSCZMStabilizationData.md) performs the solve once per assembly;
+on the host, the displacement-jump material performs it.
+
+The Robin parameter is not an input. The first evaluation derives it at each paired quadrature
+point from the bulk tangent on each side,
+
+!equation
+\beta = \frac{\gamma}{2}\,\lvert F\rvert\left(\frac{k^-}{V^-} + \frac{k^+}{V^+}\right), \qquad
+k^\pm = N_i N_J C^\pm_{iJkL} N_k N_L,
+
+and freezes it for all later assemblies, including across restart. Here $\gamma$ is
+[!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_gamma)
+(default 5), $\lvert F\rvert$ is the interface face area, $V^\pm$ are the adjacent element volumes,
+so that $V^\pm/\lvert F\rvert$ is the element normal length, and $\mathbf{C}^\pm$ is the
+[!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/tangent) property
+evaluated on the interface face. For an isotropic linear elastic bulk, $k = \lambda + 2\mu$. The
+dimensionless $\gamma$ is used instead of a stiffness because a traction law need not have the form
+$\mathbf{t} = \mathbf{K}[\![\mathbf{u}]\!]$. On the host, an `INITIAL` evaluation that runs before
+the bulk tangent exists, such as the input gathering of a NEML2 interface model, keeps the shifted
+jump and defers $\beta$ to the next evaluation.
+
+Setting [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stress_recovery)
+to `element_linear` is available only for Kokkos total-Lagrangian SCZM. It recovers each side's PK1
+stress from the volume quadrature points, and $\beta$ then uses
+[!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/volume_tangent)
+(default `dpk1_d_grad_u`).
+
+### Adding a traction-separation law id=generic-traction-law
+
+The weighted traction is generic: a new traction-separation law can be added at any time without
+changing the stabilization. The law only needs to supply, at the same interface quadrature points,
+the local traction `interface_traction` from the local jump `interface_displacement_jump` and its
+derivative `dinterface_traction_djump`.
+
+- +Host:+ a single interface material declares both properties, and its `computeQpProperties()`
+  depends only on the jump and its own stateful history. The displacement-jump material re-evaluates
+  this material and the global-traction material at each trial jump of the Robin solve.
+- +Kokkos:+ a native law follows the contract of
+  [KokkosSCZMStabilizationData](KokkosSCZMStabilizationData.md), and a NEML2
+  law needs no MOOSE code.
+- +Bulk materials:+ the bulk `stress` and `tangent` must be available on interface faces, on
+  residual as well as Jacobian evaluations, because $\mathbf{T}_h$ and $\beta$ use them.
 
 ### Interface normal under large deformation id=weighted-traction-normal
 
