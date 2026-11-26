@@ -50,8 +50,7 @@ ComputeLagrangianStressCustomPK2::computeQpPK1Stress()
 
   // The R4 algebra for `_pk1_jacobian` / `_pk1_jacobian_bypass_fbar` is read only on
   // Jacobian sweeps; skip it on residual-only sweeps.
-  if (!_fe_problem.currentlyComputingJacobian() &&
-      !_fe_problem.currentlyComputingResidualAndJacobian())
+  if (!needJacobian())
     return;
 
   // dPK1/d(F_ust) = del_ik PK2_lj  +  F_ust * dPK2/d(F_stab) * d(F_stab)/d(F_ust).
@@ -75,8 +74,7 @@ ComputeLagrangianStressCustomPK2::computeQpCauchyStress()
   const Real J_ust = _F_ust[_qp].det();
   _cauchy_stress[_qp] = _F_ust[_qp] * _pk2[_qp] * _F_ust[_qp].transpose() / J_ust;
 
-  if (!_fe_problem.currentlyComputingJacobian() &&
-      !_fe_problem.currentlyComputingResidualAndJacobian())
+  if (!needJacobian())
     return;
 
   // cauchy_jacobian = dsigma/d(dL). sigma depends on dL only through PK2(F_stab(dL))

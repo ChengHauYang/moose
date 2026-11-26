@@ -91,7 +91,7 @@ ComputeSimoHughesJ2PlasticityStress::computeQpPK1Stress()
   Real s_eff = s.doubleContraction(_Np[_qp]);
 
   // Compute the derivative of the strain before return mapping
-  if (_fe_problem.currentlyComputingJacobian())
+  if (needJacobian())
     _d_be_d_F = _F_old[_qp].inverse().times<l, m, i, j, k, m>(
         (I.times<i, k, j, l>(f_bar * _be_old[_qp].transpose()) +
          I.times<j, k, i, l>(f_bar * _be_old[_qp])) /
@@ -103,7 +103,7 @@ ComputeSimoHughesJ2PlasticityStress::computeQpPK1Stress()
   if (computeResidual(s_eff, 0) > 0)
   {
     // Initialize the derivative of the internal variable
-    if (_fe_problem.currentlyComputingJacobian())
+    if (needJacobian())
     {
       _d_deltaep_d_betr.zero();
       if (MooseUtils::absoluteFuzzyEqual(s.norm(), 0))
@@ -117,7 +117,7 @@ ComputeSimoHughesJ2PlasticityStress::computeQpPK1Stress()
     returnMappingSolve(s_eff, delta_ep, _console);
 
     // Correct the derivative of the strain after return mapping
-    if (_fe_problem.currentlyComputingJacobian())
+    if (needJacobian())
       _d_be_d_F -=
           2. / 3. *
           (_be[_qp].trace() * _Np[_qp].times<i, j, k, l>(_d_deltaep_d_betr) +
@@ -134,7 +134,7 @@ ComputeSimoHughesJ2PlasticityStress::computeQpPK1Stress()
 
   // Compute the consistent tangent, i.e. the derivative of the PK1 stress w.r.t. the deformation
   // gradient.
-  if (_fe_problem.currentlyComputingJacobian())
+  if (needJacobian())
   {
     RankFourTensor d_tau_d_F = K * detJ * detJ * I.times<i, j, k, l>(Fit) +
                                G * (_d_be_d_F - I.times<i, j, k, l>(I) * _d_be_d_F / 3);
@@ -179,7 +179,7 @@ ComputeSimoHughesJ2PlasticityStress::computeDerivative(const Real & /*effective_
 void
 ComputeSimoHughesJ2PlasticityStress::preStep(const Real & scalar, const Real & R, const Real & J)
 {
-  if (!_fe_problem.currentlyComputingJacobian())
+  if (!needJacobian())
     return;
 
   const auto I = RankTwoTensor::Identity();

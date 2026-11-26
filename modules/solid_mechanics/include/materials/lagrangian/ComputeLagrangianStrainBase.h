@@ -75,6 +75,11 @@ public:
 protected:
   virtual void initQpStatefulProperties() override;
   virtual void computeProperties() override;
+  /**
+   * Whether this evaluation computes the Jacobian-only tangents: on Jacobian passes, and on faces,
+   * where interface materials may read the bulk tangent in residual-only passes as well
+   */
+  bool needJacobian() const;
   virtual void computeQpProperties() override;
   /// Calculate the strains based on the spatial velocity gradient. The sym/skew split is
   /// trivial; kept as a public helper for backward compatibility with the linear-only path.

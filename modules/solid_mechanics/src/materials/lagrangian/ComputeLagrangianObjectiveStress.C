@@ -82,8 +82,7 @@ ComputeLagrangianObjectiveStress::computeQpCauchyStress()
 {
   computeQpSmallStress();
 
-  const bool need_jacobian = _fe_problem.currentlyComputingJacobian() ||
-                             _fe_problem.currentlyComputingResidualAndJacobian();
+  const bool need_jacobian = needJacobian();
 
   if (!_large_kinematics)
   {

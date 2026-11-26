@@ -64,7 +64,7 @@ ComputeHypoelasticStVenantKirchhoffStress::computeQpSmallStress()
   _small_stress[_qp] = _small_stress_old[_qp] + dS;
 
   // Compute the small Jacobian
-  if (_fe_problem.currentlyComputingJacobian())
+  if (needJacobian())
   {
     // dF/d(dL) as the inverse of the stored d(dL)/dF, instead of hard-coding the
     // linear-approximation factorization f.times<i, k, l, j>(F).

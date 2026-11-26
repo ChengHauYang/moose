@@ -180,6 +180,14 @@ ComputeLagrangianStrainBase<G>::initQpStatefulProperties()
 }
 
 template <class G>
+bool
+ComputeLagrangianStrainBase<G>::needJacobian() const
+{
+  return _fe_problem.currentlyComputingJacobian() ||
+         _fe_problem.currentlyComputingResidualAndJacobian() || _bnd;
+}
+
+template <class G>
 void
 ComputeLagrangianStrainBase<G>::computeProperties()
 {
@@ -223,8 +231,7 @@ ComputeLagrangianStrainBase<G>::computeQpProperties()
   // `_d_rotation_d_F` slot of the polar decomposition feed only `*_jacobian` material
   // properties, which the kernel consumes only during Jacobian or
   // residual-and-Jacobian-together assembly.
-  const bool need_jacobian = _fe_problem.currentlyComputingJacobian() ||
-                             _fe_problem.currentlyComputingResidualAndJacobian();
+  const bool need_jacobian = needJacobian();
 
   // dF/d(grad u_{n+1}) = alpha * I^{(4)} for the generalized midpoint rule
   // (alpha = 1.0 reduces to backward Euler).
@@ -823,8 +830,7 @@ ComputeLagrangianStrainBase<G>::computeDeformationGradient()
   // (the stress materials chain them into `_pk1_jacobian`/`_cauchy_jacobian`, and the
   // TL kernel's non-local F-bar term contracts `_d_F_stab_d_F_avg`). The residual sweep
   // never reads them, so skip the R4 algebra when assembling a residual alone.
-  const bool need_jacobian = _fe_problem.currentlyComputingJacobian() ||
-                             _fe_problem.currentlyComputingResidualAndJacobian();
+  const bool need_jacobian = needJacobian();
 
   // If stabilization is on do the volumetric correction
   if (_stabilize_strain)

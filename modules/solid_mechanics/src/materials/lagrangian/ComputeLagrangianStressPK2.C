@@ -33,8 +33,7 @@ ComputeLagrangianStressPK2::computeQpCauchyStress()
   //
   // The R4 chain for `_cauchy_jacobian` is Jacobian-only; the wrap to `_cauchy_stress` is
   // not. Gate accordingly.
-  const bool need_jacobian = _fe_problem.currentlyComputingJacobian() ||
-                             _fe_problem.currentlyComputingResidualAndJacobian();
+  const bool need_jacobian = needJacobian();
   if (_large_kinematics)
   {
     const Real J_ust = _F_ust[_qp].det();
@@ -75,12 +74,11 @@ ComputeLagrangianStressPK2::computeQpPK1Stress()
 
   // PK2 update (constitutive). This populates `_S` (always needed) and `_C` (= dPK2/dE,
   // Jacobian-only). PK2-subclass implementers that want to skip `_C` on residual sweeps
-  // can check `_fe_problem.currentlyComputingJacobian()` themselves; the wrap below
+  // can check `needJacobian()` themselves; the wrap below
   // doesn't read `_C` in the residual path.
   computeQpPK2Stress();
 
-  const bool need_jacobian = _fe_problem.currentlyComputingJacobian() ||
-                             _fe_problem.currentlyComputingResidualAndJacobian();
+  const bool need_jacobian = needJacobian();
 
   // PK2 -> PK1 wrap uses the *unstabilized* F so the residual matches OLD. The constitutive
   // PK2 still carries the F-bar effect via its dependence on E (Green-Lagrange of F_stab).

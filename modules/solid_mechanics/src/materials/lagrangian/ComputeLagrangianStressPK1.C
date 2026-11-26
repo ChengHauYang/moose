@@ -46,8 +46,7 @@ ComputeLagrangianStressPK1::computeQpCauchyStress()
   // All RankFourTensor algebra below builds Jacobian-only quantities
   // (`_cauchy_jacobian`, the post-multiplied `_pk1_jacobian`, and `_pk1_jacobian_bypass_fbar`).
   // Skip them on residual-only sweeps.
-  const bool need_jacobian = _fe_problem.currentlyComputingJacobian() ||
-                             _fe_problem.currentlyComputingResidualAndJacobian();
+  const bool need_jacobian = needJacobian();
   if (_large_kinematics)
   {
     const RankTwoTensor F_ust_inv = _F_ust[_qp].inverse();

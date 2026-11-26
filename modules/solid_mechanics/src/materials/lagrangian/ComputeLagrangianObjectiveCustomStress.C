@@ -40,7 +40,6 @@ ComputeLagrangianObjectiveCustomStressTmpl<symmetric>::computeQpSmallStress()
   _small_stress[_qp] = RankTwoTensor(_custom_stress[_qp]);
   // `_small_jacobian` feeds only the objective-rate tangent (LagrangianObjectiveRates::compute
   // reads it only when need_jacobian is true), so skip the copy on residual-only sweeps.
-  if (_fe_problem.currentlyComputingJacobian() ||
-      _fe_problem.currentlyComputingResidualAndJacobian())
+  if (needJacobian())
     _small_jacobian[_qp] = RankFourTensor(_custom_jacobian[_qp]);
 }

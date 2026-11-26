@@ -83,6 +83,13 @@ ComputeLagrangianStressBase::initQpStatefulProperties()
   // Actually no need to zero out the stresses as they aren't stateful (yet)
 }
 
+bool
+ComputeLagrangianStressBase::needJacobian() const
+{
+  return _fe_problem.currentlyComputingJacobian() ||
+         _fe_problem.currentlyComputingResidualAndJacobian() || _bnd;
+}
+
 void
 ComputeLagrangianStressBase::computeQpProperties()
 {
@@ -91,8 +98,7 @@ ComputeLagrangianStressBase::computeQpProperties()
   // d(PK1)/d(grad u) property and doesn't need to know about the generalized-alpha weighting.
   // For alpha = 1 (default) this is _pk1_jacobian itself. These are read only during Jacobian
   // assembly, so skip the R4*R4 work on residual-only sweeps.
-  if (_fe_problem.currentlyComputingJacobian() ||
-      _fe_problem.currentlyComputingResidualAndJacobian())
+  if (needJacobian())
   {
     _dpk1_d_grad_u[_qp] = _pk1_jacobian[_qp] * _d_F_d_grad_u[_qp];
 

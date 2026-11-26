@@ -51,8 +51,7 @@ ComputeLagrangianStressCauchy::computeQpPK1Stress()
   //
   // The R4 algebra for `_pk1_jacobian` and `_pk1_jacobian_bypass_fbar` is Jacobian-only;
   // the wrap to `_pk1_stress` is not. Gate accordingly.
-  const bool need_jacobian = _fe_problem.currentlyComputingJacobian() ||
-                             _fe_problem.currentlyComputingResidualAndJacobian();
+  const bool need_jacobian = needJacobian();
   if (_large_kinematics)
   {
     // F_ust^{-1} and det(F_ust) are published once per qp by the strain calculator; reuse them

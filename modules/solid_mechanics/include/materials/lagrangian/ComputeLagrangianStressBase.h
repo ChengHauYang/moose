@@ -67,6 +67,11 @@ protected:
   virtual void computeQpProperties() override;
   /// Provide for the actual stress updates
   virtual void computeQpStressUpdate() = 0;
+  /**
+   * Whether this evaluation computes the Jacobian-only tangents: on Jacobian passes, and on faces,
+   * where interface materials may read the bulk tangent in residual-only passes as well
+   */
+  bool needJacobian() const;
 
 protected:
   /// If true use large deformations. Derived in initialSetup() from the strain calculator's
