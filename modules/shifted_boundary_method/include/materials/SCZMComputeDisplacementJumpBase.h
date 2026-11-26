@@ -11,6 +11,8 @@
 
 #include "CZMComputeDisplacementJumpBase.h"
 #include "BoundaryShortestDistanceToSurface.h"
+#include "SCZMGeneralizedRobinSolver.h"
+#include "SCZMWeightedTractionStabilization.h"
 
 #define usingSCZMComputeDisplacementJumpBaseMembers                                                \
   usingInterfaceMaterialMembers;                                                                   \
@@ -35,6 +37,7 @@ public:
   SCZMComputeDisplacementJumpBase(const InputParameters & parameters);
 
 protected:
+  using CZMComputeDisplacementJumpBase<is_ad>::_base_name;
   using CZMComputeDisplacementJumpBase<is_ad>::_czm_total_rotation;
   using CZMComputeDisplacementJumpBase<is_ad>::_displacement_jump_global;
   using CZMComputeDisplacementJumpBase<is_ad>::_mesh;
@@ -42,12 +45,33 @@ protected:
   using CZMComputeDisplacementJumpBase<is_ad>::_qp;
 
   virtual void initialSetup() override final;
+  void initQpStatefulProperties() override;
+  void computeQpProperties() override;
 
   /// Computes the jump at the true interface using displacement gradients.
   void computeGlobalDisplacementJump() override;
 
   /// Computes the rotation using the true-interface normal.
   void computeRotationMatrices() override;
+
+  /**
+   * Replaces the shifted jump J_d with the auxiliary jump j of the generalized Robin equation
+   * j + f(j) / beta = J_d + T_h / beta, where f is the global cohesive traction and T_h the average
+   * bulk traction, and stores the inverse Robin tangent S = (I + df/dj / beta)^{-1}.
+   */
+  void computeWeightedTractionJump();
+
+  /// Global cohesive traction and its jump derivative at the trial global jump
+  Moose::Kokkos::SCZM::CohesiveEvaluation evaluateTrialTraction(const Moose::Kokkos::Real3 & jump);
+
+  /// The Robin parameter, computed from the bulk tangents on first use and then frozen
+  Real stabilizationBeta(const RealVectorValue & normal);
+
+  /**
+   * Finds the traction-separation and global traction materials that evaluateTrialTraction()
+   * re-evaluates, and checks that every property they read is current when they are.
+   */
+  void findTrialTractionMaterials();
 
   /// the coupled displacement gradients
   ///@{
@@ -60,4 +84,40 @@ protected:
 
   /// Distance/normal provider user object
   const BoundaryShortestDistanceToSurface * _sbm_distance_uo = nullptr;
+
+  /// Weighted traction stabilization settings; disabled by default
+  const SCZMWeightedTractionStabilization::Settings _stabilization;
+
+  /// Bulk stress on the element and neighbor sides, with stabilization
+  ///@{
+  const MaterialProperty<RankTwoTensor> * _stress = nullptr;
+  const MaterialProperty<RankTwoTensor> * _stress_neighbor = nullptr;
+  ///@}
+
+  /// Bulk tangent on the element and neighbor sides, with automatic beta
+  ///@{
+  const MaterialProperty<RankFourTensor> * _tangent = nullptr;
+  const MaterialProperty<RankFourTensor> * _tangent_neighbor = nullptr;
+  ///@}
+
+  /// Current and old frozen Robin parameter, with automatic beta; zero until first computed
+  ///@{
+  MaterialProperty<Real> * _beta = nullptr;
+  const MaterialProperty<Real> * _beta_old = nullptr;
+  ///@}
+
+  /// Inverse Robin tangent S, with which the kernels weight the cohesive traction derivatives
+  MaterialProperty<RankTwoTensor> * _inverse_robin_tangent = nullptr;
+
+  /// Global cohesive traction assembled by the kernels and its global jump derivative
+  ///@{
+  const MaterialProperty<RealVectorValue> * _trial_traction = nullptr;
+  const MaterialProperty<RankTwoTensor> * _trial_dtraction_djump = nullptr;
+  ///@}
+
+  /// Materials computing the local and the global cohesive traction from the jump
+  ///@{
+  MaterialBase * _traction_separation_material = nullptr;
+  MaterialBase * _global_traction_material = nullptr;
+  ///@}
 };

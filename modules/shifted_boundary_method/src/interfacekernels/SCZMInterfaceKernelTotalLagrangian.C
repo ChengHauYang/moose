@@ -60,12 +60,12 @@ template <bool is_ad>
 SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::SCZMInterfaceKernelTotalLagrangianTempl(
     const InputParameters & parameters)
   : SCZMInterfaceKernelBaseTempl<is_ad>(parameters),
-    _stress(parameters.get<bool>("directional_correction") || this->_stabilization
+    _stress(parameters.get<bool>("directional_correction")
                 ? &this->template getGenericMaterialPropertyByName<RankTwoTensor, is_ad>(
                       this->_base_name + parameters.get<MaterialPropertyName>("stress"))
                 : nullptr),
     _stress_neighbor(
-        parameters.get<bool>("directional_correction") || this->_stabilization
+        parameters.get<bool>("directional_correction")
             ? &this->template getGenericNeighborMaterialPropertyByName<RankTwoTensor, is_ad>(
                   this->_base_name + parameters.get<MaterialPropertyName>("stress"))
             : nullptr),
@@ -174,16 +174,13 @@ template <bool is_ad>
 GenericReal<is_ad>
 SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::computeQpResidual(Moose::DGResidualType type)
 {
-  if (!this->_shifted && !this->_stabilization)
+  if (!this->_shifted)
     return SCZMInterfaceKernelBaseTempl<is_ad>::computeQpResidual(type);
 
-  const RealVectorValue true_normal(this->stabilizationNormal());
+  const RealVectorValue true_normal(this->trueNormal());
   const Real true_normal_dot_surrogate_normal = true_normal * this->_normals[this->_qp];
 
-  auto residual =
-      this->_stabilization
-          ? this->stabilizedTraction(true_normal, (*_stress)[this->_qp], (*_stress_neighbor)[this->_qp])
-          : this->_traction_global[this->_qp](this->_component);
+  auto residual = this->_traction_global[this->_qp](this->_component);
   // This maps true reference-interface area to surrogate area; it is separate from the Nanson
   // mapping already included in PK1traction.
   residual *= true_normal_dot_surrogate_normal * (type == Moose::Element
@@ -360,11 +357,12 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::computeJacobianComponent(
 
     if (this->_stabilization)
     {
-      // d/du of S t_c + (I - S) (P + P_neighbor) N / 2. Each side's PK1 stress depends only on that
-      // side's displacements, so the trial side selects the stress, tangent, and trial gradient.
+      // The material evaluates the traction at the Robin jump j, whose derivative weights the
+      // cohesive traction derivatives by S and the average bulk traction derivative by I - S. Each
+      // side's PK1 stress depends only on that side's displacements, so the trial side selects the
+      // stress, tangent, and trial gradient.
       const auto normal = this->stabilizationNormal();
-      const bool trial_on_element =
-          type == Moose::ElementElement || type == Moose::NeighborElement;
+      const bool trial_on_element = type == Moose::ElementElement || type == Moose::NeighborElement;
       const Real signed_test = (type == Moose::ElementElement || type == Moose::ElementNeighbor)
                                    ? -this->_test[this->_i][this->_qp]
                                    : this->_test_neighbor[this->_i][this->_qp];
@@ -372,7 +370,7 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::computeJacobianComponent(
       Real average_traction_derivative = 0;
       for (const auto b : make_range(this->_ndisp))
       {
-        const Real weight = this->stabilizationWeight(normal, this->_component, b);
+        const Real weight = (*this->_inverse_robin_tangent)[this->_qp](this->_component, b);
         jacobian += weight * (computeDResidualDDisplacement(b, component_j, type) +
                               computeDResidualDDeformationGradient(b, component_j, type));
         average_traction_derivative += ((b == this->_component ? 1.0 : 0.0) - weight) *

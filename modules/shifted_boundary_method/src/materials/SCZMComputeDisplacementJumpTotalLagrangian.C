@@ -22,6 +22,9 @@ SCZMComputeDisplacementJumpTotalLagrangianTempl<is_ad>::validParams()
   params.addClassDescription(
       "Computes the shifted displacement jump in local coordinates for total-Lagrangian "
       "kinematics.");
+  params.set<MaterialPropertyName>("stress") = "pk1_stress";
+  params.set<MaterialPropertyName>("tangent") = "pk1_jacobian";
+  params.set<std::string>("traction_global_name") = "PK1traction";
   return params;
 }
 

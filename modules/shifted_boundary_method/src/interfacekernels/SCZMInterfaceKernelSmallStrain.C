@@ -145,16 +145,13 @@ template <bool is_ad>
 GenericReal<is_ad>
 SCZMInterfaceKernelSmallStrainTempl<is_ad>::computeQpResidual(Moose::DGResidualType type)
 {
-  if (!this->_shifted && !this->_stabilization)
+  if (!this->_shifted)
     return SCZMInterfaceKernelBaseTempl<is_ad>::computeQpResidual(type);
 
-  const RealVectorValue true_normal(this->stabilizationNormal());
+  const RealVectorValue true_normal(this->trueNormal());
   const Real true_normal_dot_surrogate_normal = true_normal * this->_normals[this->_qp];
 
-  auto residual =
-      this->_stabilization
-          ? this->stabilizedTraction(true_normal, _stress[this->_qp], _stress_neighbor[this->_qp])
-          : this->_traction_global[this->_qp](this->_component);
+  auto residual = this->_traction_global[this->_qp](this->_component);
   residual *= true_normal_dot_surrogate_normal * (type == Moose::Element
                                                       ? -this->_test[this->_i][this->_qp]
                                                       : this->_test_neighbor[this->_i][this->_qp]);
@@ -262,8 +259,7 @@ SCZMInterfaceKernelSmallStrainTempl<false>::stressDerivative(const unsigned int 
   const auto grad_phi = trial_on_element ? _grad_phi[_j][_qp] : _grad_phi_neighbor[_j][_qp];
   const auto & r4t = trial_on_element ? (*_Jacobian_mult)[_qp] : (*_Jacobian_mult_neighbor)[_qp];
 
-  const Real origin_part =
-      ElasticityTensorTools::elasticJacobian(
+  const Real origin_part = ElasticityTensorTools::elasticJacobian(
       r4t, ivar, jvar, direction /*transpose later (w^T n^T)*/, grad_phi /*B*/);
 
   const Real n0 = direction(0);
@@ -307,8 +303,8 @@ SCZMInterfaceKernelSmallStrainTempl<false>::stressDerivative(const unsigned int 
     const Real volumetric_increment = (avg_grad_op.trace() - grad_op.trace()) / 3.0;
 
     for (const auto m : make_range(3))
-      derivative +=
-          (r4t(i, 0, m, m) * n0 + r4t(i, 1, m, m) * n1 + r4t(i, 2, m, m) * n2) * volumetric_increment;
+      derivative += (r4t(i, 0, m, m) * n0 + r4t(i, 1, m, m) * n1 + r4t(i, 2, m, m) * n2) *
+                    volumetric_increment;
   }
 
   return derivative;
@@ -341,8 +337,10 @@ SCZMInterfaceKernelSmallStrainTempl<false>::computeJacobianComponent(
 
   if (_stabilization)
   {
-    // d/du of S t_c + (I - S) (stress + stress_neighbor) N / 2. Each side's stress depends only on
-    // that side's displacements, so the trial side selects the stress, tangent, and trial gradient.
+    // The material evaluates the traction at the Robin jump j, whose derivative weights the
+    // cohesive traction derivative by S and the average bulk traction derivative by I - S. Each
+    // side's stress depends only on that side's displacements, so the trial side selects the
+    // stress, tangent, and trial gradient.
     const auto normal = stabilizationNormal();
     const bool trial_on_element = type == Moose::ElementElement || type == Moose::NeighborElement;
     const Real signed_test = (type == Moose::ElementElement || type == Moose::ElementNeighbor)
@@ -352,7 +350,7 @@ SCZMInterfaceKernelSmallStrainTempl<false>::computeJacobianComponent(
     Real average_traction_derivative = 0;
     for (const auto b : make_range(_ndisp))
     {
-      const Real weight = stabilizationWeight(normal, _component, b);
+      const Real weight = (*_inverse_robin_tangent)[_qp](_component, b);
       jacobian += weight * computeDResidualDDisplacement(b, component_j, type);
       average_traction_derivative += ((b == _component ? 1.0 : 0.0) - weight) *
                                      stressDerivative(b, component_j, normal, trial_on_element);

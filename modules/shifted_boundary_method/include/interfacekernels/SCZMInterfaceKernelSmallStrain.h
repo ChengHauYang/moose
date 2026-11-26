@@ -76,7 +76,7 @@ protected:
   using SCZMInterfaceKernelBaseTempl<is_ad>::_shifted;
   using SCZMInterfaceKernelBaseTempl<is_ad>::_stabilization;
   using SCZMInterfaceKernelBaseTempl<is_ad>::stabilizationNormal;
-  using SCZMInterfaceKernelBaseTempl<is_ad>::stabilizationWeight;
+  using SCZMInterfaceKernelBaseTempl<is_ad>::_inverse_robin_tangent;
   using SCZMInterfaceKernelBaseTempl<is_ad>::_coord;
   using SCZMInterfaceKernelBaseTempl<is_ad>::_coord_sys;
   using SCZMInterfaceKernelBaseTempl<is_ad>::_JxW;

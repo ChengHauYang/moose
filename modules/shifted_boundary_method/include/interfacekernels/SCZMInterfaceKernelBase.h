@@ -36,22 +36,6 @@ protected:
   /// The interface normal of the stabilization: the true normal when shifted, else the surrogate
   RealVectorValue stabilizationNormal() const;
 
-  /// Entry (a, b) of the weighted traction stabilization weight S = beta (K + beta I)^{-1}
-  Real stabilizationWeight(const RealVectorValue & normal, unsigned int a, unsigned int b) const
-  {
-    return (a == b ? _stabilization_weights.tangential : 0.0) +
-           (_stabilization_weights.normal - _stabilization_weights.tangential) * normal(a) *
-               normal(b);
-  }
-
-  /**
-   * Component _component of the stabilized traction S t_c + (I - S) (stress + stress_neighbor) N / 2
-   * that replaces the cohesive traction t_c with 'stabilization = weighted_traction'.
-   */
-  GenericReal<is_ad> stabilizedTraction(const RealVectorValue & normal,
-                                        const GenericRankTwoTensor<is_ad> & stress,
-                                        const GenericRankTwoTensor<is_ad> & stress_neighbor) const;
-
   /// Base name of the material system that this kernel applies to
   const std::string _base_name;
 
@@ -67,11 +51,14 @@ protected:
   /// True by default; false only when requesting the non-shifted verification baseline
   const bool _shifted;
 
-  /// Weights of the weighted traction stabilization; disabled by default
-  const SCZMWeightedTractionStabilization::Weights _stabilization_weights;
-
-  /// Whether the weighted traction stabilization replaces the cohesive traction
+  /// Whether the traction is stabilized by weighted traction; disabled by default
   const bool _stabilization;
+
+  /**
+   * Inverse Robin tangent S of the weighted traction stabilization, which weights the cohesive
+   * traction derivatives against the average bulk traction derivatives in the Jacobian
+   */
+  const MaterialProperty<RankTwoTensor> * _inverse_robin_tangent;
 
   usingGenericInterfaceKernelMembers;
 };

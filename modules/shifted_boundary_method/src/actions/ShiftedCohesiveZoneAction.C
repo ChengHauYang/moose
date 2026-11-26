@@ -157,10 +157,11 @@ ShiftedCohesiveZoneAction::validParams()
       "Optional element-local affine recovery of each side's PK1 stress for Kokkos "
       "total-Lagrangian weighted stabilization.");
   SCZMWeightedTractionStabilization::addParams(params);
-  params.addParam<MooseEnum>("stabilization_cohesive_law",
-                             MooseEnum("affine coupled_cubic", "affine"),
-                             "Native memoryless cohesive evaluator used by Kokkos generalized Robin "
-                             "stabilization.");
+  params.addParam<MooseEnum>(
+      "stabilization_cohesive_law",
+      MooseEnum("affine coupled_cubic", "affine"),
+      "Native memoryless cohesive evaluator used by Kokkos generalized Robin "
+      "stabilization.");
   params.addParam<Real>("stabilization_linear_stiffness",
                         "Linear coefficient of the coupled-cubic stabilization evaluator.");
   params.addParam<Real>("stabilization_cubic_stiffness",
@@ -864,6 +865,20 @@ ShiftedCohesiveZoneAction::customizeCZMDisplacementJumpMaterialParameters(
   }
   if (isParamSetByUser("no_shifted") && params.isParamValid("no_shifted"))
     params.set<bool>("no_shifted") = getParam<bool>("no_shifted");
+  // The host jump material solves the weighted traction stabilization from the bulk stress
+  if (params.have_parameter<MooseEnum>("stabilization"))
+  {
+    params.applySpecificParameters(parameters(),
+                                   {"stabilization",
+                                    "stabilization_gamma",
+                                    "stabilization_beta",
+                                    "stabilization_normal_stiffness",
+                                    "stabilization_tangential_stiffness"});
+    if (isParamSetByUser("stress"))
+      params.set<MaterialPropertyName>("stress") = getParam<MaterialPropertyName>("stress");
+    if (isParamSetByUser("tangent"))
+      params.set<MaterialPropertyName>("tangent") = getParam<MaterialPropertyName>("tangent");
+  }
 }
 
 void

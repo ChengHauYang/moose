@@ -14,14 +14,21 @@
 /** Configuration shared by the shifted cohesive-zone weighted-traction kernels. */
 namespace SCZMWeightedTractionStabilization
 {
+/// Adds the stabilization selector, the only stabilization parameter of the host interface kernels
 inline void
-addParams(InputParameters & params)
+addModeParam(InputParameters & params)
 {
   params.addParam<MooseEnum>(
       "stabilization",
       MooseEnum("none weighted_traction", "none"),
       "Interface flux stabilization. 'weighted_traction' solves a local Robin equation using the "
       "cohesive law and average bulk stress traction.");
+}
+
+inline void
+addParams(InputParameters & params)
+{
+  addModeParam(params);
   params.addRangeCheckedParam<Real>(
       "stabilization_gamma",
       5.0,
@@ -74,40 +81,6 @@ settings(const MooseObject & object)
   result.beta_override = object.isParamValid("stabilization_beta");
   if (result.beta_override)
     result.beta = object.getParam<Real>("stabilization_beta");
-  return result;
-}
-
-/** Legacy fixed weights used only by the host SCZMInterfaceKernelBase. */
-struct Weights
-{
-  bool enabled = false;
-  Real normal = 0.0;
-  Real tangential = 0.0;
-};
-
-inline Weights
-weights(const MooseObject & object)
-{
-  const auto configuration = settings(object);
-  Weights result;
-  result.enabled = configuration.enabled;
-  if (!result.enabled)
-    return result;
-
-  if (!configuration.beta_override || !object.isParamValid("stabilization_normal_stiffness"))
-    object.paramError(
-        "stabilization",
-        "Generalized weighted traction without reference cohesive stiffness is supported only by "
-        "the Kokkos kernels. The host kernels still require 'stabilization_beta' and "
-        "'stabilization_normal_stiffness'.");
-
-  const auto normal_stiffness = object.getParam<Real>("stabilization_normal_stiffness");
-  const auto tangential_stiffness =
-      object.isParamValid("stabilization_tangential_stiffness")
-          ? object.getParam<Real>("stabilization_tangential_stiffness")
-          : normal_stiffness;
-  result.normal = configuration.beta / (normal_stiffness + configuration.beta);
-  result.tangential = configuration.beta / (tangential_stiffness + configuration.beta);
   return result;
 }
 } // namespace SCZMWeightedTractionStabilization
