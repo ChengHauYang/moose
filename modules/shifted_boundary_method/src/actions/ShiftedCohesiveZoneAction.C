@@ -197,8 +197,7 @@ ShiftedCohesiveZoneAction::validParams()
   params.addParam<MaterialPropertyName>(
       "volume_tangent",
       "dpk1_d_grad_u",
-      "Name of the complete local volume PK1 derivative used by stress recovery and automatic "
-      "stabilization beta. Small strain defaults to the 'tangent' property.");
+      "Name of the complete local volume PK1 derivative used by stress recovery.");
   params.addParam<MaterialPropertyName>(
       "volume_F_avg_invT",
       "F_avg_invT",
@@ -639,9 +638,6 @@ ShiftedCohesiveZoneAction::addStabilizationDataUserObject()
   params.set<std::string>("base_name") = _base_name;
   customizeCZMInterfaceKernelParameters(params);
   params.set<MooseEnum>("strain") = _strain == Strain::Finite ? "FINITE" : "SMALL";
-  // Automatic beta reads the small-strain bulk tangent d(stress)/d(strain) by default
-  if (_strain != Strain::Finite && !isParamSetByUser("volume_tangent"))
-    params.set<MaterialPropertyName>("volume_tangent") = getParam<MaterialPropertyName>("tangent");
   if (needsPK2ToPK1Conversion())
   {
     params.set<MaterialPropertyName>("stress") = _name + "_pk1_stress";

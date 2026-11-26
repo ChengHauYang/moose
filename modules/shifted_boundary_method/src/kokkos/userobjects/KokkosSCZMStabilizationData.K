@@ -45,11 +45,16 @@ KokkosSCZMStabilizationData::validParams()
                              "Optional element-local affine recovery of adjacent PK1 stress.");
   params.addParam<MaterialPropertyName>("stress", "pk1_stress", "Interface PK1 stress.");
   params.addParam<MaterialPropertyName>(
-      "tangent", "pk1_jacobian", "Interface derivative d(PK1)/d(F).");
+      "tangent",
+      "pk1_jacobian",
+      "Interface derivative d(PK1)/d(F), whose normal stiffness sets the automatic "
+      "stabilization_beta without recovery.");
   params.addParam<MaterialPropertyName>(
       "volume_stress", "pk1_stress", "Volume PK1 stress used by affine recovery.");
   params.addParam<MaterialPropertyName>(
-      "volume_tangent", "dpk1_d_grad_u", "Complete volume derivative d(PK1)/d(grad(u)).");
+      "volume_tangent",
+      "dpk1_d_grad_u",
+      "Complete volume derivative d(PK1)/d(grad(u)) used by affine recovery.");
   params.addParam<MooseEnum>("stabilization_cohesive_law",
                              MooseEnum("affine coupled_cubic", "affine"),
                              "Native cohesive evaluator used by the generalized Robin solve.");
@@ -108,26 +113,30 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const InputParameters &
   const auto prefix = isParamValid("base_name") && !getParam<std::string>("base_name").empty()
                           ? getParam<std::string>("base_name") + "_"
                           : "";
-  if (_element_linear_recovery || !_settings.beta_override)
+  if (_element_linear_recovery)
   {
     auto & volume_data = _fe_problem.getKokkosMaterialData(Moose::BLOCK_MATERIAL_DATA, this);
-    const auto volume_tangent_name = prefix + getParam<MaterialPropertyName>("volume_tangent");
-    _volume_tangent = getKokkosMaterialPropertyByName<Real, 4>(volume_tangent_name, volume_data);
-    _fe_problem.getKokkosMaterialPropertyStorage().requestGhostedProperty(volume_tangent_name);
-
-    if (_element_linear_recovery)
+    const auto volume_stress_name = prefix + getParam<MaterialPropertyName>("volume_stress");
+    _volume_stress = getKokkosMaterialPropertyByName<Real, 2>(volume_stress_name, volume_data);
+    _fe_problem.getKokkosMaterialPropertyStorage().requestGhostedProperty(volume_stress_name);
+    if (!_settings.beta_override)
     {
-      const auto volume_stress_name = prefix + getParam<MaterialPropertyName>("volume_stress");
-      _volume_stress = getKokkosMaterialPropertyByName<Real, 2>(volume_stress_name, volume_data);
-      _fe_problem.getKokkosMaterialPropertyStorage().requestGhostedProperty(volume_stress_name);
+      const auto volume_tangent_name = prefix + getParam<MaterialPropertyName>("volume_tangent");
+      _volume_tangent = getKokkosMaterialPropertyByName<Real, 4>(volume_tangent_name, volume_data);
+      _fe_problem.getKokkosMaterialPropertyStorage().requestGhostedProperty(volume_tangent_name);
     }
   }
-
-  if (!_element_linear_recovery)
+  else
   {
     const auto stress_name = prefix + getParam<MaterialPropertyName>("stress");
     _stress = getKokkosMaterialPropertyByName<Real, 2>(stress_name);
     _stress_neighbor = getKokkosNeighborMaterialPropertyByName<Real, 2>(stress_name);
+    if (!_settings.beta_override)
+    {
+      const auto tangent_name = prefix + getParam<MaterialPropertyName>("tangent");
+      _tangent = getKokkosMaterialPropertyByName<Real, 4>(tangent_name);
+      _tangent_neighbor = getKokkosNeighborMaterialPropertyByName<Real, 4>(tangent_name);
+    }
   }
 
   _displacement_jump_global =
@@ -177,6 +186,8 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const KokkosSCZMStabili
     _F_czm(object._F_czm),
     _stress(object._stress),
     _stress_neighbor(object._stress_neighbor),
+    _tangent(object._tangent),
+    _tangent_neighbor(object._tangent_neighbor),
     _volume_stress(object._volume_stress),
     _volume_tangent(object._volume_tangent),
     _trial_provider(object._trial_provider),

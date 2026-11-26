@@ -11,6 +11,8 @@
 
 #include "SCZMCohesiveLawEvaluators.h"
 
+#include "RankFourTensor.h"
+
 #include <cmath>
 #include <iterator>
 #include <vector>
@@ -478,4 +480,26 @@ TEST(SCZMGeneralizedRobinSolverTest, BatchFreezesTerminalPoints)
   EXPECT_EQ(finish_round[4], 0);
   // The rows converge at different rounds, so the earlier ones stayed frozen above.
   EXPECT_LT(finish_round[1], finish_round[2]);
+}
+
+TEST(SCZMGeneralizedRobinSolverTest, NormalStiffnessAndAutomaticBeta)
+{
+  // Lame parameters of E = 100, nu = 0.3, whose P-wave modulus lambda + 2 mu is 134.615...
+  const Real lambda = 100.0 * 0.3 / (1.3 * 0.4);
+  const Real mu = 100.0 / 2.6;
+  RankFourTensor tangent;
+  tangent.fillSymmetricIsotropic(lambda, mu);
+
+  // The isotropic contraction is independent of the unit normal direction in 2D and 3D. The
+  // tolerance is a few ulps of the up-to-81-term sum relative to the moduli.
+  const RealVectorValue normal_2d(0.6, 0.8, 0.0);
+  const RealVectorValue normal_3d(2.0 / 7.0, -3.0 / 7.0, 6.0 / 7.0);
+  EXPECT_NEAR(normalStiffness(tangent, normal_2d, 2), lambda + 2.0 * mu, 1e-12 * mu);
+  EXPECT_NEAR(normalStiffness(tangent, normal_3d, 3), lambda + 2.0 * mu, 1e-12 * mu);
+  // Entries along the third axis do not enter a 2D contraction
+  EXPECT_NEAR(normalStiffness(tangent, RealVectorValue(0.0, 0.0, 1.0), 2), 0.0, 1e-12 * mu);
+
+  // gamma = 5, |face| = 0.5, k_p / |V_p| = 100 / 0.25, k_n / |V_n| = 300 / 0.5:
+  // beta = 0.5 * 5 * 0.5 * (400 + 600) = 1250
+  EXPECT_DOUBLE_EQ(automaticBeta(5.0, 0.5, 100.0, 0.25, 300.0, 0.5), 1250.0);
 }

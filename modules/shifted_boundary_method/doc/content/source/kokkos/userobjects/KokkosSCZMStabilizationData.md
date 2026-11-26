@@ -73,8 +73,11 @@ assembly and invalidate it in `residualSetup()` and `jacobianSetup()`. Residual-
 assembly skips the tangents.
 
 Supply [!param](/UserObjects/KokkosSCZMStabilizationData/stabilization_beta) for a fixed $\beta$. Otherwise the first evaluation computes
-and freezes $\beta$ at each quadrature point using the adjacent elements'
-[!param](/UserObjects/KokkosSCZMStabilizationData/volume_tangent). Automatic $\beta$ must be finite and positive.
+and freezes $\beta$ at each quadrature point from the normal stiffness
+$k = n_i n_J n_k n_L C_{iJkL}$ of the bulk tangent on each side, taken from the face
+[!param](/UserObjects/KokkosSCZMStabilizationData/tangent), or from the recovered
+[!param](/UserObjects/KokkosSCZMStabilizationData/volume_tangent) with stress recovery. Automatic
+$\beta$ must be finite and positive.
 
 If the local Robin solve fails at any quadrature point, the object flags an exception through the
 problem so that the nonlinear solve stops and the time step can be cut back, instead of assembling

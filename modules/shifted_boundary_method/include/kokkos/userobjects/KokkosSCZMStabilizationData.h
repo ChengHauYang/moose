@@ -234,6 +234,9 @@ protected:
   Moose::Kokkos::MaterialProperty<Real, 2> _F_czm;
   Moose::Kokkos::MaterialProperty<Real, 2> _stress;
   Moose::Kokkos::MaterialProperty<Real, 2> _stress_neighbor;
+  /// Face bulk tangent on each side, for the automatic stabilization_beta without recovery
+  Moose::Kokkos::MaterialProperty<Real, 4> _tangent;
+  Moose::Kokkos::MaterialProperty<Real, 4> _tangent_neighbor;
   Moose::Kokkos::MaterialProperty<Real, 2> _volume_stress;
   Moose::Kokkos::MaterialProperty<Real, 4> _volume_tangent;
 
@@ -305,39 +308,36 @@ KokkosSCZMStabilizationData::executeInterface(Datum & primary,
 
     if (!_settings.beta_override && !_beta_initialized)
     {
+      // The normal stiffness is taken from the same tangent as the bulk traction: the recovered
+      // volume tangent with recovery, else the face tangent on each side
       Real primary_stiffness = 0.0;
       Real neighbor_stiffness = 0.0;
-      for (unsigned int i = 0; i < _ndisp; ++i)
-        for (unsigned int J = 0; J < _ndisp; ++J)
-          for (unsigned int k = 0; k < _ndisp; ++k)
-            for (unsigned int L = 0; L < _ndisp; ++L)
-              if (_element_linear_recovery)
-              {
-                const auto primary_offset = recoveryOffset(face, qp, true);
-                const auto neighbor_offset = recoveryOffset(face, qp, false);
-                for (unsigned int volume_qp = 0; volume_qp < primary_volume.n_qps(); ++volume_qp)
-                  primary_stiffness += normal(i) * normal(J) * normal(k) * normal(L) *
-                                       _recovery_weights[primary_offset + volume_qp] *
-                                       _volume_tangent(primary_volume, volume_qp)(i, J, k, L);
-                for (unsigned int volume_qp = 0; volume_qp < neighbor_volume.n_qps(); ++volume_qp)
-                  neighbor_stiffness += normal(i) * normal(J) * normal(k) * normal(L) *
-                                        _recovery_weights[neighbor_offset + volume_qp] *
-                                        _volume_tangent(neighbor_volume, volume_qp)(i, J, k, L);
-              }
-              else
-              {
-                for (unsigned int volume_qp = 0; volume_qp < primary_volume.n_qps(); ++volume_qp)
-                  primary_stiffness += normal(i) * normal(J) * normal(k) * normal(L) *
-                                       primary_volume.JxW(volume_qp) / primary_volume_measure *
-                                       _volume_tangent(primary_volume, volume_qp)(i, J, k, L);
-                for (unsigned int volume_qp = 0; volume_qp < neighbor_volume.n_qps(); ++volume_qp)
-                  neighbor_stiffness += normal(i) * normal(J) * normal(k) * normal(L) *
-                                        neighbor_volume.JxW(volume_qp) / neighbor_volume_measure *
-                                        _volume_tangent(neighbor_volume, volume_qp)(i, J, k, L);
-              }
-      _stabilization_beta(index) = 0.5 * _settings.gamma * face_area *
-                                   (primary_stiffness / primary_volume_measure +
-                                    neighbor_stiffness / neighbor_volume_measure);
+      if (_element_linear_recovery)
+      {
+        const auto primary_offset = recoveryOffset(face, qp, true);
+        const auto neighbor_offset = recoveryOffset(face, qp, false);
+        for (unsigned int volume_qp = 0; volume_qp < primary_volume.n_qps(); ++volume_qp)
+          primary_stiffness += _recovery_weights[primary_offset + volume_qp] *
+                               Moose::Kokkos::SCZM::normalStiffness(
+                                   _volume_tangent(primary_volume, volume_qp), normal, _ndisp);
+        for (unsigned int volume_qp = 0; volume_qp < neighbor_volume.n_qps(); ++volume_qp)
+          neighbor_stiffness += _recovery_weights[neighbor_offset + volume_qp] *
+                                Moose::Kokkos::SCZM::normalStiffness(
+                                    _volume_tangent(neighbor_volume, volume_qp), normal, _ndisp);
+      }
+      else
+      {
+        primary_stiffness =
+            Moose::Kokkos::SCZM::normalStiffness(_tangent(primary, qp), normal, _ndisp);
+        neighbor_stiffness = Moose::Kokkos::SCZM::normalStiffness(
+            _tangent_neighbor(neighbor, neighbor_qp), normal, _ndisp);
+      }
+      _stabilization_beta(index) = Moose::Kokkos::SCZM::automaticBeta(_settings.gamma,
+                                                                      face_area,
+                                                                      primary_stiffness,
+                                                                      primary_volume_measure,
+                                                                      neighbor_stiffness,
+                                                                      neighbor_volume_measure);
     }
   }
 }

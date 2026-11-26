@@ -16,7 +16,7 @@
 #include <cmath>
 #define SCZM_KOKKOS_FUNCTION inline
 #else
-#define SCZM_KOKKOS_FUNCTION KOKKOS_FUNCTION
+#define SCZM_KOKKOS_FUNCTION KOKKOS_INLINE_FUNCTION
 #endif
 
 namespace Moose::Kokkos::SCZM
@@ -502,6 +502,41 @@ private:
     return result;
   }
 };
+
+/**
+ * Normal stiffness n_i n_J n_k n_L C_iJkL of a bulk tangent C, which is the same contraction for
+ * dsigma/deps and dP/dF. For an isotropic elastic C it is the P-wave modulus lambda + 2 mu.
+ */
+template <typename Tangent, typename Vector>
+SCZM_KOKKOS_FUNCTION Real
+normalStiffness(const Tangent & tangent, const Vector & normal, const unsigned int ndisp)
+{
+  Real stiffness = 0.0;
+  for (unsigned int i = 0; i < ndisp; ++i)
+    for (unsigned int J = 0; J < ndisp; ++J)
+      for (unsigned int k = 0; k < ndisp; ++k)
+        for (unsigned int L = 0; L < ndisp; ++L)
+          stiffness += normal(i) * normal(J) * normal(k) * normal(L) * tangent(i, J, k, L);
+  return stiffness;
+}
+
+/**
+ * Automatic Robin parameter beta = gamma / 2 * |face| * (k_p / |V_p| + k_n / |V_n|) from the normal
+ * stiffness k and volume |V| of the elements on both sides of an interface face. |V| / |face| is
+ * the element size normal to the face, so k |face| / |V| is the bulk stiffness per unit area that
+ * the dimensionless gamma scales.
+ */
+SCZM_KOKKOS_FUNCTION Real
+automaticBeta(const Real gamma,
+              const Real face_area,
+              const Real primary_stiffness,
+              const Real primary_volume,
+              const Real neighbor_stiffness,
+              const Real neighbor_volume)
+{
+  return 0.5 * gamma * face_area *
+         (primary_stiffness / primary_volume + neighbor_stiffness / neighbor_volume);
+}
 } // namespace Moose::Kokkos::SCZM
 
 #undef SCZM_KOKKOS_FUNCTION
