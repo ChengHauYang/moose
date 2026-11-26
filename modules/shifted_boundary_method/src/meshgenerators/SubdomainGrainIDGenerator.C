@@ -137,6 +137,9 @@ SubdomainGrainIDGenerator::buildSubdomainGroupedData()
   _bboxes_by_subdomain.clear();
 
   libMesh::MeshBase * boundary_mesh = _boundary_owned.get();
+  // Each rank assigns the grain IDs of its local and ghost elements, so it needs every grain shell,
+  // not only its partition of a distributed boundary mesh
+  boundary_mesh->allgather();
   const auto estimated_subdomains = boundary_mesh->n_subdomains();
 
   std::unordered_map<SubdomainID, std::size_t> bucket_index_by_subdomain;
