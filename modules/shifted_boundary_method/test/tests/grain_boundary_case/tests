@@ -183,6 +183,34 @@
     requirement = 'The system shall solve the three-dimensional problem using one surface mesh per '
                   'already-formed grain interface, matching the complete boundary mesh result.'
   []
+  [kokkos_weighted_traction]
+    requirement = 'The system shall solve Kokkos total-Lagrangian shifted cohesive zones on '
+                  'polycrystalline grain boundaries loaded through softening of a stateful NEML2 '
+                  'traction-separation law, with weighted traction stabilization, element-local '
+                  'stress recovery, and F-bar,'
+    design = 'modules/shifted_boundary_method/grain_boundary_case.md SBMInterfaceManager.md '
+             'KokkosSCZMStabilizationData.md SubdomainGrainIDGenerator.md'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    [complete_interface_mesh_file]
+      type = 'Exodiff'
+      input = 'grain_boundary_sczm_kokkos_weighted.i'
+      exodiff = 'grain_boundary_sczm_kokkos_weighted_out.e'
+      detail = 'with the interfaces read by the interface manager from one complete boundary mesh '
+               'file, and'
+    []
+    [surface_mesh_per_interface]
+      type = 'Exodiff'
+      input = 'grain_boundary_sczm_kokkos_weighted_aligned.i'
+      # The gold is a symlink to grain_boundary_sczm_kokkos_weighted_out.e
+      exodiff = 'grain_boundary_sczm_kokkos_weighted_aligned_out.e'
+      mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
+      # Recovery does not rerun the mesh generators, so the saved surface meshes that
+      # SBMSurfaceMeshBuilder retrieves do not exist
+      recover = false
+      detail = 'with one surface mesh per interface, giving the same solution.'
+    []
+  []
   [error_tests]
     requirement = 'The system shall throw an error '
     [invalid_leaf_max_size]
