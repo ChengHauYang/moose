@@ -80,7 +80,8 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const InputParameters &
     _sbm_distance_uo(isParamValid("sbm_distance_uo")
                          ? &getUserObject<BoundaryShortestDistanceToSurface>("sbm_distance_uo")
                          : nullptr),
-    _stabilization_beta(declareRestartableData<Moose::Kokkos::Array<Real>>("stabilization_beta")),
+    _restartable_stabilization_beta(
+        declareRestartableData<std::vector<Real>>("stabilization_beta")),
     _beta_initialized(declareRestartableData<bool>("beta_initialized", false))
 {
   if (!_settings.enabled)
@@ -161,6 +162,7 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const KokkosSCZMStabili
     _face_qp_offsets(object._face_qp_offsets),
     _bulk_traction(object._bulk_traction),
     _stabilization_beta(object._stabilization_beta),
+    _restartable_stabilization_beta(object._restartable_stabilization_beta),
     _stabilized_traction(object._stabilized_traction),
     _auxiliary_jump(object._auxiliary_jump),
     _robin_W(object._robin_W),
@@ -317,11 +319,16 @@ KokkosSCZMStabilizationData::allocateArrays()
   _prepass_failure.create(1);
   if (!_settings.beta_override)
   {
-    if (_stabilization_beta->size() == 0)
-      _stabilization_beta->create(n_qps);
-    else if (_stabilization_beta->size() != n_qps)
-      mooseError("Recovered SCZM stabilization_beta size does not match the interface QP layout.");
-    _stabilization_beta->copyToDevice();
+    _stabilization_beta.create(n_qps);
+    if (_beta_initialized)
+    {
+      if (_restartable_stabilization_beta.size() != n_qps)
+        mooseError(
+            "Recovered SCZM stabilization_beta size does not match the interface QP layout.");
+      for (const auto i : index_range(_restartable_stabilization_beta))
+        _stabilization_beta(i) = _restartable_stabilization_beta[i];
+      _stabilization_beta.copyToDevice();
+    }
   }
 }
 
@@ -357,12 +364,13 @@ KokkosSCZMStabilizationData::ensurePrepared(const bool need_tangents)
   if (!_settings.beta_override && !_beta_initialized)
   {
     dispatch();
-    _stabilization_beta->copyToHost();
-    for (const auto i : index_range(*_stabilization_beta))
+    _stabilization_beta.copyToHost();
+    for (const auto i : index_range(_stabilization_beta))
       if (!(_stabilization_beta(i) > 0.0) || !std::isfinite(_stabilization_beta(i)))
         mooseError(
             "SCZM automatic stabilization_beta must be finite and positive; check the normal "
             "directional bulk tangents and adjacent element volumes.");
+    _restartable_stabilization_beta.assign(_stabilization_beta.begin(), _stabilization_beta.end());
     _beta_initialized = true;
   }
 

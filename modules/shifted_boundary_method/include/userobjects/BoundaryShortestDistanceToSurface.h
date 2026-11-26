@@ -70,11 +70,16 @@ protected:
   /// Local distance functions when no external distance user object is supplied.
   std::vector<const Function *> _distance_functions;
 
-  /// Distance vectors to the true interface at each quadrature point on an element side
-  std::map<ElemSide, std::vector<RealVectorValue>> _distance_vectors;
+  /// Distance vectors to the true interface at each quadrature point on an element side. It is
+  /// restartable because this user object executes only on INITIAL, which recovery skips.
+  std::map<ElemSide, std::vector<RealVectorValue>> & _distance_vectors;
 
-  /// True interface normals at projected quadrature points on an element side
-  mutable std::map<ElemSide, std::vector<RealVectorValue>> _normal_vectors;
+  /// True interface normals at projected quadrature points on an element side, restartable for the
+  /// same reason as _distance_vectors
+  std::map<ElemSide, std::vector<RealVectorValue>> & _normal_vectors;
+
+  /// Whether _distance_vectors and _normal_vectors hold finalized data, including after recovery
+  bool & _distances_finalized;
 
   /// Map from boundary ID to internal distance function index
   std::map<BoundaryID, unsigned int> _side_id_index;

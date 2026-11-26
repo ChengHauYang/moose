@@ -52,6 +52,11 @@ BoundaryShortestDistanceToSurface::validParams()
 BoundaryShortestDistanceToSurface::BoundaryShortestDistanceToSurface(
     const InputParameters & parameters)
   : SideUserObject(parameters),
+    _distance_vectors(declareRestartableData<std::map<ElemSide, std::vector<RealVectorValue>>>(
+        "distance_vectors")),
+    _normal_vectors(
+        declareRestartableData<std::map<ElemSide, std::vector<RealVectorValue>>>("normal_vectors")),
+    _distances_finalized(declareRestartableData<bool>("distances_finalized", false)),
     _suppress_distance_warning(getParam<bool>("suppress_distance_warning")),
     _debug_output(getParam<bool>("debug_output"))
 {
@@ -136,6 +141,13 @@ BoundaryShortestDistanceToSurface::initialSetup()
                    "Boundary '",
                    _mesh.getBoundaryName(boundary),
                    "' maps to an interface not detected by the manager.");
+
+#ifdef MOOSE_KOKKOS_ENABLED
+  // Recovery restores the finalized distances but skips the INITIAL execution that would populate
+  // the mappings registered during Kokkos mesh initialization
+  if (_distances_finalized)
+    populateSurrogateInterfaceMappings();
+#endif
 }
 
 void
@@ -231,6 +243,7 @@ BoundaryShortestDistanceToSurface::finalize()
     if (_true_interface_measures[libmesh_map_find(_elem_side_to_bid, elem_side)] < 0.0)
       for (auto & normal : normals)
         normal *= -1.0;
+  _distances_finalized = true;
 
 #ifdef MOOSE_KOKKOS_ENABLED
   populateSurrogateInterfaceMappings();

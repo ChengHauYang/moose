@@ -152,7 +152,7 @@ public:
     return _bulk_traction;
   }
 
-  const Moose::Kokkos::Array<Real> & stabilizationBetas() const { return *_stabilization_beta; }
+  const Moose::Kokkos::Array<Real> & stabilizationBetas() const { return _stabilization_beta; }
 
   const SCZMWeightedTractionStabilization::Settings & stabilizationSettings() const
   {
@@ -215,7 +215,10 @@ protected:
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _surrogate_distance_vectors;
   Moose::Kokkos::Array2D<dof_id_type> _face_qp_offsets;
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _bulk_traction;
-  Moose::Kokkos::ReferenceWrapper<Moose::Kokkos::Array<Real>> _stabilization_beta;
+  Moose::Kokkos::Array<Real> _stabilization_beta;
+  /// Host copy of the automatic stabilization_beta, which carries it through restart and recovery
+  /// because restartable data is restored before initialSetup sizes the device array
+  std::vector<Real> & _restartable_stabilization_beta;
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _stabilized_traction;
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _auxiliary_jump;
   Moose::Kokkos::Array<Moose::Kokkos::Real33> _robin_W;
