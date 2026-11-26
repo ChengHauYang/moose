@@ -172,8 +172,12 @@ the local traction `interface_traction` from the local jump `interface_displacem
 derivative `dinterface_traction_djump`.
 
 - +Host:+ a single interface material declares both properties, and its `computeQpProperties()`
-  depends only on the jump and its own stateful history. The displacement-jump material re-evaluates
-  this material and the global-traction material at each trial jump of the Robin solve.
+  depends only on the jump, its own old stateful values, and properties computed before the
+  displacement-jump material. The displacement-jump material re-evaluates this material and the
+  global-traction material at each trial jump of the Robin solve; the regular evaluation that
+  follows is at the converged $\mathbf{j}$, so stateful history is stored there. A material that
+  violates this contract is rejected with an explicit error. A traction law evaluated by an
+  interface `[NEML2]` block requires `use_kokkos = true`.
 - +Kokkos:+ a native law follows the contract of
   [KokkosSCZMStabilizationData](KokkosSCZMStabilizationData.md), and a NEML2
   law needs no MOOSE code.
