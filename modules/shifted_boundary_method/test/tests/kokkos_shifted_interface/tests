@@ -1747,6 +1747,76 @@
       detail = 'with a consistent Jacobian in softening.'
     []
   []
+  [neml2_traction_laws_weighted_traction]
+    requirement = 'The Kokkos shifted cohesive-zone formulation shall evaluate any NEML2 traction-separation model mapping the local displacement jump to the local traction during generalized weighted-traction stabilization, without code specific to the model, matching the native Kokkos law with the same parameters and consistently linearizing the resulting residual for'
+    design = 'KokkosSCZMStabilizationData.md'
+    capabilities = 'kokkos & libtorch & neml2'
+    compute_devices = cpu
+    # Recovery does not rebuild the Kokkos interface neighbor state; see
+    # sczm_angled_kokkos_matches_host
+    recover = false
+    [salehani_native]
+      type = Exodiff
+      input = sczm_salehani_weighted_kokkos.i
+      cli_args = 'Executioner/end_time=0.75'
+      exodiff = sczm_salehani_weighted_kokkos_out.e
+      detail = 'the native exponential Salehani-Irani law through its peak and into softening,'
+    []
+    [salehani]
+      type = Exodiff
+      input = sczm_bilinear_neml2.i
+      cli_args = 'NEML2/input=salehani_traction_neml2.i '
+                 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=100 '
+                 'Executioner/end_time=0.75 Outputs/file_base=sczm_salehani_weighted_neml2_out'
+      # The gold links to the native gold
+      exodiff = sczm_salehani_weighted_neml2_out.e
+      detail = 'the NEML2 SalehaniIraniTraction model,'
+    []
+    [salehani_jacobian]
+      type = PetscJacobianTester
+      input = sczm_bilinear_neml2.i
+      cli_args = 'NEML2/input=salehani_traction_neml2.i '
+                 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=100 '
+                 'Executioner/num_steps=1 opening_ic=0.15 slip_ic=0.05'
+      # ||J - Jfd||_F is 6.7e-4 (ratio 1.0e-7) at the default finite-difference step and scales
+      # linearly with -snes_test_err (4.5e-3 at 1e-7, 4.5e-2 at 1e-6), i.e. it is the truncation
+      # error of the exponential law's curvature; the native law gives the same values
+      ratio_tol = 2e-7
+      difference_tol = 1e-3
+      detail = 'the NEML2 SalehaniIraniTraction model in softening,'
+    []
+    [power_law_viscous_native]
+      type = Exodiff
+      input = sczm_bilinear_kokkos.i
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=100 '
+                 'Materials/local_traction/mixed_mode_criterion=POWER_LAW '
+                 'Materials/local_traction/viscosity=0.5 '
+                 'Outputs/file_base=sczm_bilinear_power_law_viscous_kokkos_out'
+      exodiff = sczm_bilinear_power_law_viscous_kokkos_out.e
+      detail = 'the native bilinear law with the power-law mixed-mode criterion and damage viscosity '
+               'through softening and unloading,'
+    []
+    [power_law_viscous]
+      type = Exodiff
+      input = sczm_bilinear_neml2.i
+      cli_args = 'NEML2/input=bilinear_power_law_viscous_traction_neml2.i '
+                 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=100 '
+                 'Outputs/file_base=sczm_bilinear_power_law_viscous_neml2_out'
+      # The gold links to the native gold
+      exodiff = sczm_bilinear_power_law_viscous_neml2_out.e
+      detail = 'the NEML2 BilinearTraction model with PowerLawFullSeparation and damage viscosity, '
+               'and'
+    []
+    [power_law_viscous_jacobian]
+      type = PetscJacobianTester
+      input = sczm_bilinear_neml2.i
+      cli_args = 'NEML2/input=bilinear_power_law_viscous_traction_neml2.i '
+                 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_beta=100 '
+                 'Executioner/num_steps=1 opening_ic=0.15 slip_ic=0.05'
+      detail = 'the NEML2 BilinearTraction model with PowerLawFullSeparation and damage viscosity in '
+               'softening.'
+    []
+  []
   [neml2_weighted_traction_rejections]
     requirement = 'The Kokkos shifted cohesive-zone formulation shall reject a NEML2 traction-separation model that cannot serve as the weighted-traction trial law with an explicit error'
     design = 'KokkosSCZMStabilizationData.md'
