@@ -1,15 +1,7 @@
-# Shifted cohesive zone on a mesh that does not fit the interface of common.i
+# Shifted cohesive zone on the Cartesian mesh of common.i, which does not fit the interface
 
 [GlobalParams]
   sbm_distance_uo = sbm_distance_uo
-[]
-
-[Mesh]
-  [gen]
-    # An odd element count puts x = 0.5 in the middle of an element column, so the surrogate
-    # interface is half an element width away from the true one
-    nx = 21
-  []
 []
 
 [Physics/SolidMechanics/ShiftedCohesiveZone]
@@ -26,14 +18,12 @@
     boundary = 'Block1_Block2'
     execution_order_group = 0
     execute_on = 'INITIAL'
-    # The surrogate distance is half the element width by construction
-    suppress_distance_warning = true
   []
 []
 
 [Functions]
   [signed_dist_func]
     type = ParsedFunction
-    expression = 'x-${x0}'
+    expression = '(x-0.5)*sin(${theta}) - (y-0.5)*cos(${theta})'
   []
 []

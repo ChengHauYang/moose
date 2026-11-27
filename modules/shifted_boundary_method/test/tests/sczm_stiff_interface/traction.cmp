@@ -1,0 +1,10 @@
+# Tolerances for a shifted cohesive zone model against the interface-fitted one. The surrogate and
+# fitted interface faces sample the traction at different points, which changes the average and
+# the maximum by up to about 1 percent. The minimum, at the clamped end of the interface, changes
+# by up to about 4 percent. The floor only applies to the zero initial state.
+GLOBAL VARIABLES relative 0 floor 0
+    time relative 0 floor 0
+    react_x relative 1e-2 floor 1e-6
+    normal_traction_average relative 2e-2 floor 1e-6
+    normal_traction_max relative 2e-2 floor 1e-6
+    normal_traction_min relative 5e-2 floor 1e-6

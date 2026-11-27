@@ -1,5 +1,5 @@
-# Salehani-Irani traction-separation law under shear, total-Lagrangian finite strain. The cohesive
-# zone strain must also be set to FINITE, on whichever cohesive zone block is used.
+# Salehani-Irani traction-separation law, total-Lagrangian finite strain. The cohesive zone strain
+# must also be set to FINITE, on whichever cohesive zone block is used.
 
 [Physics/SolidMechanics/QuasiStatic/all]
   strain = FINITE
@@ -19,27 +19,5 @@
     maximum_normal_traction = 500
     maximum_shear_traction = 300
     boundary = 'Block1_Block2'
-  []
-[]
-
-[BCs]
-  [anchor_y]
-    type = DirichletBC
-    variable = disp_y
-    boundary = 'left'
-    value = 0
-  []
-  [right_x]
-    type = DirichletBC
-    variable = disp_x
-    boundary = 'right'
-    value = 0
-  []
-  [shear]
-    type = FunctionDirichletBC
-    variable = disp_y
-    boundary = 'right'
-    function = '-1e-2*t'
-    preset = false
   []
 []

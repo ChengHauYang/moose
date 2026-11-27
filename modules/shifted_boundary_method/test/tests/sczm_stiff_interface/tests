@@ -1,144 +1,172 @@
 [Tests]
   design = 'syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md'
   issues = '#33666'
-  # Each group solves one problem with an interface about 1e5 times stiffer than the bulk, using
-  # GMRES with algebraic multigrid: with an interface-fitted cohesive zone, with a shifted cohesive
-  # zone without stabilization, which does not converge, and with a shifted cohesive zone with
-  # weighted traction stabilization at the default stabilization_gamma, which converges to the
-  # interface-fitted reactions. Reactions below 1e-6 in reaction.cmp are round-off of a reaction
-  # that is zero for the loading at hand.
-  [linear_shear]
-    requirement = 'The system shall converge a shifted cohesive zone model with a stiff linear '
-                  'traction-separation law under shear, solved with algebraic multigrid, only with '
-                  'weighted traction stabilization, and shall then reproduce the interface-fitted '
-                  'reaction history within one percent, by'
+  # Each group solves one problem with an inclined interface about 1e5 times stiffer than the bulk,
+  # using a direct solver: with an interface-fitted cohesive zone, with a shifted cohesive zone with
+  # weighted traction stabilization at the default stabilization_gamma, which reproduces the
+  # interface-fitted reaction and interface tractions, and with a shifted cohesive zone without
+  # stabilization, which either reproduces the reaction but not the tractions, or does not
+  # converge.
+  [linear]
+    requirement = 'The system shall reproduce the reaction and the interface normal tractions of an '
+                  'interface-fitted cohesive zone model with a stiff linear traction-separation law '
+                  'on an inclined interface by a shifted cohesive zone model with weighted traction '
+                  'stabilization, whereas the unstabilized shifted model produces oscillating '
+                  'tractions, by'
     [fitted]
       type = CheckFiles
-      input = 'common.i fitted.i linear_shear.i'
-      cli_args = 'Outputs/file_base=linear_shear_fitted'
-      check_files = 'linear_shear_fitted.csv'
+      input = 'common.i fitted.i linear.i'
+      cli_args = 'Outputs/file_base=linear_fitted'
+      check_files = 'linear_fitted.csv'
       recover = false
-      detail = 'computing the reaction history of the interface-fitted cohesive zone model,'
-    []
-    [unstabilized]
-      type = RunException
-      input = 'common.i shifted.i linear_shear.i'
-      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=none'
-      expect_err = 'Solve failed and timestep already at or below dtmin'
-      mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
-      recover = false
-      detail = 'failing to converge without stabilization,'
+      detail = 'computing the interface-fitted reaction and tractions,'
     []
     [weighted_traction]
       type = CheckFiles
-      input = 'common.i shifted.i linear_shear.i'
+      input = 'common.i shifted.i linear.i'
       cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=weighted_traction '
-                 'Outputs/file_base=linear_shear_weighted'
-      check_files = 'linear_shear_weighted.csv'
+                 'Outputs/file_base=linear_weighted'
+      check_files = 'linear_weighted.csv'
       mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
       recover = false
-      detail = 'converging with weighted traction stabilization,'
+      detail = 'computing them with weighted traction stabilization,'
     []
-    [compare]
+    [weighted_traction_compare]
       type = RunCommand
       command = 'python3 ../../../../../python/mooseutils/csvdiff.py '
-                'linear_shear_weighted.csv linear_shear_fitted.csv --comparison-file reaction.cmp'
-      prereq = 'linear_shear/fitted linear_shear/weighted_traction'
+                'linear_weighted.csv linear_fitted.csv --comparison-file traction.cmp'
+      prereq = 'linear/fitted linear/weighted_traction'
       recover = false
       restep = false
       valgrind = none
-      detail = 'and comparing the stabilized and interface-fitted reaction histories.'
-    []
-  []
-  [bilinear_tension]
-    requirement = 'The system shall converge a shifted cohesive zone model with a stiff mixed-mode '
-                  'bilinear traction-separation law under tension into softening, solved with '
-                  'algebraic multigrid, only with weighted traction stabilization, and shall then '
-                  'reproduce the interface-fitted reaction history within one percent, by'
-    [fitted]
-      type = CheckFiles
-      input = 'common.i fitted.i bilinear_tension.i'
-      cli_args = 'Outputs/file_base=bilinear_tension_fitted'
-      check_files = 'bilinear_tension_fitted.csv'
-      recover = false
-      detail = 'computing the reaction history of the interface-fitted cohesive zone model,'
+      detail = 'matching the stabilized and interface-fitted results,'
     []
     [unstabilized]
-      type = RunException
-      input = 'common.i shifted.i bilinear_tension.i'
-      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=none'
-      expect_err = 'Solve failed and timestep already at or below dtmin'
+      type = CheckFiles
+      input = 'common.i shifted.i linear.i'
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=none '
+                 'Outputs/file_base=linear_unstabilized'
+      check_files = 'linear_unstabilized.csv'
       mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
       recover = false
-      detail = 'failing to converge without stabilization,'
+      detail = 'computing them without stabilization,'
+    []
+    [unstabilized_compare]
+      type = RunCommand
+      command = 'python3 ../../../../../python/mooseutils/csvdiff.py '
+                'linear_unstabilized.csv linear_fitted.csv --comparison-file traction.cmp'
+      # csvdiff exits with 1 when the files differ
+      expect_exit_code = 1
+      prereq = 'linear/fitted linear/unstabilized'
+      recover = false
+      restep = false
+      valgrind = none
+      detail = 'and not matching the unstabilized and interface-fitted results.'
+    []
+  []
+  [bilinear]
+    requirement = 'The system shall reproduce the reaction and the interface normal tractions of an '
+                  'interface-fitted cohesive zone model with a stiff mixed-mode bilinear '
+                  'traction-separation law on an inclined interface by a shifted cohesive zone model '
+                  'with weighted traction stabilization, whereas the unstabilized shifted model '
+                  'produces oscillating tractions beyond the normal strength, by'
+    [fitted]
+      type = CheckFiles
+      input = 'common.i fitted.i bilinear.i'
+      cli_args = 'Outputs/file_base=bilinear_fitted'
+      check_files = 'bilinear_fitted.csv'
+      recover = false
+      detail = 'computing the interface-fitted reaction and tractions,'
     []
     [weighted_traction]
       type = CheckFiles
-      input = 'common.i shifted.i bilinear_tension.i'
+      input = 'common.i shifted.i bilinear.i'
       cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=weighted_traction '
-                 'Outputs/file_base=bilinear_tension_weighted'
-      check_files = 'bilinear_tension_weighted.csv'
+                 'Outputs/file_base=bilinear_weighted'
+      check_files = 'bilinear_weighted.csv'
       mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
       recover = false
-      detail = 'converging with weighted traction stabilization,'
+      detail = 'computing them with weighted traction stabilization,'
     []
-    [compare]
+    [weighted_traction_compare]
       type = RunCommand
       command = 'python3 ../../../../../python/mooseutils/csvdiff.py '
-                'bilinear_tension_weighted.csv bilinear_tension_fitted.csv '
-                '--comparison-file reaction.cmp'
-      prereq = 'bilinear_tension/fitted bilinear_tension/weighted_traction'
+                'bilinear_weighted.csv bilinear_fitted.csv --comparison-file traction.cmp'
+      prereq = 'bilinear/fitted bilinear/weighted_traction'
       recover = false
       restep = false
       valgrind = none
-      detail = 'and comparing the stabilized and interface-fitted reaction histories.'
+      detail = 'matching the stabilized and interface-fitted results,'
+    []
+    [unstabilized]
+      type = CheckFiles
+      input = 'common.i shifted.i bilinear.i'
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=none '
+                 'Outputs/file_base=bilinear_unstabilized'
+      check_files = 'bilinear_unstabilized.csv'
+      mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
+      recover = false
+      detail = 'computing them without stabilization,'
+    []
+    [unstabilized_compare]
+      type = RunCommand
+      command = 'python3 ../../../../../python/mooseutils/csvdiff.py '
+                'bilinear_unstabilized.csv bilinear_fitted.csv --comparison-file traction.cmp'
+      # csvdiff exits with 1 when the files differ
+      expect_exit_code = 1
+      prereq = 'bilinear/fitted bilinear/unstabilized'
+      recover = false
+      restep = false
+      valgrind = none
+      detail = 'and not matching the unstabilized and interface-fitted results.'
     []
   []
-  [salehani_finite_strain_shear]
-    requirement = 'The system shall converge a total-Lagrangian shifted cohesive zone model with a '
-                  'stiff Salehani-Irani traction-separation law under shear, solved with algebraic '
-                  'multigrid, only with weighted traction stabilization, and shall then reproduce '
-                  'the interface-fitted reaction history within one percent, by'
+  [salehani_finite_strain]
+    requirement = 'The system shall reproduce the reaction and the interface normal tractions of a '
+                  'total-Lagrangian interface-fitted cohesive zone model with a stiff Salehani-Irani '
+                  'traction-separation law on an inclined interface by a shifted cohesive zone model '
+                  'with weighted traction stabilization, whereas the unstabilized shifted model does '
+                  'not converge, by'
     [fitted]
       type = CheckFiles
-      input = 'common.i fitted.i salehani_finite_strain_shear.i'
+      input = 'common.i fitted.i salehani_finite_strain.i'
       cli_args = 'Physics/SolidMechanics/CohesiveZone/czm_ik/strain=FINITE '
-                 'Outputs/file_base=salehani_finite_strain_shear_fitted'
-      check_files = 'salehani_finite_strain_shear_fitted.csv'
+                 'Outputs/file_base=salehani_finite_strain_fitted'
+      check_files = 'salehani_finite_strain_fitted.csv'
       recover = false
-      detail = 'computing the reaction history of the interface-fitted cohesive zone model,'
+      detail = 'computing the interface-fitted reaction and tractions,'
+    []
+    [weighted_traction]
+      type = CheckFiles
+      input = 'common.i shifted.i salehani_finite_strain.i'
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/strain=FINITE '
+                 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=weighted_traction '
+                 'Outputs/file_base=salehani_finite_strain_weighted'
+      check_files = 'salehani_finite_strain_weighted.csv'
+      mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
+      recover = false
+      detail = 'computing them with weighted traction stabilization,'
+    []
+    [weighted_traction_compare]
+      type = RunCommand
+      command = 'python3 ../../../../../python/mooseutils/csvdiff.py '
+                'salehani_finite_strain_weighted.csv salehani_finite_strain_fitted.csv '
+                '--comparison-file traction.cmp'
+      prereq = 'salehani_finite_strain/fitted salehani_finite_strain/weighted_traction'
+      recover = false
+      restep = false
+      valgrind = none
+      detail = 'matching the stabilized and interface-fitted results,'
     []
     [unstabilized]
       type = RunException
-      input = 'common.i shifted.i salehani_finite_strain_shear.i'
+      input = 'common.i shifted.i salehani_finite_strain.i'
       cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/strain=FINITE '
                  'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=none'
       expect_err = 'Solve failed and timestep already at or below dtmin'
       mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
       recover = false
-      detail = 'failing to converge without stabilization,'
-    []
-    [weighted_traction]
-      type = CheckFiles
-      input = 'common.i shifted.i salehani_finite_strain_shear.i'
-      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/strain=FINITE '
-                 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=weighted_traction '
-                 'Outputs/file_base=salehani_finite_strain_shear_weighted'
-      check_files = 'salehani_finite_strain_shear_weighted.csv'
-      mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
-      recover = false
-      detail = 'converging with weighted traction stabilization,'
-    []
-    [compare]
-      type = RunCommand
-      command = 'python3 ../../../../../python/mooseutils/csvdiff.py '
-                'salehani_finite_strain_shear_weighted.csv salehani_finite_strain_shear_fitted.csv '
-                '--comparison-file reaction.cmp'
-      prereq = 'salehani_finite_strain_shear/fitted salehani_finite_strain_shear/weighted_traction'
-      recover = false
-      restep = false
-      valgrind = none
-      detail = 'and comparing the stabilized and interface-fitted reaction histories.'
+      detail = 'and failing to converge without stabilization.'
     []
   []
 []
