@@ -375,7 +375,8 @@ KOKKOS_FUNCTION void
 KokkosSCZMStabilizationData::robinFace(const TSL & tsl, const Moose::Kokkos::ThreadID tid) const
 {
   const auto & face = kokkosInterfaceFace(tid);
-  auto primary = makePrimaryInterfaceDatum<Datum>(face, kokkosAssembly(), kokkosSystems());
+  auto primary =
+      Moose::Kokkos::makePrimaryInterfaceDatum<Datum>(face, kokkosAssembly(), kokkosSystems());
 
   for (unsigned int qp = 0; qp < face.n_qps; ++qp)
   {
