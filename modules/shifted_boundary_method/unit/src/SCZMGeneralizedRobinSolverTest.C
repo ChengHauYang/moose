@@ -357,7 +357,12 @@ TEST(SCZMGeneralizedRobinSolverTest, ResumableIterationMatchesSolve)
   const Real3 small_traction{{0.8, -0.1, 0.0}};
   const Real3 large_jump{{0.6, -0.35, 0.2}};
   const Real3 large_traction{{0.4, -0.1, 0.3}};
-  const Real3 softening_jump{{0.6, 0.1, 0.0}};
+  const Real3 softening_jump{{0.3, 0.58, -0.81}};
+  const Real3 softening_traction{{-0.9, 0.7, -0.1}};
+  const Real3 restart_jump{{0.52, -1.0, -0.11}};
+  const Real3 restart_traction{{0.4, -0.5, 0.9}};
+  const Real3 failing_jump{{0.81, -0.22, 0.14}};
+  const Real3 failing_traction{{1.0, -0.9, -0.6}};
   unsigned int evaluations = 0;
 
   // The affine path requests the initial and the updated jump only.
@@ -374,17 +379,53 @@ TEST(SCZMGeneralizedRobinSolverTest, ResumableIterationMatchesSolve)
 
   // Without backtracking each iterate costs one evaluation plus the initial one, so more requests
   // show that the line search rejected trial iterates on the softening branch.
-  result = solvePointwise(softening, softening_jump, Real3{}, 5.0, 3, false, evaluations);
+  result =
+      solvePointwise(softening, softening_jump, softening_traction, 5.0, 3, false, evaluations);
   ASSERT_TRUE(result.converged);
   EXPECT_GT(evaluations, result.iterations + 1);
-  expectIdentical(result,
-                  GeneralizedRobinSolver::solve(softening, softening_jump, Real3{}, 5.0, 3, false));
+  expectIdentical(
+      result,
+      GeneralizedRobinSolver::solve(softening, softening_jump, softening_traction, 5.0, 3, false));
 
-  // beta = 2 < 0.446 k admits a non-monotone Robin operator on which the line search fails.
-  result = solvePointwise(softening, large_jump, large_traction, 2.0, 3, false, evaluations);
+  // beta = 2 < 0.446 k admits a non-monotone Robin operator. Here the line search fails from zero
+  // jump and the iteration restarted at the shifted jump converges.
+  result = solvePointwise(softening, restart_jump, restart_traction, 2.0, 3, false, evaluations);
+  ASSERT_TRUE(result.converged);
+  expectIdentical(
+      result,
+      GeneralizedRobinSolver::solve(softening, restart_jump, restart_traction, 2.0, 3, false));
+
+  // Here the line search fails from both starts.
+  result = solvePointwise(softening, failing_jump, failing_traction, 2.0, 3, false, evaluations);
   EXPECT_FALSE(result.converged);
   expectIdentical(
-      result, GeneralizedRobinSolver::solve(softening, large_jump, large_traction, 2.0, 3, false));
+      result,
+      GeneralizedRobinSolver::solve(softening, failing_jump, failing_traction, 2.0, 3, false));
+}
+
+TEST(SCZMGeneralizedRobinSolverTest, UndamagedRootOfNonmonotoneRobinOperator)
+{
+  // k / beta = 10 makes j + f(j) / beta non-monotone, with a local maximum 2.513 at j = 0.384 and a
+  // local minimum 1.177 at j = 1.042, so the right-hand side 1.5 has the roots 0.148, 0.765, and
+  // 1.498. Newton started at the shifted jump 1.5 converges to the root 1.498 past the peak traction
+  // at j = 0.5 / sqrt(2) = 0.354, whereas the undamaged root 0.148 is the one reached by loading
+  // from zero.
+  ExponentialSofteningLaw law;
+  law.stiffness = 10.0;
+  law.opening_scale = 0.5;
+  const Real beta = 1.0;
+  Real3 shifted_jump{};
+  shifted_jump.v[0] = 1.5;
+
+  const auto result = GeneralizedRobinSolver::solve(law, shifted_jump, Real3{}, beta, 1, false);
+  ASSERT_TRUE(result.converged);
+  const Real jump = result.auxiliary_jump.v[0];
+  EXPECT_LT(jump, 0.5 / std::sqrt(2.0));
+  // The initial residual at zero jump is the right-hand side 1.5, which scales the tolerance
+  const GeneralizedRobinSolverOptions options;
+  EXPECT_NEAR(jump + law.evaluate(result.auxiliary_jump, 1).traction.v[0] / beta,
+              1.5,
+              options.absolute_tolerance + options.relative_tolerance * 1.5);
 }
 
 TEST(SCZMGeneralizedRobinSolverTest, BatchFreezesTerminalPoints)
@@ -399,13 +440,14 @@ TEST(SCZMGeneralizedRobinSolverTest, BatchFreezesTerminalPoints)
     Real3 bulk_traction;
     Real beta;
   };
-  const Real3 settled_jump{{0.3, -0.2, 0.1}};
-  // The settled point starts at the Robin solution, the beta = 2 point fails in the line search,
-  // and beta = 0 is rejected by begin().
-  const Point points[] = {{settled_jump, law.evaluate(settled_jump, 3).traction, 5.0},
+  // The settled point has its Robin solution at zero jump, where Newton starts. Of the beta = 2
+  // points the first converges only after the restart at the shifted jump and the second fails
+  // from both starts. beta = 0 is rejected by begin().
+  const Point points[] = {{Real3{{0.3, -0.2, 0.1}}, Real3{{-1.5, 1.0, -0.5}}, 5.0},
                           {Real3{{0.1, -0.04, 0.0}}, Real3{{0.8, -0.1, 0.0}}, 20.0},
                           {Real3{{0.6, 0.1, 0.0}}, Real3{}, 5.0},
-                          {Real3{{0.6, -0.35, 0.2}}, Real3{{0.4, -0.1, 0.3}}, 2.0},
+                          {Real3{{0.52, -1.0, -0.11}}, Real3{{0.4, -0.5, 0.9}}, 2.0},
+                          {Real3{{0.81, -0.22, 0.14}}, Real3{{1.0, -0.9, -0.6}}, 2.0},
                           {Real3{{0.6, 0.1, 0.0}}, Real3{}, 0.0}};
   const auto n_points = std::size(points);
 
@@ -424,10 +466,10 @@ TEST(SCZMGeneralizedRobinSolverTest, BatchFreezesTerminalPoints)
       frozen[p] = states[p];
 
   unsigned int round = 0;
-  // The default budget allows at most 1 + 20 * (8 + 1) = 181 evaluations per point (initial
-  // iterate, then up to 9 trial iterates for each of 20 iterations); the cap only guards against
-  // a driver that never terminates.
-  const unsigned int max_rounds = 200;
+  // The default budget allows at most 1 + 20 * (8 + 1) = 181 evaluations per start (initial
+  // iterate, then up to 9 trial iterates for each of 20 iterations), and there are two starts; the
+  // cap only guards against a driver that never terminates.
+  const unsigned int max_rounds = 400;
   auto any_active = [&states]()
   {
     for (const auto & state : states)
@@ -462,6 +504,7 @@ TEST(SCZMGeneralizedRobinSolverTest, BatchFreezesTerminalPoints)
   const PointStatus expected_status[] = {PointStatus::Converged,
                                          PointStatus::Converged,
                                          PointStatus::Converged,
+                                         PointStatus::Converged,
                                          PointStatus::Failed,
                                          PointStatus::Failed};
   for (const auto p : make_range(n_points))
@@ -477,7 +520,7 @@ TEST(SCZMGeneralizedRobinSolverTest, BatchFreezesTerminalPoints)
   }
   EXPECT_EQ(finish_round[0], 1);
   EXPECT_EQ(states[0].result.iterations, 0);
-  EXPECT_EQ(finish_round[4], 0);
+  EXPECT_EQ(finish_round[5], 0);
   // The rows converge at different rounds, so the earlier ones stayed frozen above.
   EXPECT_LT(finish_round[1], finish_round[2]);
 }

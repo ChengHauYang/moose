@@ -140,6 +140,13 @@ and the total-Lagrangian formulation uses PK1 stress. On Kokkos,
 [KokkosSCZMStabilizationData](KokkosSCZMStabilizationData.md) performs the solve once per assembly;
 on the host, the displacement-jump material performs it.
 
+The solve is a damped Newton iteration started at $\mathbf{j} = \mathbf{0}$. For a softening law
+whose tangent exceeds $\beta$ in magnitude, the left-hand side is not monotone and the equation
+also has roots past the peak traction. Because $\beta$ is far below the initial stiffness of a stiff
+law, $\mathbf{J}_d$ can lie past the peak while the interface is loaded well below its strength.
+Starting at zero reaches the undamaged root; the iteration restarts at $\mathbf{J}_d$ only when it
+finds no undamaged root.
+
 The Robin parameter is not an input. The first evaluation derives it at each paired quadrature
 point from the bulk tangent on each side,
 

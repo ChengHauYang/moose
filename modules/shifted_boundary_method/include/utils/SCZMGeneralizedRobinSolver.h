@@ -103,6 +103,11 @@ public:
     unsigned int iteration = 0;
     unsigned int backtrack = 0;
 
+    /// Shifted jump, the start of the second attempt
+    Real3 shifted_jump{};
+    /// Whether the iteration was restarted from the shifted jump
+    bool restarted = false;
+
     Real beta = 0.0;
     unsigned int ndisp = 0;
     bool affine = false;
@@ -125,7 +130,15 @@ public:
     return state.result;
   }
 
-  /// Starts the Newton iteration at the shifted jump; Failed for inadmissible beta or ndisp.
+  /**
+   * Starts the Newton iteration at zero jump; Failed for inadmissible beta or ndisp.
+   *
+   * For a softening law whose tangent exceeds beta in magnitude, j + f(j) / beta is not monotone
+   * and the Robin equation has a root on the undamaged branch and one past the peak traction. Since
+   * beta is much smaller than the initial cohesive stiffness, the shifted jump can lie past the
+   * peak even when the undamaged root is far below it, so Newton is started at zero to reach the
+   * undamaged root, and restarted at the shifted jump only when no undamaged root is found.
+   */
   SCZM_KOKKOS_FUNCTION static PointState begin(const Real3 & shifted_jump,
                                                const Real3 & bulk_traction,
                                                const Real beta,
@@ -134,8 +147,7 @@ public:
                                                const GeneralizedRobinSolverOptions & options = {})
   {
     PointState state;
-    state.result.auxiliary_jump = shifted_jump;
-    state.requested_jump = shifted_jump;
+    state.shifted_jump = shifted_jump;
     state.beta = beta;
     state.ndisp = ndisp;
     state.affine = affine;
@@ -169,12 +181,27 @@ public:
         break;
     }
 
+    if (state.status == PointStatus::Failed && !state.restarted)
+      restart(state);
     if (state.status != PointStatus::Active)
       state.requested_jump = state.result.auxiliary_jump;
     return state.status;
   }
 
 private:
+  /// Restarts a failed iteration from the shifted jump.
+  SCZM_KOKKOS_FUNCTION static void restart(PointState & state)
+  {
+    state.result = StabilizedTractionResult{};
+    state.result.auxiliary_jump = state.shifted_jump;
+    state.requested_jump = state.shifted_jump;
+    state.stage = PointState::Stage::Newton;
+    state.iteration = 0;
+    state.backtrack = 0;
+    state.restarted = true;
+    state.status = PointStatus::Active;
+  }
+
   /// Robin residual r = j + f(j) / beta - (shifted_jump + bulk_traction / beta).
   SCZM_KOKKOS_FUNCTION static Real3
   robinResidual(const PointState & state, const Real3 & jump, const CohesiveEvaluation & evaluation)

@@ -140,11 +140,19 @@ TEST(SCZMSalehaniIraniCohesiveLawTest, GeneralizedRobinSolve)
 
   const auto evaluation = evaluator.evaluate(result.auxiliary_jump, 3);
   Real residual_squared_norm = 0.0;
+  Real right_hand_side_squared_norm = 0.0;
   for (unsigned int i = 0; i < 3; ++i)
   {
-    const Real residual = result.auxiliary_jump.v[i] + evaluation.traction.v[i] / beta -
-                          shifted_jump.v[i] - bulk_traction.v[i] / beta;
+    const Real right_hand_side = shifted_jump.v[i] + bulk_traction.v[i] / beta;
+    const Real residual =
+        result.auxiliary_jump.v[i] + evaluation.traction.v[i] / beta - right_hand_side;
     residual_squared_norm += residual * residual;
+    right_hand_side_squared_norm += right_hand_side * right_hand_side;
   }
-  EXPECT_LT(std::sqrt(residual_squared_norm), 1e-12);
+  // Newton starts at zero jump, where the traction vanishes, so the initial residual norm is that
+  // of the right-hand side and sets the relative part of the solver tolerance.
+  const GeneralizedRobinSolverOptions options;
+  EXPECT_LT(std::sqrt(residual_squared_norm),
+            options.absolute_tolerance +
+                options.relative_tolerance * std::sqrt(right_hand_side_squared_norm));
 }
