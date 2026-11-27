@@ -115,20 +115,23 @@
   []
   [sczm_pk2_action_modes]
     requirement = 'The ShiftedCohesiveZone Physics PK2 input contract shall create converters only when the active directional correction consumes them and shall diagnose an unsupported active host conversion.'
-    capabilities = 'kokkos & libtorch & neml2'
-    compute_devices = cpu
-    recover = false
     [directional_correction_inactive]
       type = RunApp
       input = sczm_pk2_action_modes.i
       cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/directional_correction=false'
       detail = 'It shall run without conversion when directional correction is disabled,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
+      recover = false
     []
     [shifted_terms_inactive]
       type = RunApp
       input = sczm_pk2_action_modes.i
       cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/no_shifted=true Problem/solve=false'
       detail = 'initialize without conversion when all shifted terms are disabled,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
+      recover = false
     []
     [host_active]
       type = RunException
@@ -136,6 +139,9 @@
       cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/use_kokkos=false'
       expect_err = 'Automatic PK2-to-PK1 conversion for directional correction is not yet supported on the CPU path'
       detail = 'and reject active conversion on the host backend.'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
+      recover = false
     []
   []
   [sczm_angled_host]
@@ -287,8 +293,6 @@
   []
   [sczm_hetero_plastic]
     requirement = 'The Kokkos shifted cohesive-zone formulation shall consume the bulk stress and tangent of two NEML2 models restricted to the blocks on either side of the interface, an elastic one and a stateful radial-return one, each evaluated with the strain of its own side and keeping history only on its own side, through a loading and unloading trajectory that yields the stateful side'
-    capabilities = 'kokkos & libtorch & neml2'
-    compute_devices = cpu
     [neighbor]
       type = Exodiff
       input = sczm_hetero_plastic_kokkos.i
@@ -297,6 +301,8 @@
       rel_err = 1e-6
       recover = false
       detail = 'with the stateful model on the neighbor side,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [primary]
       type = Exodiff
@@ -307,6 +313,8 @@
       rel_err = 1e-6
       recover = false
       detail = 'with the stateful model on the primary side,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [jacobian]
       type = PetscJacobianTester
@@ -320,6 +328,8 @@
       ratio_tol = 1e-7
       difference_tol = 1e-7
       detail = 'with a Jacobian consistent with the residual on both sides while both are elastic, and'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [plastic_jacobian]
       type = PetscJacobianTester
@@ -334,6 +344,8 @@
       only_final_jacobian = true
       ratio_tol = 1e-6
       detail = 'with a Jacobian consistent with the residual on both sides after the stateful side yields.'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
   []
   [sczm_angled_kokkos_volumetric_locking]
@@ -370,10 +382,6 @@
   []
   [sczm_volumetric_locking_sensitivity]
     requirement = 'The Kokkos SCZM volumetric-locking correction shall change the stabilized diagonal Jacobian blocks, producing a different first linear-iteration residual from the correction-off matrix.'
-    capabilities = 'kokkos & libtorch & neml2'
-    compute_devices = cpu
-    max_parallel = 1
-    recover = false
     [off]
       type = RunApp
       input = sczm_angled_kokkos.i
@@ -381,6 +389,9 @@
       cli_args = 'Executioner/petsc_options=-ksp_monitor Outputs/exodus=false'
       expect_out = '1 KSP Residual norm 1.508085642598e-02'
       detail = 'with the correction disabled,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
+      recover = false
     []
     [on]
       type = RunApp
@@ -389,6 +400,9 @@
       cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/volumetric_locking_correction=true Executioner/petsc_options=-ksp_monitor Outputs/exodus=false'
       expect_out = '1 KSP Residual norm 1.619133203872e-02'
       detail = 'and with the correction enabled.'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
+      recover = false
     []
   []
   [sczm_angled_3d_kokkos_volumetric_locking]
@@ -835,13 +849,13 @@
   # gold, so the host runs on every compute device to satisfy the prerequisite.
   [sczm_tl_fbar_2d]
     requirement = 'The total-Lagrangian shifted cohesive-zone formulation shall support the total-mode F-bar directional correction in two-dimensional plane strain on a distorted quadrilateral mesh with an angled interface, keeping full 3x3 deformation gradients with an out-of-plane stretch of one,'
-    capabilities = 'libtorch & neml2'
     [host]
       type = CSVDiff
       input = sczm_tl_fbar_2d_host.i
       csvdiff = sczm_tl_fbar_2d_host_out.csv
       compute_devices = 'cpu cuda'
       detail = 'computing the solution with the host objects,'
+      capabilities = 'libtorch & neml2'
     []
     [kinematics]
       type = RunApp
@@ -849,6 +863,7 @@
       cli_args = 'file_base=sczm_tl_fbar_2d_average_out'
       compute_devices = 'cpu cuda'
       detail = 'computing interface kinematics U, M, and B identical to those of the host bulk total-Lagrangian strain calculator, with M the element-volume average,'
+      capabilities = 'libtorch & neml2'
     []
     [kokkos]
       type = CSVDiff
@@ -884,6 +899,7 @@
       csvdiff = sczm_tl_fbar_2d_off_host_out.csv
       compute_devices = 'cpu cuda'
       detail = 'computing a different host solution when F-bar is disabled,'
+      capabilities = 'libtorch & neml2'
     []
     [off_kokkos]
       type = CSVDiff
@@ -910,6 +926,7 @@
       difference_tol = 1e-4
       compute_devices = 'cpu cuda'
       detail = 'consistently linearizing the host F-bar directional correction, including its coupling to every displacement DOF of the bulk element on each side of the interface,'
+      capabilities = 'libtorch & neml2'
     []
     [kokkos_jacobian]
       type = PetscJacobianTester
@@ -942,9 +959,6 @@
     requirement = 'The Kokkos SCZM directional correction shall reject unsupported input combinations with an explicit error.'
     design = 'syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md'
     issues = '#33666 #30655'
-    capabilities = 'kokkos & libtorch & neml2'
-    compute_devices = 'cpu cuda xpu'
-    recover = false
 
     [non_cartesian_coordinates]
       type = RunException
@@ -952,6 +966,9 @@
       cli_args = 'Mesh/coord_type=RSPHERICAL'
       expect_err = 'currently supports only Cartesian coordinate systems'
       detail = 'if a non-Cartesian coordinate system is requested, whose out-of-plane kinematics are not yet verified for NEML2.'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
 
     [neml2_output_backend_not_kokkos]
@@ -960,6 +977,9 @@
       cli_args = 'NEML2/primary_elasticity/output_backend=moose'
       expect_err = "Set 'output_backend = kokkos' or set 'directional_correction = false'"
       detail = 'if the NEML2 block providing the stress or tangent property to a Kokkos directional correction does not set output_backend = kokkos.'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
 
   []
@@ -970,16 +990,14 @@
     # face-to-volume ratio of every fixture is 2, so the default gamma = 5 gives beta of about 23 for
     # the small-strain fixture (E = 1 and 3, nu = 0.3 and 0.2), and gamma = 0.04 gives beta of about
     # 11 for the total-Lagrangian fixtures (E = 100, nu = 0.3).
-    ratio_tol = 1e-7
-    difference_tol = 1e-7
-    capabilities = 'kokkos & libtorch & neml2'
-    compute_devices = cpu
     [small_strain]
       type = PetscJacobianTester
       input = sczm_hetero_kokkos.i
       cli_args = "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction"
       compute_devices = 'cpu cuda xpu'
       detail = 'with small-strain kinematics, the directional correction, and different bulk properties on the two sides,'
+      capabilities = 'kokkos & libtorch & neml2'
+      difference_tol = 1e-7
     []
     [small_strain_no_shifted]
       type = PetscJacobianTester
@@ -988,6 +1006,8 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction"
       compute_devices = 'cpu cuda xpu'
       detail = 'with small-strain kinematics and shifted terms disabled,'
+      capabilities = 'kokkos & libtorch & neml2'
+      difference_tol = 1e-7
     []
     [total_lagrangian]
       type = PetscJacobianTester
@@ -1001,6 +1021,8 @@
       # Same tolerance as sczm_tl_fbar_off_kokkos_jacobian
       difference_tol = 1e-4
       detail = 'with total-Lagrangian kinematics,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [total_lagrangian_automatic_beta]
       type = PetscJacobianTester
@@ -1016,6 +1038,8 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction"
       difference_tol = 1e-4
       detail = 'with beta derived once from custom-named adjacent directional bulk tangents and element normal sizes,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [total_lagrangian_automatic_beta_together]
       type = PetscJacobianTester
@@ -1032,6 +1056,8 @@
                  "Executioner/residual_and_jacobian_together=true"
       difference_tol = 1e-4
       detail = 'with beta derived once and residual and Jacobian assembled together,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [total_lagrangian_automatic_beta_nonpositive]
       type = RunException
@@ -1044,6 +1070,8 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction"
       expect_err = 'SCZM stabilization beta must be finite and positive; check the normal directional bulk tangents and adjacent element volumes.'
       detail = 'and reject a nonpositive value derived from nonpositive directional bulk stiffness.'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [total_lagrangian_coupled_cubic]
       type = PetscJacobianTester
@@ -1058,6 +1086,8 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_gamma=0.04"
       difference_tol = 1e-4
       detail = 'with a native memoryless coupled-cubic cohesive law evaluated at each auxiliary separation,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [total_lagrangian_no_shifted]
       type = PetscJacobianTester
@@ -1071,6 +1101,8 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_gamma=0.04"
       difference_tol = 1e-4
       detail = 'with total-Lagrangian kinematics and shifted terms disabled,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [total_lagrangian_fbar]
       type = PetscJacobianTester
@@ -1081,6 +1113,8 @@
       # Same tolerance as sczm_tl_fbar_kokkos_jacobian
       difference_tol = 1e-4
       detail = 'with total-Lagrangian kinematics and the F-bar deformation gradient, and'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [total_lagrangian_fbar_together]
       type = PetscJacobianTester
@@ -1092,6 +1126,8 @@
       # Same tolerance as sczm_tl_fbar_kokkos_jacobian
       difference_tol = 1e-4
       detail = 'with total-Lagrangian kinematics, the F-bar deformation gradient, and residual and Jacobian assembled together,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [total_lagrangian_fbar_recovery]
       type = PetscJacobianTester
@@ -1106,6 +1142,8 @@
       max_parallel = 2
       mesh_mode = distributed
       detail = 'with element-local affine recovery of each side volume stress on distorted HEX8 elements, owner-to-ghost volume property synchronization, and the complete local and nonlocal F-bar derivatives,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [total_lagrangian_fbar_recovery_together]
       type = PetscJacobianTester
@@ -1121,6 +1159,8 @@
       max_parallel = 2
       mesh_mode = distributed
       detail = 'with element-local affine recovery, F-bar derivatives, and residual and Jacobian assembled together,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [total_lagrangian_fbar_recovery_solution]
       type = CSVDiff
@@ -1132,6 +1172,8 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_gamma=0.04 "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stress_recovery=element_linear"
       detail = 'with element-local affine recovery evaluated at the true interface rather than the surrogate interface,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [total_lagrangian_fbar_recovery_no_interface]
       type = PetscJacobianTester
@@ -1141,6 +1183,8 @@
       max_parallel = 2
       mesh_mode = distributed
       detail = 'with element-local affine recovery of stabilization and directional-correction stress on distorted HEX8 elements and no interface bulk-stress or NEML2 evaluation,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [total_lagrangian_fbar_2d_recovery_no_interface]
       type = PetscJacobianTester
@@ -1150,6 +1194,8 @@
       max_parallel = 2
       mesh_mode = distributed
       detail = 'with least-squares element-local affine recovery of stabilization and directional-correction stress on distorted QUAD4 elements and no interface bulk-stress or NEML2 evaluation, and'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cpu
     []
     [total_lagrangian_fbar_host]
       type = PetscJacobianTester
@@ -1160,15 +1206,12 @@
       capabilities = 'libtorch & neml2'
       difference_tol = 1e-4
       detail = 'in the host total-Lagrangian formulation with the F-bar deformation gradient.'
+      compute_devices = cpu
     []
   []
   [weighted_traction_stabilization_cuda]
     requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall assemble Jacobian entries consistent with its residual, and reproduce the CPU solution, for the weighted traction stabilization with the bulk NEML2 model evaluated on the CUDA device'
     # Same tolerances as the CPU children in weighted_traction_stabilization
-    ratio_tol = 1e-7
-    difference_tol = 1e-7
-    capabilities = 'kokkos & libtorch & neml2'
-    compute_devices = cuda
     [total_lagrangian]
       type = PetscJacobianTester
       input = sczm_tl_fbar_kokkos.i
@@ -1180,6 +1223,8 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_gamma=0.04"
       difference_tol = 1e-4
       detail = 'with total-Lagrangian kinematics,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cuda
     []
     [total_lagrangian_automatic_beta]
       type = PetscJacobianTester
@@ -1195,6 +1240,8 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction"
       difference_tol = 1e-4
       detail = 'with beta derived once from custom-named adjacent directional bulk tangents and element normal sizes,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cuda
     []
     [total_lagrangian_automatic_beta_together]
       type = PetscJacobianTester
@@ -1211,6 +1258,8 @@
                  "Executioner/residual_and_jacobian_together=true"
       difference_tol = 1e-4
       detail = 'with beta derived once and residual and Jacobian assembled together,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cuda
     []
     [total_lagrangian_automatic_beta_nonpositive]
       type = RunException
@@ -1223,6 +1272,8 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization=weighted_traction"
       expect_err = 'SCZM stabilization beta must be finite and positive; check the normal directional bulk tangents and adjacent element volumes.'
       detail = 'rejecting a nonpositive beta derived from nonpositive directional bulk stiffness,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cuda
     []
     [total_lagrangian_coupled_cubic]
       type = PetscJacobianTester
@@ -1237,6 +1288,8 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_gamma=0.04"
       difference_tol = 1e-4
       detail = 'with a native memoryless coupled-cubic cohesive law evaluated at each auxiliary separation,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cuda
     []
     [total_lagrangian_no_shifted]
       type = PetscJacobianTester
@@ -1250,6 +1303,8 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_gamma=0.04"
       difference_tol = 1e-4
       detail = 'with total-Lagrangian kinematics and shifted terms disabled,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cuda
     []
     [total_lagrangian_fbar]
       type = PetscJacobianTester
@@ -1259,6 +1314,8 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_gamma=0.04"
       difference_tol = 1e-4
       detail = 'with total-Lagrangian kinematics and the F-bar deformation gradient,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cuda
     []
     [total_lagrangian_fbar_together]
       type = PetscJacobianTester
@@ -1269,6 +1326,8 @@
                  "Executioner/residual_and_jacobian_together=true"
       difference_tol = 1e-4
       detail = 'with total-Lagrangian kinematics, the F-bar deformation gradient, and residual and Jacobian assembled together,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cuda
     []
     [total_lagrangian_fbar_recovery]
       type = PetscJacobianTester
@@ -1282,6 +1341,8 @@
       max_parallel = 2
       mesh_mode = distributed
       detail = 'with element-local affine recovery of each side volume stress on distorted HEX8 elements, owner-to-ghost volume property synchronization, and the complete local and nonlocal F-bar derivatives,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cuda
     []
     [total_lagrangian_fbar_recovery_together]
       type = PetscJacobianTester
@@ -1296,6 +1357,8 @@
       max_parallel = 2
       mesh_mode = distributed
       detail = 'with element-local affine recovery, F-bar derivatives, and residual and Jacobian assembled together,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cuda
     []
     [total_lagrangian_fbar_recovery_solution]
       type = CSVDiff
@@ -1308,6 +1371,8 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_gamma=0.04 "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stress_recovery=element_linear"
       detail = 'with element-local affine recovery evaluated at the true interface rather than the surrogate interface, reproducing the CPU solution,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cuda
     []
     [total_lagrangian_fbar_recovery_no_interface]
       type = PetscJacobianTester
@@ -1318,6 +1383,8 @@
       max_parallel = 2
       mesh_mode = distributed
       detail = 'with element-local affine recovery of stabilization and directional-correction stress on distorted HEX8 elements and no interface bulk-stress or NEML2 evaluation, and'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cuda
     []
     [total_lagrangian_fbar_2d_recovery_no_interface]
       type = PetscJacobianTester
@@ -1328,19 +1395,21 @@
       max_parallel = 2
       mesh_mode = distributed
       detail = 'with least-squares element-local affine recovery of stabilization and directional-correction stress on distorted QUAD4 elements and no interface bulk-stress or NEML2 evaluation.'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = cuda
     []
   []
   [coupled_cubic_rejections]
     requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall reject incomplete or invalid coupled-cubic cohesive-law configurations'
-    capabilities = 'kokkos & libtorch & neml2'
-    compute_devices = 'cpu cuda xpu'
-    recover = false
     [missing_material_linear_coefficient]
       type = RunException
       input = sczm_tl_fbar_kokkos.i
       cli_args = 'Materials/local_traction/cohesive_law=coupled_cubic'
       expect_err = 'linear_stiffness: This parameter is required for the coupled_cubic law.'
       detail = 'when the cohesive material omits its linear coefficient,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
     [missing_material_cubic_coefficient]
       type = RunException
@@ -1348,6 +1417,9 @@
       cli_args = 'Materials/local_traction/cohesive_law=coupled_cubic Materials/local_traction/linear_stiffness=8'
       expect_err = 'cubic_stiffness: This parameter is required for the coupled_cubic law.'
       detail = 'when the cohesive material omits its cubic coefficient, and'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
     [negative_material_coefficient]
       type = RunException
@@ -1355,16 +1427,16 @@
       cli_args = 'Materials/local_traction/cohesive_law=coupled_cubic Materials/local_traction/linear_stiffness=8 Materials/local_traction/cubic_stiffness=-1'
       expect_err = 'The coupled_cubic coefficients must be nonnegative.'
       detail = 'when the cohesive material has a negative coefficient.'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
   []
   [weighted_traction_stabilization_solution]
     requirement = 'The shifted cohesive-zone formulation shall compute the displacement solution with the weighted traction stabilization on a two-dimensional angled interface including the directional correction'
     # The Kokkos gold file is a copy of the host one: both solve the same generalized Robin equation
     # with the same beta, so they must agree tightly.
-    abs_zero = 1e-8
-    rel_err = 1e-8
     # See sczm_angled_kokkos_matches_host for why recovery is disabled.
-    recover = false
     [host]
       type = Exodiff
       input = sczm_angled_host.i
@@ -1372,6 +1444,9 @@
                  "Outputs/file_base=sczm_angled_stabilization_host_out"
       exodiff = sczm_angled_stabilization_host_out.e
       detail = 'on the host, and'
+      recover = false
+      abs_zero = 1e-8
+      rel_err = 1e-8
     []
     [kokkos]
       type = Exodiff
@@ -1382,13 +1457,14 @@
       capabilities = 'kokkos & libtorch & neml2'
       compute_devices = 'cpu cuda xpu'
       detail = 'with Kokkos, matching the host solution.'
+      recover = false
+      abs_zero = 1e-8
+      rel_err = 1e-8
     []
   []
   [salehani_irani_weighted_traction]
     requirement = 'The Kokkos shifted cohesive-zone formulation shall evaluate the nonlinear Salehani-Irani traction-separation law during generalized weighted-traction stabilization, matching the host SalehaniIrani3DCTraction solution and consistently linearizing the resulting residual'
     design = 'KokkosSalehaniIraniTractionSeparation.md KokkosSCZMStabilizationData.md'
-    capabilities = 'kokkos & libtorch & neml2'
-    compute_devices = cpu
     # The Kokkos golds link to the host golds: both solve the same generalized Robin equation. The
     # Jacobian test probes the nonlinear range.
     [small_strain_host]
@@ -1398,6 +1474,7 @@
       # Recovery does not rebuild the interface neighbor state; see sczm_angled_kokkos_matches_host
       recover = false
       detail = 'computing the host reference solution for small-strain kinematics,'
+      capabilities = 'kokkos & libtorch & neml2'
     []
     [finite_strain_host]
       type = Exodiff
@@ -1409,6 +1486,7 @@
       # Recovery does not rebuild the interface neighbor state; see sczm_angled_kokkos_matches_host
       recover = false
       detail = 'computing the host reference solution for total-Lagrangian finite-strain kinematics,'
+      capabilities = 'kokkos & libtorch & neml2'
     []
     [small_strain]
       type = Exodiff
@@ -1420,6 +1498,8 @@
       abs_zero = 1e-8
       rel_err = 1e-8
       detail = 'matching the host for small-strain kinematics,'
+      compute_devices = 'cpu cuda xpu'
+      capabilities = 'kokkos & libtorch & neml2'
     []
     [finite_strain]
       type = Exodiff
@@ -1434,6 +1514,8 @@
       abs_zero = 1e-8
       rel_err = 1e-8
       detail = 'matching the host for total-Lagrangian finite-strain kinematics, and'
+      compute_devices = 'cpu cuda xpu'
+      capabilities = 'kokkos & libtorch & neml2'
     []
     [jacobian]
       type = PetscJacobianTester
@@ -1456,13 +1538,13 @@
       # exponential law's curvature
       difference_tol = 5e-5
       detail = 'with a nonlinear finite-strain state and all diagonal and cross-component Jacobian blocks.'
+      compute_devices = 'cpu cuda xpu'
+      capabilities = 'kokkos & libtorch & neml2'
     []
   []
   [bilinear_mixed_mode_weighted_traction]
     requirement = 'The Kokkos shifted cohesive-zone formulation shall evaluate the stateful mixed-mode bilinear traction-separation law during generalized weighted-traction stabilization, recording its damage and history at the converged auxiliary jump through softening and unloading'
     design = 'KokkosBiLinearMixedModeTraction.md KokkosSCZMStabilizationData.md'
-    capabilities = 'kokkos'
-    compute_devices = cpu
     # beta = gamma |face| E / V with E = 1000, nu = 0, and a face-to-volume ratio of 2, so
     # gamma = 0.05 gives a finite beta = 100, equal to the penalty stiffness
     [host]
@@ -1472,6 +1554,7 @@
       # Recovery does not rebuild the interface neighbor state; see sczm_angled_kokkos_matches_host
       recover = false
       detail = 'computing the unstabilized host BiLinearMixedModeTraction reference solution,'
+      capabilities = 'kokkos'
     []
     [matches_host]
       type = Exodiff
@@ -1485,6 +1568,8 @@
       # sczm_angled_kokkos_matches_host
       recover = false
       detail = 'matching the host solution as the stabilization parameter grows,'
+      compute_devices = 'cpu cuda xpu'
+      capabilities = 'kokkos'
     []
     [finite_beta]
       type = Exodiff
@@ -1496,6 +1581,8 @@
       # sczm_angled_kokkos_matches_host
       recover = false
       detail = 'reproducing the reference solution at a finite stabilization parameter,'
+      compute_devices = 'cpu cuda xpu'
+      capabilities = 'kokkos'
     []
     [jacobian_elastic]
       type = PetscJacobianTester
@@ -1503,6 +1590,8 @@
       cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_gamma=0.05 '
                  'Executioner/num_steps=1 opening_ic=0.02 slip_ic=0.01'
       detail = 'with a consistent Jacobian below damage onset,'
+      compute_devices = 'cpu cuda xpu'
+      capabilities = 'kokkos'
     []
     [jacobian_softening]
       type = PetscJacobianTester
@@ -1513,6 +1602,8 @@
       # with -snes_test_err (2.7e-6 at 1e-6, 2.7e-7 at 1e-7), i.e. it is the truncation error of the
       # softening curvature
       detail = 'with a consistent Jacobian in softening with lagged mode mixity, and'
+      compute_devices = 'cpu cuda xpu'
+      capabilities = 'kokkos'
     []
     [jacobian_softening_current_mixity]
       type = PetscJacobianTester
@@ -1521,13 +1612,14 @@
                  'Executioner/num_steps=1 opening_ic=0.15 slip_ic=0.05 '
                  'Materials/local_traction/lag_mode_mixity=false'
       detail = 'with a consistent Jacobian in softening with the current mode mixity.'
+      compute_devices = 'cpu cuda xpu'
+      capabilities = 'kokkos'
     []
   []
   [kokkos_stress_recovery_rejections]
     requirement = 'The Kokkos shifted cohesive-zone formulation shall reject unsupported stress_recovery configurations with an explicit error'
     design = 'KokkosSCZMInterfaceKernelTotalLagrangian.md ShiftedCohesiveZoneAction.md'
     issues = '#33666 #30655'
-    recover = false
     [host_path]
       type = RunException
       input = sczm_tl_fbar_host.i
@@ -1535,6 +1627,7 @@
       expect_err = 'Stress recovery is supported only by Kokkos total-Lagrangian SCZM'
       capabilities = 'libtorch & neml2'
       detail = 'on the host path,'
+      recover = false
     []
     [small_strain]
       type = RunException
@@ -1544,6 +1637,7 @@
       capabilities = 'kokkos & libtorch & neml2'
       compute_devices = 'cpu cuda xpu'
       detail = 'with small-strain kinematics,'
+      recover = false
     []
     [without_weighted_traction]
       type = RunException
@@ -1553,6 +1647,7 @@
       capabilities = 'kokkos & libtorch & neml2'
       compute_devices = 'cpu cuda xpu'
       detail = 'when weighted traction stabilization is disabled, and'
+      recover = false
     []
     [without_shifted_mapping]
       type = RunException
@@ -1562,14 +1657,13 @@
       capabilities = 'kokkos & libtorch & neml2'
       compute_devices = 'cpu cuda xpu'
       detail = 'when shifted interface terms are disabled.'
+      recover = false
     []
   []
   [neml2_traction_weighted_traction]
     requirement = 'The Kokkos total-Lagrangian shifted cohesive-zone formulation shall evaluate a NEML2 traction-separation model during generalized weighted-traction stabilization, matching the native KokkosPureElasticTractionSeparation solution under the default and a nondefault stabilization_gamma in 2D and 3D and providing a consistent Jacobian'
     design = 'KokkosSCZMStabilizationData.md KokkosSCZMInterfaceKernelTotalLagrangian.md'
     issues = '#33666 #30655'
-    capabilities = 'kokkos & libtorch & neml2'
-    compute_devices = cpu
     # beta = gamma |face| (lambda + 2 mu) / V with E = 200, nu = 0.3, and a face-to-volume ratio of
     # 2 is about 2700 for the default gamma = 5 and about 11 for gamma = 0.02
     [2d_custom_gamma_native]
@@ -1581,6 +1675,8 @@
       cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_gamma=0.02 file_base=sczm_tl_2d_weighted_native_out'
       csvdiff = sczm_tl_2d_weighted_native_out.csv
       detail = 'with the native 2D law and a nondefault stabilization_gamma,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
     []
     [2d_custom_gamma_neml2]
       type = CSVDiff
@@ -1592,6 +1688,8 @@
       # The gold is a symlink to sczm_tl_2d_weighted_native_out.csv: the same law, so the same solution
       csvdiff = sczm_tl_2d_weighted_neml2_out.csv
       detail = 'with the 2D NEML2 law and a nondefault stabilization_gamma matching the native gold,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
     []
     [2d_auto_native]
       type = CSVDiff
@@ -1602,6 +1700,8 @@
       cli_args = 'file_base=sczm_tl_2d_weighted_auto_native_out'
       csvdiff = sczm_tl_2d_weighted_auto_native_out.csv
       detail = 'with the native 2D law and the default stabilization_gamma,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
     []
     [2d_auto_neml2]
       type = CSVDiff
@@ -1613,6 +1713,8 @@
       # The gold is a symlink to sczm_tl_2d_weighted_auto_native_out.csv: the same law, so the same solution
       csvdiff = sczm_tl_2d_weighted_auto_neml2_out.csv
       detail = 'with the 2D NEML2 law and the default stabilization_gamma matching the native gold,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
     []
     [3d_custom_gamma_native]
       type = CSVDiff
@@ -1623,6 +1725,8 @@
       cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_gamma=0.02 file_base=sczm_tl_3d_weighted_native_out'
       csvdiff = sczm_tl_3d_weighted_native_out.csv
       detail = 'with the native 3D law and a nondefault stabilization_gamma,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
     []
     [3d_custom_gamma_neml2]
       type = CSVDiff
@@ -1634,6 +1738,8 @@
       # The gold is a symlink to sczm_tl_3d_weighted_native_out.csv: the same law, so the same solution
       csvdiff = sczm_tl_3d_weighted_neml2_out.csv
       detail = 'with the 3D NEML2 law and a nondefault stabilization_gamma matching the native gold,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
     []
     [3d_auto_native]
       type = CSVDiff
@@ -1644,6 +1750,8 @@
       cli_args = 'file_base=sczm_tl_3d_weighted_auto_native_out'
       csvdiff = sczm_tl_3d_weighted_auto_native_out.csv
       detail = 'with the native 3D law and the default stabilization_gamma,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
     []
     [3d_auto_neml2]
       type = CSVDiff
@@ -1655,6 +1763,8 @@
       # The gold is a symlink to sczm_tl_3d_weighted_auto_native_out.csv: the same law, so the same solution
       csvdiff = sczm_tl_3d_weighted_auto_neml2_out.csv
       detail = 'with the 3D NEML2 law and the default stabilization_gamma matching the native gold, and'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
     []
     [2d_neml2_jacobian]
       type = PetscJacobianTester
@@ -1666,16 +1776,15 @@
       # law at this state, above the 1e-4 of the other weighted-traction Jacobian tests
       difference_tol = 5e-4
       detail = 'with a consistent Jacobian for the 2D NEML2 weighted-traction formulation.'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
     []
   []
   [bilinear_mixed_mode_neml2_weighted_traction]
     requirement = 'The Kokkos shifted cohesive-zone formulation shall evaluate a stateful NEML2 traction-separation model during generalized weighted-traction stabilization, advancing its damage and history from the converged auxiliary jump to match the native KokkosBiLinearMixedModeTraction solution through softening and unloading'
     design = 'KokkosSCZMStabilizationData.md'
-    capabilities = 'kokkos & libtorch & neml2'
-    compute_devices = cpu
     # Recovery does not rebuild the Kokkos interface neighbor state; see
     # sczm_angled_kokkos_matches_host
-    recover = false
     [matches_host]
       type = Exodiff
       input = sczm_bilinear_neml2.i
@@ -1684,6 +1793,9 @@
       abs_zero = 1e-10
       rel_err = 1e-8
       detail = 'matching the unstabilized host solution as the stabilization parameter grows,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
     [finite_beta]
       type = Exodiff
@@ -1694,6 +1806,9 @@
       # advancing the NEML2 state from the shifted jump instead changes the solution by about 1e-2
       exodiff = sczm_bilinear_neml2_beta100_out.e
       detail = 'matching the native solution at a finite stabilization parameter,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
     [jacobian_softening]
       type = PetscJacobianTester
@@ -1701,22 +1816,25 @@
       cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/sczm/stabilization_gamma=0.05 '
                  'Executioner/num_steps=1 opening_ic=0.15 slip_ic=0.05'
       detail = 'with a consistent Jacobian in softening.'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
   []
   [neml2_traction_laws_weighted_traction]
     requirement = 'The Kokkos shifted cohesive-zone formulation shall evaluate any NEML2 traction-separation model mapping the local displacement jump to the local traction during generalized weighted-traction stabilization, without code specific to the model, matching the native Kokkos law with the same parameters and consistently linearizing the resulting residual for'
     design = 'KokkosSCZMStabilizationData.md'
-    capabilities = 'kokkos & libtorch & neml2'
-    compute_devices = cpu
     # Recovery does not rebuild the Kokkos interface neighbor state; see
     # sczm_angled_kokkos_matches_host
-    recover = false
     [salehani_native]
       type = Exodiff
       input = sczm_salehani_weighted_kokkos.i
       cli_args = 'Executioner/end_time=0.75'
       exodiff = sczm_salehani_weighted_kokkos_out.e
       detail = 'the native exponential Salehani-Irani law through its peak and into softening,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
     [salehani]
       type = Exodiff
@@ -1727,6 +1845,9 @@
       # The gold links to the native gold
       exodiff = sczm_salehani_weighted_neml2_out.e
       detail = 'the NEML2 SalehaniIraniTraction model,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
     [salehani_jacobian]
       type = PetscJacobianTester
@@ -1740,6 +1861,9 @@
       ratio_tol = 2e-7
       difference_tol = 1e-3
       detail = 'the NEML2 SalehaniIraniTraction model in softening,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
     [power_law_viscous_native]
       type = Exodiff
@@ -1751,6 +1875,9 @@
       exodiff = sczm_bilinear_power_law_viscous_kokkos_out.e
       detail = 'the native bilinear law with the power-law mixed-mode criterion and damage viscosity '
                'through softening and unloading,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
     [power_law_viscous]
       type = Exodiff
@@ -1762,6 +1889,9 @@
       exodiff = sczm_bilinear_power_law_viscous_neml2_out.e
       detail = 'the NEML2 BilinearTraction model with PowerLawFullSeparation and damage viscosity, '
                'and'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
     [power_law_viscous_jacobian]
       type = PetscJacobianTester
@@ -1771,14 +1901,14 @@
                  'Executioner/num_steps=1 opening_ic=0.15 slip_ic=0.05'
       detail = 'the NEML2 BilinearTraction model with PowerLawFullSeparation and damage viscosity in '
                'softening.'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
   []
   [neml2_weighted_traction_rejections]
     requirement = 'The Kokkos shifted cohesive-zone formulation shall reject a NEML2 traction-separation model that cannot serve as the weighted-traction trial law with an explicit error'
     design = 'KokkosSCZMStabilizationData.md'
-    capabilities = 'kokkos & libtorch & neml2'
-    compute_devices = cpu
-    recover = false
     [manage_state_advance_required]
       type = RunException
       input = sczm_bilinear_neml2.i
@@ -1787,6 +1917,9 @@
       cli_args = 'NEML2/traction/input_backend=moose NEML2/traction/manage_state_advance=false'
       expect_err = "requires 'manage_state_advance = true' for the NEML2 cohesive model"
       detail = 'when a model with history does not have its state advanced by the executor,'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
     [traction_not_on_device]
       type = RunException
@@ -1794,6 +1927,9 @@
       cli_args = 'NEML2/traction/output_backend=moose'
       expect_err = "found no Kokkos material supplying 'interface_traction' on its interface"
       detail = 'when the model traction is not a Kokkos material property, and'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
     [rotated_traction]
       type = RunException
@@ -1806,6 +1942,9 @@
       expect_err = "weighted_traction requires an interface NEML2 traction-separation law to "
                    "produce 'interface_traction' from the local displacement jump"
       detail = 'when the model produces a rotated traction.'
+      capabilities = 'kokkos & libtorch & neml2'
+      compute_devices = 'cpu cuda xpu'
+      recover = false
     []
   []
 []
