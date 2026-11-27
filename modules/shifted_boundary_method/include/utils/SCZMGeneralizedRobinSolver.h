@@ -547,22 +547,44 @@ normalStiffness(const Tangent & tangent, const Vector & normal, const unsigned i
   return stiffness;
 }
 
-/**
- * Automatic Robin parameter beta = gamma / 2 * |face| * (k_p / |V_p| + k_n / |V_n|) from the normal
- * stiffness k and volume |V| of the elements on both sides of an interface face. |V| / |face| is
- * the element size normal to the face, so k |face| / |V| is the bulk stiffness per unit area that
- * the dimensionless gamma scales.
- */
-SCZM_KOKKOS_FUNCTION Real
-automaticBeta(const Real gamma,
-              const Real face_area,
-              const Real primary_stiffness,
-              const Real primary_volume,
-              const Real neighbor_stiffness,
-              const Real neighbor_volume)
+/// Weights of the average bulk traction and the Robin parameter of one interface quadrature point
+struct StabilizationParameters
 {
-  return 0.5 * gamma * face_area *
-         (primary_stiffness / primary_volume + neighbor_stiffness / neighbor_volume);
+  /// Weight of the primary side traction in T_h; the neighbor side traction has 1 - primary_weight
+  Real primary_weight = 0.5;
+  Real beta = 0.0;
+};
+
+/**
+ * Automatic stabilization parameters from the normal stiffness k and volume |V| of the elements on
+ * both sides of an interface face. |V| / |face| is the element size normal to the face, so
+ * a = k |face| / |V| is the bulk stiffness per unit area. Each side's traction is weighted by the
+ * other side's stiffness, w_p = a_n / (a_p + a_n) and w_n = a_p / (a_p + a_n), and
+ *
+ *   beta = gamma * 2 a_p a_n / (a_p + a_n),
+ *
+ * the harmonic mean of a scaled by the dimensionless gamma. A trace inequality bounds the traction
+ * of each side by its own a, so the average needs beta of order sum_s w_s^2 a_s, which is half the
+ * harmonic mean for these weights; equal weights would need half the arithmetic mean. The weights
+ * thus keep beta at the scale of the compliant side, and the stabilization effective, when the two
+ * sides differ in stiffness by orders of magnitude (Annavarapu, Hautefeuille, and Dolbow, Comput.
+ * Methods Appl. Mech. Eng. 225-228, 2012). Equal sides give equal weights and beta = gamma a.
+ */
+SCZM_KOKKOS_FUNCTION StabilizationParameters
+automaticStabilization(const Real gamma,
+                       const Real face_area,
+                       const Real primary_stiffness,
+                       const Real primary_volume,
+                       const Real neighbor_stiffness,
+                       const Real neighbor_volume)
+{
+  const Real primary = primary_stiffness * face_area / primary_volume;
+  const Real neighbor = neighbor_stiffness * face_area / neighbor_volume;
+  const Real sum = primary + neighbor;
+  StabilizationParameters parameters;
+  parameters.primary_weight = neighbor / sum;
+  parameters.beta = 2.0 * gamma * primary * neighbor / sum;
+  return parameters;
 }
 } // namespace Moose::Kokkos::SCZM
 

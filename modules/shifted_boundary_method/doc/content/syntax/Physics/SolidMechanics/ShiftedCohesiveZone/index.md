@@ -124,14 +124,15 @@ The AD interface kernel differentiates its residual automatically and does not u
 ## Weighted-traction stabilization id=weighted-traction-stabilization
 
 Set [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization) to `weighted_traction` to combine the shifted cohesive traction
-with the average adjacent bulk traction. At each paired interface quadrature point, the host and
+with a weighted average of the adjacent bulk tractions. At each paired interface quadrature point, the host and
 Kokkos paths solve the same generalized Robin equation for the auxiliary jump $\mathbf{j}$,
 
 !equation
 \mathbf{j} + \frac{1}{\beta}\mathbf{f}(\mathbf{j}) = \mathbf{J}_d + \frac{1}{\beta}\mathbf{T}_h,
 
 where $\mathbf{J}_d$ is the shifted displacement jump, $\mathbf{f}$ is the global cohesive traction,
-and $\mathbf{T}_h$ is the average adjacent bulk traction. The kernels then assemble
+and $\mathbf{T}_h = w^-\boldsymbol{\sigma}^-\mathbf{n} + w^+\boldsymbol{\sigma}^+\mathbf{n}$ is the
+weighted average of the adjacent bulk tractions. The kernels then assemble
 $\mathbf{f}(\mathbf{j})$ and weight its derivatives with
 $\mathbf{S} = (\mathbf{I} + \beta^{-1}\partial\mathbf{f}/\partial\mathbf{j})^{-1}$. The solve only
 evaluates the traction law and its jump derivative, so any traction-separation law works without a
@@ -147,20 +148,31 @@ law, $\mathbf{J}_d$ can lie past the peak while the interface is loaded well bel
 Starting at zero reaches the undamaged root; the iteration restarts at $\mathbf{J}_d$ only when it
 finds no undamaged root.
 
-The Robin parameter is not an input. The first evaluation derives it at each paired quadrature
-point from the bulk tangent on each side,
+Neither the weights nor the Robin parameter is an input. The first evaluation derives them at each
+paired quadrature point from the bulk tangent on each side,
 
 !equation
-\beta = \frac{\gamma}{2}\,\lvert F\rvert\left(\frac{k^-}{V^-} + \frac{k^+}{V^+}\right), \qquad
+w^\mp = \frac{a^\pm}{a^- + a^+}, \qquad
+\beta = 2\gamma\,\frac{a^- a^+}{a^- + a^+}, \qquad
+a^\pm = \frac{k^\pm\lvert F\rvert}{V^\pm}, \qquad
 k^\pm = N_i N_J C^\pm_{iJkL} N_k N_L,
 
-and freezes it for all later assemblies, including across restart. Here $\gamma$ is
+and freezes them for all later assemblies, including across restart. Here $\gamma$ is
 [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization_gamma)
 (default 5), $\lvert F\rvert$ is the interface face area, $V^\pm$ are the adjacent element volumes,
 so that $V^\pm/\lvert F\rvert$ is the element normal length, and $\mathbf{C}^\pm$ is the
 [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/tangent) property
-evaluated on the interface face. For an isotropic linear elastic bulk, $k = \lambda + 2\mu$. The
-dimensionless $\gamma$ is used instead of a stiffness because a traction law need not have the form
+evaluated on the interface face. For an isotropic linear elastic bulk, $k = \lambda + 2\mu$.
+
+The softer side gets the larger weight, and $\beta$ is $\gamma$ times the harmonic mean of
+$a^-$ and $a^+$. Stability requires $\beta$ to bound the bulk traction term by the trace inequality,
+which with these weights needs $\beta \gtrsim \frac{1}{2}$ the harmonic mean, whereas equal weights
+would need $\frac{1}{2}$ the arithmetic mean. For a high stiffness contrast, the arithmetic mean is
+dominated by the stiff side, so equal weights let the stiff side's traction error dominate
+$\mathbf{T}_h$, and a $\beta$ large enough to stabilize it drives $\mathbf{S}$ toward the
+unstabilized $\mathbf{I}$. Stiffness weighting keeps $\beta$ of the order of the softer side for any
+contrast (Annavarapu, Hautefeuille and Dolbow, Comput. Methods Appl. Mech. Engrg. 225-228, 2012).
+For equal sides, $w^\pm = \frac{1}{2}$ and $\beta = \gamma a$. The dimensionless $\gamma$ is used instead of a stiffness because a traction law need not have the form
 $\mathbf{t} = \mathbf{K}[\![\mathbf{u}]\!]$. On the host, an `INITIAL` evaluation that runs before
 the bulk tangent exists, such as the input gathering of a NEML2 interface model, keeps the shifted
 jump and defers $\beta$ to the next evaluation.
@@ -196,12 +208,13 @@ derivative `dinterface_traction_djump`.
 Both sides of the Robin equation of
 [KokkosSCZMInterfaceKernelTotalLagrangian](KokkosSCZMInterfaceKernelTotalLagrangian.md) use one
 fixed reference unit normal $\mathbf{N}$: the true-interface reference normal when shifted, and the
-surrogate face reference normal with `no_shifted = true`. Hence $\partial\mathbf{N}/\partial\mathbf{u} = \mathbf{0}$. The average bulk traction is
+surrogate face reference normal with `no_shifted = true`. Hence $\partial\mathbf{N}/\partial\mathbf{u} = \mathbf{0}$. The weighted average bulk traction is
 
 !equation
-\mathbf{T}_h = \frac{1}{2}\left(\mathbf{P}^- + \mathbf{P}^+\right)\mathbf{N},
+\mathbf{T}_h = \left(w^-\mathbf{P}^- + w^+\mathbf{P}^+\right)\mathbf{N},
 
-where $\mathbf{P}^\pm$ is the first Piola-Kirchhoff stress of the adjacent element on each side. No
+where $\mathbf{P}^\pm$ is the first Piola-Kirchhoff stress of the adjacent element on each side and
+$w^\pm$ are the frozen weights of [#weighted-traction-stabilization]. No
 current normal is needed, because Nanson's relation gives on each side
 
 !equation
@@ -226,11 +239,11 @@ rotation built from $\mathbf{N}$, and $\mathbf{f}_\mathrm{loc}$ is the local coh
 unit current area. Both sides of the Robin equation are therefore tractions per unit reference area.
 
 The linearization keeps $\mathbf{N}$ fixed. The bulk side gives
-$\delta\mathbf{T}_h = \frac{1}{2}(\delta\mathbf{P}^- + \delta\mathbf{P}^+)\mathbf{N}$, with the
+$\delta\mathbf{T}_h = (w^-\delta\mathbf{P}^- + w^+\delta\mathbf{P}^+)\mathbf{N}$, with the
 deformation entering through $\partial\mathbf{P}/\partial\mathbf{F}$ (`tangent`, or
 `volume_tangent` with `stress_recovery = element_linear`). The cohesive side includes $\delta a_N$,
 $\delta\mathbf{Q} = \delta\bar{\mathbf{R}}\,\mathbf{Q}_0$, and the $\delta\mathbf{Q}^T\mathbf{j}$
-term of the local jump. The automatic beta uses the same normal,
+term of the local jump. The automatic weights and beta use the same normal,
 $\kappa_N^\pm = N_i N_J C^\pm_{iJkL} N_k N_L$, with
 $\mathbf{C}^\pm = \partial\mathbf{P}^\pm/\partial\mathbf{F}$ taken from each adjacent element's
 `volume_tangent`.

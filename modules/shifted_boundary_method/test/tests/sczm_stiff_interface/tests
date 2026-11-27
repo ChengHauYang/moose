@@ -169,4 +169,62 @@
       detail = 'and failing to converge without stabilization.'
     []
   []
+  [bimaterial]
+    requirement = 'The system shall reproduce the reaction and the interface normal tractions of an '
+                  'interface-fitted cohesive zone model with a stiff linear traction-separation law '
+                  'on an inclined interface between two bulk materials, one 1000 times stiffer than '
+                  'the other, by a shifted cohesive zone model with weighted traction '
+                  'stabilization, whereas the unstabilized shifted model produces oscillating '
+                  'tractions, by'
+    [fitted]
+      type = CheckFiles
+      input = 'common.i fitted.i linear.i bimaterial.i'
+      cli_args = 'Outputs/file_base=bimaterial_fitted'
+      check_files = 'bimaterial_fitted.csv'
+      recover = false
+      detail = 'computing the interface-fitted reaction and tractions,'
+    []
+    [weighted_traction]
+      type = CheckFiles
+      input = 'common.i shifted.i linear.i bimaterial.i'
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=weighted_traction '
+                 'Outputs/file_base=bimaterial_weighted'
+      check_files = 'bimaterial_weighted.csv'
+      mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
+      recover = false
+      detail = 'computing them with weighted traction stabilization,'
+    []
+    [weighted_traction_compare]
+      type = RunCommand
+      command = 'python3 ../../../../../python/mooseutils/csvdiff.py '
+                'bimaterial_weighted.csv bimaterial_fitted.csv --comparison-file bimaterial.cmp'
+      prereq = 'bimaterial/fitted bimaterial/weighted_traction'
+      recover = false
+      restep = false
+      valgrind = none
+      detail = 'matching the stabilized and interface-fitted results,'
+    []
+    [unstabilized]
+      type = CheckFiles
+      input = 'common.i shifted.i linear.i bimaterial.i'
+      cli_args = 'Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=none '
+                 'Outputs/file_base=bimaterial_unstabilized'
+      check_files = 'bimaterial_unstabilized.csv'
+      mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
+      recover = false
+      detail = 'computing them without stabilization,'
+    []
+    [unstabilized_compare]
+      type = RunCommand
+      command = 'python3 ../../../../../python/mooseutils/csvdiff.py '
+                'bimaterial_unstabilized.csv bimaterial_fitted.csv --comparison-file bimaterial.cmp'
+      # csvdiff exits with 1 when the files differ
+      expect_exit_code = 1
+      prereq = 'bimaterial/fitted bimaterial/unstabilized'
+      recover = false
+      restep = false
+      valgrind = none
+      detail = 'and not matching the unstabilized and interface-fitted results.'
+    []
+  []
 []

@@ -165,6 +165,7 @@ KokkosSCZMInterfaceKernelSmallStrain::initialSetup()
 
   _face_qp_offsets = _stabilization_data->faceQpOffsets();
   _stabilization_beta = _stabilization_data->stabilizationBetas();
+  _primary_weight = _stabilization_data->primaryWeights();
   _stabilized_traction = _stabilization_data->stabilizedTractions();
   _robin_W = _stabilization_data->robinTangents();
 }

@@ -376,8 +376,8 @@ SCZMInterfaceKernelTotalLagrangianTempl<is_ad>::computeJacobianComponent(
         average_traction_derivative += ((b == this->_component ? 1.0 : 0.0) - weight) *
                                        stressDerivative(b, component_j, normal, trial_on_element);
       }
-      jacobian +=
-          0.5 * (normal * this->_normals[this->_qp]) * signed_test * average_traction_derivative;
+      jacobian += this->averageTractionWeight(trial_on_element) *
+                  (normal * this->_normals[this->_qp]) * signed_test * average_traction_derivative;
     }
     else
       jacobian = computeDResidualDDisplacement(this->_component, component_j, type) +

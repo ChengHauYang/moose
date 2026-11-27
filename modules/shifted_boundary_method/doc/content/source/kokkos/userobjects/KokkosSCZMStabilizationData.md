@@ -9,7 +9,7 @@ for [small-strain](KokkosSCZMInterfaceKernelSmallStrain.md) and
 when [!param](/Physics/SolidMechanics/ShiftedCohesiveZone/ShiftedCohesiveZoneAction/stabilization) is set to `weighted_traction` and passes it to each displacement
 component kernel through its [!param](/InterfaceKernels/KokkosSCZMInterfaceKernelSmallStrain/stabilization_data) parameter.
 
-At each paired interface quadrature point, the object computes the average adjacent bulk traction
+At each paired interface quadrature point, the object computes the weighted average bulk traction
 $\mathbf{T}_h$ from Cauchy stress for small strain or PK1 stress for total Lagrangian and solves
 the [generalized Robin equation](KokkosSCZMInterfaceKernelTotalLagrangian.md#weighted-traction-stabilization). It
 stores the stabilized traction $\widehat{\mathbf{t}}$ and the auxiliary jump $\mathbf{j}$. When the
@@ -72,7 +72,9 @@ The object is passive with [!param](/UserObjects/KokkosSCZMStabilizationData/exe
 assembly and invalidate it in `residualSetup()` and `jacobianSetup()`. Residual-only
 assembly skips the tangents.
 
-The first evaluation computes and freezes $\beta$ at each quadrature point, scaled by
+The first evaluation computes and freezes the
+[average traction weights](syntax/Physics/SolidMechanics/ShiftedCohesiveZone/index.md#weighted-traction-stabilization)
+and $\beta$ at each quadrature point, scaled by
 [!param](/UserObjects/KokkosSCZMStabilizationData/stabilization_gamma), from the normal stiffness
 $k = n_i n_J n_k n_L C_{iJkL}$ of the bulk tangent on each side, taken from the face
 [!param](/UserObjects/KokkosSCZMStabilizationData/tangent), or from the recovered

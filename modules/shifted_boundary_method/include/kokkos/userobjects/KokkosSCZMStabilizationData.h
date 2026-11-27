@@ -153,6 +153,7 @@ public:
   }
 
   const Moose::Kokkos::Array<Real> & stabilizationBetas() const { return _stabilization_beta; }
+  const Moose::Kokkos::Array<Real> & primaryWeights() const { return _primary_weight; }
 
   const SCZMWeightedTractionStabilization::Settings & stabilizationSettings() const
   {
@@ -213,6 +214,10 @@ protected:
   /// Host copy of the stabilization beta, which carries it through restart and recovery
   /// because restartable data is restored before initialSetup sizes the device array
   std::vector<Real> & _restartable_stabilization_beta;
+  /// Frozen weight of the primary side traction in the average bulk traction
+  Moose::Kokkos::Array<Real> _primary_weight;
+  /// Host copy of the primary side weight, restored with the stabilization beta
+  std::vector<Real> & _restartable_primary_weight;
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _stabilized_traction;
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _auxiliary_jump;
   Moose::Kokkos::Array<Moose::Kokkos::Real33> _robin_W;
@@ -274,31 +279,6 @@ KokkosSCZMStabilizationData::executeInterface(Datum & primary,
     const auto index = face.qp_map_offset + qp;
     const auto neighbor_qp = kokkosInterfaceNeighborQp(face, qp);
     const auto normal = _shifted ? _true_normals[index] : primary.normals(qp);
-    Moose::Kokkos::Real3 average_traction{};
-    for (unsigned int i = 0; i < _ndisp; ++i)
-      for (unsigned int J = 0; J < _ndisp; ++J)
-      {
-        Real primary_stress = 0.0;
-        Real neighbor_stress = 0.0;
-        if (_element_linear_recovery)
-        {
-          const auto primary_offset = recoveryOffset(face, qp, true);
-          const auto neighbor_offset = recoveryOffset(face, qp, false);
-          for (unsigned int volume_qp = 0; volume_qp < primary_volume.n_qps(); ++volume_qp)
-            primary_stress += _recovery_weights[primary_offset + volume_qp] *
-                              _volume_stress(primary_volume, volume_qp)(i, J);
-          for (unsigned int volume_qp = 0; volume_qp < neighbor_volume.n_qps(); ++volume_qp)
-            neighbor_stress += _recovery_weights[neighbor_offset + volume_qp] *
-                               _volume_stress(neighbor_volume, volume_qp)(i, J);
-        }
-        else
-        {
-          primary_stress = _stress(primary, qp)(i, J);
-          neighbor_stress = _stress_neighbor(neighbor, neighbor_qp)(i, J);
-        }
-        average_traction(i) += 0.5 * (primary_stress + neighbor_stress) * normal(J);
-      }
-    _bulk_traction[index] = average_traction;
 
     if (!_beta_initialized)
     {
@@ -326,13 +306,44 @@ KokkosSCZMStabilizationData::executeInterface(Datum & primary,
         neighbor_stiffness = Moose::Kokkos::SCZM::normalStiffness(
             _tangent_neighbor(neighbor, neighbor_qp), normal, _ndisp);
       }
-      _stabilization_beta(index) = Moose::Kokkos::SCZM::automaticBeta(_settings.gamma,
-                                                                      face_area,
-                                                                      primary_stiffness,
-                                                                      primary_volume_measure,
-                                                                      neighbor_stiffness,
-                                                                      neighbor_volume_measure);
+      const auto parameters = Moose::Kokkos::SCZM::automaticStabilization(_settings.gamma,
+                                                                          face_area,
+                                                                          primary_stiffness,
+                                                                          primary_volume_measure,
+                                                                          neighbor_stiffness,
+                                                                          neighbor_volume_measure);
+      _stabilization_beta(index) = parameters.beta;
+      _primary_weight(index) = parameters.primary_weight;
     }
+
+    const Real primary_weight = _primary_weight(index);
+    Moose::Kokkos::Real3 average_traction{};
+    for (unsigned int i = 0; i < _ndisp; ++i)
+      for (unsigned int J = 0; J < _ndisp; ++J)
+      {
+        Real primary_stress = 0.0;
+        Real neighbor_stress = 0.0;
+        if (_element_linear_recovery)
+        {
+          const auto primary_offset = recoveryOffset(face, qp, true);
+          const auto neighbor_offset = recoveryOffset(face, qp, false);
+          for (unsigned int volume_qp = 0; volume_qp < primary_volume.n_qps(); ++volume_qp)
+            primary_stress += _recovery_weights[primary_offset + volume_qp] *
+                              _volume_stress(primary_volume, volume_qp)(i, J);
+          for (unsigned int volume_qp = 0; volume_qp < neighbor_volume.n_qps(); ++volume_qp)
+            neighbor_stress += _recovery_weights[neighbor_offset + volume_qp] *
+                               _volume_stress(neighbor_volume, volume_qp)(i, J);
+        }
+        else
+        {
+          primary_stress = _stress(primary, qp)(i, J);
+          neighbor_stress = _stress_neighbor(neighbor, neighbor_qp)(i, J);
+        }
+        average_traction(i) +=
+            (primary_weight * primary_stress + (1.0 - primary_weight) * neighbor_stress) *
+            normal(J);
+      }
+    _bulk_traction[index] = average_traction;
   }
 }
 

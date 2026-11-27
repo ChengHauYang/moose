@@ -1,0 +1,13 @@
+# Tolerances for a shifted cohesive zone model against the interface-fitted one between bulk
+# materials of very different stiffness. Each element cut by the interface takes the material of
+# the side that holds most of it, so the material boundary follows the zigzag surrogate interface
+# rather than the true one. This first-order error in the mesh size changes the reaction by about
+# 4 percent and the average traction by about 9 percent on the 20 x 20 mesh, and halves on the
+# 40 x 40 mesh. The maximum and minimum change by up to about 1.5 percent. The floor only applies
+# to the zero initial state.
+GLOBAL VARIABLES relative 0 floor 0
+    time relative 0 floor 0
+    react_x relative 5e-2 floor 1e-6
+    normal_traction_average relative 1e-1 floor 1e-6
+    normal_traction_max relative 2e-2 floor 1e-6
+    normal_traction_min relative 2e-2 floor 1e-6

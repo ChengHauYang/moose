@@ -60,6 +60,12 @@ protected:
    */
   const MaterialProperty<RankTwoTensor> * _inverse_robin_tangent;
 
+  /// Weight of the element side traction in the average bulk traction, with stabilization
+  const MaterialProperty<Real> * _primary_weight = nullptr;
+
+  /// Weight of the trial side traction in the average bulk traction
+  Real averageTractionWeight(bool trial_on_element) const;
+
   usingGenericInterfaceKernelMembers;
 };
 

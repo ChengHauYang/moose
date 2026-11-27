@@ -525,7 +525,7 @@ TEST(SCZMGeneralizedRobinSolverTest, BatchFreezesTerminalPoints)
   EXPECT_LT(finish_round[1], finish_round[2]);
 }
 
-TEST(SCZMGeneralizedRobinSolverTest, NormalStiffnessAndAutomaticBeta)
+TEST(SCZMGeneralizedRobinSolverTest, NormalStiffnessAndAutomaticStabilization)
 {
   // Lame parameters of E = 100, nu = 0.3, whose P-wave modulus lambda + 2 mu is 134.615...
   const Real lambda = 100.0 * 0.3 / (1.3 * 0.4);
@@ -542,7 +542,13 @@ TEST(SCZMGeneralizedRobinSolverTest, NormalStiffnessAndAutomaticBeta)
   // Entries along the third axis do not enter a 2D contraction
   EXPECT_NEAR(normalStiffness(tangent, RealVectorValue(0.0, 0.0, 1.0), 2), 0.0, 1e-12 * mu);
 
-  // gamma = 5, |face| = 0.5, k_p / |V_p| = 100 / 0.25, k_n / |V_n| = 300 / 0.5:
-  // beta = 0.5 * 5 * 0.5 * (400 + 600) = 1250
-  EXPECT_DOUBLE_EQ(automaticBeta(5.0, 0.5, 100.0, 0.25, 300.0, 0.5), 1250.0);
+  // gamma = 5, |face| = 0.5, a_p = 100 * 0.5 / 0.25 = 200, a_n = 300 * 0.5 / 0.5 = 300:
+  // w_p = 300 / 500 = 0.6 and beta = 2 * 5 * 200 * 300 / 500 = 1200
+  const auto parameters = automaticStabilization(5.0, 0.5, 100.0, 0.25, 300.0, 0.5);
+  EXPECT_DOUBLE_EQ(parameters.primary_weight, 0.6);
+  EXPECT_DOUBLE_EQ(parameters.beta, 1200.0);
+  // Equal sides weight the tractions equally, and beta = gamma a = 5 * 200
+  const auto equal = automaticStabilization(5.0, 0.5, 100.0, 0.25, 100.0, 0.25);
+  EXPECT_DOUBLE_EQ(equal.primary_weight, 0.5);
+  EXPECT_DOUBLE_EQ(equal.beta, 1000.0);
 }

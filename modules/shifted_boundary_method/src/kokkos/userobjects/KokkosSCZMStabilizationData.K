@@ -74,6 +74,8 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const InputParameters &
                          : nullptr),
     _restartable_stabilization_beta(
         declareRestartableData<std::vector<Real>>("stabilization_beta")),
+    _restartable_primary_weight(
+        declareRestartableData<std::vector<Real>>("stabilization_primary_weight")),
     _beta_initialized(declareRestartableData<bool>("beta_initialized", false))
 {
   if (!_settings.enabled)
@@ -141,6 +143,8 @@ KokkosSCZMStabilizationData::KokkosSCZMStabilizationData(const KokkosSCZMStabili
     _bulk_traction(object._bulk_traction),
     _stabilization_beta(object._stabilization_beta),
     _restartable_stabilization_beta(object._restartable_stabilization_beta),
+    _primary_weight(object._primary_weight),
+    _restartable_primary_weight(object._restartable_primary_weight),
     _stabilized_traction(object._stabilized_traction),
     _auxiliary_jump(object._auxiliary_jump),
     _robin_W(object._robin_W),
@@ -298,13 +302,20 @@ KokkosSCZMStabilizationData::allocateArrays()
     _robin_weighted_dF.create(n_qps, 27);
   _prepass_failure.create(1);
   _stabilization_beta.create(n_qps);
+  _primary_weight.create(n_qps);
   if (_beta_initialized)
   {
-    if (_restartable_stabilization_beta.size() != n_qps)
-      mooseError("Recovered SCZM stabilization beta size does not match the interface QP layout.");
+    if (_restartable_stabilization_beta.size() != n_qps ||
+        _restartable_primary_weight.size() != n_qps)
+      mooseError("Recovered SCZM stabilization parameter size does not match the interface QP "
+                 "layout.");
     for (const auto i : index_range(_restartable_stabilization_beta))
+    {
       _stabilization_beta(i) = _restartable_stabilization_beta[i];
+      _primary_weight(i) = _restartable_primary_weight[i];
+    }
     _stabilization_beta.copyToDevice();
+    _primary_weight.copyToDevice();
   }
 }
 
@@ -346,6 +357,8 @@ KokkosSCZMStabilizationData::ensurePrepared(const bool need_tangents)
         mooseError("SCZM stabilization beta must be finite and positive; check the normal "
                    "directional bulk tangents and adjacent element volumes.");
     _restartable_stabilization_beta.assign(_stabilization_beta.begin(), _stabilization_beta.end());
+    _primary_weight.copyToHost();
+    _restartable_primary_weight.assign(_primary_weight.begin(), _primary_weight.end());
     _beta_initialized = true;
   }
 

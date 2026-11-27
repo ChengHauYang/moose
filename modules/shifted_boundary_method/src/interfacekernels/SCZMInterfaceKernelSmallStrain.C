@@ -355,7 +355,8 @@ SCZMInterfaceKernelSmallStrainTempl<false>::computeJacobianComponent(
       average_traction_derivative += ((b == _component ? 1.0 : 0.0) - weight) *
                                      stressDerivative(b, component_j, normal, trial_on_element);
     }
-    jacobian += 0.5 * (normal * _normals[_qp]) * signed_test * average_traction_derivative;
+    jacobian += averageTractionWeight(trial_on_element) * (normal * _normals[_qp]) * signed_test *
+                average_traction_derivative;
   }
   else
     jacobian = computeDResidualDDisplacement(_component, component_j, type);

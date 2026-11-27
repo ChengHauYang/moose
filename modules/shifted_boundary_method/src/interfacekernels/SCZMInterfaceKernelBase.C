@@ -59,8 +59,12 @@ SCZMInterfaceKernelBaseTempl<is_ad>::SCZMInterfaceKernelBaseTempl(
                        "Weighted traction stabilization requires the non-AD shifted cohesive zone "
                        "objects.");
     else
+    {
       _inverse_robin_tangent = &this->template getMaterialPropertyByName<RankTwoTensor>(
           _base_name + "inverse_robin_tangent");
+      _primary_weight =
+          &this->template getMaterialPropertyByName<Real>(_base_name + "stabilization_primary_weight");
+    }
   }
 
   if (_ndisp != this->_mesh.dimension())
@@ -97,6 +101,14 @@ SCZMInterfaceKernelBaseTempl<is_ad>::stabilizationNormal() const
 {
   return _shifted ? RealVectorValue(this->trueNormal())
                   : RealVectorValue(this->_normals[this->_qp]);
+}
+
+template <bool is_ad>
+Real
+SCZMInterfaceKernelBaseTempl<is_ad>::averageTractionWeight(const bool trial_on_element) const
+{
+  const auto primary_weight = (*_primary_weight)[this->_qp];
+  return trial_on_element ? primary_weight : 1.0 - primary_weight;
 }
 
 template class SCZMInterfaceKernelBaseTempl<false>;

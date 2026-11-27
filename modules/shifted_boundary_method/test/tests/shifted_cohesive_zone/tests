@@ -507,13 +507,14 @@
                   'traction stabilization of the shifted cohesive zone interface flux'
     # These gammas set beta near the initial cohesive stiffness (about 1.4e3 for the
     # Salehani-Irani law, 5e3 for the elastic law), so S is near I / 2 and both the cohesive and
-    # the average bulk traction derivatives carry weight
+    # the average bulk traction derivatives carry weight. Block 2 is three times stiffer than
+    # block 1, so the two sides' bulk tractions enter the average with different weights.
     [small_strain]
       type = PetscJacobianTester
       input = 'rectangle_sczm_tri_material.i'
       cli_args = "Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=weighted_traction "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization_gamma=0.25 "
-                 "Executioner/num_steps=1 Outputs/active=''"
+                 "E2=3e3 Executioner/num_steps=1 Outputs/active=''"
       run_sim = true
       mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
       detail = 'with small-strain kinematics and the directional correction,'
@@ -524,7 +525,7 @@
       cli_args = "Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/no_shifted=true "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=weighted_traction "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization_gamma=0.25 "
-                 "UserObjects/active='' Executioner/num_steps=1 Outputs/active=''"
+                 "E2=3e3 UserObjects/active='' Executioner/num_steps=1 Outputs/active=''"
       run_sim = true
       mesh_mode = REPLICATED
       detail = 'with small-strain kinematics and shifted evaluation disabled,'
@@ -535,7 +536,7 @@
       cli_args = "Physics/SolidMechanics/QuasiStatic/all/volumetric_locking_correction=true "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization=weighted_traction "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/czm_ik/stabilization_gamma=0.25 "
-                 "Executioner/num_steps=1 Outputs/active=''"
+                 "E2=3e3 Executioner/num_steps=1 Outputs/active=''"
       run_sim = true
       mesh_mode = REPLICATED # SBMSurfaceMeshBuilder requires a serial mesh
       detail = 'with small-strain kinematics and volumetric locking correction,'
@@ -547,6 +548,7 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/czm/directional_correction=true "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/czm/stabilization=weighted_traction "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/czm/stabilization_gamma=0.5 "
+                 "Materials/elasticity_tensor_2/youngs_modulus=3e3 "
                  "Materials/czm/type=PureElasticTractionSeparation Executioner/num_steps=1 Outputs/active=''"
       run_sim = true
       mesh_mode = REPLICATED
@@ -562,6 +564,7 @@
                  "Physics/SolidMechanics/ShiftedCohesiveZone/czm/no_shifted=true "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/czm/stabilization=weighted_traction "
                  "Physics/SolidMechanics/ShiftedCohesiveZone/czm/stabilization_gamma=0.5 "
+                 "Materials/elasticity_tensor_2/youngs_modulus=3e3 "
                  "Materials/czm/type=PureElasticTractionSeparation UserObjects/active='' "
                  "Executioner/num_steps=1 Outputs/active=''"
       run_sim = true

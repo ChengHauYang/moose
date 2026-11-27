@@ -65,10 +65,11 @@ protected:
   Moose::Kokkos::SCZM::CohesiveEvaluation evaluateTrialTraction(const Moose::Kokkos::Real3 & jump);
 
   /**
-   * The Robin parameter, computed from the bulk tangents on first use and then frozen. Zero on an
-   * EXEC_INITIAL evaluation whose bulk tangents are not yet available.
+   * The traction weights and the Robin parameter, computed from the bulk tangents on first use and
+   * then frozen. Beta is zero on an EXEC_INITIAL evaluation whose bulk tangents are not yet
+   * available.
    */
-  Real stabilizationBeta(const RealVectorValue & normal);
+  Moose::Kokkos::SCZM::StabilizationParameters stabilizationParameters(const RealVectorValue & normal);
 
   /**
    * Finds the traction-separation and global traction materials that evaluateTrialTraction()
@@ -107,6 +108,13 @@ protected:
   ///@{
   MaterialProperty<Real> * _beta = nullptr;
   const MaterialProperty<Real> * _beta_old = nullptr;
+  ///@}
+
+  /// Current and old frozen weight of the element side traction in the average bulk traction,
+  /// with stabilization
+  ///@{
+  MaterialProperty<Real> * _primary_weight = nullptr;
+  const MaterialProperty<Real> * _primary_weight_old = nullptr;
   ///@}
 
   /// Inverse Robin tangent S, with which the kernels weight the cohesive traction derivatives

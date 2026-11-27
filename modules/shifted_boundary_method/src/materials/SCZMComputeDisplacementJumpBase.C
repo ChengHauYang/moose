@@ -72,6 +72,10 @@ SCZMComputeDisplacementJumpBase<is_ad>::SCZMComputeDisplacementJumpBase(
       _beta = &this->template declarePropertyByName<Real>(_base_name + "stabilization_beta");
       _beta_old =
           &this->template getMaterialPropertyOldByName<Real>(_base_name + "stabilization_beta");
+      _primary_weight = &this->template declarePropertyByName<Real>(
+          _base_name + "stabilization_primary_weight");
+      _primary_weight_old = &this->template getMaterialPropertyOldByName<Real>(
+          _base_name + "stabilization_primary_weight");
       _inverse_robin_tangent = &this->template declarePropertyByName<RankTwoTensor>(
           _base_name + "inverse_robin_tangent");
 
@@ -211,7 +215,10 @@ SCZMComputeDisplacementJumpBase<is_ad>::initQpStatefulProperties()
 {
   CZMComputeDisplacementJumpBase<is_ad>::initQpStatefulProperties();
   if (_beta)
+  {
     (*_beta)[_qp] = 0.0;
+    (*_primary_weight)[_qp] = 0.0;
+  }
 }
 
 template <bool is_ad>
@@ -235,14 +242,24 @@ SCZMComputeDisplacementJumpBase<is_ad>::computeWeightedTractionJump()
                        std::make_pair(this->_current_elem->id(), this->_current_side), _qp))
                  : RealVectorValue(this->_normals[_qp]);
 
+    auto & S = (*_inverse_robin_tangent)[_qp];
+    const auto [primary_weight, beta] = stabilizationParameters(normal);
+    if (beta == 0.0)
+    {
+      // No beta yet on an initial evaluation: keep the shifted jump
+      S = RankTwoTensor::Identity();
+      return;
+    }
+
     Moose::Kokkos::Real3 shifted_jump{};
     Moose::Kokkos::Real3 bulk_traction{};
     for (const auto i : make_range(_ndisp))
     {
       shifted_jump.v[i] = _displacement_jump_global[_qp](i);
       for (const auto J : make_range(_ndisp))
-        bulk_traction.v[i] +=
-            0.5 * ((*_stress)[_qp](i, J) + (*_stress_neighbor)[_qp](i, J)) * normal(J);
+        bulk_traction.v[i] += (primary_weight * (*_stress)[_qp](i, J) +
+                               (1.0 - primary_weight) * (*_stress_neighbor)[_qp](i, J)) *
+                              normal(J);
     }
 
     struct Evaluator
@@ -253,15 +270,6 @@ SCZMComputeDisplacementJumpBase<is_ad>::computeWeightedTractionJump()
       }
       SCZMComputeDisplacementJumpBase<is_ad> & material;
     };
-    auto & S = (*_inverse_robin_tangent)[_qp];
-    const Real beta = stabilizationBeta(normal);
-    if (beta == 0.0)
-    {
-      // No beta yet on an initial evaluation: keep the shifted jump
-      S = RankTwoTensor::Identity();
-      return;
-    }
-
     const auto result = GeneralizedRobinSolver::solve(
         Evaluator{*this}, shifted_jump, bulk_traction, beta, _ndisp, false);
     if (!result.converged)
@@ -301,25 +309,31 @@ SCZMComputeDisplacementJumpBase<is_ad>::evaluateTrialTraction(const Moose::Kokko
 }
 
 template <bool is_ad>
-Real
-SCZMComputeDisplacementJumpBase<is_ad>::stabilizationBeta(const RealVectorValue & normal)
+Moose::Kokkos::SCZM::StabilizationParameters
+SCZMComputeDisplacementJumpBase<is_ad>::stabilizationParameters(const RealVectorValue & normal)
 {
-  // Stored every evaluation so that the frozen value is carried to the next time step
+  // Stored every evaluation so that the frozen values are carried to the next time step
   auto & beta = (*_beta)[_qp];
+  auto & primary_weight = (*_primary_weight)[_qp];
   if ((*_beta_old)[_qp] > 0.0)
+  {
     beta = (*_beta_old)[_qp];
+    primary_weight = (*_primary_weight_old)[_qp];
+  }
   else if (!(beta > 0.0))
   {
     Real face_area = 0.0;
     for (const auto qp : make_range(this->_qrule->n_points()))
       face_area += this->_JxW[qp];
-    beta = Moose::Kokkos::SCZM::automaticBeta(
+    const auto parameters = Moose::Kokkos::SCZM::automaticStabilization(
         _stabilization.gamma,
         face_area,
         Moose::Kokkos::SCZM::normalStiffness((*_tangent)[_qp], normal, _ndisp),
         this->_current_elem->volume(),
         Moose::Kokkos::SCZM::normalStiffness((*_tangent_neighbor)[_qp], normal, _ndisp),
         this->_neighbor_elem->volume());
+    beta = parameters.beta;
+    primary_weight = parameters.primary_weight;
     if (!(beta > 0.0) || !std::isfinite(beta))
     {
       // A user object producing the bulk tangent, such as a NEML2 model executor whose input
@@ -332,7 +346,7 @@ SCZMComputeDisplacementJumpBase<is_ad>::stabilizationBeta(const RealVectorValue 
                    "directional bulk tangents and adjacent element volumes.");
     }
   }
-  return beta;
+  return {primary_weight, beta};
 }
 
 template <bool is_ad>

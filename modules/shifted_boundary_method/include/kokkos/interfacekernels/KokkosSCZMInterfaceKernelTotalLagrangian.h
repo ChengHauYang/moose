@@ -251,6 +251,8 @@ protected:
   KokkosSCZMStabilizationData * const _stabilization_data;
   Moose::Kokkos::Array2D<dof_id_type> _face_qp_offsets;
   Moose::Kokkos::Array<Real> _stabilization_beta;
+  /// Weight of the primary side stress in the average bulk traction
+  Moose::Kokkos::Array<Real> _primary_weight;
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _stabilized_traction;
   Moose::Kokkos::Array<Moose::Kokkos::Real33> _robin_W;
   Moose::Kokkos::Array2D<Real> _robin_weighted_dF;
@@ -627,6 +629,9 @@ KokkosSCZMInterfaceKernelTotalLagrangian::computeJacobianComponent(
                                                      weighted_dF);
 
     const Real beta = _stabilization_beta[index];
+    // Weight of the trial side stress in the average bulk traction
+    const Real trial_weight =
+        trial_on_element ? _primary_weight[index] : 1.0 - _primary_weight[index];
     for (unsigned int b = 0; b < _ndisp; ++b)
     {
       Real bulk_derivative = 0.0;
@@ -642,7 +647,7 @@ KokkosSCZMInterfaceKernelTotalLagrangian::computeJacobianComponent(
                                            normal,
                                            grad_phi,
                                            avg_grad_phi);
-      jacobian += 0.5 * (_shifted ? areaCorrection(elem_datum, qp) : 1.0) * signed_test *
+      jacobian += trial_weight * (_shifted ? areaCorrection(elem_datum, qp) : 1.0) * signed_test *
                   _robin_W[index](_component, b) / beta * bulk_derivative;
     }
   }

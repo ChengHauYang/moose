@@ -179,6 +179,8 @@ protected:
   KokkosSCZMStabilizationData * const _stabilization_data;
   Moose::Kokkos::Array2D<dof_id_type> _face_qp_offsets;
   Moose::Kokkos::Array<Real> _stabilization_beta;
+  /// Weight of the primary side stress in the average bulk traction
+  Moose::Kokkos::Array<Real> _primary_weight;
   Moose::Kokkos::Array<Moose::Kokkos::Real3> _stabilized_traction;
   /// W = (I + K / beta)^{-1} K, the derivative of the stabilized traction with respect to the jump
   Moose::Kokkos::Array<Moose::Kokkos::Real33> _robin_W;
@@ -377,14 +379,16 @@ KokkosSCZMInterfaceKernelSmallStrain::computeJacobianComponent(
 
   if (_stabilization_settings.enabled)
   {
-    // d(t)/d(J_d) = W and d(t)/d(T_h) = W / beta with T_h = (stress + stress_neighbor) N / 2. Each
-    // side's stress depends only on that side's displacements, so the trial side selects the
-    // stress, tangent, and trial gradient.
+    // d(t)/d(J_d) = W and d(t)/d(T_h) = W / beta with T_h = (w stress + (1 - w) stress_neighbor) N.
+    // Each side's stress depends only on that side's displacements, so the trial side selects the
+    // stress, tangent, trial gradient, and weight.
     const auto normal = stabilizationNormal(elem_datum, qp);
     const auto index = _face_qp_offsets(elem_datum.side(), elem_datum.elemID()) + qp;
     const auto & W = _robin_W[index];
     const Real beta = _stabilization_beta[index];
     const bool trial_on_element = type == Moose::ElementElement || type == Moose::NeighborElement;
+    const Real trial_weight =
+        trial_on_element ? _primary_weight[index] : 1.0 - _primary_weight[index];
     const auto grad_phi = trial_on_element ? _grad_phi(elem_datum, j, qp)
                                            : _grad_phi_neighbor(neighbor_datum, j, neighbor_qp);
     const Real signed_test = (type == Moose::ElementElement || type == Moose::ElementNeighbor)
@@ -405,7 +409,7 @@ KokkosSCZMInterfaceKernelSmallStrain::computeJacobianComponent(
                            normal,
                            grad_phi,
                            avg_grad_phi);
-    jacobian += 0.5 * (_shifted ? areaCorrection(elem_datum, qp) : 1.0) * signed_test *
+    jacobian += trial_weight * (_shifted ? areaCorrection(elem_datum, qp) : 1.0) * signed_test *
                 average_traction_derivative;
   }
   else
