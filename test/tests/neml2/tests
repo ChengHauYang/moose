@@ -160,8 +160,8 @@
       type = RunException
       input = kokkos_interface_quantity_to_neml2.i
       cli_args = 'NEML2/weighted/interface_material_inputs=F'
-      expect_err = 'The Kokkos input backend does not support true interface material data'
-      detail = 'a true interface material input.'
+      expect_err = 'The Kokkos input backend supports only current-state vector interface material inputs'
+      detail = 'a rank-two true interface material input.'
       capabilities = 'kokkos & libtorch & neml2'
       valgrind = none
     []
