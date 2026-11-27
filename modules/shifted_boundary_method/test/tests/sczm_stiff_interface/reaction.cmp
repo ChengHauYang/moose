@@ -1,0 +1,4 @@
+GLOBAL VARIABLES relative 0 floor 0
+    time relative 0 floor 0
+    react_x relative 1e-2 floor 1e-6
+    react_y relative 1e-2 floor 1e-6
